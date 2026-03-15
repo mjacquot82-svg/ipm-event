@@ -1,8 +1,10 @@
-// Mock Data for Event Navigator - Phase 2
-// Centered around Moscone Center, San Francisco (37.7842, -122.4016)
+// Mock Data for IPM 2026 - International Plowing Match & Rural Expo
+// Walkerton, Bruce County, Ontario
+// September 22-26, 2026
 
-export type LocationType = 'stage' | 'vendor' | 'utility';
-export type UtilitySubtype = 'food' | 'restroom' | 'info' | 'medical' | 'general';
+export type LocationType = 'stage' | 'vendor' | 'utility' | 'field';
+export type UtilitySubtype = 'food' | 'restroom' | 'info' | 'medical' | 'parking' | 'general';
+export type FieldSubtype = 'plowing' | 'demo' | 'competition';
 
 export interface Location {
   id: string;
@@ -11,6 +13,7 @@ export interface Location {
   lng: number;
   type: LocationType;
   utilitySubtype?: UtilitySubtype;
+  fieldSubtype?: FieldSubtype;
 }
 
 export interface Vendor {
@@ -28,114 +31,135 @@ export interface Session {
   location_id: string;
 }
 
-// Moscone Center venue coordinates
+// IPM 2026 - Walkerton, Bruce County coordinates
 export const VENUE_CENTER = {
-  latitude: 37.7842,
-  longitude: -122.4016,
-  latitudeDelta: 0.008,
-  longitudeDelta: 0.008,
+  latitude: 44.1251,
+  longitude: -81.2061,
+  latitudeDelta: 0.015,
+  longitudeDelta: 0.015,
 };
 
 // Google Maps API Key placeholder
 export const GOOGLE_MAPS_API_KEY = 'GOOGLE_MAPS_API_KEY_PLACEHOLDER';
 
-// Locations around Moscone Center
+// Locations around the IPM 2026 site
 export const locations: Location[] = [
+  // Main Attractions (Stages)
   {
     id: 'loc-1',
-    name: 'Main Stage',
-    lat: 37.7845,
-    lng: -122.4020,
-    type: 'stage',
+    name: 'Main Plowing Field',
+    lat: 44.1260,
+    lng: -81.2055,
+    type: 'field',
+    fieldSubtype: 'plowing',
   },
   {
     id: 'loc-2',
-    name: 'Innovation Hall',
-    lat: 37.7840,
-    lng: -122.4010,
+    name: 'Rural Expo Stage',
+    lat: 44.1245,
+    lng: -81.2070,
     type: 'stage',
   },
   {
     id: 'loc-3',
-    name: 'Workshop Room A',
-    lat: 37.7838,
-    lng: -122.4025,
-    type: 'stage',
+    name: 'Horse Plowing Arena',
+    lat: 44.1255,
+    lng: -81.2040,
+    type: 'field',
+    fieldSubtype: 'competition',
   },
   {
     id: 'loc-4',
-    name: 'TechCorp Booth',
-    lat: 37.7848,
-    lng: -122.4012,
-    type: 'vendor',
+    name: 'Antique Tractor Display',
+    lat: 44.1240,
+    lng: -81.2080,
+    type: 'field',
+    fieldSubtype: 'demo',
   },
+  // Vendors/Exhibitors
   {
     id: 'loc-5',
-    name: 'CloudSoft Pavilion',
-    lat: 37.7835,
-    lng: -122.4018,
+    name: 'Agricultural Equipment Tent',
+    lat: 44.1248,
+    lng: -81.2050,
     type: 'vendor',
   },
   {
     id: 'loc-6',
-    name: 'AI Solutions Hub',
-    lat: 37.7843,
-    lng: -122.4005,
+    name: 'Local Artisan Market',
+    lat: 44.1235,
+    lng: -81.2065,
     type: 'vendor',
   },
   {
     id: 'loc-7',
-    name: 'Food Court',
-    lat: 37.7850,
-    lng: -122.4022,
+    name: 'Farm Fresh Produce',
+    lat: 44.1252,
+    lng: -81.2075,
+    type: 'vendor',
+  },
+  // Utilities
+  {
+    id: 'loc-8',
+    name: 'Food Pavilion',
+    lat: 44.1242,
+    lng: -81.2058,
     type: 'utility',
     utilitySubtype: 'food',
   },
   {
-    id: 'loc-8',
+    id: 'loc-9',
     name: 'Restrooms - North',
-    lat: 37.7852,
-    lng: -122.4015,
+    lat: 44.1265,
+    lng: -81.2060,
     type: 'utility',
     utilitySubtype: 'restroom',
   },
   {
-    id: 'loc-9',
-    name: 'Information Desk',
-    lat: 37.7842,
-    lng: -122.4016,
+    id: 'loc-10',
+    name: 'Information Tent',
+    lat: 44.1251,
+    lng: -81.2061,
     type: 'utility',
     utilitySubtype: 'info',
   },
   {
-    id: 'loc-10',
+    id: 'loc-11',
     name: 'First Aid Station',
-    lat: 37.7833,
-    lng: -122.4008,
+    lat: 44.1238,
+    lng: -81.2045,
     type: 'utility',
     utilitySubtype: 'medical',
   },
+  {
+    id: 'loc-12',
+    name: 'Main Parking Area',
+    lat: 44.1230,
+    lng: -81.2090,
+    type: 'utility',
+    utilitySubtype: 'parking',
+  },
 ];
 
-// Vendors at the event
+// Vendors/Exhibitors at IPM 2026
 export const vendors: Vendor[] = [
   {
     id: 'vendor-1',
-    name: 'TechCorp Industries',
-    description: 'Leading provider of enterprise software solutions. Visit us for live demos of our latest AI-powered tools.',
-    location_id: 'loc-4',
-  },
-  {
-    id: 'vendor-2',
-    name: 'CloudSoft',
-    description: 'Cloud infrastructure and DevOps automation. Free swag and consultations available!',
+    name: 'Bruce County Farm Equipment',
+    description: 'Local dealer showcasing the latest tractors and farming implements. Live demonstrations throughout the day!',
     location_id: 'loc-5',
   },
   {
-    id: 'vendor-3',
-    name: 'AI Solutions Inc.',
-    description: 'Machine learning platforms for modern businesses. Experience our demo zone.',
+    id: 'vendor-2',
+    name: 'Walkerton Artisan Collective',
+    description: 'Handcrafted goods from local artisans including woodwork, textiles, and pottery celebrating rural Ontario heritage.',
     location_id: 'loc-6',
+  },
+  {
+    id: 'vendor-3',
+    name: 'Ontario Farm Fresh Market',
+    description: 'Fresh seasonal produce, preserves, and baked goods from Bruce County farms.',
+    location_id: 'loc-7',
   },
 ];
 
@@ -147,42 +171,49 @@ const getToday = () => {
 
 const TODAY = getToday();
 
-// Sessions/Events schedule - using dynamic dates for demo
+// Sessions/Events schedule for IPM 2026
 export const sessions: Session[] = [
   {
     id: 'session-1',
-    title: 'Opening Keynote: Future of Technology',
+    title: 'Opening Ceremony - 50 Years Strong',
     start_time: `${TODAY}T09:00:00`,
-    end_time: `${TODAY}T10:30:00`,
-    location_id: 'loc-1',
-  },
-  {
-    id: 'session-2',
-    title: 'Building Scalable Applications',
-    start_time: `${TODAY}T11:00:00`,
-    end_time: `${TODAY}T12:00:00`,
+    end_time: `${TODAY}T10:00:00`,
     location_id: 'loc-2',
   },
   {
+    id: 'session-2',
+    title: 'Ontario Provincial Plowing Championship',
+    start_time: `${TODAY}T10:30:00`,
+    end_time: `${TODAY}T12:30:00`,
+    location_id: 'loc-1',
+  },
+  {
     id: 'session-3',
-    title: 'Hands-on: React Native Workshop',
+    title: 'Horse Plowing Demonstration',
     start_time: `${TODAY}T13:00:00`,
-    end_time: `${TODAY}T15:00:00`,
+    end_time: `${TODAY}T14:30:00`,
     location_id: 'loc-3',
   },
   {
     id: 'session-4',
-    title: 'AI/ML in Production',
-    start_time: `${TODAY}T15:30:00`,
-    end_time: `${TODAY}T16:30:00`,
-    location_id: 'loc-2',
+    title: 'Antique Tractor Parade',
+    start_time: `${TODAY}T15:00:00`,
+    end_time: `${TODAY}T16:00:00`,
+    location_id: 'loc-4',
   },
   {
     id: 'session-5',
-    title: 'Closing Ceremony & Networking',
-    start_time: `${TODAY}T17:00:00`,
-    end_time: `${TODAY}T18:30:00`,
-    location_id: 'loc-1',
+    title: 'Agricultural Innovation Panel',
+    start_time: `${TODAY}T16:30:00`,
+    end_time: `${TODAY}T17:30:00`,
+    location_id: 'loc-2',
+  },
+  {
+    id: 'session-6',
+    title: 'Evening Concert & Celebration',
+    start_time: `${TODAY}T18:00:00`,
+    end_time: `${TODAY}T21:00:00`,
+    location_id: 'loc-2',
   },
 ];
 
@@ -206,30 +237,47 @@ export const getSessionById = (id: string): Session | undefined => {
 export const getLocationTypeColor = (type: LocationType): string => {
   switch (type) {
     case 'stage':
-      return '#FF6B6B'; // Red for stages
+      return '#A6262D'; // Deep Red
     case 'vendor':
-      return '#4ECDC4'; // Teal for vendors
+      return '#F2A900'; // Harvest Gold
+    case 'field':
+      return '#6B8E23'; // Olive (plowing fields)
     case 'utility':
-      return '#FFE66D'; // Yellow for utilities
+      return '#4ECDC4'; // Teal
     default:
-      return '#FFFFFF';
+      return '#F0EFEB';
   }
 };
 
-// Enhanced icon function with utility subtypes
-export const getLocationTypeIcon = (type: LocationType, utilitySubtype?: UtilitySubtype): string => {
+// Enhanced icon function with IPM-specific subtypes
+export const getLocationTypeIcon = (type: LocationType, utilitySubtype?: UtilitySubtype, fieldSubtype?: FieldSubtype): string => {
   if (type === 'utility' && utilitySubtype) {
     switch (utilitySubtype) {
       case 'food':
-        return 'coffee'; // Coffee/food icon
+        return 'coffee';
       case 'restroom':
-        return 'users'; // People icon for restrooms
+        return 'users';
       case 'info':
-        return 'help-circle'; // Help/info icon
+        return 'help-circle';
       case 'medical':
-        return 'heart'; // Heart for medical/first aid
+        return 'heart';
+      case 'parking':
+        return 'truck'; // Parking/vehicle icon
       default:
         return 'info';
+    }
+  }
+  
+  if (type === 'field' && fieldSubtype) {
+    switch (fieldSubtype) {
+      case 'plowing':
+        return 'grid'; // Field pattern
+      case 'demo':
+        return 'eye'; // Demonstration
+      case 'competition':
+        return 'award'; // Competition
+      default:
+        return 'square';
     }
   }
   
@@ -238,14 +286,16 @@ export const getLocationTypeIcon = (type: LocationType, utilitySubtype?: Utility
       return 'mic'; // Microphone for stages
     case 'vendor':
       return 'shopping-bag'; // Shopping bag for vendors
+    case 'field':
+      return 'grid'; // Grid for fields
     case 'utility':
-      return 'info'; // Default info for utilities
+      return 'info';
     default:
       return 'map-pin';
   }
 };
 
-// Get sessions happening now (within current hour)
+// Get sessions happening now (within current time)
 export const getHappeningNow = (): Session[] => {
   const now = new Date();
   return sessions.filter(session => {
@@ -272,4 +322,15 @@ export const getNextStarredSession = (starredIds: string[]): Session | undefined
     .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
   
   return starredSessions[0];
+};
+
+// Event info for About section
+export const eventInfo = {
+  name: 'International Plowing Match & Rural Expo',
+  year: 2026,
+  tagline: '50 Years Strong',
+  dates: 'September 22-26, 2026',
+  location: 'Walkerton, Bruce County, Ontario',
+  coordinates: { lat: 44.1251, lng: -81.2061 },
+  description: 'Celebrating 50 years of agricultural heritage and innovation in Bruce County. Join us for world-class plowing competitions, rural exhibitions, and community celebration.',
 };

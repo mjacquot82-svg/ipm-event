@@ -39,7 +39,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   const vendor = getVendorByLocationId(location.id);
   const sessions = getSessionsByLocationId(location.id);
   const typeColor = getLocationTypeColor(location.type);
-  const typeIcon = getLocationTypeIcon(location.type, location.utilitySubtype);
+  const typeIcon = getLocationTypeIcon(location.type, location.utilitySubtype, location.fieldSubtype);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -50,9 +50,9 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
     });
   };
 
-  const getTypeLabel = (type: string, subtype?: string) => {
-    if (type === 'utility' && subtype) {
-      switch (subtype) {
+  const getTypeLabel = (type: string, utilitySubtype?: string, fieldSubtype?: string) => {
+    if (type === 'utility' && utilitySubtype) {
+      switch (utilitySubtype) {
         case 'food':
           return 'Food & Drinks';
         case 'restroom':
@@ -61,15 +61,31 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           return 'Information';
         case 'medical':
           return 'First Aid';
+        case 'parking':
+          return 'Parking';
         default:
           return 'Utility';
+      }
+    }
+    if (type === 'field' && fieldSubtype) {
+      switch (fieldSubtype) {
+        case 'plowing':
+          return 'Plowing Field';
+        case 'demo':
+          return 'Demonstration Area';
+        case 'competition':
+          return 'Competition Arena';
+        default:
+          return 'Field';
       }
     }
     switch (type) {
       case 'stage':
         return 'Stage';
       case 'vendor':
-        return 'Vendor Booth';
+        return 'Exhibitor';
+      case 'field':
+        return 'Field';
       case 'utility':
         return 'Utility';
       default:
@@ -99,7 +115,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
                 <Text style={styles.locationName}>{location.name}</Text>
                 <View style={styles.typeTag}>
                   <Text style={[styles.typeText, { color: typeColor }]}>
-                    {getTypeLabel(location.type, location.utilitySubtype)}
+                    {getTypeLabel(location.type, location.utilitySubtype, location.fieldSubtype)}
                   </Text>
                 </View>
               </View>
@@ -119,11 +135,11 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
             {/* Upcoming Sessions */}
             {sessions.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Upcoming Sessions</Text>
+                <Text style={styles.sectionTitle}>Scheduled Events</Text>
                 {sessions.map((session) => (
                   <View key={session.id} style={styles.sessionCard}>
                     <View style={styles.sessionTime}>
-                      <Feather name="clock" size={14} color={colors.primary} />
+                      <Feather name="clock" size={14} color={colors.accent} />
                       <Text style={styles.sessionTimeText}>
                         {formatTime(session.start_time)} - {formatTime(session.end_time)}
                       </Text>
@@ -199,7 +215,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 56,
     height: 56,
-    borderRadius: 16,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -254,7 +270,7 @@ const styles = StyleSheet.create({
   },
   sessionTimeText: {
     fontSize: 13,
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: '500',
   },
   sessionTitle: {
@@ -280,7 +296,7 @@ const styles = StyleSheet.create({
     gap: 10,
     backgroundColor: colors.primary,
     paddingVertical: 16,
-    borderRadius: 14,
+    borderRadius: 50,
   },
   directionsButtonDisabled: {
     backgroundColor: colors.surfaceHighlight,

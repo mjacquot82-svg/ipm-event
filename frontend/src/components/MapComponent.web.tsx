@@ -90,15 +90,18 @@ const MapComponent: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* Header with Logo */}
       <View style={styles.header}>
-        <Feather name="map" size={48} color={colors.primary} />
-        <Text style={styles.title}>Event Map</Text>
-        <Text style={styles.subtitle}>Moscone Center, San Francisco</Text>
+        <View style={styles.logoCircle}>
+          <Feather name="truck" size={28} color={colors.textPrimary} />
+        </View>
+        <Text style={styles.title}>IPM 2026</Text>
+        <Text style={styles.subtitle}>Walkerton, Bruce County, Ontario</Text>
         {userLocation && (
           <View style={styles.userLocationBadge}>
             <Feather name="navigation" size={14} color={colors.userLocation} />
             <Text style={styles.userLocationText}>
-              Your location: {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
+              {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
             </Text>
           </View>
         )}
@@ -108,7 +111,7 @@ const MapComponent: React.FC = () => {
       {directions.isActive && directions.destination && (
         <View style={styles.directionsBanner}>
           <View style={styles.directionsInfo}>
-            <Feather name="navigation" size={20} color={colors.primary} />
+            <Feather name="navigation" size={20} color={colors.accent} />
             <View style={styles.directionsTextContainer}>
               <Text style={styles.directionsLabel}>Navigating to</Text>
               <Text style={styles.directionsDestination}>{directions.destination.name}</Text>
@@ -124,27 +127,33 @@ const MapComponent: React.FC = () => {
         </View>
       )}
       
+      {/* Legend */}
       <View style={styles.legendContainer}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.field }]} />
+          <Text style={styles.legendText}>Fields</Text>
+        </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.stage }]} />
           <Text style={styles.legendText}>Stages</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.vendor }]} />
-          <Text style={styles.legendText}>Vendors</Text>
+          <Text style={styles.legendText}>Exhibitors</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: colors.utility }]} />
-          <Text style={styles.legendText}>Utilities</Text>
+          <View style={[styles.legendDot, { backgroundColor: '#4ECDC4' }]} />
+          <Text style={styles.legendText}>Services</Text>
         </View>
       </View>
 
       <ScrollView style={styles.locationsList} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Venue Locations</Text>
+        <Text style={styles.sectionTitle}>IPM Locations</Text>
         {locations.map((location) => {
           const typeColor = getLocationTypeColor(location.type);
-          const iconName = getLocationTypeIcon(location.type, location.utilitySubtype);
+          const iconName = getLocationTypeIcon(location.type, location.utilitySubtype, location.fieldSubtype);
           const isDestination = directions.isActive && directions.destination?.id === location.id;
+          const isField = location.type === 'field';
           
           return (
             <TouchableOpacity
@@ -156,8 +165,16 @@ const MapComponent: React.FC = () => {
               onPress={() => handleMarkerPress(location)}
               activeOpacity={0.7}
             >
-              <View style={[styles.locationIcon, { backgroundColor: typeColor }]}>
-                <Feather name={iconName as any} size={20} color="#FFFFFF" />
+              <View style={[
+                styles.locationIcon, 
+                { backgroundColor: typeColor },
+                isField && styles.fieldIcon,
+              ]}>
+                {isField ? (
+                  <Feather name="truck" size={20} color="#FFFFFF" />
+                ) : (
+                  <Feather name={iconName as any} size={20} color="#FFFFFF" />
+                )}
               </View>
               <View style={styles.locationInfo}>
                 <Text style={styles.locationName}>{location.name}</Text>
@@ -167,7 +184,7 @@ const MapComponent: React.FC = () => {
               </View>
               {isDestination ? (
                 <View style={styles.navigatingBadge}>
-                  <Feather name="navigation" size={14} color={colors.primary} />
+                  <Feather name="navigation" size={14} color={colors.accent} />
                 </View>
               ) : (
                 <Feather name="chevron-right" size={20} color={colors.textMuted} />
@@ -180,7 +197,7 @@ const MapComponent: React.FC = () => {
       <View style={styles.webNotice}>
         <Feather name="info" size={16} color={colors.info} />
         <Text style={styles.webNoticeText}>
-          Full interactive map with directions available on iOS/Android
+          Full satellite map with directions on iOS/Android
         </Text>
       </View>
 
@@ -203,20 +220,30 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingTop: 40,
-    paddingBottom: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  logoCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primary,
+    borderWidth: 3,
+    borderColor: colors.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginTop: 12,
+    marginTop: 10,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
-    marginTop: 4,
+    marginTop: 2,
   },
   userLocationBadge: {
     flexDirection: 'row',
@@ -224,12 +251,12 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: colors.surface,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderRadius: 20,
-    marginTop: 12,
+    marginTop: 10,
   },
   userLocationText: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.userLocation,
   },
   directionsBanner: {
@@ -238,10 +265,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.surface,
     margin: 16,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.primary,
+    padding: 14,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: colors.accent,
   },
   directionsInfo: {
     flexDirection: 'row',
@@ -252,18 +279,18 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   directionsLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textMuted,
   },
   directionsDestination: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textPrimary,
   },
   cancelButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: colors.surfaceElevated,
     justifyContent: 'center',
     alignItems: 'center',
@@ -271,22 +298,22 @@ const styles = StyleSheet.create({
   legendContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 20,
-    paddingVertical: 16,
+    gap: 16,
+    paddingVertical: 12,
     backgroundColor: colors.surface,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
   legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   legendText: {
-    fontSize: 13,
+    fontSize: 11,
     color: colors.textSecondary,
   },
   locationsList: {
@@ -294,7 +321,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textMuted,
     marginBottom: 12,
@@ -303,39 +330,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    padding: 14,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 50,
     marginBottom: 10,
   },
   destinationCard: {
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: colors.accent,
   },
   locationIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  fieldIcon: {
+    borderWidth: 2,
+    borderColor: colors.accent,
   },
   locationInfo: {
     flex: 1,
     marginLeft: 12,
   },
   locationName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textPrimary,
   },
   locationCoords: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: 1,
   },
   navigatingBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: colors.surfaceElevated,
     justifyContent: 'center',
     alignItems: 'center',
@@ -345,13 +376,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    padding: 16,
+    padding: 14,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
   webNoticeText: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.textSecondary,
   },
 });

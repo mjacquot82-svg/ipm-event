@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -21,6 +22,7 @@ import {
   getLocationTypeColor,
   getLocationTypeIcon,
   Session,
+  eventInfo,
 } from '../../src/data/mockData';
 import { getFavorites } from '../../src/utils/favoritesStorage';
 
@@ -30,13 +32,11 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Load favorites and update time on screen focus
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
       setCurrentTime(new Date());
       
-      // Update time every minute
       const interval = setInterval(() => {
         setCurrentTime(new Date());
       }, 60000);
@@ -57,7 +57,6 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, []);
 
-  // Get live data
   const happeningNow = getHappeningNow();
   const nextStarredSession = getNextStarredSession(favorites);
   const upcomingSessions = getUpcomingSessions().slice(0, 3);
@@ -89,7 +88,7 @@ export default function HomeScreen() {
   const renderSessionCard = (session: Session, showTimeUntil: boolean = false) => {
     const location = getLocationById(session.location_id);
     const typeColor = location ? getLocationTypeColor(location.type) : colors.primary;
-    const iconName = location ? getLocationTypeIcon(location.type, location.utilitySubtype) : 'map-pin';
+    const iconName = location ? getLocationTypeIcon(location.type, location.utilitySubtype, location.fieldSubtype) : 'map-pin';
     
     return (
       <TouchableOpacity 
@@ -99,7 +98,11 @@ export default function HomeScreen() {
         activeOpacity={0.8}
       >
         <View style={[styles.sessionIconContainer, { backgroundColor: typeColor }]}>
-          <Feather name={iconName as any} size={20} color="#FFFFFF" />
+          {location?.type === 'field' ? (
+            <Feather name="truck" size={20} color="#FFFFFF" />
+          ) : (
+            <Feather name={iconName as any} size={20} color="#FFFFFF" />
+          )}
         </View>
         <View style={styles.sessionCardContent}>
           <Text style={styles.sessionCardTitle} numberOfLines={1}>{session.title}</Text>
@@ -130,16 +133,24 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
           />
         }
       >
-        {/* Header */}
+        {/* Header with Logo */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Welcome to</Text>
-          <Text style={styles.eventName}>Tech Conference 2025</Text>
-          <Text style={styles.venue}>Moscone Center, San Francisco</Text>
+          <View style={styles.logoRow}>
+            <View style={styles.logoCircle}>
+              <Feather name="truck" size={24} color={colors.textPrimary} />
+            </View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.eventName}>IPM 2026</Text>
+              <Text style={styles.eventTagline}>50 Years Strong</Text>
+            </View>
+          </View>
+          <Text style={styles.venue}>{eventInfo.location}</Text>
+          <Text style={styles.dates}>{eventInfo.dates}</Text>
         </View>
 
         {/* Happening Now Section */}
@@ -177,9 +188,9 @@ export default function HomeScreen() {
                       Until {formatTime(session.end_time)}
                     </Text>
                   </View>
-                  <View style={styles.goButton}>
-                    <Feather name="navigation" size={18} color={colors.primary} />
-                  </View>
+                  <TouchableOpacity style={styles.goButton}>
+                    <Feather name="navigation" size={18} color={colors.accent} />
+                  </TouchableOpacity>
                 </TouchableOpacity>
               );
             })}
@@ -191,7 +202,7 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.starredHeader}>
-                <Feather name="star" size={18} color={colors.warning} />
+                <Feather name="star" size={18} color={colors.accent} />
                 <Text style={styles.sectionTitleStarred}>My Next Session</Text>
               </View>
             </View>
@@ -211,8 +222,8 @@ export default function HomeScreen() {
               <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
                 <Feather name="map" size={24} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionTitle}>Open Map</Text>
-              <Text style={styles.actionSubtitle}>Navigate the venue</Text>
+              <Text style={styles.actionTitle}>Event Map</Text>
+              <Text style={styles.actionSubtitle}>Navigate the grounds</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -220,11 +231,11 @@ export default function HomeScreen() {
               onPress={() => router.push('/(tabs)/schedule')}
               activeOpacity={0.8}
             >
-              <View style={[styles.actionIcon, { backgroundColor: colors.secondary }]}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.accent }]}>
                 <Feather name="calendar" size={24} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Schedule</Text>
-              <Text style={styles.actionSubtitle}>View all sessions</Text>
+              <Text style={styles.actionSubtitle}>View all events</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -232,7 +243,7 @@ export default function HomeScreen() {
         {/* Upcoming Sessions */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming Sessions</Text>
+            <Text style={styles.sectionTitle}>Coming Up</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/schedule')}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
@@ -243,7 +254,7 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.emptyState}>
               <Feather name="calendar" size={40} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No upcoming sessions</Text>
+              <Text style={styles.emptyText}>No upcoming events</Text>
             </View>
           )}
         </View>
@@ -254,24 +265,24 @@ export default function HomeScreen() {
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>{sessions.length}</Text>
-              <Text style={styles.statLabel}>Sessions</Text>
+              <Text style={styles.statLabel}>Events</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>
-                {locations.filter((l) => l.type === 'stage').length}
+                {locations.filter((l) => l.type === 'field').length}
               </Text>
-              <Text style={styles.statLabel}>Stages</Text>
+              <Text style={styles.statLabel}>Fields</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>
                 {locations.filter((l) => l.type === 'vendor').length}
               </Text>
-              <Text style={styles.statLabel}>Vendors</Text>
+              <Text style={styles.statLabel}>Exhibitors</Text>
             </View>
           </View>
         </View>
 
-        {/* Starred Count */}
+        {/* Starred Sessions Banner */}
         {favorites.length > 0 && (
           <View style={styles.section}>
             <TouchableOpacity 
@@ -280,12 +291,12 @@ export default function HomeScreen() {
               activeOpacity={0.8}
             >
               <View style={styles.starredBannerContent}>
-                <Feather name="star" size={24} color={colors.warning} />
+                <Feather name="star" size={24} color={colors.accent} />
                 <View style={styles.starredBannerText}>
                   <Text style={styles.starredBannerTitle}>
-                    {favorites.length} Starred Session{favorites.length > 1 ? 's' : ''}
+                    {favorites.length} Starred Event{favorites.length > 1 ? 's' : ''}
                   </Text>
-                  <Text style={styles.starredBannerSubtitle}>View your personal agenda</Text>
+                  <Text style={styles.starredBannerSubtitle}>View your personal schedule</Text>
                 </View>
               </View>
               <Feather name="chevron-right" size={20} color={colors.textMuted} />
@@ -310,25 +321,51 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  greeting: {
-    fontSize: 16,
-    color: colors.textMuted,
-    marginBottom: 4,
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  logoCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextContainer: {
+    marginLeft: 14,
   },
   eventName: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 4,
+  },
+  eventTagline: {
+    fontSize: 14,
+    color: colors.accent,
+    fontWeight: '600',
+    fontStyle: 'italic',
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   venue: {
-    fontSize: 15,
+    fontSize: 14,
     color: colors.textSecondary,
+  },
+  dates: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   section: {
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginTop: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -346,10 +383,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    backgroundColor: 'rgba(107, 142, 35, 0.15)',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 20,
   },
   liveDot: {
     width: 8,
@@ -386,7 +423,7 @@ const styles = StyleSheet.create({
   },
   seeAll: {
     fontSize: 14,
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: '500',
   },
   liveSessionCard: {
@@ -394,7 +431,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 2,
     marginBottom: 12,
   },
@@ -437,13 +474,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     alignItems: 'center',
   },
   actionIcon: {
     width: 56,
     height: 56,
-    borderRadius: 16,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -463,13 +500,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 50,
     marginBottom: 12,
   },
   sessionIconContainer: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -499,7 +536,7 @@ const styles = StyleSheet.create({
   },
   timeUntil: {
     fontSize: 12,
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: '500',
     marginLeft: 8,
   },
@@ -520,13 +557,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 20,
     alignItems: 'center',
   },
   statNumber: {
     fontSize: 28,
     fontWeight: '700',
-    color: colors.primary,
+    color: colors.accent,
   },
   statLabel: {
     fontSize: 13,
@@ -538,9 +575,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 50,
     borderWidth: 1,
-    borderColor: colors.warning,
+    borderColor: colors.accent,
   },
   starredBannerContent: {
     flex: 1,

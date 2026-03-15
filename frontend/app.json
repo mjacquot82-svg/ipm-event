@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "Event Navigator",
-    "slug": "event-navigator",
+    "name": "IPM 2026",
+    "slug": "ipm-2026",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "eventnavigator",
+    "scheme": "ipm2026",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Navigate to event locations nearby",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Track your path through the venue"
+        "NSLocationWhenInUseUsageDescription": "Navigate to event locations at IPM 2026",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Track your path through the IPM grounds"
       },
       "config": {
         "googleMapsApiKey": "GOOGLE_MAPS_API_KEY_PLACEHOLDER"
@@ -21,7 +21,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#121212"
+        "backgroundColor": "#2D2926"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -45,16 +45,16 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "imageWidth": 280,
           "resizeMode": "contain",
-          "backgroundColor": "#121212"
+          "backgroundColor": "#2D2926"
         }
       ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Navigate to event locations nearby",
-          "locationWhenInUsePermission": "Navigate to event locations nearby"
+          "locationAlwaysAndWhenInUsePermission": "Navigate to event locations at IPM 2026",
+          "locationWhenInUsePermission": "Navigate to event locations at IPM 2026"
         }
       ]
     ],

@@ -24,7 +24,6 @@ export default function ScheduleScreen() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
-  // Load favorites on screen focus
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
@@ -59,7 +58,6 @@ export default function ScheduleScreen() {
     });
   };
 
-  // Group sessions by date
   const groupedSessions = sessions.reduce((acc, session) => {
     const date = formatDate(session.start_time);
     if (!acc[date]) {
@@ -69,7 +67,6 @@ export default function ScheduleScreen() {
     return acc;
   }, {} as Record<string, typeof sessions>);
 
-  // Sort sessions within each date by start time
   Object.keys(groupedSessions).forEach((date) => {
     groupedSessions[date].sort(
       (a, b) =>
@@ -80,18 +77,16 @@ export default function ScheduleScreen() {
   const filterOptions = [
     { label: 'All', value: null, icon: 'list' },
     { label: 'Starred', value: 'starred', icon: 'star' },
+    { label: 'Fields', value: 'field', icon: 'grid' },
     { label: 'Stages', value: 'stage', icon: 'mic' },
-    { label: 'Vendors', value: 'vendor', icon: 'shopping-bag' },
   ];
 
   const filteredGroupedSessions = Object.keys(groupedSessions).reduce(
     (acc, date) => {
       const filtered = groupedSessions[date].filter((session) => {
-        // Filter by favorites
         if (showFavoritesOnly && !favorites.includes(session.id)) {
           return false;
         }
-        // Filter by location type
         if (selectedType && selectedType !== 'starred') {
           const location = getLocationById(session.location_id);
           return location?.type === selectedType;
@@ -129,10 +124,10 @@ export default function ScheduleScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Schedule</Text>
         <View style={styles.headerSubtitle}>
-          <Text style={styles.subtitle}>{sessions.length} sessions</Text>
+          <Text style={styles.subtitle}>{sessions.length} events</Text>
           {favorites.length > 0 && (
             <View style={styles.starredBadge}>
-              <Feather name="star" size={12} color={colors.warning} />
+              <Feather name="star" size={12} color={colors.accent} />
               <Text style={styles.starredCount}>{favorites.length} starred</Text>
             </View>
           )}
@@ -188,10 +183,11 @@ export default function ScheduleScreen() {
                 ? getLocationTypeColor(location.type)
                 : colors.primary;
               const iconName = location
-                ? getLocationTypeIcon(location.type, location.utilitySubtype)
+                ? getLocationTypeIcon(location.type, location.utilitySubtype, location.fieldSubtype)
                 : 'map-pin';
               const isFavorite = favorites.includes(session.id);
               const isNow = isSessionHappeningNow(session);
+              const isField = location?.type === 'field';
 
               return (
                 <View key={session.id} style={styles.sessionCard}>
@@ -215,7 +211,11 @@ export default function ScheduleScreen() {
                     <Text style={styles.sessionTitle}>{session.title}</Text>
                     {location && (
                       <View style={styles.sessionLocationRow}>
-                        <Feather name={iconName as any} size={14} color={typeColor} />
+                        {isField ? (
+                          <Feather name="truck" size={14} color={typeColor} />
+                        ) : (
+                          <Feather name={iconName as any} size={14} color={typeColor} />
+                        )}
                         <Text style={[styles.sessionLocation, { color: typeColor }]}>
                           {location.name}
                         </Text>
@@ -228,10 +228,9 @@ export default function ScheduleScreen() {
                     activeOpacity={0.7}
                   >
                     <Feather 
-                      name={isFavorite ? 'star' : 'star'} 
+                      name="star" 
                       size={22} 
-                      color={isFavorite ? colors.warning : colors.textMuted}
-                      style={isFavorite ? styles.starFilled : undefined}
+                      color={isFavorite ? colors.accent : colors.textMuted}
                     />
                   </TouchableOpacity>
                 </View>
@@ -248,11 +247,11 @@ export default function ScheduleScreen() {
               color={colors.textMuted} 
             />
             <Text style={styles.emptyText}>
-              {showFavoritesOnly ? 'No starred sessions' : 'No sessions found'}
+              {showFavoritesOnly ? 'No starred events' : 'No events found'}
             </Text>
             <Text style={styles.emptySubtext}>
               {showFavoritesOnly 
-                ? 'Tap the star icon to save sessions' 
+                ? 'Tap the star icon to save events' 
                 : 'Try adjusting your filters'}
             </Text>
           </View>
@@ -293,13 +292,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: colors.surface,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 20,
   },
   starredCount: {
     fontSize: 12,
-    color: colors.warning,
+    color: colors.accent,
     fontWeight: '500',
   },
   filterContainer: {
@@ -312,7 +311,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 50,
     backgroundColor: colors.surface,
     marginRight: 10,
   },
@@ -344,7 +343,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: 20,
     marginBottom: 12,
     overflow: 'hidden',
   },
@@ -401,9 +400,6 @@ const styles = StyleSheet.create({
   },
   starButton: {
     padding: 14,
-  },
-  starFilled: {
-    // Add fill effect - using the same icon but with color
   },
   emptyState: {
     alignItems: 'center',

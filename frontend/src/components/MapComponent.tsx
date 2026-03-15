@@ -74,7 +74,6 @@ const MapComponent: React.FC = () => {
           });
         }
 
-        // Start watching position for live updates (Blue Dot tracking)
         locationSubscription.current = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
@@ -135,7 +134,6 @@ const MapComponent: React.FC = () => {
     }
   }, []);
 
-  // Fit map to show both user and destination
   const fitToDirections = useCallback((destination: LocationData) => {
     if (mapRef.current && userLocation) {
       const coordinates = [
@@ -150,7 +148,6 @@ const MapComponent: React.FC = () => {
     }
   }, [userLocation]);
 
-  // Handle "Get Directions" - draw path and zoom to fit
   const handleGetDirections = useCallback(() => {
     if (!selectedLocation) return;
     
@@ -170,13 +167,11 @@ const MapComponent: React.FC = () => {
     
     setIsBottomSheetVisible(false);
     
-    // Fit map to show both user and destination
     setTimeout(() => {
       fitToDirections(selectedLocation);
     }, 300);
   }, [selectedLocation, userLocation, fitToDirections]);
 
-  // Cancel directions
   const handleCancelDirections = useCallback(() => {
     setDirections({
       destination: null,
@@ -186,8 +181,9 @@ const MapComponent: React.FC = () => {
 
   const renderMarker = (location: LocationData) => {
     const markerColor = getLocationTypeColor(location.type);
-    const iconName = getLocationTypeIcon(location.type, location.utilitySubtype);
+    const iconName = getLocationTypeIcon(location.type, location.utilitySubtype, location.fieldSubtype);
     const isDestination = directions.isActive && directions.destination?.id === location.id;
+    const isMainPlowingField = location.id === 'loc-1' || location.type === 'field';
 
     return (
       <Marker
@@ -200,14 +196,18 @@ const MapComponent: React.FC = () => {
           styles.markerContainer, 
           { backgroundColor: markerColor },
           isDestination && styles.destinationMarker,
+          isMainPlowingField && styles.fieldMarker,
         ]}>
-          <Feather name={iconName as any} size={16} color="#FFFFFF" />
+          {isMainPlowingField ? (
+            <Feather name="truck" size={16} color="#FFFFFF" />
+          ) : (
+            <Feather name={iconName as any} size={16} color="#FFFFFF" />
+          )}
         </View>
       </Marker>
     );
   };
 
-  // Render route line from user to destination
   const renderRouteLine = () => {
     if (!directions.isActive || !directions.destination || !userLocation) {
       return null;
@@ -233,8 +233,8 @@ const MapComponent: React.FC = () => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading map...</Text>
+        <ActivityIndicator size="large" color={colors.accent} />
+        <Text style={styles.loadingText}>Loading IPM 2026 map...</Text>
       </View>
     );
   }
@@ -250,8 +250,7 @@ const MapComponent: React.FC = () => {
         showsMyLocationButton={false}
         showsCompass={true}
         showsScale={true}
-        mapType="standard"
-        customMapStyle={darkMapStyle}
+        mapType="hybrid"
       >
         {locations.map(renderMarker)}
         {renderRouteLine()}
@@ -261,7 +260,7 @@ const MapComponent: React.FC = () => {
       {directions.isActive && directions.destination && (
         <View style={styles.directionsBanner}>
           <View style={styles.directionsInfo}>
-            <Feather name="navigation" size={20} color={colors.primary} />
+            <Feather name="navigation" size={20} color={colors.accent} />
             <View style={styles.directionsTextContainer}>
               <Text style={styles.directionsLabel}>Navigating to</Text>
               <Text style={styles.directionsDestination}>{directions.destination.name}</Text>
@@ -293,23 +292,27 @@ const MapComponent: React.FC = () => {
           onPress={handleCenterOnVenue}
           activeOpacity={0.8}
         >
-          <Feather name="target" size={22} color={colors.textPrimary} />
+          <Feather name="target" size={22} color={colors.accent} />
         </TouchableOpacity>
       </View>
 
       {/* Legend */}
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.field }]} />
+          <Text style={styles.legendText}>Fields</Text>
+        </View>
+        <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.stage }]} />
           <Text style={styles.legendText}>Stages</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.vendor }]} />
-          <Text style={styles.legendText}>Vendors</Text>
+          <Text style={styles.legendText}>Exhibitors</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: colors.utility }]} />
-          <Text style={styles.legendText}>Utilities</Text>
+          <View style={[styles.legendDot, { backgroundColor: '#4ECDC4' }]} />
+          <Text style={styles.legendText}>Services</Text>
         </View>
       </View>
 
@@ -323,7 +326,6 @@ const MapComponent: React.FC = () => {
         </View>
       )}
 
-      {/* Bottom Sheet */}
       <BottomSheet
         isVisible={isBottomSheetVisible}
         onClose={handleCloseBottomSheet}
@@ -334,29 +336,6 @@ const MapComponent: React.FC = () => {
     </View>
   );
 };
-
-// Dark mode map styling for Google Maps
-const darkMapStyle = [
-  { elementType: 'geometry', stylers: [{ color: '#212121' }] },
-  { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#212121' }] },
-  { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#757575' }] },
-  { featureType: 'administrative.country', elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#bdbdbd' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#181818' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
-  { featureType: 'road', elementType: 'geometry.fill', stylers: [{ color: '#2c2c2c' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#8a8a8a' }] },
-  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#373737' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3c3c3c' }] },
-  { featureType: 'road.highway.controlled_access', elementType: 'geometry', stylers: [{ color: '#4e4e4e' }] },
-  { featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
-  { featureType: 'transit', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#000000' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#3d3d3d' }] },
-];
 
 const styles = StyleSheet.create({
   container: {
@@ -396,7 +375,14 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 3,
-    borderColor: colors.primary,
+    borderColor: colors.accent,
+  },
+  fieldMarker: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: colors.accent,
   },
   directionsBanner: {
     position: 'absolute',
@@ -408,7 +394,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.surface,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 50,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -450,7 +436,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -465,7 +451,7 @@ const styles = StyleSheet.create({
     top: 130,
     backgroundColor: colors.mapOverlay,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 16,
     gap: 8,
   },
   legendItem: {
@@ -490,9 +476,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: colors.surface,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 50,
     borderLeftWidth: 3,
     borderLeftColor: colors.warning,
   },
