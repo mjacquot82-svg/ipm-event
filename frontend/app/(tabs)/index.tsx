@@ -316,10 +316,13 @@ const styles = StyleSheet.create({
   headerBanner: {
     width: '100%',
     backgroundColor: colors.background,
+    alignItems: 'center',
+    paddingVertical: 10,
   },
   bannerImage: {
-    width: '100%',
-    height: 180,
+    width: '92%',
+    aspectRatio: 0.94,
+    borderRadius: 16,
   },
   section: {
     paddingHorizontal: 20,
