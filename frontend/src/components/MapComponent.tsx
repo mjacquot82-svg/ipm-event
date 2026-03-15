@@ -7,8 +7,8 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
-  ScrollView,
 } from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
 import {
@@ -17,220 +17,17 @@ import {
   VENUE_CENTER,
   getLocationTypeColor,
   getLocationTypeIcon,
-  getVendorByLocationId,
-  getSessionsByLocationId,
 } from '../data/mockData';
 import colors from '../theme/colors';
 import BottomSheet from './BottomSheet';
-
-// Conditionally import MapView only on native platforms
-let MapView: any = null;
-let Marker: any = null;
-let PROVIDER_GOOGLE: any = null;
-
-if (Platform.OS !== 'web') {
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
-  PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
-}
 
 interface UserLocation {
   latitude: number;
   longitude: number;
 }
 
-// Web Fallback Map Component
-const WebMapFallback: React.FC<{
-  locations: LocationData[];
-  onMarkerPress: (location: LocationData) => void;
-  userLocation: UserLocation | null;
-}> = ({ locations, onMarkerPress, userLocation }) => {
-  return (
-    <View style={webStyles.container}>
-      <View style={webStyles.header}>
-        <Feather name="map" size={48} color={colors.primary} />
-        <Text style={webStyles.title}>Event Map</Text>
-        <Text style={webStyles.subtitle}>Moscone Center, San Francisco</Text>
-        {userLocation && (
-          <View style={webStyles.userLocationBadge}>
-            <Feather name="navigation" size={14} color={colors.userLocation} />
-            <Text style={webStyles.userLocationText}>
-              Your location: {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
-            </Text>
-          </View>
-        )}
-      </View>
-      
-      {/* Legend */}
-      <View style={webStyles.legendContainer}>
-        <View style={webStyles.legendItem}>
-          <View style={[webStyles.legendDot, { backgroundColor: colors.stage }]} />
-          <Text style={webStyles.legendText}>Stages</Text>
-        </View>
-        <View style={webStyles.legendItem}>
-          <View style={[webStyles.legendDot, { backgroundColor: colors.vendor }]} />
-          <Text style={webStyles.legendText}>Vendors</Text>
-        </View>
-        <View style={webStyles.legendItem}>
-          <View style={[webStyles.legendDot, { backgroundColor: colors.utility }]} />
-          <Text style={webStyles.legendText}>Utilities</Text>
-        </View>
-      </View>
-
-      <ScrollView style={webStyles.locationsList} showsVerticalScrollIndicator={false}>
-        <Text style={webStyles.sectionTitle}>Venue Locations</Text>
-        {locations.map((location) => {
-          const typeColor = getLocationTypeColor(location.type);
-          const iconName = getLocationTypeIcon(location.type);
-          return (
-            <TouchableOpacity
-              key={location.id}
-              style={webStyles.locationCard}
-              onPress={() => onMarkerPress(location)}
-              activeOpacity={0.7}
-            >
-              <View style={[webStyles.locationIcon, { backgroundColor: typeColor }]}>
-                <Feather name={iconName as any} size={20} color="#FFFFFF" />
-              </View>
-              <View style={webStyles.locationInfo}>
-                <Text style={webStyles.locationName}>{location.name}</Text>
-                <Text style={webStyles.locationCoords}>
-                  {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-                </Text>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      <View style={webStyles.webNotice}>
-        <Feather name="info" size={16} color={colors.info} />
-        <Text style={webStyles.webNoticeText}>
-          Full interactive map available on iOS/Android
-        </Text>
-      </View>
-    </View>
-  );
-};
-
-const webStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginTop: 12,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  userLocationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginTop: 12,
-  },
-  userLocationText: {
-    fontSize: 12,
-    color: colors.userLocation,
-  },
-  legendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-    paddingVertical: 16,
-    backgroundColor: colors.surface,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  legendText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  locationsList: {
-    flex: 1,
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textMuted,
-    marginBottom: 12,
-  },
-  locationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  locationIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  locationInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  locationName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  locationCoords: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  webNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: 16,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  webNoticeText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-});
-
-// Native Map Component
-const NativeMapComponent: React.FC = () => {
-  const mapRef = useRef<any>(null);
+const MapComponent: React.FC = () => {
+  const mapRef = useRef<MapView>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -268,6 +65,7 @@ const NativeMapComponent: React.FC = () => {
           });
         }
 
+        // Start watching position for live updates (Blue Dot tracking)
         locationSubscription.current = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
@@ -382,6 +180,7 @@ const NativeMapComponent: React.FC = () => {
         {locations.map(renderMarker)}
       </MapView>
 
+      {/* Map Controls */}
       <View style={styles.controlsContainer}>
         {locationPermission && userLocation && (
           <TouchableOpacity
@@ -401,6 +200,7 @@ const NativeMapComponent: React.FC = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Legend */}
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: colors.stage }]} />
@@ -416,6 +216,7 @@ const NativeMapComponent: React.FC = () => {
         </View>
       </View>
 
+      {/* Permission denied message */}
       {!locationPermission && (
         <View style={styles.permissionBanner}>
           <Feather name="alert-circle" size={16} color={colors.warning} />
@@ -425,6 +226,7 @@ const NativeMapComponent: React.FC = () => {
         </View>
       )}
 
+      {/* Bottom Sheet */}
       <BottomSheet
         isVisible={isBottomSheetVisible}
         onClose={handleCloseBottomSheet}
@@ -435,6 +237,7 @@ const NativeMapComponent: React.FC = () => {
   );
 };
 
+// Dark mode map styling for Google Maps
 const darkMapStyle = [
   { elementType: 'geometry', stylers: [{ color: '#212121' }] },
   { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
@@ -552,68 +355,5 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-
-// Main Map Component - handles platform detection
-const MapComponent: React.FC = () => {
-  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
-  const [isBottomSheetVisible, setIsBottomSheetVisible] = useState<boolean>(false);
-
-  // For web, set up basic location tracking
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      Location.requestForegroundPermissionsAsync().then(({ status }) => {
-        if (status === 'granted') {
-          Location.getCurrentPositionAsync({}).then((location) => {
-            setUserLocation({
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            });
-          });
-        }
-      });
-    }
-  }, []);
-
-  const handleMarkerPress = useCallback((location: LocationData) => {
-    setSelectedLocation(location);
-    setIsBottomSheetVisible(true);
-  }, []);
-
-  const handleCloseBottomSheet = useCallback(() => {
-    setIsBottomSheetVisible(false);
-    setSelectedLocation(null);
-  }, []);
-
-  const handleGetDirections = useCallback(() => {
-    if (selectedLocation) {
-      Alert.alert(
-        'Get Directions',
-        `Navigation to ${selectedLocation.name} will be implemented in Phase 2`,
-        [{ text: 'OK' }]
-      );
-    }
-  }, [selectedLocation]);
-
-  if (Platform.OS === 'web') {
-    return (
-      <>
-        <WebMapFallback
-          locations={locations}
-          onMarkerPress={handleMarkerPress}
-          userLocation={userLocation}
-        />
-        <BottomSheet
-          isVisible={isBottomSheetVisible}
-          onClose={handleCloseBottomSheet}
-          location={selectedLocation}
-          onGetDirections={handleGetDirections}
-        />
-      </>
-    );
-  }
-
-  return <NativeMapComponent />;
-};
 
 export default MapComponent;
