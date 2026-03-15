@@ -313,47 +313,13 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  header: {
-    padding: 20,
-    paddingTop: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+  headerBanner: {
+    width: '100%',
+    backgroundColor: colors.background,
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  logoImage: {
-    width: 90,
-    height: 90,
-    marginLeft: 12,
-  },
-  eventName: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  eventTagline: {
-    fontSize: 14,
-    color: colors.accent,
-    fontWeight: '600',
-    fontStyle: 'italic',
-    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-    marginTop: 2,
-  },
-  venue: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 6,
-  },
-  dates: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 2,
+  bannerImage: {
+    width: '100%',
+    height: 180,
   },
   section: {
     paddingHorizontal: 20,
