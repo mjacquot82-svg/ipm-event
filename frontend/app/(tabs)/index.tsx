@@ -142,7 +142,7 @@ export default function HomeScreen() {
         {/* Header Banner Image */}
         <View style={styles.headerBanner}>
           <Image
-            source={require('../../assets/images/ipm-banner.png')}
+            source={require('../../assets/images/ipm-banner-cropped.png')}
             style={styles.bannerImage}
             resizeMode="contain"
           />
