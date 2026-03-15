@@ -327,23 +327,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  logoRow: {
+  headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  logoCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: colors.primary,
-    borderWidth: 2,
-    borderColor: colors.accent,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerTextContainer: {
-    marginLeft: 14,
+    flex: 1,
+  },
+  logoImage: {
+    width: 90,
+    height: 90,
+    marginLeft: 12,
   },
   eventName: {
     fontSize: 26,
@@ -356,10 +351,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontStyle: 'italic',
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    marginTop: 2,
   },
   venue: {
     fontSize: 14,
     color: colors.textSecondary,
+    marginTop: 6,
   },
   dates: {
     fontSize: 13,
