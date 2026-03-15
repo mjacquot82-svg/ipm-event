@@ -301,7 +301,7 @@ export default function HomeScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
