@@ -318,10 +318,13 @@ const styles = StyleSheet.create({
   },
   headerBanner: {
     width: '100%',
+    overflow: 'hidden',
   },
   bannerImage: {
     width: '100%',
+    height: undefined,
     aspectRatio: 1.66,
+    resizeMode: 'cover',
   },
   section: {
     paddingHorizontal: 20,
