@@ -315,11 +315,11 @@ const styles = StyleSheet.create({
   },
   headerBanner: {
     width: '100%',
-    backgroundColor: '#1a1510',
+    backgroundColor: colors.background,
   },
   bannerImage: {
     width: '100%',
-    aspectRatio: 1.01,
+    aspectRatio: 1.66,
   },
   section: {
     paddingHorizontal: 20,
