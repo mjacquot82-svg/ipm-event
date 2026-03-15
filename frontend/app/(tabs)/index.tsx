@@ -316,9 +316,11 @@ const styles = StyleSheet.create({
   headerBanner: {
     width: '100%',
     backgroundColor: colors.background,
+    alignItems: 'center',
   },
   bannerImage: {
     width: '100%',
+    height: undefined,
     aspectRatio: 1080/1350,
   },
   section: {
