@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   },
   headerBanner: {
     width: '100%',
-    backgroundColor: colors.background,
+    backgroundColor: '#1a1510',
   },
   bannerImage: {
     width: '100%',
