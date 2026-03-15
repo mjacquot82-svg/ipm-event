@@ -141,17 +141,19 @@ export default function HomeScreen() {
       >
         {/* Header with Logo */}
         <View style={styles.header}>
-          <View style={styles.logoRow}>
-            <View style={styles.logoCircle}>
-              <Feather name="truck" size={24} color={colors.textPrimary} />
-            </View>
+          <View style={styles.headerRow}>
             <View style={styles.headerTextContainer}>
               <Text style={styles.eventName}>IPM 2026</Text>
               <Text style={styles.eventTagline}>50 Years Strong</Text>
+              <Text style={styles.venue}>{eventInfo.location}</Text>
+              <Text style={styles.dates}>{eventInfo.dates}</Text>
             </View>
+            <Image
+              source={require('../../assets/images/ipm-logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
-          <Text style={styles.venue}>{eventInfo.location}</Text>
-          <Text style={styles.dates}>{eventInfo.dates}</Text>
         </View>
 
         {/* Happening Now Section */}
