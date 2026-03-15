@@ -1,26 +1,66 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import colors from '../../src/theme/colors';
-import { sessions, locations, getLocationById } from '../../src/data/mockData';
+import { 
+  sessions, 
+  locations, 
+  getLocationById, 
+  getHappeningNow,
+  getUpcomingSessions,
+  getNextStarredSession,
+  getLocationTypeColor,
+  getLocationTypeIcon,
+  Session,
+} from '../../src/data/mockData';
+import { getFavorites } from '../../src/utils/favoritesStorage';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Get the next upcoming session
-  const now = new Date();
-  const upcomingSessions = sessions
-    .filter((s) => new Date(s.start_time) > now)
-    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-    .slice(0, 3);
+  // Load favorites and update time on screen focus
+  useFocusEffect(
+    useCallback(() => {
+      loadFavorites();
+      setCurrentTime(new Date());
+      
+      // Update time every minute
+      const interval = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 60000);
+      
+      return () => clearInterval(interval);
+    }, [])
+  );
+
+  const loadFavorites = async () => {
+    const storedFavorites = await getFavorites();
+    setFavorites(storedFavorites);
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadFavorites();
+    setCurrentTime(new Date());
+    setRefreshing(false);
+  }, []);
+
+  // Get live data
+  const happeningNow = getHappeningNow();
+  const nextStarredSession = getNextStarredSession(favorites);
+  const upcomingSessions = getUpcomingSessions().slice(0, 3);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -31,15 +71,133 @@ export default function HomeScreen() {
     });
   };
 
+  const getTimeUntil = (dateString: string): string => {
+    const target = new Date(dateString);
+    const diff = target.getTime() - currentTime.getTime();
+    
+    if (diff <= 0) return 'Starting now';
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    
+    if (hours > 0) {
+      return `in ${hours}h ${minutes % 60}m`;
+    }
+    return `in ${minutes}m`;
+  };
+
+  const renderSessionCard = (session: Session, showTimeUntil: boolean = false) => {
+    const location = getLocationById(session.location_id);
+    const typeColor = location ? getLocationTypeColor(location.type) : colors.primary;
+    const iconName = location ? getLocationTypeIcon(location.type, location.utilitySubtype) : 'map-pin';
+    
+    return (
+      <TouchableOpacity 
+        key={session.id} 
+        style={styles.sessionCardFull}
+        onPress={() => router.push('/(tabs)/schedule')}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.sessionIconContainer, { backgroundColor: typeColor }]}>
+          <Feather name={iconName as any} size={20} color="#FFFFFF" />
+        </View>
+        <View style={styles.sessionCardContent}>
+          <Text style={styles.sessionCardTitle} numberOfLines={1}>{session.title}</Text>
+          {location && (
+            <Text style={styles.sessionCardLocation}>{location.name}</Text>
+          )}
+          <View style={styles.sessionCardTimeRow}>
+            <Feather name="clock" size={12} color={colors.textMuted} />
+            <Text style={styles.sessionCardTime}>
+              {formatTime(session.start_time)} - {formatTime(session.end_time)}
+            </Text>
+            {showTimeUntil && (
+              <Text style={styles.timeUntil}>{getTimeUntil(session.start_time)}</Text>
+            )}
+          </View>
+        </View>
+        <Feather name="chevron-right" size={20} color={colors.textMuted} />
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.greeting}>Welcome to</Text>
           <Text style={styles.eventName}>Tech Conference 2025</Text>
           <Text style={styles.venue}>Moscone Center, San Francisco</Text>
         </View>
+
+        {/* Happening Now Section */}
+        {happeningNow.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderLive}>
+              <View style={styles.liveIndicator}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+              <Text style={styles.sectionTitleLive}>Happening Now</Text>
+            </View>
+            {happeningNow.map((session) => {
+              const location = getLocationById(session.location_id);
+              const typeColor = location ? getLocationTypeColor(location.type) : colors.primary;
+              
+              return (
+                <TouchableOpacity 
+                  key={session.id} 
+                  style={[styles.liveSessionCard, { borderColor: typeColor }]}
+                  onPress={() => router.push('/(tabs)/map')}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.liveSessionContent}>
+                    <Text style={styles.liveSessionTitle}>{session.title}</Text>
+                    {location && (
+                      <View style={styles.liveLocationRow}>
+                        <Feather name="map-pin" size={14} color={typeColor} />
+                        <Text style={[styles.liveLocationText, { color: typeColor }]}>
+                          {location.name}
+                        </Text>
+                      </View>
+                    )}
+                    <Text style={styles.liveTimeText}>
+                      Until {formatTime(session.end_time)}
+                    </Text>
+                  </View>
+                  <View style={styles.goButton}>
+                    <Feather name="navigation" size={18} color={colors.primary} />
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {/* My Next Session (Starred) */}
+        {nextStarredSession && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.starredHeader}>
+                <Feather name="star" size={18} color={colors.warning} />
+                <Text style={styles.sectionTitleStarred}>My Next Session</Text>
+              </View>
+            </View>
+            {renderSessionCard(nextStarredSession, true)}
+          </View>
+        )}
 
         {/* Quick Actions */}
         <View style={styles.section}>
@@ -81,28 +239,7 @@ export default function HomeScreen() {
           </View>
 
           {upcomingSessions.length > 0 ? (
-            upcomingSessions.map((session) => {
-              const location = getLocationById(session.location_id);
-              return (
-                <View key={session.id} style={styles.sessionCard}>
-                  <View style={styles.sessionTimeContainer}>
-                    <Text style={styles.sessionTime}>
-                      {formatTime(session.start_time)}
-                    </Text>
-                    <View style={styles.timeLine} />
-                  </View>
-                  <View style={styles.sessionContent}>
-                    <Text style={styles.sessionTitle}>{session.title}</Text>
-                    {location && (
-                      <View style={styles.locationRow}>
-                        <Feather name="map-pin" size={14} color={colors.textMuted} />
-                        <Text style={styles.locationText}>{location.name}</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              );
-            })
+            upcomingSessions.map((session) => renderSessionCard(session, true))
           ) : (
             <View style={styles.emptyState}>
               <Feather name="calendar" size={40} color={colors.textMuted} />
@@ -133,6 +270,30 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+
+        {/* Starred Count */}
+        {favorites.length > 0 && (
+          <View style={styles.section}>
+            <TouchableOpacity 
+              style={styles.starredBanner}
+              onPress={() => router.push('/(tabs)/schedule')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.starredBannerContent}>
+                <Feather name="star" size={24} color={colors.warning} />
+                <View style={styles.starredBannerText}>
+                  <Text style={styles.starredBannerTitle}>
+                    {favorites.length} Starred Session{favorites.length > 1 ? 's' : ''}
+                  </Text>
+                  <Text style={styles.starredBannerSubtitle}>View your personal agenda</Text>
+                </View>
+              </View>
+              <Feather name="chevron-right" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.bottomPadding} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -175,6 +336,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  sectionHeaderLive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 10,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.success,
+  },
+  liveText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.success,
+    letterSpacing: 0.5,
+  },
+  sectionTitleLive: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  starredHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionTitleStarred: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -185,6 +388,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
     fontWeight: '500',
+  },
+  liveSessionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+    marginBottom: 12,
+  },
+  liveSessionContent: {
+    flex: 1,
+  },
+  liveSessionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 6,
+  },
+  liveLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  liveLocationText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  liveTimeText: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  goButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surfaceElevated,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   quickActions: {
     flexDirection: 'row',
@@ -215,46 +458,50 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
   },
-  sessionCard: {
+  sessionCardFull: {
     flexDirection: 'row',
-    marginBottom: 16,
-  },
-  sessionTimeContainer: {
-    width: 70,
     alignItems: 'center',
-  },
-  sessionTime: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  timeLine: {
-    width: 2,
-    flex: 1,
-    backgroundColor: colors.border,
-    marginTop: 8,
-  },
-  sessionContent: {
-    flex: 1,
     backgroundColor: colors.surface,
     padding: 14,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  sessionIconContainer: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sessionCardContent: {
+    flex: 1,
     marginLeft: 12,
   },
-  sessionTitle: {
+  sessionCardTitle: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: 6,
+    marginBottom: 2,
   },
-  locationRow: {
+  sessionCardLocation: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  sessionCardTimeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
-  locationText: {
-    fontSize: 13,
+  sessionCardTime: {
+    fontSize: 12,
     color: colors.textMuted,
+  },
+  timeUntil: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '500',
+    marginLeft: 8,
   },
   emptyState: {
     alignItems: 'center',
@@ -285,5 +532,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     marginTop: 4,
+  },
+  starredBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.warning,
+  },
+  starredBannerContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  starredBannerText: {
+    flex: 1,
+  },
+  starredBannerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  starredBannerSubtitle: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  bottomPadding: {
+    height: 20,
   },
 });

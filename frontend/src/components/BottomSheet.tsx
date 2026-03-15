@@ -24,6 +24,7 @@ interface BottomSheetProps {
   onClose: () => void;
   location: Location | null;
   onGetDirections: () => void;
+  hasUserLocation?: boolean;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({
@@ -31,13 +32,14 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   onClose,
   location,
   onGetDirections,
+  hasUserLocation = false,
 }) => {
   if (!location) return null;
 
   const vendor = getVendorByLocationId(location.id);
   const sessions = getSessionsByLocationId(location.id);
   const typeColor = getLocationTypeColor(location.type);
-  const typeIcon = getLocationTypeIcon(location.type);
+  const typeIcon = getLocationTypeIcon(location.type, location.utilitySubtype);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -48,7 +50,21 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
     });
   };
 
-  const getTypeLabel = (type: string) => {
+  const getTypeLabel = (type: string, subtype?: string) => {
+    if (type === 'utility' && subtype) {
+      switch (subtype) {
+        case 'food':
+          return 'Food & Drinks';
+        case 'restroom':
+          return 'Restrooms';
+        case 'info':
+          return 'Information';
+        case 'medical':
+          return 'First Aid';
+        default:
+          return 'Utility';
+      }
+    }
     switch (type) {
       case 'stage':
         return 'Stage';
@@ -83,7 +99,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
                 <Text style={styles.locationName}>{location.name}</Text>
                 <View style={styles.typeTag}>
                   <Text style={[styles.typeText, { color: typeColor }]}>
-                    {getTypeLabel(location.type)}
+                    {getTypeLabel(location.type, location.utilitySubtype)}
                   </Text>
                 </View>
               </View>
@@ -129,13 +145,21 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
             {/* Actions */}
             <View style={styles.actions}>
               <TouchableOpacity
-                style={styles.directionsButton}
+                style={[
+                  styles.directionsButton,
+                  !hasUserLocation && styles.directionsButtonDisabled,
+                ]}
                 onPress={onGetDirections}
                 activeOpacity={0.8}
               >
                 <Feather name="navigation" size={20} color="#FFFFFF" />
-                <Text style={styles.directionsButtonText}>Get Directions</Text>
+                <Text style={styles.directionsButtonText}>Take Me There</Text>
               </TouchableOpacity>
+              {!hasUserLocation && (
+                <Text style={styles.locationHint}>
+                  Enable location services for directions
+                </Text>
+              )}
             </View>
           </ScrollView>
         </Pressable>
@@ -258,10 +282,19 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 14,
   },
+  directionsButtonDisabled: {
+    backgroundColor: colors.surfaceHighlight,
+  },
   directionsButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  locationHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
 

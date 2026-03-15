@@ -24,10 +24,19 @@ interface UserLocation {
   longitude: number;
 }
 
+interface DirectionsState {
+  destination: LocationData | null;
+  isActive: boolean;
+}
+
 const MapComponent: React.FC = () => {
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState<boolean>(false);
+  const [directions, setDirections] = useState<DirectionsState>({
+    destination: null,
+    isActive: false,
+  });
 
   useEffect(() => {
     Location.requestForegroundPermissionsAsync().then(({ status }) => {
@@ -53,14 +62,31 @@ const MapComponent: React.FC = () => {
   }, []);
 
   const handleGetDirections = useCallback(() => {
-    if (selectedLocation) {
+    if (!selectedLocation) return;
+    
+    if (!userLocation) {
       Alert.alert(
-        'Get Directions',
-        `Navigation to ${selectedLocation.name} will be implemented in Phase 2`,
+        'Location Required',
+        'Please enable location services to get directions.',
         [{ text: 'OK' }]
       );
+      return;
     }
-  }, [selectedLocation]);
+
+    setDirections({
+      destination: selectedLocation,
+      isActive: true,
+    });
+    
+    setIsBottomSheetVisible(false);
+  }, [selectedLocation, userLocation]);
+
+  const handleCancelDirections = useCallback(() => {
+    setDirections({
+      destination: null,
+      isActive: false,
+    });
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -77,6 +103,26 @@ const MapComponent: React.FC = () => {
           </View>
         )}
       </View>
+
+      {/* Directions Banner */}
+      {directions.isActive && directions.destination && (
+        <View style={styles.directionsBanner}>
+          <View style={styles.directionsInfo}>
+            <Feather name="navigation" size={20} color={colors.primary} />
+            <View style={styles.directionsTextContainer}>
+              <Text style={styles.directionsLabel}>Navigating to</Text>
+              <Text style={styles.directionsDestination}>{directions.destination.name}</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={handleCancelDirections}
+            activeOpacity={0.8}
+          >
+            <Feather name="x" size={20} color={colors.textPrimary} />
+          </TouchableOpacity>
+        </View>
+      )}
       
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
@@ -97,11 +143,16 @@ const MapComponent: React.FC = () => {
         <Text style={styles.sectionTitle}>Venue Locations</Text>
         {locations.map((location) => {
           const typeColor = getLocationTypeColor(location.type);
-          const iconName = getLocationTypeIcon(location.type);
+          const iconName = getLocationTypeIcon(location.type, location.utilitySubtype);
+          const isDestination = directions.isActive && directions.destination?.id === location.id;
+          
           return (
             <TouchableOpacity
               key={location.id}
-              style={styles.locationCard}
+              style={[
+                styles.locationCard,
+                isDestination && styles.destinationCard,
+              ]}
               onPress={() => handleMarkerPress(location)}
               activeOpacity={0.7}
             >
@@ -114,7 +165,13 @@ const MapComponent: React.FC = () => {
                   {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
                 </Text>
               </View>
-              <Feather name="chevron-right" size={20} color={colors.textMuted} />
+              {isDestination ? (
+                <View style={styles.navigatingBadge}>
+                  <Feather name="navigation" size={14} color={colors.primary} />
+                </View>
+              ) : (
+                <Feather name="chevron-right" size={20} color={colors.textMuted} />
+              )}
             </TouchableOpacity>
           );
         })}
@@ -123,7 +180,7 @@ const MapComponent: React.FC = () => {
       <View style={styles.webNotice}>
         <Feather name="info" size={16} color={colors.info} />
         <Text style={styles.webNoticeText}>
-          Full interactive map available on iOS/Android
+          Full interactive map with directions available on iOS/Android
         </Text>
       </View>
 
@@ -132,6 +189,7 @@ const MapComponent: React.FC = () => {
         onClose={handleCloseBottomSheet}
         location={selectedLocation}
         onGetDirections={handleGetDirections}
+        hasUserLocation={!!userLocation}
       />
     </View>
   );
@@ -174,6 +232,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.userLocation,
   },
+  directionsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    margin: 16,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  directionsInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  directionsTextContainer: {
+    marginLeft: 12,
+  },
+  directionsLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  directionsDestination: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  cancelButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surfaceElevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   legendContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -213,6 +307,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 10,
   },
+  destinationCard: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
   locationIcon: {
     width: 44,
     height: 44,
@@ -233,6 +331,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  navigatingBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceElevated,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   webNotice: {
     flexDirection: 'row',

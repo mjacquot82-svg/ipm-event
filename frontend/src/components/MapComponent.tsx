@@ -8,7 +8,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
 import {
@@ -26,6 +26,11 @@ interface UserLocation {
   longitude: number;
 }
 
+interface DirectionsState {
+  destination: LocationData | null;
+  isActive: boolean;
+}
+
 const MapComponent: React.FC = () => {
   const mapRef = useRef<MapView>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -33,6 +38,10 @@ const MapComponent: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState<boolean>(false);
+  const [directions, setDirections] = useState<DirectionsState>({
+    destination: null,
+    isActive: false,
+  });
   const locationSubscription = useRef<Location.LocationSubscription | null>(null);
 
   useEffect(() => {
@@ -126,19 +135,59 @@ const MapComponent: React.FC = () => {
     }
   }, []);
 
+  // Fit map to show both user and destination
+  const fitToDirections = useCallback((destination: LocationData) => {
+    if (mapRef.current && userLocation) {
+      const coordinates = [
+        { latitude: userLocation.latitude, longitude: userLocation.longitude },
+        { latitude: destination.lat, longitude: destination.lng },
+      ];
+      
+      mapRef.current.fitToCoordinates(coordinates, {
+        edgePadding: { top: 100, right: 50, bottom: 300, left: 50 },
+        animated: true,
+      });
+    }
+  }, [userLocation]);
+
+  // Handle "Get Directions" - draw path and zoom to fit
   const handleGetDirections = useCallback(() => {
-    if (selectedLocation) {
+    if (!selectedLocation) return;
+    
+    if (!userLocation) {
       Alert.alert(
-        'Get Directions',
-        `Navigation to ${selectedLocation.name} will be implemented in Phase 2`,
+        'Location Required',
+        'Please enable location services to get directions.',
         [{ text: 'OK' }]
       );
+      return;
     }
-  }, [selectedLocation]);
+
+    setDirections({
+      destination: selectedLocation,
+      isActive: true,
+    });
+    
+    setIsBottomSheetVisible(false);
+    
+    // Fit map to show both user and destination
+    setTimeout(() => {
+      fitToDirections(selectedLocation);
+    }, 300);
+  }, [selectedLocation, userLocation, fitToDirections]);
+
+  // Cancel directions
+  const handleCancelDirections = useCallback(() => {
+    setDirections({
+      destination: null,
+      isActive: false,
+    });
+  }, []);
 
   const renderMarker = (location: LocationData) => {
     const markerColor = getLocationTypeColor(location.type);
-    const iconName = getLocationTypeIcon(location.type);
+    const iconName = getLocationTypeIcon(location.type, location.utilitySubtype);
+    const isDestination = directions.isActive && directions.destination?.id === location.id;
 
     return (
       <Marker
@@ -147,10 +196,37 @@ const MapComponent: React.FC = () => {
         onPress={() => handleMarkerPress(location)}
         tracksViewChanges={false}
       >
-        <View style={[styles.markerContainer, { backgroundColor: markerColor }]}>
+        <View style={[
+          styles.markerContainer, 
+          { backgroundColor: markerColor },
+          isDestination && styles.destinationMarker,
+        ]}>
           <Feather name={iconName as any} size={16} color="#FFFFFF" />
         </View>
       </Marker>
+    );
+  };
+
+  // Render route line from user to destination
+  const renderRouteLine = () => {
+    if (!directions.isActive || !directions.destination || !userLocation) {
+      return null;
+    }
+
+    const routeCoordinates = [
+      { latitude: userLocation.latitude, longitude: userLocation.longitude },
+      { latitude: directions.destination.lat, longitude: directions.destination.lng },
+    ];
+
+    return (
+      <Polyline
+        coordinates={routeCoordinates}
+        strokeColor={colors.primary}
+        strokeWidth={4}
+        lineDashPattern={[1]}
+        lineCap="round"
+        lineJoin="round"
+      />
     );
   };
 
@@ -178,7 +254,28 @@ const MapComponent: React.FC = () => {
         customMapStyle={darkMapStyle}
       >
         {locations.map(renderMarker)}
+        {renderRouteLine()}
       </MapView>
+
+      {/* Directions Banner */}
+      {directions.isActive && directions.destination && (
+        <View style={styles.directionsBanner}>
+          <View style={styles.directionsInfo}>
+            <Feather name="navigation" size={20} color={colors.primary} />
+            <View style={styles.directionsTextContainer}>
+              <Text style={styles.directionsLabel}>Navigating to</Text>
+              <Text style={styles.directionsDestination}>{directions.destination.name}</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={handleCancelDirections}
+            activeOpacity={0.8}
+          >
+            <Feather name="x" size={20} color={colors.textPrimary} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Map Controls */}
       <View style={styles.controlsContainer}>
@@ -232,6 +329,7 @@ const MapComponent: React.FC = () => {
         onClose={handleCloseBottomSheet}
         location={selectedLocation}
         onGetDirections={handleGetDirections}
+        hasUserLocation={!!userLocation}
       />
     </View>
   );
@@ -293,10 +391,59 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  destinationMarker: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 3,
+    borderColor: colors.primary,
+  },
+  directionsBanner: {
+    position: 'absolute',
+    top: 50,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  directionsInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  directionsTextContainer: {
+    marginLeft: 12,
+  },
+  directionsLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  directionsDestination: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  cancelButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surfaceElevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   controlsContainer: {
     position: 'absolute',
     right: 16,
-    top: 100,
+    top: 130,
     gap: 12,
   },
   controlButton: {
@@ -315,7 +462,7 @@ const styles = StyleSheet.create({
   legendContainer: {
     position: 'absolute',
     left: 16,
-    top: 100,
+    top: 130,
     backgroundColor: colors.mapOverlay,
     padding: 12,
     borderRadius: 12,

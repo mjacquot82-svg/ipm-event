@@ -1,7 +1,8 @@
-// Mock Data for Event Navigator - Phase 1
+// Mock Data for Event Navigator - Phase 2
 // Centered around Moscone Center, San Francisco (37.7842, -122.4016)
 
 export type LocationType = 'stage' | 'vendor' | 'utility';
+export type UtilitySubtype = 'food' | 'restroom' | 'info' | 'medical' | 'general';
 
 export interface Location {
   id: string;
@@ -9,6 +10,7 @@ export interface Location {
   lat: number;
   lng: number;
   type: LocationType;
+  utilitySubtype?: UtilitySubtype;
 }
 
 export interface Vendor {
@@ -33,6 +35,9 @@ export const VENUE_CENTER = {
   latitudeDelta: 0.008,
   longitudeDelta: 0.008,
 };
+
+// Google Maps API Key placeholder
+export const GOOGLE_MAPS_API_KEY = 'GOOGLE_MAPS_API_KEY_PLACEHOLDER';
 
 // Locations around Moscone Center
 export const locations: Location[] = [
@@ -84,6 +89,7 @@ export const locations: Location[] = [
     lat: 37.7850,
     lng: -122.4022,
     type: 'utility',
+    utilitySubtype: 'food',
   },
   {
     id: 'loc-8',
@@ -91,6 +97,7 @@ export const locations: Location[] = [
     lat: 37.7852,
     lng: -122.4015,
     type: 'utility',
+    utilitySubtype: 'restroom',
   },
   {
     id: 'loc-9',
@@ -98,6 +105,7 @@ export const locations: Location[] = [
     lat: 37.7842,
     lng: -122.4016,
     type: 'utility',
+    utilitySubtype: 'info',
   },
   {
     id: 'loc-10',
@@ -105,6 +113,7 @@ export const locations: Location[] = [
     lat: 37.7833,
     lng: -122.4008,
     type: 'utility',
+    utilitySubtype: 'medical',
   },
 ];
 
@@ -130,41 +139,49 @@ export const vendors: Vendor[] = [
   },
 ];
 
-// Sessions/Events schedule
+// Get today's date for demo purposes - sessions are happening "today"
+const getToday = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+};
+
+const TODAY = getToday();
+
+// Sessions/Events schedule - using dynamic dates for demo
 export const sessions: Session[] = [
   {
     id: 'session-1',
     title: 'Opening Keynote: Future of Technology',
-    start_time: '2025-07-15T09:00:00',
-    end_time: '2025-07-15T10:30:00',
+    start_time: `${TODAY}T09:00:00`,
+    end_time: `${TODAY}T10:30:00`,
     location_id: 'loc-1',
   },
   {
     id: 'session-2',
     title: 'Building Scalable Applications',
-    start_time: '2025-07-15T11:00:00',
-    end_time: '2025-07-15T12:00:00',
+    start_time: `${TODAY}T11:00:00`,
+    end_time: `${TODAY}T12:00:00`,
     location_id: 'loc-2',
   },
   {
     id: 'session-3',
     title: 'Hands-on: React Native Workshop',
-    start_time: '2025-07-15T13:00:00',
-    end_time: '2025-07-15T15:00:00',
+    start_time: `${TODAY}T13:00:00`,
+    end_time: `${TODAY}T15:00:00`,
     location_id: 'loc-3',
   },
   {
     id: 'session-4',
     title: 'AI/ML in Production',
-    start_time: '2025-07-15T15:30:00',
-    end_time: '2025-07-15T16:30:00',
+    start_time: `${TODAY}T15:30:00`,
+    end_time: `${TODAY}T16:30:00`,
     location_id: 'loc-2',
   },
   {
     id: 'session-5',
     title: 'Closing Ceremony & Networking',
-    start_time: '2025-07-15T17:00:00',
-    end_time: '2025-07-15T18:30:00',
+    start_time: `${TODAY}T17:00:00`,
+    end_time: `${TODAY}T18:30:00`,
     location_id: 'loc-1',
   },
 ];
@@ -182,6 +199,10 @@ export const getSessionsByLocationId = (locationId: string): Session[] => {
   return sessions.filter(session => session.location_id === locationId);
 };
 
+export const getSessionById = (id: string): Session | undefined => {
+  return sessions.find(session => session.id === id);
+};
+
 export const getLocationTypeColor = (type: LocationType): string => {
   switch (type) {
     case 'stage':
@@ -195,15 +216,60 @@ export const getLocationTypeColor = (type: LocationType): string => {
   }
 };
 
-export const getLocationTypeIcon = (type: LocationType): string => {
+// Enhanced icon function with utility subtypes
+export const getLocationTypeIcon = (type: LocationType, utilitySubtype?: UtilitySubtype): string => {
+  if (type === 'utility' && utilitySubtype) {
+    switch (utilitySubtype) {
+      case 'food':
+        return 'coffee'; // Coffee/food icon
+      case 'restroom':
+        return 'users'; // People icon for restrooms
+      case 'info':
+        return 'help-circle'; // Help/info icon
+      case 'medical':
+        return 'heart'; // Heart for medical/first aid
+      default:
+        return 'info';
+    }
+  }
+  
   switch (type) {
     case 'stage':
       return 'mic'; // Microphone for stages
     case 'vendor':
       return 'shopping-bag'; // Shopping bag for vendors
     case 'utility':
-      return 'info'; // Info for utilities
+      return 'info'; // Default info for utilities
     default:
       return 'map-pin';
   }
+};
+
+// Get sessions happening now (within current hour)
+export const getHappeningNow = (): Session[] => {
+  const now = new Date();
+  return sessions.filter(session => {
+    const start = new Date(session.start_time);
+    const end = new Date(session.end_time);
+    return now >= start && now <= end;
+  });
+};
+
+// Get upcoming sessions (sorted by start time)
+export const getUpcomingSessions = (): Session[] => {
+  const now = new Date();
+  return sessions
+    .filter(session => new Date(session.start_time) > now)
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+};
+
+// Get next starred session
+export const getNextStarredSession = (starredIds: string[]): Session | undefined => {
+  const now = new Date();
+  const starredSessions = sessions
+    .filter(session => starredIds.includes(session.id))
+    .filter(session => new Date(session.start_time) > now)
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+  
+  return starredSessions[0];
 };
