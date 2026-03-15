@@ -313,11 +313,11 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingTop: 0,
+  },
   headerBanner: {
     width: '100%',
-    marginTop: -50,
-    paddingTop: 50,
-    backgroundColor: '#d4a94b',
   },
   bannerImage: {
     width: '100%',
