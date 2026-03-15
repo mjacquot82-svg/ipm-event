@@ -144,7 +144,7 @@ export default function HomeScreen() {
           <Image
             source={require('../../assets/images/ipm-banner.png')}
             style={styles.bannerImage}
-            resizeMode="cover"
+            resizeMode="contain"
           />
         </View>
 
