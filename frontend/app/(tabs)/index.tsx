@@ -319,8 +319,7 @@ const styles = StyleSheet.create({
   },
   bannerImage: {
     width: '100%',
-    height: 320,
-    resizeMode: 'contain',
+    aspectRatio: 1080/1350,
   },
   section: {
     paddingHorizontal: 20,
