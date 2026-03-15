@@ -130,6 +130,7 @@ export default function HomeScreen() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -144,7 +145,6 @@ export default function HomeScreen() {
           <Image
             source={require('../../assets/images/ipm-banner-cropped.png')}
             style={styles.bannerImage}
-            resizeMode="contain"
           />
         </View>
 
