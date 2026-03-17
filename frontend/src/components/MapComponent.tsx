@@ -183,17 +183,31 @@ const MapComponent: React.FC = () => {
 
   const renderMarker = (location: LocationData) => {
     const markerColor = getLocationTypeColor(location.type);
+    const iconName = getLocationTypeIcon(location.type, location.utilitySubtype, location.fieldSubtype);
     const isDestination = directions.isActive && directions.destination?.id === location.id;
+    const isField = location.type === 'field';
 
-    // Use simple pin markers for better Android compatibility
     return (
       <Marker
         key={location.id}
         coordinate={{ latitude: location.lat, longitude: location.lng }}
         onPress={() => handleMarkerPress(location)}
         title={location.name}
-        pinColor={markerColor}
-      />
+        tracksViewChanges={false}
+      >
+        <View style={[
+          styles.markerContainer, 
+          { backgroundColor: markerColor },
+          isDestination && styles.destinationMarker,
+          isField && styles.fieldMarker,
+        ]}>
+          {isField ? (
+            <Feather name="truck" size={16} color="#FFFFFF" />
+          ) : (
+            <Feather name={iconName as any} size={16} color="#FFFFFF" />
+          )}
+        </View>
+      </Marker>
     );
   };
 
