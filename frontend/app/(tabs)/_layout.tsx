@@ -79,22 +79,12 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: 8,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
+    marginBottom: 2,
   },
   tabItem: {
-    paddingVertical: 4,
+    paddingTop: 4,
   },
 });
