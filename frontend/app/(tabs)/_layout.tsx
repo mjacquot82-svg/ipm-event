@@ -4,14 +4,25 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { StyleSheet, View, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../src/theme/colors';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  
+  // Calculate proper bottom padding based on device safe area
+  const bottomPadding = Math.max(insets.bottom, 10);
+  const tabBarHeight = 60 + bottomPadding;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: {
+          ...styles.tabBar,
+          height: tabBarHeight,
+          paddingBottom: bottomPadding,
+        },
         tabBarActiveTintColor: colors.tabActive,
         tabBarInactiveTintColor: colors.tabInactive,
         tabBarLabelStyle: styles.tabLabel,
