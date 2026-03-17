@@ -1,3 +1,5 @@
+// © 2026 1001538341 ONTARIO INC. All Rights Reserved.
+
 import React from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

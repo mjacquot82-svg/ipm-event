@@ -1,3 +1,4 @@
+// © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 // @ts-nocheck
 import { ScrollViewStyleReset } from "expo-router/html";
 import type { PropsWithChildren } from "react";

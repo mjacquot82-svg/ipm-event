@@ -1,3 +1,5 @@
+// © 2026 1001538341 ONTARIO INC. All Rights Reserved.
+
 import React, { useState, useCallback } from 'react';
 import {
   View,

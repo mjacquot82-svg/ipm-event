@@ -1,3 +1,5 @@
+// © 2026 1001538341 ONTARIO INC. All Rights Reserved.
+
 // IPM 2026 Brand Color Palette
 // International Plowing Match & Rural Expo - Bruce County, Ontario
 

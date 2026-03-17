@@ -1,3 +1,5 @@
+// © 2026 1001538341 ONTARIO INC. All Rights Reserved.
+
 import React from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

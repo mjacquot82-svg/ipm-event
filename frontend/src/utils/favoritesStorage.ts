@@ -1,3 +1,5 @@
+// © 2026 1001538341 ONTARIO INC. All Rights Reserved.
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const FAVORITES_KEY = '@event_navigator_favorites';

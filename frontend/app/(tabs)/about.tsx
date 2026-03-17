@@ -1,3 +1,5 @@
+// © 2026 1001538341 ONTARIO INC. All Rights Reserved.
+
 import React from 'react';
 import {
   View,
@@ -154,6 +156,12 @@ export default function AboutScreen() {
             <Text style={styles.footerText}>Bruce County • Ontario • Canada</Text>
             <Text style={styles.footerTagline}>Where Tradition Meets Innovation</Text>
           </View>
+        </View>
+
+        {/* Copyright Footer */}
+        <View style={styles.copyrightSection}>
+          <Text style={styles.copyrightText}>© 2026 1001538341 ONTARIO INC.</Text>
+          <Text style={styles.copyrightText}>All Rights Reserved.</Text>
         </View>
 
         <View style={styles.bottomPadding} />
@@ -384,6 +392,16 @@ const styles = StyleSheet.create({
     color: colors.accent,
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  copyrightSection: {
+    marginTop: 24,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  copyrightText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
   bottomPadding: {
     height: 30,
