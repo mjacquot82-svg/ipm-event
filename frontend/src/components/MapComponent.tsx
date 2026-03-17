@@ -298,6 +298,16 @@ const MapComponent: React.FC = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Go to Event Button - Prominent */}
+      <TouchableOpacity
+        style={styles.goToEventButton}
+        onPress={handleCenterOnVenue}
+        activeOpacity={0.8}
+      >
+        <Feather name="map-pin" size={18} color="#FFFFFF" />
+        <Text style={styles.goToEventText}>Go to IPM 2026</Text>
+      </TouchableOpacity>
+
       {/* Legend */}
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
