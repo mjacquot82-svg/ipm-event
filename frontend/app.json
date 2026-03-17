@@ -56,6 +56,12 @@
           "locationAlwaysAndWhenInUsePermission": "Navigate to event locations at IPM 2026",
           "locationWhenInUsePermission": "Navigate to event locations at IPM 2026"
         }
+      ],
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsDownloadToken": "pk.eyJ1IjoibWphY3F1b3QiLCJhIjoiY21tdXNueDJ5MmQ2ZjJycGwwMHo5MWQxbCJ9.t07o87TA6XMMBg1TXb60LQ"
+        }
       ]
     ],
     "experiments": {
