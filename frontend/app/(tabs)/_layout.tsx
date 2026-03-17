@@ -3,25 +3,33 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View, Platform, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../src/theme/colors';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   
-  // Calculate proper bottom padding based on device safe area
-  const bottomPadding = Math.max(insets.bottom, 10);
-  const tabBarHeight = 60 + bottomPadding;
+  // Use larger padding for devices with home indicators/gesture navigation
+  // Minimum 34px for iPhone X+ series, or device's actual bottom inset
+  const bottomInset = Math.max(insets.bottom, 34);
+  const tabBarHeight = 56 + bottomInset;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          ...styles.tabBar,
+          backgroundColor: colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
           height: tabBarHeight,
-          paddingBottom: bottomPadding,
+          paddingBottom: bottomInset,
+          paddingTop: 6,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
         },
         tabBarActiveTintColor: colors.tabActive,
         tabBarInactiveTintColor: colors.tabInactive,
