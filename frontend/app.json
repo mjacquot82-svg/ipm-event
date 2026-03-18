@@ -59,7 +59,10 @@
       ],
       [
         "@rnmapbox/maps",
-        {}
+        {
+          "RNMapboxMapsImpl": "mapbox",
+          "RNMapboxMapsDownloadToken": "sk.eyJ1IjoibWphY3F1b3QiLCJhIjoiY21tdjY3d2U5MmV6ZDJxb213ZGk5azU4dyJ9.XsDD_84KenHFdC3bzfpNKg"
+        }
       ]
     ],
     "experiments": {
