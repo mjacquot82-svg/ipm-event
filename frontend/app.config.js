@@ -46,6 +46,16 @@ export default {
       "expo-router",
       "./plugins/withMapboxToken",
       [
+        "expo-build-properties",
+        {
+          android: {
+            extraMavenRepos: [
+              "https://api.mapbox.com/downloads/v2/releases/maven"
+            ]
+          }
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           image: "./assets/images/splash-icon.png",
