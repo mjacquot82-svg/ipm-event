@@ -44,7 +44,6 @@ export default {
     },
     plugins: [
       "expo-router",
-      "./plugins/withMapboxToken",
       [
         "expo-build-properties",
         {
@@ -76,7 +75,8 @@ export default {
         {
           RNMapboxMapsImpl: "mapbox"
         }
-      ]
+      ],
+      "./plugins/withMapboxToken"
     ],
     experiments: {
       typedRoutes: true
