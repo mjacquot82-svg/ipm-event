@@ -73,10 +73,10 @@ export default {
       [
         "@rnmapbox/maps",
         {
-          RNMapboxMapsImpl: "mapbox"
+          RNMapboxMapsImpl: "mapbox",
+          RNMapboxMapsDownloadToken: "sk.eyJ1IjoibWphY3F1b3QiLCJhIjoiY21tdmRwcXVuMDJsbjJycHBrcXV6czl3dyJ9.pUiimStUZ4mIXhkErun2MQ"
         }
-      ],
-      "./plugins/withMapboxToken"
+      ]
     ],
     experiments: {
       typedRoutes: true
