@@ -64,7 +64,7 @@ export default {
         "@rnmapbox/maps",
         {
           RNMapboxMapsImpl: "mapbox",
-          RNMapboxMapsDownloadToken: process.env.MAPBOX_DOWNLOADS_TOKEN || "sk.eyJ1IjoibWphY3F1b3QiLCJhIjoiY21tdjY3d2U5MmV6ZDJxb213ZGk5azU4dyJ9.XsDD_84KenHFdC3bzfpNKg"
+          RNMapboxMapsDownloadToken: process.env.MAPBOX_DOWNLOADS_TOKEN || "sk.eyJ1IjoibWphY3F1b3QiLCJhIjoiY21tdmRwcXVuMDJsbjJycHBrcXV6czl3dyJ9.pUiimStUZ4mIXhkErun2MQ"
         }
       ]
     ],
