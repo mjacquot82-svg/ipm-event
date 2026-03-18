@@ -44,6 +44,7 @@ export default {
     },
     plugins: [
       "expo-router",
+      "./plugins/withMapboxToken",
       [
         "expo-splash-screen",
         {
@@ -63,8 +64,7 @@ export default {
       [
         "@rnmapbox/maps",
         {
-          RNMapboxMapsImpl: "mapbox",
-          RNMapboxMapsDownloadToken: process.env.MAPBOX_DOWNLOADS_TOKEN || "sk.eyJ1IjoibWphY3F1b3QiLCJhIjoiY21tdmRwcXVuMDJsbjJycHBrcXV6czl3dyJ9.pUiimStUZ4mIXhkErun2MQ"
+          RNMapboxMapsImpl: "mapbox"
         }
       ]
     ],
