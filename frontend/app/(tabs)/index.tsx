@@ -155,38 +155,6 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* External Links - Buy Tickets, Let's Camp, Souvenirs */}
-        <View style={styles.section}>
-          <View style={styles.externalLinksRow}>
-            <TouchableOpacity
-              style={[styles.externalLinkCard, { backgroundColor: colors.primary }]}
-              onPress={() => openLink('https://www.tix123.com/tickets/?code=IPMRE26')}
-              activeOpacity={0.8}
-            >
-              <Feather name="credit-card" size={22} color="#FFFFFF" />
-              <Text style={styles.externalLinkText}>Buy Tickets</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.externalLinkCard, { backgroundColor: colors.field }]}
-              onPress={() => openLink('https://letscamp.ca/camps/ipm-2026')}
-              activeOpacity={0.8}
-            >
-              <Feather name="sun" size={22} color="#FFFFFF" />
-              <Text style={styles.externalLinkText}>Let's Camp</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.externalLinkCard, { backgroundColor: colors.accent }]}
-              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/?fbclid=IwY2xjawQuGmhleHRuA2FlbQIxMABicmlkETE3aUxCemtNREIzNGE4WGh5c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHrdITwGKjyFPU7v_T2U8wtz5YWVsIsHECguU33ZzpdUAUnr25lMzuUThqcX0_aem_ca4nGCbppwbVWXaXs1BNHg')}
-              activeOpacity={0.8}
-            >
-              <Feather name="gift" size={22} color="#FFFFFF" />
-              <Text style={styles.externalLinkText}>Souvenirs</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Happening Now Section */}
         {happeningNow.length > 0 && (
           <View style={styles.section}>
@@ -247,7 +215,7 @@ export default function HomeScreen() {
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActions}>
+          <View style={styles.quickActionsGrid}>
             <TouchableOpacity
               style={styles.actionCard}
               onPress={() => router.push('/(tabs)/map')}
@@ -270,6 +238,42 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.actionTitle}>Schedule</Text>
               <Text style={styles.actionSubtitle}>View all events</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => openLink('https://www.tix123.com/tickets/?code=IPMRE26')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.stage }]}>
+                <Feather name="credit-card" size={24} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Buy Tickets</Text>
+              <Text style={styles.actionSubtitle}>Get your passes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => openLink('https://letscamp.ca/camps/ipm-2026')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
+                <Feather name="sun" size={24} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Let's Camp</Text>
+              <Text style={styles.actionSubtitle}>Book camping</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/?fbclid=IwY2xjawQuGmhleHRuA2FlbQIxMABicmlkETE3aUxCemtNREIzNGE4WGh5c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHrdITwGKjyFPU7v_T2U8wtz5YWVsIsHECguU33ZzpdUAUnr25lMzuUThqcX0_aem_ca4nGCbppwbVWXaXs1BNHg')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.vendor }]}>
+                <Feather name="gift" size={24} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Souvenirs</Text>
+              <Text style={styles.actionSubtitle}>Shop merchandise</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -470,12 +474,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   actionCard: {
-    flex: 1,
+    width: '48%',
     backgroundColor: colors.surface,
     padding: 16,
     borderRadius: 20,
     alignItems: 'center',
+    marginBottom: 4,
   },
   actionIcon: {
     width: 56,
