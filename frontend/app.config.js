@@ -8,33 +8,26 @@ export default {
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "ipm2026",
-    userInterfaceStyle: "dark",
-    newArchEnabled: true,
+    userInterfaceStyle: "light",
+    newArchEnabled: false,
+    jsEngine: "jsc",
     ios: {
       supportsTablet: true,
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "Navigate to event locations at IPM 2026",
         NSLocationAlwaysAndWhenInUseUsageDescription: "Track your path through the IPM grounds"
-      },
-      config: {
-        googleMapsApiKey: "GOOGLE_MAPS_API_KEY_PLACEHOLDER"
       }
     },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/images/adaptive-icon.png",
-        backgroundColor: "#2D2926"
+        backgroundColor: "#F5F5F0"
       },
       edgeToEdgeEnabled: true,
       permissions: [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
       ],
-      config: {
-        googleMaps: {
-          apiKey: "GOOGLE_MAPS_API_KEY_PLACEHOLDER"
-        }
-      },
       package: "com.mjacquot.ipm2026"
     },
     web: {
