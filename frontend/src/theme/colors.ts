@@ -1,6 +1,6 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-// IPM 2026 Brand Color Palette
+// IPM 2026 Brand Color Palette - Light Theme
 // International Plowing Match & Rural Expo - Bruce County, Ontario
 
 export const colors = {
@@ -9,45 +9,45 @@ export const colors = {
   primaryLight: '#C73B42',
   primaryDark: '#8A1F25',
   
-  accent: '#F2A900',         // Harvest Gold from logo
-  accentLight: '#FFBE33',
-  accentDark: '#D99400',
+  accent: '#D4920A',         // Darker Harvest Gold (better contrast on light)
+  accentLight: '#F2A900',
+  accentDark: '#B87D08',
   
-  // Base colors
-  background: '#2D2926',     // Charcoal
-  surface: '#3D3936',
-  surfaceElevated: '#4D4946',
-  surfaceHighlight: '#5D5956',
+  // Base colors - LIGHT THEME
+  background: '#F5F5F0',     // Warm off-white
+  surface: '#FFFFFF',        // Pure white cards
+  surfaceElevated: '#FAFAF7',
+  surfaceHighlight: '#F0F0EB',
   
-  // Text colors
-  textPrimary: '#F0EFEB',    // Off-white from logo
-  textSecondary: '#C4C3BF',
+  // Text colors - DARK FOR LIGHT THEME
+  textPrimary: '#2D2926',    // Dark charcoal
+  textSecondary: '#5C5856',
   textMuted: '#8A8986',
   
   // Location type colors (themed for IPM)
   stage: '#A6262D',          // Deep Red for main attractions
-  vendor: '#F2A900',         // Harvest Gold for vendors/exhibitors
-  utility: '#4ECDC4',        // Teal for utilities
-  field: '#6B8E23',          // Olive for plowing fields
+  vendor: '#D4920A',         // Harvest Gold for vendors/exhibitors
+  utility: '#3DBDB5',        // Teal for utilities
+  field: '#5A7A1F',          // Darker Olive for plowing fields
   
   // Status colors
-  success: '#6B8E23',        // Olive green (farm themed)
-  warning: '#F2A900',        // Harvest Gold
+  success: '#5A7A1F',        // Olive green (farm themed)
+  warning: '#D4920A',        // Harvest Gold
   error: '#A6262D',          // Deep Red
-  info: '#4A90D9',
+  info: '#3A7BC8',
   
   // UI elements
-  border: '#4D4946',
-  divider: '#3D3936',
-  overlay: 'rgba(45, 41, 38, 0.85)',
+  border: '#E0E0DB',
+  divider: '#EAEAE5',
+  overlay: 'rgba(45, 41, 38, 0.5)',
   
   // Navigation
-  tabActive: '#F2A900',      // Harvest Gold for active tabs
-  tabInactive: '#8A8986',
+  tabActive: '#A6262D',      // Deep Red for active tabs (better on light)
+  tabInactive: '#9A9896',
   
   // Map
-  userLocation: '#4A90D9',
-  mapOverlay: 'rgba(45, 41, 38, 0.95)',
+  userLocation: '#3A7BC8',
+  mapOverlay: 'rgba(255, 255, 255, 0.95)',
   route: '#A6262D',          // Deep Red for routes
 };
 
