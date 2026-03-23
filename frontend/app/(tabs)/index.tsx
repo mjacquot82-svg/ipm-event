@@ -11,6 +11,8 @@ import {
   Platform,
   Image,
   Linking,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -28,13 +30,14 @@ import {
   Session,
   eventInfo,
 } from '../../src/data/mockData';
-import { getFavorites } from '../../src/utils/favoritesStorage';
+import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [favorites, setFavorites] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showItinerary, setShowItinerary] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -91,6 +94,43 @@ export default function HomeScreen() {
 
   const openLink = (url: string) => {
     Linking.openURL(url);
+  };
+
+  // Get starred sessions sorted by date
+  const getStarredSessions = () => {
+    return sessions
+      .filter(session => favorites.includes(session.id))
+      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+  };
+
+  const starredSessions = getStarredSessions();
+
+  // Group starred sessions by date
+  const groupedStarredSessions = starredSessions.reduce((acc, session) => {
+    const date = new Date(session.start_time).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(session);
+    return acc;
+  }, {} as Record<string, Session[]>);
+
+  const handleRemoveFromItinerary = async (sessionId: string) => {
+    const result = await toggleFavorite(sessionId);
+    setFavorites(result.favorites);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   const renderSessionCard = (session: Session, showTimeUntil: boolean = false) => {
@@ -278,7 +318,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => router.push('/(tabs)/schedule')}
+              onPress={() => setShowItinerary(true)}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.utility }]}>
@@ -356,6 +396,113 @@ export default function HomeScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* My Itinerary Modal */}
+      <Modal
+        visible={showItinerary}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowItinerary(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <Feather name="clipboard" size={24} color={colors.utility} />
+                <Text style={styles.modalTitle}>My Itinerary</Text>
+              </View>
+              <TouchableOpacity 
+                onPress={() => setShowItinerary(false)}
+                style={styles.modalCloseButton}
+              >
+                <Feather name="x" size={24} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Itinerary Content */}
+            <ScrollView 
+              style={styles.modalScroll}
+              showsVerticalScrollIndicator={false}
+            >
+              {starredSessions.length === 0 ? (
+                <View style={styles.emptyItinerary}>
+                  <Feather name="star" size={48} color={colors.textMuted} />
+                  <Text style={styles.emptyItineraryTitle}>No events planned yet</Text>
+                  <Text style={styles.emptyItineraryText}>
+                    Star events from the Schedule to add them to your itinerary
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.browseButton}
+                    onPress={() => {
+                      setShowItinerary(false);
+                      router.push('/(tabs)/schedule');
+                    }}
+                  >
+                    <Text style={styles.browseButtonText}>Browse Schedule</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.itinerarySummary}>
+                    {starredSessions.length} event{starredSessions.length > 1 ? 's' : ''} planned
+                  </Text>
+                  {Object.entries(groupedStarredSessions).map(([date, dateSessions]) => (
+                    <View key={date} style={styles.itineraryDateSection}>
+                      <Text style={styles.itineraryDateHeader}>{date}</Text>
+                      {dateSessions.map((session) => {
+                        const location = getLocationById(session.location_id);
+                        const typeColor = location ? getLocationTypeColor(location.type) : colors.primary;
+                        
+                        return (
+                          <View key={session.id} style={styles.itineraryCard}>
+                            <View style={[styles.itineraryColorBar, { backgroundColor: typeColor }]} />
+                            <View style={styles.itineraryCardContent}>
+                              <View style={styles.itineraryTimeRow}>
+                                <Feather name="clock" size={14} color={colors.textMuted} />
+                                <Text style={styles.itineraryTime}>
+                                  {formatTime(session.start_time)} - {formatTime(session.end_time)}
+                                </Text>
+                              </View>
+                              <Text style={styles.itineraryTitle}>{session.title}</Text>
+                              {location && (
+                                <View style={styles.itineraryLocationRow}>
+                                  <Feather name="map-pin" size={12} color={typeColor} />
+                                  <Text style={[styles.itineraryLocation, { color: typeColor }]}>
+                                    {location.name}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                            <TouchableOpacity 
+                              style={styles.removeButton}
+                              onPress={() => handleRemoveFromItinerary(session.id)}
+                            >
+                              <Feather name="x-circle" size={20} color={colors.textMuted} />
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ))}
+                  <View style={styles.itineraryFooter}>
+                    <TouchableOpacity 
+                      style={styles.addMoreButton}
+                      onPress={() => {
+                        setShowItinerary(false);
+                        router.push('/(tabs)/schedule');
+                      }}
+                    >
+                      <Feather name="plus" size={18} color={colors.accent} />
+                      <Text style={styles.addMoreText}>Add more events</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -622,5 +769,151 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 20,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    minHeight: '50%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalScroll: {
+    flex: 1,
+    padding: 20,
+  },
+  emptyItinerary: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyItineraryTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyItineraryText: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  browseButton: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+  },
+  browseButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  itinerarySummary: {
+    fontSize: 14,
+    color: colors.textMuted,
+    marginBottom: 16,
+  },
+  itineraryDateSection: {
+    marginBottom: 20,
+  },
+  itineraryDateHeader: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  itineraryCard: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  itineraryColorBar: {
+    width: 4,
+  },
+  itineraryCardContent: {
+    flex: 1,
+    padding: 14,
+  },
+  itineraryTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  itineraryTime: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  itineraryTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  itineraryLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  itineraryLocation: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  removeButton: {
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  itineraryFooter: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  addMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    borderRadius: 25,
+  },
+  addMoreText: {
+    color: colors.accent,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
