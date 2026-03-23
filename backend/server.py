@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,9 +6,12 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 import uuid
 from datetime import datetime
+import httpx
+import csv
+from io import StringIO
 
 
 ROOT_DIR = Path(__file__).parent
@@ -18,6 +21,10 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# Google Sheet URL (public CSV export)
+GOOGLE_SHEET_ID = "1tnfBd7Ffg5S4hyk5c5CpB-VGkJcSnLpdsKGbNJIiQCs"
+GOOGLE_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv"
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -35,6 +42,24 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+class ScheduleEvent(BaseModel):
+    id: str
+    title: str
+    description: Optional[str] = ""
+    start_date: str
+    start_time: str
+    end_time: str
+    category: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    days_active: str
+    location_name: Optional[str] = None
+
+class ScheduleResponse(BaseModel):
+    events: List[ScheduleEvent]
+    last_updated: datetime
+    total_count: int
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
@@ -51,6 +76,63 @@ async def create_status_check(input: StatusCheckCreate):
 async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
+
+@api_router.get("/schedule", response_model=ScheduleResponse)
+async def get_schedule():
+    """Fetch schedule events from Google Sheets (only Event type, not Locations)"""
+    try:
+        async with httpx.AsyncClient(follow_redirects=True) as http_client:
+            response = await http_client.get(GOOGLE_SHEET_CSV_URL, timeout=30.0)
+            response.raise_for_status()
+            
+        # Parse CSV
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        
+        events = []
+        for idx, row in enumerate(reader):
+            # Only include Event types, not Locations
+            entry_type = row.get('Entry_Type', '').strip()
+            if entry_type.lower() != 'event':
+                continue
+            
+            # Parse coordinates
+            try:
+                lat = float(row.get('Lat', 0)) if row.get('Lat') else None
+                lng = float(row.get('Long', 0)) if row.get('Long') else None
+            except ValueError:
+                lat, lng = None, None
+            
+            # Create unique ID based on row data
+            event_id = f"gs_{idx}_{row.get('Name', '').replace(' ', '_').lower()}"
+            
+            event = ScheduleEvent(
+                id=event_id,
+                title=row.get('Name', 'Untitled Event').strip(),
+                description=row.get('Description', '').strip(),
+                start_date=row.get('Start Date', '').strip(),
+                start_time=row.get('Event Start', '').strip(),
+                end_time=row.get('Event End', '').strip(),
+                category=row.get('Category', 'Event').strip(),
+                latitude=lat,
+                longitude=lng,
+                days_active=row.get('Days_Active', '').strip(),
+                location_name=None  # Can be added later if needed
+            )
+            events.append(event)
+        
+        return ScheduleResponse(
+            events=events,
+            last_updated=datetime.utcnow(),
+            total_count=len(events)
+        )
+        
+    except httpx.HTTPError as e:
+        logger.error(f"Failed to fetch Google Sheet: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch schedule data")
+    except Exception as e:
+        logger.error(f"Error processing schedule: {e}")
+        raise HTTPException(status_code=500, detail="Error processing schedule data")
 
 # Include the router in the main app
 app.include_router(api_router)

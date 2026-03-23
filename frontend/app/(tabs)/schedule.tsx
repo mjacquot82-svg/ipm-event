@@ -7,28 +7,87 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import colors from '../../src/theme/colors';
-import {
-  sessions,
-  getLocationById,
-  getLocationTypeColor,
-  getLocationTypeIcon,
-  Session,
-} from '../../src/data/mockData';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 
+// API Event type from Google Sheets
+interface ScheduleEvent {
+  id: string;
+  title: string;
+  description: string;
+  start_date: string;
+  start_time: string;
+  end_time: string;
+  category: string;
+  latitude: number | null;
+  longitude: number | null;
+  days_active: string;
+  location_name: string | null;
+}
+
+interface ScheduleResponse {
+  events: ScheduleEvent[];
+  last_updated: string;
+  total_count: number;
+}
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
 export default function ScheduleScreen() {
+  const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
+  // Fetch schedule from API
+  const fetchSchedule = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
+      const response = await fetch(`${API_BASE_URL}/api/schedule`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch schedule');
+      }
+
+      const data: ScheduleResponse = await response.json();
+      setEvents(data.events);
+      setLastUpdated(data.last_updated);
+    } catch (err) {
+      console.error('Error fetching schedule:', err);
+      setError('Unable to load schedule. Pull down to retry.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Load on mount
+  useEffect(() => {
+    fetchSchedule();
+  }, []);
+
+  // Refresh on focus
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
+      // Optionally refresh schedule on focus
+      // fetchSchedule(true);
     }, [])
   );
 
@@ -37,61 +96,70 @@ export default function ScheduleScreen() {
     setFavorites(storedFavorites);
   };
 
-  const handleToggleFavorite = async (sessionId: string) => {
-    const result = await toggleFavorite(sessionId);
+  const handleToggleFavorite = async (eventId: string) => {
+    const result = await toggleFavorite(eventId);
     setFavorites(result.favorites);
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+  const onRefresh = () => {
+    fetchSchedule(true);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  // Group events by date
+  const groupedEvents = events.reduce((acc, event) => {
+    const date = formatDisplayDate(event.start_date);
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(event);
+    return acc;
+  }, {} as Record<string, ScheduleEvent[]>);
+
+  // Sort events within each date by start time
+  Object.keys(groupedEvents).forEach((date) => {
+    groupedEvents[date].sort((a, b) => {
+      return parseTime(a.start_time) - parseTime(b.start_time);
+    });
+  });
+
+  // Parse time string to minutes for sorting
+  function parseTime(timeStr: string): number {
+    if (!timeStr) return 0;
+    const match = timeStr.match(/(\d+):?(\d*)\s*(AM|PM)?/i);
+    if (!match) return 0;
+    
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2] || '0', 10);
+    const period = match[3]?.toUpperCase();
+    
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    
+    return hours * 60 + minutes;
+  }
+
+  // Format date for display
+  function formatDisplayDate(dateStr: string): string {
+    if (!dateStr) return 'Unknown Date';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
     });
-  };
-
-  const groupedSessions = sessions.reduce((acc, session) => {
-    const date = formatDate(session.start_time);
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(session);
-    return acc;
-  }, {} as Record<string, typeof sessions>);
-
-  Object.keys(groupedSessions).forEach((date) => {
-    groupedSessions[date].sort(
-      (a, b) =>
-        new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-    );
-  });
+  }
 
   const filterOptions = [
     { label: 'All', value: null, icon: 'list' },
     { label: 'Starred', value: 'starred', icon: 'star' },
-    { label: 'Fields', value: 'field', icon: 'grid' },
-    { label: 'Stages', value: 'stage', icon: 'mic' },
   ];
 
-  const filteredGroupedSessions = Object.keys(groupedSessions).reduce(
+  const filteredGroupedEvents = Object.keys(groupedEvents).reduce(
     (acc, date) => {
-      const filtered = groupedSessions[date].filter((session) => {
-        if (showFavoritesOnly && !favorites.includes(session.id)) {
+      const filtered = groupedEvents[date].filter((event) => {
+        if (showFavoritesOnly && !favorites.includes(event.id)) {
           return false;
-        }
-        if (selectedType && selectedType !== 'starred') {
-          const location = getLocationById(session.location_id);
-          return location?.type === selectedType;
         }
         return true;
       });
@@ -100,7 +168,7 @@ export default function ScheduleScreen() {
       }
       return acc;
     },
-    {} as Record<string, typeof sessions>
+    {} as Record<string, ScheduleEvent[]>
   );
 
   const handleFilterPress = (value: string | null) => {
@@ -113,12 +181,20 @@ export default function ScheduleScreen() {
     }
   };
 
-  const isSessionHappeningNow = (session: Session): boolean => {
-    const now = new Date();
-    const start = new Date(session.start_time);
-    const end = new Date(session.end_time);
-    return now >= start && now <= end;
-  };
+  // Loading state
+  if (loading && events.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Schedule</Text>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading schedule...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -126,38 +202,39 @@ export default function ScheduleScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Schedule</Text>
         <View style={styles.headerSubtitle}>
-          <Text style={styles.subtitle}>{sessions.length} events</Text>
+          <Text style={styles.subtitle}>{events.length} events</Text>
           {favorites.length > 0 && (
-            <View style={styles.starredBadge}>
+            <View style={styles.starBadge}>
               <Feather name="star" size={12} color={colors.accent} />
-              <Text style={styles.starredCount}>{favorites.length} starred</Text>
+              <Text style={styles.starCount}>{favorites.length}</Text>
             </View>
           )}
         </View>
       </View>
 
-      {/* Filters */}
+      {/* Filter Pills */}
       <View style={styles.filterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterScroll}
+        >
           {filterOptions.map((option) => {
-            const isActive = 
+            const isActive =
+              (option.value === null && !showFavoritesOnly) ||
               (option.value === 'starred' && showFavoritesOnly) ||
-              (option.value !== 'starred' && !showFavoritesOnly && selectedType === option.value);
-            
+              selectedType === option.value;
+
             return (
               <TouchableOpacity
                 key={option.label}
-                style={[
-                  styles.filterButton,
-                  isActive && styles.filterButtonActive,
-                ]}
+                style={[styles.filterPill, isActive && styles.filterPillActive]}
                 onPress={() => handleFilterPress(option.value)}
-                activeOpacity={0.8}
               >
-                <Feather 
-                  name={option.icon as any} 
-                  size={14} 
-                  color={isActive ? '#FFFFFF' : colors.textSecondary} 
+                <Feather
+                  name={option.icon as any}
+                  size={14}
+                  color={isActive ? '#FFFFFF' : colors.textSecondary}
                 />
                 <Text
                   style={[
@@ -173,90 +250,140 @@ export default function ScheduleScreen() {
         </ScrollView>
       </View>
 
-      {/* Sessions List */}
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {Object.keys(filteredGroupedSessions).map((date) => (
-          <View key={date} style={styles.dateSection}>
-            <Text style={styles.dateHeader}>{date}</Text>
+      {/* Error State */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Feather name="alert-circle" size={24} color={colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
 
-            {filteredGroupedSessions[date].map((session) => {
-              const location = getLocationById(session.location_id);
-              const typeColor = location
-                ? getLocationTypeColor(location.type)
-                : colors.primary;
-              const iconName = location
-                ? getLocationTypeIcon(location.type, location.utilitySubtype, location.fieldSubtype)
-                : 'map-pin';
-              const isFavorite = favorites.includes(session.id);
-              const isNow = isSessionHappeningNow(session);
-              const isField = location?.type === 'field';
-
-              return (
-                <View key={session.id} style={styles.sessionCard}>
-                  <View
-                    style={[styles.sessionIndicator, { backgroundColor: typeColor }]}
-                  />
-                  <View style={styles.sessionInfo}>
-                    {isNow && (
-                      <View style={styles.liveTag}>
-                        <View style={styles.liveDot} />
-                        <Text style={styles.liveText}>HAPPENING NOW</Text>
-                      </View>
-                    )}
-                    <View style={styles.sessionTimeRow}>
-                      <Feather name="clock" size={14} color={colors.textMuted} />
-                      <Text style={styles.sessionTime}>
-                        {formatTime(session.start_time)} -{' '}
-                        {formatTime(session.end_time)}
-                      </Text>
-                    </View>
-                    <Text style={styles.sessionTitle}>{session.title}</Text>
-                    {location && (
-                      <View style={styles.sessionLocationRow}>
-                        {isField ? (
-                          <Feather name="truck" size={14} color={typeColor} />
-                        ) : (
-                          <Feather name={iconName as any} size={14} color={typeColor} />
-                        )}
-                        <Text style={[styles.sessionLocation, { color: typeColor }]}>
-                          {location.name}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <TouchableOpacity 
-                    style={styles.starButton}
-                    onPress={() => handleToggleFavorite(session.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Feather 
-                      name="star" 
-                      size={22} 
-                      color={isFavorite ? colors.accent : colors.textMuted}
-                    />
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
+      {/* Schedule List */}
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
+        {/* Last Updated Indicator */}
+        {lastUpdated && (
+          <View style={styles.lastUpdatedContainer}>
+            <Feather name="refresh-cw" size={12} color={colors.textMuted} />
+            <Text style={styles.lastUpdatedText}>
+              Pull down to refresh
+            </Text>
           </View>
-        ))}
+        )}
 
-        {Object.keys(filteredGroupedSessions).length === 0 && (
+        {Object.keys(filteredGroupedEvents).length === 0 ? (
           <View style={styles.emptyState}>
-            <Feather 
-              name={showFavoritesOnly ? 'star' : 'calendar'} 
-              size={48} 
-              color={colors.textMuted} 
+            <Feather
+              name={showFavoritesOnly ? 'star' : 'calendar'}
+              size={48}
+              color={colors.textMuted}
             />
-            <Text style={styles.emptyText}>
-              {showFavoritesOnly ? 'No starred events' : 'No events found'}
+            <Text style={styles.emptyTitle}>
+              {showFavoritesOnly ? 'No Starred Events' : 'No Events'}
             </Text>
-            <Text style={styles.emptySubtext}>
-              {showFavoritesOnly 
-                ? 'Tap the star icon to save events' 
-                : 'Try adjusting your filters'}
+            <Text style={styles.emptyText}>
+              {showFavoritesOnly
+                ? 'Tap the star icon on events to add them here'
+                : 'Events will appear here when scheduled'}
             </Text>
           </View>
+        ) : (
+          Object.entries(filteredGroupedEvents).map(([date, dateEvents]) => (
+            <View key={date} style={styles.dateSection}>
+              <View style={styles.dateHeader}>
+                <Text style={styles.dateText}>{date}</Text>
+                <Text style={styles.eventCount}>
+                  {dateEvents.length} event{dateEvents.length > 1 ? 's' : ''}
+                </Text>
+              </View>
+
+              {dateEvents.map((event) => {
+                const isFavorite = favorites.includes(event.id);
+
+                return (
+                  <View key={event.id} style={styles.eventCard}>
+                    <View
+                      style={[
+                        styles.eventColorBar,
+                        { backgroundColor: colors.primary },
+                      ]}
+                    />
+
+                    <View style={styles.eventContent}>
+                      <View style={styles.eventHeader}>
+                        <View style={styles.eventTimeContainer}>
+                          <Feather
+                            name="clock"
+                            size={14}
+                            color={colors.textMuted}
+                          />
+                          <Text style={styles.eventTime}>
+                            {event.start_time} - {event.end_time}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => handleToggleFavorite(event.id)}
+                          style={styles.favoriteButton}
+                        >
+                          <Feather
+                            name={isFavorite ? 'star' : 'star'}
+                            size={20}
+                            color={isFavorite ? colors.accent : colors.textMuted}
+                            style={isFavorite ? { fill: colors.accent } : {}}
+                          />
+                        </TouchableOpacity>
+                      </View>
+
+                      <Text style={styles.eventTitle}>{event.title}</Text>
+
+                      {event.description ? (
+                        <Text style={styles.eventDescription} numberOfLines={2}>
+                          {event.description}
+                        </Text>
+                      ) : null}
+
+                      <View style={styles.eventMeta}>
+                        {event.days_active && (
+                          <View style={styles.metaItem}>
+                            <Feather
+                              name="calendar"
+                              size={12}
+                              color={colors.textMuted}
+                            />
+                            <Text style={styles.metaText}>
+                              {event.days_active}
+                            </Text>
+                          </View>
+                        )}
+                        {event.latitude && event.longitude && (
+                          <View style={styles.metaItem}>
+                            <Feather
+                              name="map-pin"
+                              size={12}
+                              color={colors.primary}
+                            />
+                            <Text style={[styles.metaText, { color: colors.primary }]}>
+                              View on Map
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ))
         )}
 
         <View style={styles.bottomPadding} />
@@ -271,8 +398,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 8,
     paddingBottom: 12,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   title: {
     fontSize: 28,
@@ -286,139 +417,191 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   subtitle: {
-    fontSize: 15,
-    color: colors.textMuted,
+    fontSize: 14,
+    color: colors.textSecondary,
   },
-  starredBadge: {
+  starBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 10,
+    backgroundColor: colors.surfaceHighlight,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: 12,
   },
-  starredCount: {
+  starCount: {
     fontSize: 12,
+    fontWeight: '600',
     color: colors.accent,
-    fontWeight: '500',
   },
   filterContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    backgroundColor: colors.surface,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  filterButton: {
+  filterScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.surfaceHighlight,
     gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 50,
-    backgroundColor: colors.surface,
-    marginRight: 10,
+    marginRight: 8,
   },
-  filterButtonActive: {
+  filterPillActive: {
     backgroundColor: colors.primary,
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: colors.textSecondary,
   },
   filterTextActive: {
     color: '#FFFFFF',
   },
-  scrollView: {
+  content: {
     flex: 1,
+    paddingHorizontal: 16,
   },
-  dateSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
   },
-  dateHeader: {
+  loadingText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.textMuted,
-    marginBottom: 12,
+    color: colors.textSecondary,
   },
-  sessionCard: {
+  errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    gap: 8,
+    backgroundColor: colors.surfaceHighlight,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    color: colors.error,
+  },
+  lastUpdatedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+  },
+  lastUpdatedText: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  dateSection: {
+    marginBottom: 20,
+  },
+  dateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingTop: 8,
+  },
+  dateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  eventCount: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  eventCard: {
+    flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderRadius: 20,
+    borderRadius: 16,
     marginBottom: 12,
     overflow: 'hidden',
   },
-  sessionIndicator: {
+  eventColorBar: {
     width: 4,
-    alignSelf: 'stretch',
   },
-  sessionInfo: {
+  eventContent: {
     flex: 1,
     padding: 14,
   },
-  liveTag: {
+  eventHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  eventTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 6,
   },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.success,
-  },
-  liveText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.success,
-    letterSpacing: 0.5,
-  },
-  sessionTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  sessionTime: {
+  eventTime: {
     fontSize: 13,
     color: colors.textMuted,
+    fontWeight: '500',
   },
-  sessionTitle: {
+  favoriteButton: {
+    padding: 4,
+  },
+  eventTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  sessionLocationRow: {
+  eventDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  eventMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 4,
+  },
+  metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
-  sessionLocation: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  starButton: {
-    padding: 14,
+  metaText: {
+    fontSize: 12,
+    color: colors.textMuted,
   },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
   },
-  emptyText: {
+  emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
     marginTop: 16,
+    marginBottom: 8,
   },
-  emptySubtext: {
+  emptyText: {
     fontSize: 14,
     color: colors.textMuted,
-    marginTop: 4,
+    textAlign: 'center',
+    paddingHorizontal: 40,
   },
   bottomPadding: {
-    height: 20,
+    height: 120,
   },
 });
