@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   bottomPadding: {
-    height: 20,
+    height: 120,
   },
   // Modal styles
   modalOverlay: {
