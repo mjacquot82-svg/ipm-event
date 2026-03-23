@@ -150,7 +150,7 @@ export default function HomeScreen() {
         {/* Header Banner Image */}
         <View style={styles.headerBanner}>
           <Image
-            source={require('../../assets/images/ipm-hero-banner.png')}
+            source={require('../../assets/images/ipm-2026-banner.png')}
             style={styles.bannerImage}
           />
         </View>
@@ -163,7 +163,7 @@ export default function HomeScreen() {
               onPress={() => openLink('https://www.tix123.com/tickets/?code=IPMRE26')}
               activeOpacity={0.8}
             >
-              <Feather name="ticket" size={22} color="#FFFFFF" />
+              <Feather name="credit-card" size={22} color="#FFFFFF" />
               <Text style={styles.externalLinkText}>Buy Tickets</Text>
             </TouchableOpacity>
 
@@ -172,16 +172,16 @@ export default function HomeScreen() {
               onPress={() => openLink('https://letscamp.ca/camps/ipm-2026')}
               activeOpacity={0.8}
             >
-              <Feather name="sunrise" size={22} color="#FFFFFF" />
+              <Feather name="sun" size={22} color="#FFFFFF" />
               <Text style={styles.externalLinkText}>Let's Camp</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.externalLinkCard, { backgroundColor: colors.accent }]}
-              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/')}
+              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/?fbclid=IwY2xjawQuGmhleHRuA2FlbQIxMABicmlkETE3aUxCemtNREIzNGE4WGh5c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHrdITwGKjyFPU7v_T2U8wtz5YWVsIsHECguU33ZzpdUAUnr25lMzuUThqcX0_aem_ca4nGCbppwbVWXaXs1BNHg')}
               activeOpacity={0.8}
             >
-              <Feather name="shopping-bag" size={22} color="#FFFFFF" />
+              <Feather name="gift" size={22} color="#FFFFFF" />
               <Text style={styles.externalLinkText}>Souvenirs</Text>
             </TouchableOpacity>
           </View>
