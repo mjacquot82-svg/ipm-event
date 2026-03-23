@@ -44,16 +44,7 @@ export default {
     },
     plugins: [
       "expo-router",
-      [
-        "expo-build-properties",
-        {
-          android: {
-            extraMavenRepos: [
-              "https://api.mapbox.com/downloads/v2/releases/maven"
-            ]
-          }
-        }
-      ],
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
@@ -69,14 +60,16 @@ export default {
           locationAlwaysAndWhenInUsePermission: "Navigate to event locations at IPM 2026",
           locationWhenInUsePermission: "Navigate to event locations at IPM 2026"
         }
-      ],
-      [
-        "@rnmapbox/maps",
-        {
-          RNMapboxMapsImpl: "mapbox",
-          RNMapboxMapsDownloadToken: "sk.eyJ1IjoibWphY3F1b3QiLCJhIjoiY21tdmRwcXVuMDJsbjJycHBrcXV6czl3dyJ9.pUiimStUZ4mIXhkErun2MQ"
-        }
       ]
+      // Note: @rnmapbox/maps requires a development build, not Expo Go
+      // Uncomment when building with EAS:
+      // [
+      //   "@rnmapbox/maps",
+      //   {
+      //     RNMapboxMapsImpl: "mapbox",
+      //     RNMapboxMapsDownloadToken: "sk.eyJ1IjoibWphY3F1b3QiLCJhIjoiY21tdmRwcXVuMDJsbjJycHBrcXV6czl3dyJ9.pUiimStUZ4mIXhkErun2MQ"
+      //   }
+      // ]
     ],
     experiments: {
       typedRoutes: true
