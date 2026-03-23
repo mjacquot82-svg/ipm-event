@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Platform,
   Image,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -88,6 +89,10 @@ export default function HomeScreen() {
     return `in ${minutes}m`;
   };
 
+  const openLink = (url: string) => {
+    Linking.openURL(url);
+  };
+
   const renderSessionCard = (session: Session, showTimeUntil: boolean = false) => {
     const location = getLocationById(session.location_id);
     const typeColor = location ? getLocationTypeColor(location.type) : colors.primary;
@@ -145,9 +150,41 @@ export default function HomeScreen() {
         {/* Header Banner Image */}
         <View style={styles.headerBanner}>
           <Image
-            source={require('../../assets/images/ipm-banner-cropped.png')}
+            source={require('../../assets/images/ipm-hero-banner.png')}
             style={styles.bannerImage}
           />
+        </View>
+
+        {/* External Links - Buy Tickets, Let's Camp, Souvenirs */}
+        <View style={styles.section}>
+          <View style={styles.externalLinksRow}>
+            <TouchableOpacity
+              style={[styles.externalLinkCard, { backgroundColor: colors.primary }]}
+              onPress={() => openLink('https://www.tix123.com/tickets/?code=IPMRE26')}
+              activeOpacity={0.8}
+            >
+              <Feather name="ticket" size={22} color="#FFFFFF" />
+              <Text style={styles.externalLinkText}>Buy Tickets</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.externalLinkCard, { backgroundColor: colors.field }]}
+              onPress={() => openLink('https://letscamp.ca/camps/ipm-2026')}
+              activeOpacity={0.8}
+            >
+              <Feather name="sunrise" size={22} color="#FFFFFF" />
+              <Text style={styles.externalLinkText}>Let's Camp</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.externalLinkCard, { backgroundColor: colors.accent }]}
+              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/')}
+              activeOpacity={0.8}
+            >
+              <Feather name="shopping-bag" size={22} color="#FFFFFF" />
+              <Text style={styles.externalLinkText}>Souvenirs</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Happening Now Section */}
