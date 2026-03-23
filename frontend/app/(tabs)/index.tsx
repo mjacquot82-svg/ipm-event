@@ -349,29 +349,6 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Stats */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Event Overview</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{sessions.length}</Text>
-              <Text style={styles.statLabel}>Events</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>
-                {locations.filter((l) => l.type === 'field').length}
-              </Text>
-              <Text style={styles.statLabel}>Fields</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>
-                {locations.filter((l) => l.type === 'vendor').length}
-              </Text>
-              <Text style={styles.statLabel}>Exhibitors</Text>
-            </View>
-          </View>
-        </View>
-
         {/* Starred Sessions Banner */}
         {favorites.length > 0 && (
           <View style={styles.section}>
