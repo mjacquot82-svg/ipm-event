@@ -6,12 +6,15 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 import uuid
 from datetime import datetime
 import httpx
 import csv
 from io import StringIO
+import asyncio
+import hashlib
+import json
 
 
 ROOT_DIR = Path(__file__).parent
@@ -28,6 +31,10 @@ EVENTS_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{EVENTS_SHEET_ID
 
 VENDORS_SHEET_ID = "12FhDHOZDUaI41oZGeIvSopFxlfFi7X8OxKNSVaBmBgg"
 VENDORS_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{VENDORS_SHEET_ID}/export?format=csv"
+
+# Cron job settings
+CHECK_INTERVAL_SECONDS = 300  # Check every 5 minutes
+cached_events_hash: str = ""
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -260,6 +267,164 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ============== CRON JOB FOR EVENT CHANGE DETECTION ==============
+
+async def fetch_events_data() -> tuple[List[dict], str]:
+    """Fetch events from Google Sheet and return data with hash"""
+    try:
+        async with httpx.AsyncClient(follow_redirects=True) as http_client:
+            response = await http_client.get(EVENTS_SHEET_CSV_URL, timeout=30.0)
+            response.raise_for_status()
+        
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        
+        events = []
+        for idx, row in enumerate(reader):
+            entry_type = row.get('Entry_Type', '').strip()
+            if entry_type.lower() != 'event':
+                continue
+            
+            event_id = f"gs_{idx}_{row.get('Name', '').replace(' ', '_').lower()}"
+            events.append({
+                'id': event_id,
+                'title': row.get('Name', '').strip(),
+                'description': row.get('Description', '').strip(),
+                'start_date': row.get('Start Date', '').strip(),
+                'start_time': row.get('Event Start', '').strip(),
+                'end_time': row.get('Event End', '').strip(),
+                'category': row.get('Category', '').strip(),
+                'days_active': row.get('Days_Active', '').strip(),
+            })
+        
+        # Create hash of the data to detect changes
+        data_str = json.dumps(events, sort_keys=True)
+        data_hash = hashlib.md5(data_str.encode()).hexdigest()
+        
+        return events, data_hash
+    except Exception as e:
+        logger.error(f"Error fetching events for cron: {e}")
+        return [], ""
+
+async def send_expo_push_notification(push_token: str, title: str, body: str, data: dict = None):
+    """Send push notification via Expo's push service"""
+    try:
+        message = {
+            "to": push_token,
+            "sound": "default",
+            "title": title,
+            "body": body,
+            "data": data or {},
+        }
+        
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.post(
+                "https://exp.host/--/api/v2/push/send",
+                json=message,
+                headers={"Content-Type": "application/json"},
+                timeout=10.0
+            )
+            if response.status_code == 200:
+                logger.info(f"Notification sent to {push_token[:20]}...")
+            else:
+                logger.warning(f"Failed to send notification: {response.text}")
+    except Exception as e:
+        logger.error(f"Error sending push notification: {e}")
+
+async def check_for_event_changes():
+    """Check Google Sheet for changes and notify users"""
+    global cached_events_hash
+    
+    logger.info("Cron: Checking for event changes...")
+    
+    events, new_hash = await fetch_events_data()
+    
+    if not new_hash:
+        logger.warning("Cron: Could not fetch events data")
+        return
+    
+    # First run - just cache the hash
+    if not cached_events_hash:
+        cached_events_hash = new_hash
+        # Store events in DB for comparison
+        await db.cached_events.delete_many({})
+        for event in events:
+            await db.cached_events.insert_one(event)
+        logger.info(f"Cron: Initial cache set with {len(events)} events")
+        return
+    
+    # Check if hash changed
+    if new_hash == cached_events_hash:
+        logger.info("Cron: No changes detected")
+        return
+    
+    logger.info("Cron: Changes detected! Finding affected events...")
+    
+    # Find what changed
+    old_events = await db.cached_events.find().to_list(1000)
+    old_events_dict = {e['id']: e for e in old_events}
+    
+    changed_event_ids = []
+    for event in events:
+        old_event = old_events_dict.get(event['id'])
+        if old_event:
+            # Check if any field changed
+            for key in ['title', 'description', 'start_date', 'start_time', 'end_time', 'days_active']:
+                if event.get(key) != old_event.get(key):
+                    changed_event_ids.append(event['id'])
+                    logger.info(f"Cron: Event '{event['title']}' changed (field: {key})")
+                    break
+    
+    # Update cache
+    cached_events_hash = new_hash
+    await db.cached_events.delete_many({})
+    for event in events:
+        await db.cached_events.insert_one(event)
+    
+    if not changed_event_ids:
+        logger.info("Cron: Hash changed but no event content changes detected")
+        return
+    
+    # Find users who starred these events and notify them
+    for event_id in changed_event_ids:
+        # Find the event details
+        event_details = next((e for e in events if e['id'] == event_id), None)
+        if not event_details:
+            continue
+        
+        # Find users who starred this event
+        starred_users = await db.user_starred_events.find({
+            "starred_event_ids": event_id
+        }).to_list(1000)
+        
+        logger.info(f"Cron: Notifying {len(starred_users)} users about '{event_details['title']}'")
+        
+        for user in starred_users:
+            push_token = user.get('push_token')
+            if push_token:
+                await send_expo_push_notification(
+                    push_token=push_token,
+                    title="Event Updated! 📅",
+                    body=f"'{event_details['title']}' has been updated. Check the app for details.",
+                    data={"eventId": event_id, "type": "event_update"}
+                )
+
+async def cron_scheduler():
+    """Background task that runs the event check periodically"""
+    while True:
+        try:
+            await check_for_event_changes()
+        except Exception as e:
+            logger.error(f"Cron scheduler error: {e}")
+        
+        await asyncio.sleep(CHECK_INTERVAL_SECONDS)
+
+@app.on_event("startup")
+async def startup_event():
+    """Start the cron job when the server starts"""
+    logger.info("Starting cron scheduler for event change detection...")
+    asyncio.create_task(cron_scheduler())
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

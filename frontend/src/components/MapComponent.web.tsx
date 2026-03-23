@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   legendContainer: {
     position: 'absolute',
     left: 16,
-    bottom: 80,
+    bottom: 120,
     backgroundColor: colors.mapOverlay,
     padding: 12,
     borderRadius: 16,
