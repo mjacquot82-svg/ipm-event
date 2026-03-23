@@ -22,9 +22,12 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Google Sheet URL (public CSV export)
-GOOGLE_SHEET_ID = "1tnfBd7Ffg5S4hyk5c5CpB-VGkJcSnLpdsKGbNJIiQCs"
-GOOGLE_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv"
+# Google Sheet URLs (public CSV export)
+EVENTS_SHEET_ID = "1tnfBd7Ffg5S4hyk5c5CpB-VGkJcSnLpdsKGbNJIiQCs"
+EVENTS_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{EVENTS_SHEET_ID}/export?format=csv"
+
+VENDORS_SHEET_ID = "12FhDHOZDUaI41oZGeIvSopFxlfFi7X8OxKNSVaBmBgg"
+VENDORS_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{VENDORS_SHEET_ID}/export?format=csv"
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -60,6 +63,27 @@ class ScheduleResponse(BaseModel):
     last_updated: datetime
     total_count: int
 
+class Vendor(BaseModel):
+    id: str
+    name: str
+    type: str
+    location: str
+    hours_of_operation: str
+    days_of_operation: str
+
+class VendorsResponse(BaseModel):
+    vendors: List[Vendor]
+    last_updated: datetime
+    total_count: int
+
+class PushTokenRegister(BaseModel):
+    push_token: str
+    device_id: str
+
+class StarredEventsUpdate(BaseModel):
+    push_token: str
+    starred_event_ids: List[str]
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
@@ -82,7 +106,7 @@ async def get_schedule():
     """Fetch schedule events from Google Sheets (only Event type, not Locations)"""
     try:
         async with httpx.AsyncClient(follow_redirects=True) as http_client:
-            response = await http_client.get(GOOGLE_SHEET_CSV_URL, timeout=30.0)
+            response = await http_client.get(EVENTS_SHEET_CSV_URL, timeout=30.0)
             response.raise_for_status()
             
         # Parse CSV
@@ -133,6 +157,91 @@ async def get_schedule():
     except Exception as e:
         logger.error(f"Error processing schedule: {e}")
         raise HTTPException(status_code=500, detail="Error processing schedule data")
+
+@api_router.get("/vendors", response_model=VendorsResponse)
+async def get_vendors():
+    """Fetch vendors from Google Sheets"""
+    try:
+        async with httpx.AsyncClient(follow_redirects=True) as http_client:
+            response = await http_client.get(VENDORS_SHEET_CSV_URL, timeout=30.0)
+            response.raise_for_status()
+            
+        # Parse CSV
+        csv_content = response.text
+        reader = csv.DictReader(StringIO(csv_content))
+        
+        vendors = []
+        for idx, row in enumerate(reader):
+            # Skip empty rows
+            name = row.get('Name', '').strip()
+            if not name:
+                continue
+            
+            vendor_id = f"vendor_{idx}_{name.replace(' ', '_').lower()}"
+            
+            vendor = Vendor(
+                id=vendor_id,
+                name=name,
+                type=row.get('Type', '').strip(),
+                location=row.get('Location', '').strip(),
+                hours_of_operation=row.get('Hours of Operation', '').strip(),
+                days_of_operation=row.get('Days of Operation', '').strip(),
+            )
+            vendors.append(vendor)
+        
+        return VendorsResponse(
+            vendors=vendors,
+            last_updated=datetime.utcnow(),
+            total_count=len(vendors)
+        )
+        
+    except httpx.HTTPError as e:
+        logger.error(f"Failed to fetch Vendors Sheet: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch vendors data")
+    except Exception as e:
+        logger.error(f"Error processing vendors: {e}")
+        raise HTTPException(status_code=500, detail="Error processing vendors data")
+
+@api_router.post("/register-push-token")
+async def register_push_token(data: PushTokenRegister):
+    """Register a device's push notification token"""
+    try:
+        # Upsert the token (update if exists, insert if not)
+        await db.push_tokens.update_one(
+            {"device_id": data.device_id},
+            {
+                "$set": {
+                    "push_token": data.push_token,
+                    "device_id": data.device_id,
+                    "updated_at": datetime.utcnow()
+                }
+            },
+            upsert=True
+        )
+        return {"status": "success", "message": "Push token registered"}
+    except Exception as e:
+        logger.error(f"Error registering push token: {e}")
+        raise HTTPException(status_code=500, detail="Failed to register push token")
+
+@api_router.post("/update-starred-events")
+async def update_starred_events(data: StarredEventsUpdate):
+    """Update the list of starred events for a user (for notification tracking)"""
+    try:
+        await db.user_starred_events.update_one(
+            {"push_token": data.push_token},
+            {
+                "$set": {
+                    "push_token": data.push_token,
+                    "starred_event_ids": data.starred_event_ids,
+                    "updated_at": datetime.utcnow()
+                }
+            },
+            upsert=True
+        )
+        return {"status": "success", "message": "Starred events updated"}
+    except Exception as e:
+        logger.error(f"Error updating starred events: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update starred events")
 
 # Include the router in the main app
 app.include_router(api_router)

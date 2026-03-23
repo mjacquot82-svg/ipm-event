@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import colors from '../../src/theme/colors';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
+import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
 
 // API Event type from Google Sheets
 interface ScheduleEvent {
@@ -94,11 +95,15 @@ export default function ScheduleScreen() {
   const loadFavorites = async () => {
     const storedFavorites = await getFavorites();
     setFavorites(storedFavorites);
+    // Sync with backend for notifications
+    syncStarredEventsWithBackend(storedFavorites);
   };
 
   const handleToggleFavorite = async (eventId: string) => {
     const result = await toggleFavorite(eventId);
     setFavorites(result.favorites);
+    // Sync with backend for notifications
+    syncStarredEventsWithBackend(result.favorites);
   };
 
   const onRefresh = () => {
