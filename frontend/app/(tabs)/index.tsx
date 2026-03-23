@@ -275,6 +275,18 @@ export default function HomeScreen() {
               <Text style={styles.actionTitle}>Souvenirs</Text>
               <Text style={styles.actionSubtitle}>Shop merchandise</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/(tabs)/schedule')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.utility }]}>
+                <Feather name="clipboard" size={24} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>My Itinerary</Text>
+              <Text style={styles.actionSubtitle}>Your starred events</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
