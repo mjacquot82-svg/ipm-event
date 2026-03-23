@@ -112,29 +112,6 @@ export default function AboutScreen() {
           </View>
         </View>
 
-        {/* Event Stats */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>This Year's Event</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{sessions.length}</Text>
-              <Text style={styles.statLabel}>Events</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>
-                {locations.filter((l) => l.type === 'field').length}
-              </Text>
-              <Text style={styles.statLabel}>Fields</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>
-                {locations.filter((l) => l.type === 'vendor').length}
-              </Text>
-              <Text style={styles.statLabel}>Exhibitors</Text>
-            </View>
-          </View>
-        </View>
-
         {/* Heritage Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Our Heritage</Text>
@@ -147,14 +124,6 @@ export default function AboutScreen() {
               From horse-drawn plows to modern machinery, we honor the past while 
               embracing the future of farming.
             </Text>
-          </View>
-        </View>
-
-        {/* Contact/Links */}
-        <View style={styles.section}>
-          <View style={styles.footerBadge}>
-            <Text style={styles.footerText}>Bruce County • Ontario • Canada</Text>
-            <Text style={styles.footerTagline}>Where Tradition Meets Innovation</Text>
           </View>
         </View>
 
