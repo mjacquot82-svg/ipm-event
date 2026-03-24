@@ -27,11 +27,13 @@ const MAP_HEIGHT = SCREEN_HEIGHT - 180;
 
 interface MapComponentProps {
   highlightedLocation?: string | null;
+  showOnlyHighlighted?: boolean;
   onLocationSelect?: (location: MapLocation) => void;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ 
   highlightedLocation,
+  showOnlyHighlighted = false,
   onLocationSelect 
 }) => {
   const [selectedPin, setSelectedPin] = useState<MapLocation | null>(null);
@@ -133,6 +135,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
   // Get unique categories for legend
   const categories = [...new Set(mapLocations.map(loc => loc.category))];
 
+  // Filter pins based on showOnlyHighlighted mode
+  const highlightedLocationData = highlightedLocation ? findLocationByName(highlightedLocation) : null;
+  const pinsToShow = showOnlyHighlighted && highlightedLocationData
+    ? [highlightedLocationData]
+    : mapLocations;
+
   return (
     <View style={styles.container}>
       {/* Map with pins */}
@@ -153,8 +161,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
             resizeMode="cover"
           />
           
-          {/* Render all pins */}
-          {mapLocations.map(renderPin)}
+          {/* Render pins (filtered if showOnlyHighlighted) */}
+          {pinsToShow.map(renderPin)}
         </View>
       </ScrollView>
 

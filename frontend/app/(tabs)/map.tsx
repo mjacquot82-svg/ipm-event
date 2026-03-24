@@ -8,12 +8,15 @@ import colors from '../../src/theme/colors';
 
 export default function MapScreen() {
   // Get location parameter from navigation
-  const { location } = useLocalSearchParams<{ location?: string }>();
+  const { location, showOnly } = useLocalSearchParams<{ location?: string; showOnly?: string }>();
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
-      <MapComponent highlightedLocation={location || null} />
+      <MapComponent 
+        highlightedLocation={location || null} 
+        showOnlyHighlighted={showOnly === 'true'}
+      />
     </View>
   );
 }

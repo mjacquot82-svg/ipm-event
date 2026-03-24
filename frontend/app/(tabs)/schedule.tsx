@@ -481,7 +481,7 @@ export default function ScheduleScreen() {
                         setShowEventModal(false);
                         router.push({
                           pathname: '/(tabs)/map',
-                          params: { location: selectedEvent.location_name }
+                          params: { location: selectedEvent.location_name, showOnly: 'true' }
                         });
                       }}
                       activeOpacity={0.7}

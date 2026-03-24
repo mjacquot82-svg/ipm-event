@@ -899,7 +899,7 @@ export default function HomeScreen() {
                           setShowVendors(false);
                           router.push({
                             pathname: '/(tabs)/map',
-                            params: { location: vendor.location }
+                            params: { location: vendor.location, showOnly: 'true' }
                           });
                         }}
                       >
