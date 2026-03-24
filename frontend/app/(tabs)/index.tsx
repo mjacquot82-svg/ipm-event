@@ -40,6 +40,8 @@ export default function HomeScreen() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showItinerary, setShowItinerary] = useState(false);
   const [apiEvents, setApiEvents] = useState<any[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [showEventDetails, setShowEventDetails] = useState(false);
 
   // Fetch events from API
   const fetchApiEvents = async () => {
@@ -457,7 +459,16 @@ export default function HomeScreen() {
                         const typeColor = colors.primary;
                         
                         return (
-                          <View key={event.id} style={styles.itineraryCard}>
+                          <TouchableOpacity 
+                            key={event.id} 
+                            style={styles.itineraryCard}
+                            onPress={() => {
+                              setSelectedEvent(event);
+                              setShowItinerary(false);
+                              setTimeout(() => setShowEventDetails(true), 300);
+                            }}
+                            activeOpacity={0.7}
+                          >
                             <View style={[styles.itineraryColorBar, { backgroundColor: typeColor }]} />
                             <View style={styles.itineraryCardContent}>
                               <View style={styles.itineraryTimeRow}>
@@ -467,22 +478,25 @@ export default function HomeScreen() {
                                 </Text>
                               </View>
                               <Text style={styles.itineraryTitle}>{event.title}</Text>
-                              {event.days_active && (
+                              {event.location_name && (
                                 <View style={styles.itineraryLocationRow}>
-                                  <Feather name="calendar" size={12} color={typeColor} />
+                                  <Feather name="map-pin" size={12} color={typeColor} />
                                   <Text style={[styles.itineraryLocation, { color: typeColor }]}>
-                                    {event.days_active}
+                                    {event.location_name}
                                   </Text>
                                 </View>
                               )}
                             </View>
                             <TouchableOpacity 
                               style={styles.removeButton}
-                              onPress={() => handleRemoveFromItinerary(event.id)}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleRemoveFromItinerary(event.id);
+                              }}
                             >
                               <Feather name="x-circle" size={20} color={colors.textMuted} />
                             </TouchableOpacity>
-                          </View>
+                          </TouchableOpacity>
                         );
                       })}
                     </View>
@@ -502,6 +516,150 @@ export default function HomeScreen() {
                 </>
               )}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Event Details Modal */}
+      <Modal
+        visible={showEventDetails}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEventDetails(false)}
+      >
+        <View style={styles.eventModalOverlay}>
+          <View style={styles.eventModalContent}>
+            {selectedEvent && (
+              <>
+                {/* Modal Header */}
+                <View style={styles.eventModalHeader}>
+                  <View style={styles.eventModalTitleContainer}>
+                    <Text style={styles.eventModalTitle}>{selectedEvent.title}</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        handleRemoveFromItinerary(selectedEvent.id);
+                      }}
+                      style={styles.eventModalStarButton}
+                    >
+                      <Feather
+                        name="star"
+                        size={24}
+                        color={favorites.includes(selectedEvent.id) ? colors.accent : colors.textMuted}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setShowEventDetails(false)}
+                    style={styles.eventModalCloseButton}
+                  >
+                    <Feather name="x" size={24} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Modal Body */}
+                <ScrollView style={styles.eventModalBody} showsVerticalScrollIndicator={false}>
+                  {/* Time & Date */}
+                  <View style={styles.eventDetailSection}>
+                    <View style={styles.eventDetailRow}>
+                      <View style={styles.eventDetailIcon}>
+                        <Feather name="clock" size={20} color={colors.primary} />
+                      </View>
+                      <View style={styles.eventDetailTextContainer}>
+                        <Text style={styles.eventDetailLabel}>Time</Text>
+                        <Text style={styles.eventDetailValue}>
+                          {selectedEvent.start_time} - {selectedEvent.end_time}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.eventDetailRow}>
+                      <View style={styles.eventDetailIcon}>
+                        <Feather name="calendar" size={20} color={colors.primary} />
+                      </View>
+                      <View style={styles.eventDetailTextContainer}>
+                        <Text style={styles.eventDetailLabel}>Date</Text>
+                        <Text style={styles.eventDetailValue}>
+                          {selectedEvent.start_date}
+                        </Text>
+                        {selectedEvent.days_active && (
+                          <Text style={styles.eventDetailSubValue}>
+                            Active: {selectedEvent.days_active}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Location */}
+                  {selectedEvent.location_name && (
+                    <View style={styles.eventDetailSection}>
+                      <View style={styles.eventDetailRow}>
+                        <View style={styles.eventDetailIcon}>
+                          <Feather name="map-pin" size={20} color={colors.field} />
+                        </View>
+                        <View style={styles.eventDetailTextContainer}>
+                          <Text style={styles.eventDetailLabel}>Location</Text>
+                          <Text style={styles.eventDetailValue}>
+                            {selectedEvent.location_name}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Category */}
+                  {selectedEvent.category && (
+                    <View style={styles.eventDetailSection}>
+                      <View style={styles.eventDetailRow}>
+                        <View style={styles.eventDetailIcon}>
+                          <Feather name="tag" size={20} color={colors.accent} />
+                        </View>
+                        <View style={styles.eventDetailTextContainer}>
+                          <Text style={styles.eventDetailLabel}>Category</Text>
+                          <Text style={styles.eventDetailValue}>
+                            {selectedEvent.category}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Description */}
+                  {selectedEvent.description && (
+                    <View style={styles.eventDescriptionSection}>
+                      <Text style={styles.eventDescriptionLabel}>Description</Text>
+                      <Text style={styles.eventDescriptionText}>
+                        {selectedEvent.description}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={{ height: 40 }} />
+                </ScrollView>
+
+                {/* Footer Button */}
+                <View style={styles.eventModalFooter}>
+                  <TouchableOpacity
+                    style={[
+                      styles.eventModalButton,
+                      favorites.includes(selectedEvent.id) && styles.eventModalButtonRemove
+                    ]}
+                    onPress={() => {
+                      handleRemoveFromItinerary(selectedEvent.id);
+                    }}
+                  >
+                    <Feather
+                      name={favorites.includes(selectedEvent.id) ? 'check' : 'plus'}
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.eventModalButtonText}>
+                      {favorites.includes(selectedEvent.id) ? 'In Itinerary' : 'Add to Itinerary'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -917,5 +1075,126 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: 14,
     fontWeight: '500',
+  },
+  // Event Details Modal styles
+  eventModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  eventModalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    minHeight: '50%',
+  },
+  eventModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  eventModalTitleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  eventModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  eventModalStarButton: {
+    padding: 4,
+  },
+  eventModalCloseButton: {
+    padding: 4,
+  },
+  eventModalBody: {
+    flex: 1,
+    padding: 20,
+  },
+  eventDetailSection: {
+    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+  },
+  eventDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  eventDetailIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surfaceHighlight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  eventDetailTextContainer: {
+    flex: 1,
+  },
+  eventDetailLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: 2,
+  },
+  eventDetailValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  eventDetailSubValue: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  eventDescriptionSection: {
+    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+  },
+  eventDescriptionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  eventDescriptionText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    lineHeight: 22,
+  },
+  eventModalFooter: {
+    padding: 20,
+    paddingBottom: 34,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  eventModalButton: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 16,
+    gap: 8,
+  },
+  eventModalButtonRemove: {
+    backgroundColor: colors.field,
+  },
+  eventModalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
