@@ -42,6 +42,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Reset showAllPins when showOnlyHighlighted prop changes
+  useEffect(() => {
+    setShowAllPins(!showOnlyHighlighted);
+  }, [showOnlyHighlighted]);
+
   // Find and highlight location when prop changes
   useEffect(() => {
     if (highlightedLocation) {
@@ -237,16 +242,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
           onPress={() => setShowAllPins(true)}
           activeOpacity={0.8}
         >
-          <Feather name="layers" size={18} color="#FFFFFF" />
+          <Feather name="layers" size={20} color="#FFFFFF" />
           <Text style={styles.showAllButtonText}>Show All Locations</Text>
         </TouchableOpacity>
       )}
 
-      {/* Zoom hint */}
-      <View style={styles.zoomHint}>
-        <Feather name="zoom-in" size={16} color={colors.textMuted} />
-        <Text style={styles.zoomHintText}>Pinch to zoom • Tap pins for info</Text>
-      </View>
+      {/* Zoom hint - only show when NOT in filtered mode */}
+      {!isFilteredMode && (
+        <View style={styles.zoomHint}>
+          <Feather name="zoom-in" size={16} color={colors.textMuted} />
+          <Text style={styles.zoomHintText}>Pinch to zoom • Tap pins for info</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -447,27 +454,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
   },
-  // Show All Locations button
+  // Show All Locations button - FULL WIDTH at bottom
   showAllButton: {
     position: 'absolute',
-    top: 16,
+    bottom: 90,
+    left: 16,
     right: 16,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
-    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
   },
   showAllButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
 });
