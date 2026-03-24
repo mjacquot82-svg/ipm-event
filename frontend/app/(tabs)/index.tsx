@@ -142,14 +142,15 @@ export default function HomeScreen() {
       });
 
       if (response.ok) {
+        // Close the form immediately
+        setShowSOSForm(false);
+        setSOSForm(initialSOSForm);
+        fetchActiveSOSReports();
+        
+        // Then show confirmation
         Alert.alert(
           'Alert Sent',
-          'Missing person alert has been sent to all event attendees. Please also notify event staff immediately.',
-          [{ text: 'OK', onPress: () => {
-            setShowSOSForm(false);
-            setSOSForm(initialSOSForm);
-            fetchActiveSOSReports();
-          }}]
+          'Missing person alert has been sent to all event attendees. Please also notify event staff immediately.'
         );
       } else {
         Alert.alert('Error', 'Failed to send alert. Please try again or contact event staff directly.');
