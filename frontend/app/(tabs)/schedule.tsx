@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
@@ -42,6 +42,7 @@ interface ScheduleResponse {
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export default function ScheduleScreen() {
+  const router = useRouter();
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -474,7 +475,17 @@ export default function ScheduleScreen() {
 
                   {/* Location */}
                   {selectedEvent.location_name && (
-                    <View style={styles.detailSection}>
+                    <TouchableOpacity 
+                      style={styles.detailSection}
+                      onPress={() => {
+                        setShowEventModal(false);
+                        router.push({
+                          pathname: '/(tabs)/map',
+                          params: { location: selectedEvent.location_name }
+                        });
+                      }}
+                      activeOpacity={0.7}
+                    >
                       <View style={styles.detailRow}>
                         <View style={styles.detailIcon}>
                           <Feather name="map-pin" size={20} color={colors.field} />
@@ -485,8 +496,9 @@ export default function ScheduleScreen() {
                             {selectedEvent.location_name}
                           </Text>
                         </View>
+                        <Feather name="external-link" size={16} color={colors.primary} />
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   )}
 
                   {/* Category */}

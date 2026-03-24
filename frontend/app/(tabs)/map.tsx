@@ -2,15 +2,18 @@
 
 import React from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams } from 'expo-router';
 import MapComponent from '../../src/components/MapComponent';
 import colors from '../../src/theme/colors';
 
 export default function MapScreen() {
+  // Get location parameter from navigation
+  const { location } = useLocalSearchParams<{ location?: string }>();
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-      <MapComponent />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+      <MapComponent highlightedLocation={location || null} />
     </View>
   );
 }

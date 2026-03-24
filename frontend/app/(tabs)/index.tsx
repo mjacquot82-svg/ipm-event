@@ -892,10 +892,20 @@ export default function HomeScreen() {
                       </View>
                     </View>
                     {vendor.location && (
-                      <View style={styles.vendorRow}>
-                        <Feather name="map-pin" size={14} color={colors.textMuted} />
-                        <Text style={styles.vendorDetail}>{vendor.location}</Text>
-                      </View>
+                      <TouchableOpacity 
+                        style={styles.vendorRow}
+                        onPress={() => {
+                          setShowVendors(false);
+                          router.push({
+                            pathname: '/(tabs)/map',
+                            params: { location: vendor.location }
+                          });
+                        }}
+                      >
+                        <Feather name="map-pin" size={14} color={colors.primary} />
+                        <Text style={[styles.vendorDetail, { color: colors.primary }]}>{vendor.location}</Text>
+                        <Feather name="external-link" size={12} color={colors.primary} style={{ marginLeft: 4 }} />
+                      </TouchableOpacity>
                     )}
                     {vendor.hours_of_operation && (
                       <View style={styles.vendorRow}>
