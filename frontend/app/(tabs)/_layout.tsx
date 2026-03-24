@@ -11,9 +11,9 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   
   // Use larger padding for devices with home indicators/gesture navigation
-  // Minimum 34px for iPhone X+ series, or device's actual bottom inset
-  const bottomInset = Math.max(insets.bottom, 34);
-  const tabBarHeight = 56 + bottomInset;
+  // Minimum 20px for web, or device's actual bottom inset for native
+  const bottomInset = Platform.OS === 'web' ? 10 : Math.max(insets.bottom, 20);
+  const tabBarHeight = 60 + bottomInset;
 
   return (
     <Tabs
@@ -25,11 +25,16 @@ export default function TabLayout() {
           borderTopColor: colors.border,
           height: tabBarHeight,
           paddingBottom: bottomInset,
-          paddingTop: 6,
+          paddingTop: 8,
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
         },
         tabBarActiveTintColor: colors.tabActive,
         tabBarInactiveTintColor: colors.tabInactive,

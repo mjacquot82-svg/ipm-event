@@ -148,7 +148,7 @@ async def get_schedule():
                 latitude=lat,
                 longitude=lng,
                 days_active=row.get('Days_Active', '').strip(),
-                location_name=None  # Can be added later if needed
+                location_name=row.get('Location', '').strip()
             )
             events.append(event)
         

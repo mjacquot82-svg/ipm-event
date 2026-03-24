@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -49,6 +50,8 @@ export default function ScheduleScreen() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
+  const [showEventModal, setShowEventModal] = useState(false);
 
   // Fetch schedule from API
   const fetchSchedule = async (isRefresh = false) => {
@@ -316,7 +319,15 @@ export default function ScheduleScreen() {
                 const isFavorite = favorites.includes(event.id);
 
                 return (
-                  <View key={event.id} style={styles.eventCard}>
+                  <TouchableOpacity 
+                    key={event.id} 
+                    style={styles.eventCard}
+                    onPress={() => {
+                      setSelectedEvent(event);
+                      setShowEventModal(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
                     <View
                       style={[
                         styles.eventColorBar,
@@ -337,19 +348,28 @@ export default function ScheduleScreen() {
                           </Text>
                         </View>
                         <TouchableOpacity
-                          onPress={() => handleToggleFavorite(event.id)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleToggleFavorite(event.id);
+                          }}
                           style={styles.favoriteButton}
                         >
                           <Feather
                             name={isFavorite ? 'star' : 'star'}
                             size={20}
                             color={isFavorite ? colors.accent : colors.textMuted}
-                            style={isFavorite ? { fill: colors.accent } : {}}
                           />
                         </TouchableOpacity>
                       </View>
 
                       <Text style={styles.eventTitle}>{event.title}</Text>
+
+                      {event.location_name ? (
+                        <View style={styles.locationBadge}>
+                          <Feather name="map-pin" size={12} color={colors.primary} />
+                          <Text style={styles.locationBadgeText}>{event.location_name}</Text>
+                        </View>
+                      ) : null}
 
                       {event.description ? (
                         <Text style={styles.eventDescription} numberOfLines={2}>
@@ -370,21 +390,9 @@ export default function ScheduleScreen() {
                             </Text>
                           </View>
                         )}
-                        {event.latitude && event.longitude && (
-                          <View style={styles.metaItem}>
-                            <Feather
-                              name="map-pin"
-                              size={12}
-                              color={colors.primary}
-                            />
-                            <Text style={[styles.metaText, { color: colors.primary }]}>
-                              View on Map
-                            </Text>
-                          </View>
-                        )}
                       </View>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -393,6 +401,150 @@ export default function ScheduleScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Event Details Modal */}
+      <Modal
+        visible={showEventModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEventModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {selectedEvent && (
+              <>
+                {/* Modal Header */}
+                <View style={styles.modalHeader}>
+                  <View style={styles.modalTitleContainer}>
+                    <Text style={styles.modalTitle}>{selectedEvent.title}</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        handleToggleFavorite(selectedEvent.id);
+                      }}
+                      style={styles.modalStarButton}
+                    >
+                      <Feather
+                        name="star"
+                        size={24}
+                        color={favorites.includes(selectedEvent.id) ? colors.accent : colors.textMuted}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setShowEventModal(false)}
+                    style={styles.modalCloseButton}
+                  >
+                    <Feather name="x" size={24} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Modal Body */}
+                <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                  {/* Time & Date */}
+                  <View style={styles.detailSection}>
+                    <View style={styles.detailRow}>
+                      <View style={styles.detailIcon}>
+                        <Feather name="clock" size={20} color={colors.primary} />
+                      </View>
+                      <View style={styles.detailTextContainer}>
+                        <Text style={styles.detailLabel}>Time</Text>
+                        <Text style={styles.detailValue}>
+                          {selectedEvent.start_time} - {selectedEvent.end_time}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.detailRow}>
+                      <View style={styles.detailIcon}>
+                        <Feather name="calendar" size={20} color={colors.primary} />
+                      </View>
+                      <View style={styles.detailTextContainer}>
+                        <Text style={styles.detailLabel}>Date</Text>
+                        <Text style={styles.detailValue}>
+                          {selectedEvent.start_date}
+                        </Text>
+                        {selectedEvent.days_active && (
+                          <Text style={styles.detailSubValue}>
+                            Active: {selectedEvent.days_active}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Location */}
+                  {selectedEvent.location_name && (
+                    <View style={styles.detailSection}>
+                      <View style={styles.detailRow}>
+                        <View style={styles.detailIcon}>
+                          <Feather name="map-pin" size={20} color={colors.field} />
+                        </View>
+                        <View style={styles.detailTextContainer}>
+                          <Text style={styles.detailLabel}>Location</Text>
+                          <Text style={styles.detailValue}>
+                            {selectedEvent.location_name}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Category */}
+                  {selectedEvent.category && (
+                    <View style={styles.detailSection}>
+                      <View style={styles.detailRow}>
+                        <View style={styles.detailIcon}>
+                          <Feather name="tag" size={20} color={colors.accent} />
+                        </View>
+                        <View style={styles.detailTextContainer}>
+                          <Text style={styles.detailLabel}>Category</Text>
+                          <Text style={styles.detailValue}>
+                            {selectedEvent.category}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Description */}
+                  {selectedEvent.description && (
+                    <View style={styles.descriptionSection}>
+                      <Text style={styles.descriptionLabel}>Description</Text>
+                      <Text style={styles.descriptionText}>
+                        {selectedEvent.description}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={{ height: 40 }} />
+                </ScrollView>
+
+                {/* Add to Itinerary Button */}
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity
+                    style={[
+                      styles.addToItineraryButton,
+                      favorites.includes(selectedEvent.id) && styles.removeFromItineraryButton
+                    ]}
+                    onPress={() => {
+                      handleToggleFavorite(selectedEvent.id);
+                    }}
+                  >
+                    <Feather
+                      name={favorites.includes(selectedEvent.id) ? 'check' : 'plus'}
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.addToItineraryText}>
+                      {favorites.includes(selectedEvent.id) ? 'Added to Itinerary' : 'Add to Itinerary'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -608,5 +760,137 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 120,
+  },
+  locationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 6,
+  },
+  locationBadgeText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    minHeight: '50%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  modalStarButton: {
+    padding: 4,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalBody: {
+    flex: 1,
+    padding: 20,
+  },
+  detailSection: {
+    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  detailIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surfaceHighlight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  detailTextContainer: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  detailSubValue: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  descriptionSection: {
+    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+  },
+  descriptionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  descriptionText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    lineHeight: 22,
+  },
+  modalFooter: {
+    padding: 20,
+    paddingBottom: 34,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  addToItineraryButton: {
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 16,
+    gap: 8,
+  },
+  removeFromItineraryButton: {
+    backgroundColor: colors.field,
+  },
+  addToItineraryText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
