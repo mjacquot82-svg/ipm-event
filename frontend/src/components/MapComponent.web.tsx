@@ -38,6 +38,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 }) => {
   const [selectedPin, setSelectedPin] = useState<MapLocation | null>(null);
   const [showLegend, setShowLegend] = useState(true);
+  const [showAllPins, setShowAllPins] = useState(!showOnlyHighlighted);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -134,11 +135,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
   // Get unique categories for legend
   const categories = [...new Set(mapLocations.map(loc => loc.category))];
 
-  // Filter pins based on showOnlyHighlighted mode
+  // Filter pins based on showOnlyHighlighted mode and showAllPins toggle
   const highlightedLocationData = highlightedLocation ? findLocationByName(highlightedLocation) : null;
-  const pinsToShow = showOnlyHighlighted && highlightedLocationData
+  const pinsToShow = (showOnlyHighlighted && !showAllPins && highlightedLocationData)
     ? [highlightedLocationData]
     : mapLocations;
+
+  // Check if we're in filtered mode (showing only one pin and have the option to show all)
+  const isFilteredMode = showOnlyHighlighted && highlightedLocationData && !showAllPins;
 
   return (
     <View style={styles.container}>
@@ -224,6 +228,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
           </>
         )}
       </TouchableOpacity>
+
+      {/* Show All Locations button - only visible when in filtered mode */}
+      {isFilteredMode && (
+        <TouchableOpacity 
+          style={styles.showAllButton}
+          onPress={() => setShowAllPins(true)}
+          activeOpacity={0.8}
+        >
+          <Feather name="layers" size={18} color="#FFFFFF" />
+          <Text style={styles.showAllButtonText}>Show All Locations</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Zoom hint */}
       <View style={styles.zoomHint}>
@@ -429,6 +445,29 @@ const styles = StyleSheet.create({
   zoomHintText: {
     fontSize: 12,
     color: colors.textMuted,
+  },
+  // Show All Locations button
+  showAllButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  showAllButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 

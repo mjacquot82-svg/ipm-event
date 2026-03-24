@@ -752,21 +752,32 @@ export default function HomeScreen() {
                     </View>
                   </View>
 
-                  {/* Location */}
+                  {/* Location - Clickable to show on map */}
                   {selectedEvent.location_name && (
-                    <View style={styles.eventDetailSection}>
+                    <TouchableOpacity 
+                      style={styles.eventDetailSection}
+                      onPress={() => {
+                        setShowEventDetails(false);
+                        router.push({
+                          pathname: '/(tabs)/map',
+                          params: { location: selectedEvent.location_name, showOnly: 'true' }
+                        });
+                      }}
+                      activeOpacity={0.7}
+                    >
                       <View style={styles.eventDetailRow}>
                         <View style={styles.eventDetailIcon}>
                           <Feather name="map-pin" size={20} color={colors.field} />
                         </View>
                         <View style={styles.eventDetailTextContainer}>
                           <Text style={styles.eventDetailLabel}>Location</Text>
-                          <Text style={styles.eventDetailValue}>
+                          <Text style={[styles.eventDetailValue, { color: colors.primary }]}>
                             {selectedEvent.location_name}
                           </Text>
                         </View>
+                        <Feather name="external-link" size={16} color={colors.primary} />
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   )}
 
                   {/* Category */}
