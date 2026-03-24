@@ -1,114 +1,63 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// Simple map component using react-native-maps (works with Expo Go)
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Image,
   ScrollView,
   Dimensions,
-  Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import colors from '../theme/colors';
-import { locations, getLocationTypeColor, getLocationTypeIcon, Location } from '../data/mockData';
-import BottomSheet from './BottomSheet';
 
 const { width, height } = Dimensions.get('window');
 
 const MapComponent: React.FC = () => {
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-  const [showBottomSheet, setShowBottomSheet] = useState(false);
-
-  const handleMarkerPress = (location: Location) => {
-    setSelectedLocation(location);
-    setShowBottomSheet(true);
-  };
-
-  const handleCloseBottomSheet = () => {
-    setShowBottomSheet(false);
-    setSelectedLocation(null);
-  };
-
-  // Group locations by type for the legend
-  const locationTypes = ['field', 'stage', 'vendor', 'utility'];
+  const [imageError, setImageError] = useState(false);
 
   return (
     <View style={styles.container}>
-      {/* Map Placeholder */}
-      <View style={styles.mapPlaceholder}>
-        <View style={styles.mapContent}>
-          <Feather name="map" size={64} color={colors.primary} />
-          <Text style={styles.mapTitle}>IPM 2026 Event Map</Text>
-          <Text style={styles.mapSubtitle}>Interactive map coming soon</Text>
-          <Text style={styles.mapInfo}>
-            Browse locations below to explore the event grounds
-          </Text>
-        </View>
-      </View>
-
-      {/* Locations List */}
-      <View style={styles.locationsContainer}>
-        <Text style={styles.locationsTitle}>Event Locations</Text>
-        <ScrollView 
-          style={styles.locationsList}
-          showsVerticalScrollIndicator={false}
-        >
-          {locations.map((location) => {
-            const typeColor = getLocationTypeColor(location.type);
-            const typeIcon = getLocationTypeIcon(location.type);
-            
-            return (
-              <TouchableOpacity
-                key={location.id}
-                style={styles.locationCard}
-                onPress={() => handleMarkerPress(location)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.locationIcon, { backgroundColor: typeColor }]}>
-                  <Feather name={typeIcon as any} size={20} color="#FFFFFF" />
-                </View>
-                <View style={styles.locationInfo}>
-                  <Text style={styles.locationName}>{location.name}</Text>
-                  <Text style={styles.locationType}>
-                    {location.type.charAt(0).toUpperCase() + location.type.slice(1)}
-                  </Text>
-                </View>
-                <Feather name="chevron-right" size={20} color={colors.textMuted} />
-              </TouchableOpacity>
-            );
-          })}
-          <View style={styles.bottomPadding} />
-        </ScrollView>
-      </View>
+      {/* Map Image */}
+      <ScrollView
+        style={styles.mapContainer}
+        contentContainerStyle={styles.mapContent}
+        maximumZoomScale={3}
+        minimumZoomScale={1}
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
+        bouncesZoom={true}
+      >
+        <Image
+          source={require('../../assets/images/event-map.png')}
+          style={styles.mapImage}
+          resizeMode="cover"
+          onError={() => setImageError(true)}
+        />
+      </ScrollView>
 
       {/* Legend */}
       <View style={styles.legendContainer}>
-        <View style={styles.legendHeader}>
-          <Text style={styles.legendTitle}>Legend</Text>
+        <Text style={styles.legendTitle}>IPM 2026</Text>
+        <Text style={styles.legendSubtitle}>Event Grounds</Text>
+        <View style={styles.legendDivider} />
+        <View style={styles.legendItem}>
+          <Feather name="map-pin" size={14} color={colors.primary} />
+          <Text style={styles.legendText}>Huron Tractor</Text>
         </View>
-        {locationTypes.map((type) => (
-          <View key={type} style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: getLocationTypeColor(type) }]} />
-            <Text style={styles.legendText}>
-              {type === 'field' ? 'Fields' : 
-               type === 'stage' ? 'Stages' : 
-               type === 'vendor' ? 'Exhibitors' : 'Services'}
-            </Text>
-          </View>
-        ))}
+        <View style={styles.legendItem}>
+          <Feather name="navigation" size={14} color={colors.field} />
+          <Text style={styles.legendText}>Durham Rd & Bruce Rd 3</Text>
+        </View>
       </View>
 
-      {/* Bottom Sheet */}
-      {selectedLocation && (
-        <BottomSheet
-          visible={showBottomSheet}
-          onClose={handleCloseBottomSheet}
-          location={selectedLocation}
-        />
-      )}
+      {/* Zoom hint */}
+      <View style={styles.zoomHint}>
+        <Feather name="zoom-in" size={16} color={colors.textMuted} />
+        <Text style={styles.zoomHintText}>Pinch to zoom</Text>
+      </View>
     </View>
   );
 };
@@ -118,115 +67,75 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  mapPlaceholder: {
-    height: height * 0.35,
-    backgroundColor: colors.surfaceHighlight,
-    justifyContent: 'center',
-    alignItems: 'center',
+  mapContainer: {
+    flex: 1,
   },
   mapContent: {
-    alignItems: 'center',
-    padding: 20,
+    minHeight: height - 150,
   },
-  mapTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginTop: 16,
-  },
-  mapSubtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: 8,
-  },
-  mapInfo: {
-    fontSize: 14,
-    color: colors.textMuted,
-    marginTop: 12,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  locationsContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  locationsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 12,
-  },
-  locationsList: {
-    flex: 1,
-  },
-  locationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  locationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  locationInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  locationName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  locationType: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
+  mapImage: {
+    width: width,
+    height: height - 100,
   },
   legendContainer: {
     position: 'absolute',
     left: 16,
-    top: 100,
+    top: 16,
     backgroundColor: colors.surface,
-    padding: 12,
+    padding: 14,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 3,
-  },
-  legendHeader: {
-    marginBottom: 8,
+    elevation: 4,
+    minWidth: 160,
   },
   legendTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.textPrimary,
+  },
+  legendSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  legendDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 10,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 6,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 8,
+    gap: 8,
   },
   legendText: {
     fontSize: 12,
     color: colors.textSecondary,
   },
-  bottomPadding: {
-    height: 120,
+  zoomHint: {
+    position: 'absolute',
+    bottom: 120,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  zoomHintText: {
+    fontSize: 12,
+    color: colors.textMuted,
   },
 });
 

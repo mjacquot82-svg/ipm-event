@@ -1,6 +1,6 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Linking,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -38,11 +39,31 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showItinerary, setShowItinerary] = useState(false);
+  const [apiEvents, setApiEvents] = useState<any[]>([]);
+
+  // Fetch events from API
+  const fetchApiEvents = async () => {
+    try {
+      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      const response = await fetch(`${API_BASE_URL}/api/schedule`);
+      if (response.ok) {
+        const data = await response.json();
+        setApiEvents(data.events || []);
+      }
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchApiEvents();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
       setCurrentTime(new Date());
+      fetchApiEvents();
       
       const interval = setInterval(() => {
         setCurrentTime(new Date());
@@ -96,28 +117,33 @@ export default function HomeScreen() {
     Linking.openURL(url);
   };
 
-  // Get starred sessions sorted by date
+  // Get starred sessions from API events
   const getStarredSessions = () => {
-    return sessions
-      .filter(session => favorites.includes(session.id))
-      .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    return apiEvents
+      .filter(event => favorites.includes(event.id))
+      .sort((a, b) => {
+        // Sort by date then time
+        const dateA = new Date(a.start_date);
+        const dateB = new Date(b.start_date);
+        return dateA.getTime() - dateB.getTime();
+      });
   };
 
   const starredSessions = getStarredSessions();
 
   // Group starred sessions by date
-  const groupedStarredSessions = starredSessions.reduce((acc, session) => {
-    const date = new Date(session.start_time).toLocaleDateString('en-US', {
+  const groupedStarredSessions = starredSessions.reduce((acc, event) => {
+    const date = event.start_date ? new Date(event.start_date).toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
-    });
+    }) : 'Unknown Date';
     if (!acc[date]) {
       acc[date] = [];
     }
-    acc[date].push(session);
+    acc[date].push(event);
     return acc;
-  }, {} as Record<string, Session[]>);
+  }, {} as Record<string, any[]>);
 
   const handleRemoveFromItinerary = async (sessionId: string) => {
     const result = await toggleFavorite(sessionId);
@@ -424,36 +450,35 @@ export default function HomeScreen() {
                   <Text style={styles.itinerarySummary}>
                     {starredSessions.length} event{starredSessions.length > 1 ? 's' : ''} planned
                   </Text>
-                  {Object.entries(groupedStarredSessions).map(([date, dateSessions]) => (
+                  {Object.entries(groupedStarredSessions).map(([date, dateEvents]) => (
                     <View key={date} style={styles.itineraryDateSection}>
                       <Text style={styles.itineraryDateHeader}>{date}</Text>
-                      {dateSessions.map((session) => {
-                        const location = getLocationById(session.location_id);
-                        const typeColor = location ? getLocationTypeColor(location.type) : colors.primary;
+                      {dateEvents.map((event: any) => {
+                        const typeColor = colors.primary;
                         
                         return (
-                          <View key={session.id} style={styles.itineraryCard}>
+                          <View key={event.id} style={styles.itineraryCard}>
                             <View style={[styles.itineraryColorBar, { backgroundColor: typeColor }]} />
                             <View style={styles.itineraryCardContent}>
                               <View style={styles.itineraryTimeRow}>
                                 <Feather name="clock" size={14} color={colors.textMuted} />
                                 <Text style={styles.itineraryTime}>
-                                  {formatTime(session.start_time)} - {formatTime(session.end_time)}
+                                  {event.start_time} - {event.end_time}
                                 </Text>
                               </View>
-                              <Text style={styles.itineraryTitle}>{session.title}</Text>
-                              {location && (
+                              <Text style={styles.itineraryTitle}>{event.title}</Text>
+                              {event.days_active && (
                                 <View style={styles.itineraryLocationRow}>
-                                  <Feather name="map-pin" size={12} color={typeColor} />
+                                  <Feather name="calendar" size={12} color={typeColor} />
                                   <Text style={[styles.itineraryLocation, { color: typeColor }]}>
-                                    {location.name}
+                                    {event.days_active}
                                   </Text>
                                 </View>
                               )}
                             </View>
                             <TouchableOpacity 
                               style={styles.removeButton}
-                              onPress={() => handleRemoveFromItinerary(session.id)}
+                              onPress={() => handleRemoveFromItinerary(event.id)}
                             >
                               <Feather name="x-circle" size={20} color={colors.textMuted} />
                             </TouchableOpacity>
