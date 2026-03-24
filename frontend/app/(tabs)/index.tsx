@@ -14,6 +14,8 @@ import {
   Modal,
   Pressable,
   ActivityIndicator,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -33,6 +35,19 @@ import {
 } from '../../src/data/mockData';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 
+// SOS Form initial state
+const initialSOSForm = {
+  name: '',
+  sex: '',
+  age: '',
+  height: '',
+  hair_color: '',
+  glasses: false,
+  shirt_color: '',
+  pants_color: '',
+  last_location: '',
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -42,6 +57,22 @@ export default function HomeScreen() {
   const [apiEvents, setApiEvents] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
+  
+  // Vendors state
+  const [showVendors, setShowVendors] = useState(false);
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [vendorTypes, setVendorTypes] = useState<string[]>([]);
+  const [selectedVendorType, setSelectedVendorType] = useState<string>('All');
+  const [vendorsLoading, setVendorsLoading] = useState(false);
+  
+  // SOS state
+  const [showSOSWarning, setShowSOSWarning] = useState(false);
+  const [showSOSConfirm, setShowSOSConfirm] = useState(false);
+  const [showSOSForm, setShowSOSForm] = useState(false);
+  const [sosForm, setSOSForm] = useState(initialSOSForm);
+  const [sosSubmitting, setSOSSubmitting] = useState(false);
+  const [activeSOSReports, setActiveSOSReports] = useState<any[]>([]);
+  const [showActiveAlerts, setShowActiveAlerts] = useState(false);
 
   // Fetch events from API
   const fetchApiEvents = async () => {
@@ -57,8 +88,105 @@ export default function HomeScreen() {
     }
   };
 
+  // Fetch vendors from API
+  const fetchVendors = async () => {
+    setVendorsLoading(true);
+    try {
+      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      const response = await fetch(`${API_BASE_URL}/api/vendors`);
+      if (response.ok) {
+        const data = await response.json();
+        const vendorList = data.vendors || [];
+        setVendors(vendorList);
+        
+        // Extract unique types for filter
+        const types = ['All', ...new Set(vendorList.map((v: any) => v.type).filter(Boolean))];
+        setVendorTypes(types as string[]);
+      }
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+    } finally {
+      setVendorsLoading(false);
+    }
+  };
+
+  // Fetch active SOS reports
+  const fetchActiveSOSReports = async () => {
+    try {
+      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      const response = await fetch(`${API_BASE_URL}/api/sos/active`);
+      if (response.ok) {
+        const data = await response.json();
+        setActiveSOSReports(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching SOS reports:', error);
+    }
+  };
+
+  // Submit SOS report
+  const submitSOSReport = async () => {
+    // Validate form
+    if (!sosForm.name || !sosForm.sex || !sosForm.age || !sosForm.last_location) {
+      Alert.alert('Missing Information', 'Please fill in at least Name, Sex, Age, and Last Location.');
+      return;
+    }
+
+    setSOSSubmitting(true);
+    try {
+      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      const response = await fetch(`${API_BASE_URL}/api/sos/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sosForm),
+      });
+
+      if (response.ok) {
+        Alert.alert(
+          'Alert Sent',
+          'Missing person alert has been sent to all event attendees. Please also notify event staff immediately.',
+          [{ text: 'OK', onPress: () => {
+            setShowSOSForm(false);
+            setSOSForm(initialSOSForm);
+            fetchActiveSOSReports();
+          }}]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to send alert. Please try again or contact event staff directly.');
+      }
+    } catch (error) {
+      console.error('Error submitting SOS:', error);
+      Alert.alert('Error', 'Failed to send alert. Please contact event staff directly.');
+    } finally {
+      setSOSSubmitting(false);
+    }
+  };
+
+  // Cancel SOS report
+  const cancelSOSReport = async (reportId: string) => {
+    try {
+      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      const response = await fetch(`${API_BASE_URL}/api/sos/cancel/${reportId}`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        Alert.alert('Person Found', 'Thank you! The alert has been cancelled and all attendees notified.');
+        fetchActiveSOSReports();
+      }
+    } catch (error) {
+      console.error('Error cancelling SOS:', error);
+    }
+  };
+
+  // Get filtered vendors
+  const filteredVendors = selectedVendorType === 'All' 
+    ? vendors 
+    : vendors.filter(v => v.type === selectedVendorType);
+
   useEffect(() => {
     fetchApiEvents();
+    fetchActiveSOSReports();
   }, []);
 
   useFocusEffect(
@@ -66,6 +194,7 @@ export default function HomeScreen() {
       loadFavorites();
       setCurrentTime(new Date());
       fetchApiEvents();
+      fetchActiveSOSReports();
       
       const interval = setInterval(() => {
         setCurrentTime(new Date());
@@ -280,7 +409,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Quick Actions */}
+        {/* Quick Actions - 3 column grid */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
@@ -290,10 +419,9 @@ export default function HomeScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
-                <Feather name="map" size={24} color="#FFFFFF" />
+                <Feather name="map" size={22} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionTitle}>Event Map</Text>
-              <Text style={styles.actionSubtitle}>Navigate the grounds</Text>
+              <Text style={styles.actionTitle}>Map</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -302,10 +430,23 @@ export default function HomeScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.accent }]}>
-                <Feather name="calendar" size={24} color="#FFFFFF" />
+                <Feather name="calendar" size={22} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Schedule</Text>
-              <Text style={styles.actionSubtitle}>View all events</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => {
+                fetchVendors();
+                setShowVendors(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.vendor }]}>
+                <Feather name="shopping-bag" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Vendors</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -314,10 +455,9 @@ export default function HomeScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.stage }]}>
-                <Feather name="credit-card" size={24} color="#FFFFFF" />
+                <Feather name="credit-card" size={22} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionTitle}>Buy Tickets</Text>
-              <Text style={styles.actionSubtitle}>Get your passes</Text>
+              <Text style={styles.actionTitle}>Tickets</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -326,22 +466,20 @@ export default function HomeScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
-                <Feather name="sun" size={24} color="#FFFFFF" />
+                <Feather name="sun" size={22} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionTitle}>Let's Camp</Text>
-              <Text style={styles.actionSubtitle}>Book camping</Text>
+              <Text style={styles.actionTitle}>Camping</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/?fbclid=IwY2xjawQuGmhleHRuA2FlbQIxMABicmlkETE3aUxCemtNREIzNGE4WGh5c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHrdITwGKjyFPU7v_T2U8wtz5YWVsIsHECguU33ZzpdUAUnr25lMzuUThqcX0_aem_ca4nGCbppwbVWXaXs1BNHg')}
+              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/')}
               activeOpacity={0.8}
             >
-              <View style={[styles.actionIcon, { backgroundColor: colors.vendor }]}>
-                <Feather name="gift" size={24} color="#FFFFFF" />
+              <View style={[styles.actionIcon, { backgroundColor: '#9C27B0' }]}>
+                <Feather name="gift" size={22} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Souvenirs</Text>
-              <Text style={styles.actionSubtitle}>Shop merchandise</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -350,11 +488,34 @@ export default function HomeScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.utility }]}>
-                <Feather name="clipboard" size={24} color="#FFFFFF" />
+                <Feather name="clipboard" size={22} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionTitle}>My Itinerary</Text>
-              <Text style={styles.actionSubtitle}>Your starred events</Text>
+              <Text style={styles.actionTitle}>Itinerary</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.sosCard]}
+              onPress={() => setShowSOSWarning(true)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#D32F2F' }]}>
+                <Feather name="alert-triangle" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={[styles.actionTitle, { color: '#D32F2F' }]}>SOS</Text>
+            </TouchableOpacity>
+
+            {activeSOSReports.length > 0 && (
+              <TouchableOpacity
+                style={[styles.actionCard, styles.alertCard]}
+                onPress={() => setShowActiveAlerts(true)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: '#FF5722' }]}>
+                  <Feather name="bell" size={22} color="#FFFFFF" />
+                </View>
+                <Text style={[styles.actionTitle, { color: '#FF5722' }]}>Alerts ({activeSOSReports.length})</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -663,6 +824,390 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Vendors Modal */}
+      <Modal
+        visible={showVendors}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowVendors(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <Feather name="shopping-bag" size={24} color={colors.vendor} />
+                <Text style={styles.modalTitle}>Vendors</Text>
+              </View>
+              <TouchableOpacity 
+                onPress={() => setShowVendors(false)}
+                style={styles.modalCloseButton}
+              >
+                <Feather name="x" size={24} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Filter Chips */}
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterScroll}
+              contentContainerStyle={styles.filterContent}
+            >
+              {vendorTypes.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.filterChip,
+                    selectedVendorType === type && styles.filterChipActive
+                  ]}
+                  onPress={() => setSelectedVendorType(type)}
+                >
+                  <Text style={[
+                    styles.filterChipText,
+                    selectedVendorType === type && styles.filterChipTextActive
+                  ]}>{type}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              {vendorsLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={styles.loadingText}>Loading vendors...</Text>
+                </View>
+              ) : filteredVendors.length === 0 ? (
+                <View style={styles.emptyItinerary}>
+                  <Feather name="shopping-bag" size={48} color={colors.textMuted} />
+                  <Text style={styles.emptyItineraryTitle}>No vendors found</Text>
+                </View>
+              ) : (
+                filteredVendors.map((vendor) => (
+                  <View key={vendor.id} style={styles.vendorCard}>
+                    <View style={styles.vendorHeader}>
+                      <Text style={styles.vendorName}>{vendor.name}</Text>
+                      <View style={styles.vendorTypeBadge}>
+                        <Text style={styles.vendorTypeText}>{vendor.type}</Text>
+                      </View>
+                    </View>
+                    {vendor.location && (
+                      <View style={styles.vendorRow}>
+                        <Feather name="map-pin" size={14} color={colors.textMuted} />
+                        <Text style={styles.vendorDetail}>{vendor.location}</Text>
+                      </View>
+                    )}
+                    {vendor.hours_of_operation && (
+                      <View style={styles.vendorRow}>
+                        <Feather name="clock" size={14} color={colors.textMuted} />
+                        <Text style={styles.vendorDetail}>{vendor.hours_of_operation}</Text>
+                      </View>
+                    )}
+                    {vendor.days_of_operation && (
+                      <View style={styles.vendorRow}>
+                        <Feather name="calendar" size={14} color={colors.textMuted} />
+                        <Text style={styles.vendorDetail}>{vendor.days_of_operation}</Text>
+                      </View>
+                    )}
+                  </View>
+                ))
+              )}
+              <View style={{ height: 40 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* SOS Warning Modal */}
+      <Modal
+        visible={showSOSWarning}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowSOSWarning(false)}
+      >
+        <View style={styles.sosModalOverlay}>
+          <View style={styles.sosModalContent}>
+            <View style={styles.sosWarningIcon}>
+              <Feather name="alert-triangle" size={48} color="#D32F2F" />
+            </View>
+            <Text style={styles.sosWarningTitle}>Missing Person Alert</Text>
+            <Text style={styles.sosWarningText}>
+              Only press the SOS button if you are seriously missing a person. This will send an emergency alert to ALL event attendees.
+            </Text>
+            <TouchableOpacity
+              style={styles.sosButton}
+              onPress={() => {
+                setShowSOSWarning(false);
+                setShowSOSConfirm(true);
+              }}
+            >
+              <Feather name="alert-circle" size={24} color="#FFFFFF" />
+              <Text style={styles.sosButtonText}>SOS - Report Missing Person</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sosCancelButton}
+              onPress={() => setShowSOSWarning(false)}
+            >
+              <Text style={styles.sosCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* SOS Confirmation Modal */}
+      <Modal
+        visible={showSOSConfirm}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowSOSConfirm(false)}
+      >
+        <View style={styles.sosModalOverlay}>
+          <View style={styles.sosModalContent}>
+            <Feather name="alert-octagon" size={48} color="#D32F2F" />
+            <Text style={styles.sosWarningTitle}>Are you sure?</Text>
+            <Text style={styles.sosWarningText}>
+              This will send an emergency notification to thousands of event attendees. Please confirm this is a real emergency.
+            </Text>
+            <TouchableOpacity
+              style={styles.sosButton}
+              onPress={() => {
+                setShowSOSConfirm(false);
+                setShowSOSForm(true);
+              }}
+            >
+              <Text style={styles.sosButtonText}>Yes, Continue</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sosCancelButton}
+              onPress={() => setShowSOSConfirm(false)}
+            >
+              <Text style={styles.sosCancelText}>No, Go Back</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* SOS Form Modal */}
+      <Modal
+        visible={showSOSForm}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSOSForm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: '95%' }]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <Feather name="alert-triangle" size={24} color="#D32F2F" />
+                <Text style={[styles.modalTitle, { color: '#D32F2F' }]}>Missing Person Details</Text>
+              </View>
+              <TouchableOpacity 
+                onPress={() => {
+                  setShowSOSForm(false);
+                  setSOSForm(initialSOSForm);
+                }}
+                style={styles.modalCloseButton}
+              >
+                <Feather name="x" size={24} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <Text style={styles.formLabel}>Name *</Text>
+              <TextInput
+                style={styles.formInput}
+                value={sosForm.name}
+                onChangeText={(text) => setSOSForm({...sosForm, name: text})}
+                placeholder="Full name of missing person"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              <Text style={styles.formLabel}>Sex *</Text>
+              <View style={styles.formButtonRow}>
+                {['Male', 'Female', 'Other'].map((sex) => (
+                  <TouchableOpacity
+                    key={sex}
+                    style={[
+                      styles.formSelectButton,
+                      sosForm.sex === sex && styles.formSelectButtonActive
+                    ]}
+                    onPress={() => setSOSForm({...sosForm, sex})}
+                  >
+                    <Text style={[
+                      styles.formSelectText,
+                      sosForm.sex === sex && styles.formSelectTextActive
+                    ]}>{sex}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.formLabel}>Age *</Text>
+              <TextInput
+                style={styles.formInput}
+                value={sosForm.age}
+                onChangeText={(text) => setSOSForm({...sosForm, age: text})}
+                placeholder="Approximate age"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.formLabel}>Height</Text>
+              <TextInput
+                style={styles.formInput}
+                value={sosForm.height}
+                onChangeText={(text) => setSOSForm({...sosForm, height: text})}
+                placeholder="e.g., 5 feet 6 inches or 170cm"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              <Text style={styles.formLabel}>Hair Color</Text>
+              <TextInput
+                style={styles.formInput}
+                value={sosForm.hair_color}
+                onChangeText={(text) => setSOSForm({...sosForm, hair_color: text})}
+                placeholder="e.g., Brown, Blonde, Black"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              <Text style={styles.formLabel}>Glasses</Text>
+              <View style={styles.formButtonRow}>
+                {[{label: 'Yes', value: true}, {label: 'No', value: false}].map((option) => (
+                  <TouchableOpacity
+                    key={option.label}
+                    style={[
+                      styles.formSelectButton,
+                      sosForm.glasses === option.value && styles.formSelectButtonActive
+                    ]}
+                    onPress={() => setSOSForm({...sosForm, glasses: option.value})}
+                  >
+                    <Text style={[
+                      styles.formSelectText,
+                      sosForm.glasses === option.value && styles.formSelectTextActive
+                    ]}>{option.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.formLabel}>Shirt Color</Text>
+              <TextInput
+                style={styles.formInput}
+                value={sosForm.shirt_color}
+                onChangeText={(text) => setSOSForm({...sosForm, shirt_color: text})}
+                placeholder="e.g., Red t-shirt, Blue flannel"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              <Text style={styles.formLabel}>Pants/Shorts Color</Text>
+              <TextInput
+                style={styles.formInput}
+                value={sosForm.pants_color}
+                onChangeText={(text) => setSOSForm({...sosForm, pants_color: text})}
+                placeholder="e.g., Blue jeans, Khaki shorts"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              <Text style={styles.formLabel}>Last Location Seen *</Text>
+              <TextInput
+                style={[styles.formInput, { height: 80, textAlignVertical: 'top' }]}
+                value={sosForm.last_location}
+                onChangeText={(text) => setSOSForm({...sosForm, last_location: text})}
+                placeholder="Where was the person last seen?"
+                placeholderTextColor={colors.textMuted}
+                multiline
+              />
+
+              <View style={{ height: 20 }} />
+            </ScrollView>
+
+            <View style={styles.eventModalFooter}>
+              <TouchableOpacity
+                style={[styles.sosButton, sosSubmitting && { opacity: 0.6 }]}
+                onPress={submitSOSReport}
+                disabled={sosSubmitting}
+              >
+                {sosSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Feather name="send" size={20} color="#FFFFFF" />
+                    <Text style={styles.sosButtonText}>Send Alert</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Active Alerts Modal */}
+      <Modal
+        visible={showActiveAlerts}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowActiveAlerts(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <Feather name="bell" size={24} color="#FF5722" />
+                <Text style={[styles.modalTitle, { color: '#FF5722' }]}>Active Alerts</Text>
+              </View>
+              <TouchableOpacity 
+                onPress={() => setShowActiveAlerts(false)}
+                style={styles.modalCloseButton}
+              >
+                <Feather name="x" size={24} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              {activeSOSReports.length === 0 ? (
+                <View style={styles.emptyItinerary}>
+                  <Feather name="check-circle" size={48} color={colors.success} />
+                  <Text style={styles.emptyItineraryTitle}>No Active Alerts</Text>
+                  <Text style={styles.emptyItineraryText}>There are currently no missing person alerts.</Text>
+                </View>
+              ) : (
+                activeSOSReports.map((report) => (
+                  <View key={report.id} style={styles.alertCard}>
+                    <View style={styles.alertHeader}>
+                      <Feather name="alert-triangle" size={20} color="#D32F2F" />
+                      <Text style={styles.alertTitle}>Missing: {report.name}</Text>
+                    </View>
+                    <View style={styles.alertDetails}>
+                      <Text style={styles.alertDetail}>Sex: {report.sex} | Age: {report.age}</Text>
+                      {report.height && <Text style={styles.alertDetail}>Height: {report.height}</Text>}
+                      {report.hair_color && <Text style={styles.alertDetail}>Hair: {report.hair_color}</Text>}
+                      <Text style={styles.alertDetail}>Glasses: {report.glasses ? 'Yes' : 'No'}</Text>
+                      {report.shirt_color && <Text style={styles.alertDetail}>Shirt: {report.shirt_color}</Text>}
+                      {report.pants_color && <Text style={styles.alertDetail}>Pants: {report.pants_color}</Text>}
+                      <Text style={styles.alertDetail}>Last seen: {report.last_location}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.foundButton}
+                      onPress={() => {
+                        Alert.alert(
+                          'Person Found?',
+                          'Confirm that this person has been found and cancel the alert?',
+                          [
+                            { text: 'No', style: 'cancel' },
+                            { text: 'Yes, Person Found', onPress: () => cancelSOSReport(report.id) }
+                          ]
+                        );
+                      }}
+                    >
+                      <Feather name="check-circle" size={18} color="#FFFFFF" />
+                      <Text style={styles.foundButtonText}>Person Found - Cancel Alert</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+              <View style={{ height: 40 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -791,39 +1336,48 @@ const styles = StyleSheet.create({
   },
   quickActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 12,
+    justifyContent: 'flex-start',
+    gap: 8,
   },
   actionCard: {
-    width: '48%',
+    width: '31%',
     backgroundColor: colors.surface,
-    padding: 16,
-    borderRadius: 20,
+    padding: 12,
+    borderRadius: 16,
     alignItems: 'center',
     marginBottom: 4,
+  },
+  sosCard: {
+    borderWidth: 1,
+    borderColor: '#D32F2F',
+  },
+  alertCard: {
+    borderWidth: 1,
+    borderColor: '#FF5722',
   },
   actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.textPrimary,
-    marginBottom: 4,
+    textAlign: 'center',
   },
   actionSubtitle: {
-    fontSize: 13,
+    fontSize: 11,
     color: colors.textMuted,
+    textAlign: 'center',
   },
   sessionCardFull: {
     flexDirection: 'row',
@@ -1195,6 +1749,226 @@ const styles = StyleSheet.create({
   eventModalButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  // Filter styles
+  filterScroll: {
+    maxHeight: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  filterContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterChipText: {
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+  },
+  // Vendor styles
+  vendorCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+  },
+  vendorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  vendorName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  vendorTypeBadge: {
+    backgroundColor: colors.vendor,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  vendorTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  vendorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  vendorDetail: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  // SOS Modal styles
+  sosModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  sosModalContent: {
+    backgroundColor: colors.background,
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  sosWarningIcon: {
+    marginBottom: 16,
+  },
+  sosWarningTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#D32F2F',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  sosWarningText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  sosButton: {
+    backgroundColor: '#D32F2F',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 16,
+    width: '100%',
+    gap: 10,
+    marginBottom: 12,
+  },
+  sosButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  sosCancelButton: {
+    padding: 12,
+  },
+  sosCancelText: {
+    color: colors.textMuted,
+    fontSize: 16,
+  },
+  // Form styles
+  formLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 8,
+    marginTop: 12,
+  },
+  formInput: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  formButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  formSelectButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  formSelectButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  formSelectText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textPrimary,
+  },
+  formSelectTextActive: {
+    color: '#FFFFFF',
+  },
+  // Active alerts styles
+  alertCardStyle: {
+    backgroundColor: '#FFF3E0',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#FF5722',
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  alertTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#D32F2F',
+  },
+  alertDetails: {
+    marginBottom: 16,
+  },
+  alertDetail: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  foundButton: {
+    backgroundColor: colors.success,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  foundButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
   },
 });

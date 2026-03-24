@@ -91,6 +91,49 @@ class StarredEventsUpdate(BaseModel):
     push_token: str
     starred_event_ids: List[str]
 
+class SOSReport(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    sex: str
+    age: str
+    height: str
+    hair_color: str
+    glasses: bool
+    shirt_color: str
+    pants_color: str
+    last_location: str
+    status: str = "active"  # active, resolved
+    reporter_token: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    resolved_at: Optional[datetime] = None
+
+class SOSReportCreate(BaseModel):
+    name: str
+    sex: str
+    age: str
+    height: str
+    hair_color: str
+    glasses: bool
+    shirt_color: str
+    pants_color: str
+    last_location: str
+    reporter_token: Optional[str] = None
+
+class SOSReportResponse(BaseModel):
+    id: str
+    name: str
+    sex: str
+    age: str
+    height: str
+    hair_color: str
+    glasses: bool
+    shirt_color: str
+    pants_color: str
+    last_location: str
+    status: str
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
@@ -249,6 +292,157 @@ async def update_starred_events(data: StarredEventsUpdate):
     except Exception as e:
         logger.error(f"Error updating starred events: {e}")
         raise HTTPException(status_code=500, detail="Failed to update starred events")
+
+# ============== SOS MISSING PERSON ENDPOINTS ==============
+
+@api_router.post("/sos/report", response_model=SOSReportResponse)
+async def create_sos_report(data: SOSReportCreate):
+    """Create an SOS missing person report and broadcast to all users"""
+    try:
+        # Create the report
+        report = SOSReport(
+            name=data.name,
+            sex=data.sex,
+            age=data.age,
+            height=data.height,
+            hair_color=data.hair_color,
+            glasses=data.glasses,
+            shirt_color=data.shirt_color,
+            pants_color=data.pants_color,
+            last_location=data.last_location,
+            reporter_token=data.reporter_token
+        )
+        
+        # Save to database
+        await db.sos_reports.insert_one(report.dict())
+        
+        # Build notification message
+        glasses_text = "Wears glasses" if data.glasses else "No glasses"
+        notification_body = (
+            f"🚨 MISSING PERSON ALERT 🚨\n"
+            f"Name: {data.name}\n"
+            f"Sex: {data.sex}, Age: {data.age}\n"
+            f"Height: {data.height}, Hair: {data.hair_color}\n"
+            f"{glasses_text}\n"
+            f"Shirt: {data.shirt_color}, Pants: {data.pants_color}\n"
+            f"Last seen: {data.last_location}"
+        )
+        
+        # Get all registered push tokens
+        all_tokens = await db.push_tokens.find().to_list(10000)
+        
+        logger.info(f"SOS: Broadcasting alert to {len(all_tokens)} devices")
+        
+        # Send notification to all registered devices
+        for token_doc in all_tokens:
+            push_token = token_doc.get('push_token')
+            if push_token:
+                await send_sos_push_notification(
+                    push_token=push_token,
+                    title="🚨 MISSING PERSON ALERT",
+                    body=notification_body,
+                    data={"type": "sos_alert", "sos_id": report.id}
+                )
+        
+        return SOSReportResponse(
+            id=report.id,
+            name=report.name,
+            sex=report.sex,
+            age=report.age,
+            height=report.height,
+            hair_color=report.hair_color,
+            glasses=report.glasses,
+            shirt_color=report.shirt_color,
+            pants_color=report.pants_color,
+            last_location=report.last_location,
+            status=report.status,
+            created_at=report.created_at
+        )
+        
+    except Exception as e:
+        logger.error(f"Error creating SOS report: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create SOS report")
+
+@api_router.get("/sos/active", response_model=List[SOSReportResponse])
+async def get_active_sos_reports():
+    """Get all active SOS reports"""
+    try:
+        reports = await db.sos_reports.find({"status": "active"}).to_list(100)
+        return [SOSReportResponse(**report) for report in reports]
+    except Exception as e:
+        logger.error(f"Error fetching SOS reports: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch SOS reports")
+
+@api_router.post("/sos/cancel/{report_id}")
+async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None):
+    """Cancel/resolve an SOS report (person found)"""
+    try:
+        # Find the report
+        report = await db.sos_reports.find_one({"id": report_id})
+        if not report:
+            raise HTTPException(status_code=404, detail="SOS report not found")
+        
+        # Update status
+        await db.sos_reports.update_one(
+            {"id": report_id},
+            {
+                "$set": {
+                    "status": "resolved",
+                    "resolved_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Notify all users that the person was found
+        all_tokens = await db.push_tokens.find().to_list(10000)
+        
+        logger.info(f"SOS: Broadcasting FOUND alert to {len(all_tokens)} devices")
+        
+        for token_doc in all_tokens:
+            push_token = token_doc.get('push_token')
+            if push_token:
+                await send_expo_push_notification(
+                    push_token=push_token,
+                    title="✅ Person Found - Alert Cancelled",
+                    body=f"{report['name']} has been found! Thank you for your help.",
+                    data={"type": "sos_cancelled", "sos_id": report_id}
+                )
+        
+        return {"status": "success", "message": "SOS report cancelled, person found"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling SOS report: {e}")
+        raise HTTPException(status_code=500, detail="Failed to cancel SOS report")
+
+async def send_sos_push_notification(push_token: str, title: str, body: str, data: dict = None):
+    """Send CRITICAL push notification for SOS alerts with loud sound"""
+    try:
+        message = {
+            "to": push_token,
+            "sound": "default",
+            "title": title,
+            "body": body,
+            "data": data or {},
+            "priority": "high",
+            "channelId": "sos-alerts",
+            "_contentAvailable": True,
+        }
+        
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.post(
+                "https://exp.host/--/api/v2/push/send",
+                json=message,
+                headers={"Content-Type": "application/json"},
+                timeout=10.0
+            )
+            if response.status_code == 200:
+                logger.info(f"SOS Notification sent to {push_token[:20]}...")
+            else:
+                logger.warning(f"Failed to send SOS notification: {response.text}")
+    except Exception as e:
+        logger.error(f"Error sending SOS push notification: {e}")
 
 # Include the router in the main app
 app.include_router(api_router)
