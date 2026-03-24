@@ -476,8 +476,9 @@ export default function ScheduleScreen() {
                   {/* Location */}
                   {selectedEvent.location_name && (
                     <TouchableOpacity 
-                      style={styles.detailSection}
+                      style={[styles.detailSection, styles.locationClickable]}
                       onPress={() => {
+                        console.log('Location clicked:', selectedEvent.location_name);
                         setShowEventModal(false);
                         router.push({
                           pathname: '/(tabs)/map',
@@ -488,15 +489,16 @@ export default function ScheduleScreen() {
                     >
                       <View style={styles.detailRow}>
                         <View style={styles.detailIcon}>
-                          <Feather name="map-pin" size={20} color={colors.field} />
+                          <Feather name="map-pin" size={20} color={colors.primary} />
                         </View>
                         <View style={styles.detailTextContainer}>
                           <Text style={styles.detailLabel}>Location</Text>
-                          <Text style={styles.detailValue}>
+                          <Text style={[styles.detailValue, { color: colors.primary }]}>
                             {selectedEvent.location_name}
                           </Text>
+                          <Text style={styles.tapToViewMap}>Tap to view on map</Text>
                         </View>
-                        <Feather name="external-link" size={16} color={colors.primary} />
+                        <Feather name="chevron-right" size={20} color={colors.primary} />
                       </View>
                     </TouchableOpacity>
                   )}
@@ -832,6 +834,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 16,
+  },
+  locationClickable: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
+  },
+  tapToViewMap: {
+    fontSize: 12,
+    color: colors.primary,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   detailRow: {
     flexDirection: 'row',

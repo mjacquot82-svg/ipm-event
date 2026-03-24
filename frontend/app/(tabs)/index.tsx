@@ -755,8 +755,9 @@ export default function HomeScreen() {
                   {/* Location - Clickable to show on map */}
                   {selectedEvent.location_name && (
                     <TouchableOpacity 
-                      style={styles.eventDetailSection}
+                      style={[styles.eventDetailSection, styles.locationClickable]}
                       onPress={() => {
+                        console.log('Location clicked:', selectedEvent.location_name);
                         setShowEventDetails(false);
                         router.push({
                           pathname: '/(tabs)/map',
@@ -767,15 +768,16 @@ export default function HomeScreen() {
                     >
                       <View style={styles.eventDetailRow}>
                         <View style={styles.eventDetailIcon}>
-                          <Feather name="map-pin" size={20} color={colors.field} />
+                          <Feather name="map-pin" size={20} color={colors.primary} />
                         </View>
                         <View style={styles.eventDetailTextContainer}>
                           <Text style={styles.eventDetailLabel}>Location</Text>
                           <Text style={[styles.eventDetailValue, { color: colors.primary }]}>
                             {selectedEvent.location_name}
                           </Text>
+                          <Text style={styles.tapToViewMap}>Tap to view on map</Text>
                         </View>
-                        <Feather name="external-link" size={16} color={colors.primary} />
+                        <Feather name="chevron-right" size={20} color={colors.primary} />
                       </View>
                     </TouchableOpacity>
                   )}
@@ -1749,6 +1751,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 22,
+  },
+  locationClickable: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
+  },
+  tapToViewMap: {
+    fontSize: 12,
+    color: colors.primary,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   eventModalFooter: {
     padding: 20,
