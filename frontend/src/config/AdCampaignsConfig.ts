@@ -24,14 +24,14 @@ export interface AdCampaignsConfig {
 // ============================================
 
 const adCampaignsConfig: AdCampaignsConfig = {
-  // Top Masthead Banner (320x80)
+  // Top Masthead Banner (1800x400)
   // Appears at the top of every screen below the status bar
   topBanner: {
     id: 'top-banner',
     name: 'Sponsor Spotlight',
-    imageUrl: 'https://i.imgur.com/a57na7W.jpeg',
-    targetUrl: 'https://www.jenniferjacquotphotography.com/',
-    placeholderText: 'SPONSOR SPOTLIGHT (1800x400) - CLICK HERE',
+    imageUrl: '',
+    targetUrl: '',
+    placeholderText: 'TOP BANNER AD (1800x400)',
     width: 1800,
     height: 400,
     enabled: true,
@@ -42,22 +42,22 @@ const adCampaignsConfig: AdCampaignsConfig = {
   bottomBanner: {
     id: 'bottom-banner',
     name: 'Official Souvenirs',
-    imageUrl: 'https://i.imgur.com/pW0fXPa.jpeg',
-    targetUrl: 'https://www.jenniferjacquotphotography.com/',
-    placeholderText: 'OFFICIAL SOUVENIRS (1800x250) - CLICK HERE',
+    imageUrl: '',
+    targetUrl: '',
+    placeholderText: 'BOTTOM BANNER AD (1800x250)',
     width: 1800,
     height: 250,
     enabled: true,
   },
 
   // Full-Screen Interstitial (1170x2532)
-  // Appears once per session when Map screen loads
+  // Appears once per session when app opens
   interstitial: {
     id: 'interstitial',
     name: 'Full-Screen Spotlight',
-    imageUrl: 'https://i.imgur.com/Neu0DAX.jpeg',
-    targetUrl: 'https://www.jenniferjacquotphotography.com/',
-    placeholderText: 'FULL-SCREEN SPOTLIGHT AD\n(CLICK TO DISMISS)',
+    imageUrl: '',
+    targetUrl: '',
+    placeholderText: 'FULL-SCREEN AD\n(1170x2532)\n\nTap anywhere to close',
     width: 1170,
     height: 2532,
     enabled: true,
