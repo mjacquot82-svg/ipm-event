@@ -48,7 +48,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
             <Image
               source={{ uri: adUnit.imageUrl }}
               style={styles.topBannerImage}
-              resizeMode="contain"
+              resizeMode="cover"
             />
           ) : (
             <View style={styles.topPlaceholder}>
@@ -72,7 +72,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
           <Image
             source={{ uri: adUnit.imageUrl }}
             style={styles.bottomBannerImage}
-            resizeMode="contain"
+            resizeMode="cover"
           />
         ) : (
           <View style={styles.bottomPlaceholder}>
