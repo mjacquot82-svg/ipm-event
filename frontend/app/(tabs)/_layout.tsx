@@ -3,16 +3,16 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { StyleSheet, View, Platform, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, View, Platform, TouchableOpacity, Text, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../src/theme/colors';
 import AdBanner from '../../src/components/AdBanner';
 import adCampaignsConfig from '../../src/config/AdCampaignsConfig';
 
-// Fixed dimensions
+// Fixed dimensions - NEVER auto-resize
 const ICON_SIZE = 24;
-const TAB_BAR_HEIGHT = 60;
-const BOTTOM_AD_HEIGHT = 58; // 50px banner + 8px padding
+const NAV_BAR_HEIGHT = 60; // Fixed height - no auto-resize
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 // Helper function to get icon names
 function getIconName(routeName: string): keyof typeof Feather.glyphMap {
@@ -38,59 +38,9 @@ function getLabel(routeName: string): string {
   }
 }
 
-// Floating Tab Bar component - absolute positioned at bottom
-function FloatingTabBar(props: any) {
-  const { state, navigation } = props;
-  const insets = useSafeAreaInsets();
-  const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
-  
-  return (
-    <View style={[
-      styles.floatingTabBar, 
-      { paddingBottom: bottomInset, height: TAB_BAR_HEIGHT + bottomInset }
-    ]}>
-      {state.routes.map((route: any, index: number) => {
-        const isFocused = state.index === index;
-        const iconName = getIconName(route.name);
-        const label = getLabel(route.name);
-        
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
-
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
-
-        return (
-          <TouchableOpacity
-            key={route.key}
-            style={styles.tabItem}
-            onPress={onPress}
-            activeOpacity={0.7}
-          >
-            <View style={styles.iconContainer}>
-              <Feather
-                name={iconName}
-                size={ICON_SIZE}
-                color={isFocused ? colors.tabActive : colors.tabInactive}
-              />
-            </View>
-            <Text style={[
-              styles.tabLabel,
-              { color: isFocused ? colors.tabActive : colors.tabInactive }
-            ]}>
-              {label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
+// Fixed-height Tab Bar - returns null since we render our own
+function EmptyTabBar() {
+  return null;
 }
 
 export default function TabLayout() {
@@ -99,42 +49,58 @@ export default function TabLayout() {
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
   
   // Calculate top banner height with safe area
-  const topBannerHeight = adCampaignsConfig.topBanner.enabled ? 108 : 0; // 100px + 8px padding
-  
-  return (
-    <View style={styles.container}>
-      {/* Full-Screen Tab Content - Goes behind everything */}
-      <Tabs
-        tabBar={(props) => <FloatingTabBar {...props} />}
-        screenOptions={{
-          headerShown: false,
-        }}
-        sceneContainerStyle={{
-          // Content takes full screen but has padding for top ad
-          paddingTop: topBannerHeight + topInset,
-          backgroundColor: colors.background,
-        }}
-        initialRouteName="map"
-      >
-        <Tabs.Screen name="index" options={{ title: 'Home' }} />
-        <Tabs.Screen name="map" options={{ title: 'Map' }} />
-        <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
-        <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
-        <Tabs.Screen name="about" options={{ title: 'About' }} />
-      </Tabs>
+  const topBannerHeight = adCampaignsConfig.topBanner.enabled ? 108 : 0;
 
-      {/* Fixed Top Ad Banner - SafeAreaView for phone clock */}
+  return (
+    // ROOT CONTAINER - Takes full screen
+    <View style={styles.rootContainer}>
+      
+      {/* CONTENT UNDERLAY - flex: 1, height: 100%, extends behind nav bar */}
+      <View style={[styles.contentUnderlay, { height: SCREEN_HEIGHT }]}>
+        
+        {/* Tab Navigator - Content goes all the way down */}
+        <Tabs
+          tabBar={() => <EmptyTabBar />}
+          screenOptions={{
+            headerShown: false,
+          }}
+          sceneContainerStyle={{
+            paddingTop: topBannerHeight + topInset,
+            backgroundColor: colors.background,
+          }}
+          initialRouteName="map"
+        >
+          <Tabs.Screen name="index" options={{ title: 'Home' }} />
+          <Tabs.Screen name="map" options={{ title: 'Map' }} />
+          <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
+          <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
+          <Tabs.Screen name="about" options={{ title: 'About' }} />
+        </Tabs>
+      </View>
+
+      {/* FIXED TOP BANNER - SafeAreaView for phone clock */}
       {adCampaignsConfig.topBanner.enabled && (
         <View style={[styles.fixedTopBanner, { paddingTop: topInset }]}>
           <AdBanner adUnit={adCampaignsConfig.topBanner} position="top" />
         </View>
       )}
 
-      {/* Floating Bottom Ad - Absolute positioned above nav bar */}
+      {/* FIXED BOTTOM NAV BAR - height: 60, position: absolute, bottom: 0 */}
+      <View style={[
+        styles.fixedNavBar,
+        { 
+          height: NAV_BAR_HEIGHT + bottomInset,
+          paddingBottom: bottomInset,
+        }
+      ]}>
+        <TabBarContent />
+      </View>
+
+      {/* DE-COUPLED BOTTOM AD - position: absolute, bottom: 65, LAST ITEM = on top */}
       {adCampaignsConfig.bottomBanner.enabled && (
         <View style={[
-          styles.floatingBottomAd, 
-          { bottom: TAB_BAR_HEIGHT + bottomInset }
+          styles.floatingBottomAd,
+          { bottom: NAV_BAR_HEIGHT + bottomInset + 5 } // 65px above screen bottom (60 nav + 5 spacing)
         ]}>
           <AdBanner adUnit={adCampaignsConfig.bottomBanner} position="bottom" />
         </View>
@@ -143,13 +109,86 @@ export default function TabLayout() {
   );
 }
 
+// Separate component for tab bar content to access navigation
+function TabBarContent() {
+  // We need to use a workaround since we can't access navigation directly here
+  // This is handled by the individual tab items
+  return (
+    <View style={styles.navBarInner}>
+      <TabItem routeName="index" />
+      <TabItem routeName="map" />
+      <TabItem routeName="schedule" />
+      <TabItem routeName="leaderboard" />
+      <TabItem routeName="about" />
+    </View>
+  );
+}
+
+// Individual tab item with navigation
+function TabItem({ routeName }: { routeName: string }) {
+  const { usePathname, useRouter } = require('expo-router');
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  const iconName = getIconName(routeName);
+  const label = getLabel(routeName);
+  
+  // Check if this tab is active
+  const currentPath = pathname === '/' ? 'index' : pathname.replace('/', '');
+  const isFocused = currentPath === routeName || 
+                    (routeName === 'index' && pathname === '/') ||
+                    pathname.includes(routeName);
+  
+  const onPress = () => {
+    if (routeName === 'index') {
+      router.push('/');
+    } else {
+      router.push(`/${routeName}`);
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.tabItem}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.iconContainer}>
+        <Feather
+          name={iconName}
+          size={ICON_SIZE}
+          color={isFocused ? colors.tabActive : colors.tabInactive}
+        />
+      </View>
+      <Text style={[
+        styles.tabLabel,
+        { color: isFocused ? colors.tabActive : colors.tabInactive }
+      ]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
+  // ROOT CONTAINER - Full screen
+  rootContainer: {
     flex: 1,
     backgroundColor: colors.background,
   },
   
-  // Fixed Top Ad Banner - absolute at top with SafeArea
+  // CONTENT UNDERLAY - Extends to bottom edge, behind nav bar
+  contentUnderlay: {
+    flex: 1,
+    width: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  
+  // FIXED TOP BANNER - Absolute at top
   fixedTopBanner: {
     position: 'absolute',
     top: 0,
@@ -161,17 +200,15 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   
-  // Floating Tab Bar - absolute at bottom with solid background
-  floatingTabBar: {
+  // FIXED NAV BAR - Absolute at bottom, FIXED height: 60
+  fixedNavBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: 8,
     zIndex: 100,
     // Shadow for depth
     elevation: 20,
@@ -181,15 +218,21 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   
-  // Floating Bottom Ad - absolute positioned above nav bar
+  // Nav bar inner container
+  navBarInner: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingTop: 8,
+  },
+  
+  // DE-COUPLED BOTTOM AD - Absolute, sits on top of everything
   floatingBottomAd: {
     position: 'absolute',
     left: 0,
     right: 0,
     zIndex: 90,
     alignItems: 'center',
-    paddingVertical: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    // No background - truly floating
   },
   
   // Tab item
