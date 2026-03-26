@@ -3,114 +3,151 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View, Platform, TouchableOpacity, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../src/theme/colors';
 import AdBanner from '../../src/components/AdBanner';
 import adCampaignsConfig from '../../src/config/AdCampaignsConfig';
 
+// Fixed dimensions
+const ICON_SIZE = 24;
+const TAB_BAR_HEIGHT = 60;
+const TOP_BANNER_HEIGHT = 108; // 100px banner + 8px padding
+
+// Helper function to get icon names
+function getIconName(routeName: string): keyof typeof Feather.glyphMap {
+  switch (routeName) {
+    case 'index': return 'home';
+    case 'map': return 'map';
+    case 'schedule': return 'calendar';
+    case 'leaderboard': return 'bar-chart-2';
+    case 'about': return 'award';
+    default: return 'circle';
+  }
+}
+
+// Helper function to get display labels
+function getLabel(routeName: string): string {
+  switch (routeName) {
+    case 'index': return 'Home';
+    case 'map': return 'Map';
+    case 'schedule': return 'Schedule';
+    case 'leaderboard': return 'Leaderboard';
+    case 'about': return 'About';
+    default: return routeName;
+  }
+}
+
+// Custom Tab Bar component that includes the ad banner above it
+function CustomTabBar(props: any) {
+  const { state, navigation } = props;
+  const insets = useSafeAreaInsets();
+  const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
+  
+  return (
+    <View style={styles.customTabBarContainer}>
+      {/* Bottom Ad Banner - sits exactly above tab bar */}
+      {adCampaignsConfig.bottomBanner.enabled && (
+        <View style={styles.bottomAdWrapper}>
+          <AdBanner adUnit={adCampaignsConfig.bottomBanner} position="bottom" />
+        </View>
+      )}
+      
+      {/* Actual Tab Bar - pinned to bottom */}
+      <View style={[
+        styles.tabBar, 
+        { paddingBottom: bottomInset, height: TAB_BAR_HEIGHT + bottomInset }
+      ]}>
+        {state.routes.map((route: any, index: number) => {
+          const isFocused = state.index === index;
+          const iconName = getIconName(route.name);
+          const label = getLabel(route.name);
+          
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          return (
+            <TouchableOpacity
+              key={route.key}
+              style={styles.tabItem}
+              onPress={onPress}
+              activeOpacity={0.7}
+            >
+              <View style={styles.iconContainer}>
+                <Feather
+                  name={iconName}
+                  size={ICON_SIZE}
+                  color={isFocused ? colors.tabActive : colors.tabInactive}
+                />
+              </View>
+              <Text style={[
+                styles.tabLabel,
+                { color: isFocused ? colors.tabActive : colors.tabInactive }
+              ]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const topInset = insets.top || 0;
   
-  // Calculate heights for proper spacing
-  const topBannerHeight = adCampaignsConfig.topBanner.enabled ? 108 : 0; // 100 + padding
-  const bottomBannerHeight = adCampaignsConfig.bottomBanner.enabled ? 58 : 0; // 50 + padding
-  const bottomInset = Platform.OS === 'web' ? 20 : Math.max(insets.bottom, 34);
-  const tabBarHeight = 70 + bottomInset;
-
+  // Calculate content padding
+  const topPadding = adCampaignsConfig.topBanner.enabled ? TOP_BANNER_HEIGHT + topInset : topInset;
+  
   return (
     <View style={styles.container}>
-      {/* Top Masthead Banner (320x100) */}
-      <View style={[styles.topBannerContainer, { paddingTop: insets.top }]}>
-        <AdBanner adUnit={adCampaignsConfig.topBanner} position="top" />
-      </View>
+      {/* Top Masthead Banner (320x100) - Fixed at top */}
+      {adCampaignsConfig.topBanner.enabled && (
+        <View style={[styles.topBannerContainer, { paddingTop: topInset }]}>
+          <AdBanner adUnit={adCampaignsConfig.topBanner} position="top" />
+        </View>
+      )}
 
-      {/* Main Tab Content - Positioned between banners */}
-      <View style={[
-        styles.tabsContainer, 
-        { 
-          marginTop: topBannerHeight + insets.top,
-          marginBottom: tabBarHeight + bottomBannerHeight,
-        }
-      ]}>
-        <Tabs
-          screenOptions={{
-            headerShown: false,
-            tabBarStyle: {
-              backgroundColor: colors.surface,
-              borderTopWidth: 0,
-              height: tabBarHeight,
-              paddingBottom: bottomInset,
-              paddingTop: 10,
-              position: 'absolute',
-              bottom: bottomBannerHeight,
-              left: 0,
-              right: 0,
-              elevation: 8,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: -2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-            },
-            tabBarActiveTintColor: colors.tabActive,
-            tabBarInactiveTintColor: colors.tabInactive,
-            tabBarLabelStyle: styles.tabLabel,
-            tabBarItemStyle: styles.tabItem,
-          }}
-          initialRouteName="map"
-        >
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: 'Home',
-              tabBarIcon: ({ color, size }) => (
-                <Feather name="home" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="map"
-            options={{
-              title: 'Map',
-              tabBarIcon: ({ color, size }) => (
-                <Feather name="map" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="schedule"
-            options={{
-              title: 'Schedule',
-              tabBarIcon: ({ color, size }) => (
-                <Feather name="calendar" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="leaderboard"
-            options={{
-              title: 'Leaderboard',
-              tabBarIcon: ({ color, size }) => (
-                <Feather name="bar-chart-2" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="about"
-            options={{
-              title: 'About',
-              tabBarIcon: ({ color, size }) => (
-                <Feather name="award" size={size} color={color} />
-              ),
-            }}
-          />
-        </Tabs>
-      </View>
-
-      {/* Bottom Banner (320x50) - Above tab navigation */}
-      <View style={[styles.bottomBannerContainer, { bottom: tabBarHeight }]}>
-        <AdBanner adUnit={adCampaignsConfig.bottomBanner} position="bottom" />
-      </View>
+      {/* Main Tab Navigator */}
+      <Tabs
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+        }}
+        initialRouteName="map"
+      >
+        <Tabs.Screen
+          name="index"
+          options={{ title: 'Home' }}
+        />
+        <Tabs.Screen
+          name="map"
+          options={{ title: 'Map' }}
+        />
+        <Tabs.Screen
+          name="schedule"
+          options={{ title: 'Schedule' }}
+        />
+        <Tabs.Screen
+          name="leaderboard"
+          options={{ title: 'Leaderboard' }}
+        />
+        <Tabs.Screen
+          name="about"
+          options={{ title: 'About' }}
+        />
+      </Tabs>
     </View>
   );
 }
@@ -120,6 +157,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  // Top banner - absolute positioned at top
   topBannerContainer: {
     position: 'absolute',
     top: 0,
@@ -128,22 +166,49 @@ const styles = StyleSheet.create({
     zIndex: 100,
     backgroundColor: colors.background,
   },
-  tabsContainer: {
-    flex: 1,
-  },
-  bottomBannerContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 100,
+  // Custom tab bar container - includes ad + tabs
+  customTabBarContainer: {
     backgroundColor: colors.background,
   },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 2,
+  // Bottom ad wrapper - exactly above tab bar
+  bottomAdWrapper: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
+  // Tab bar styling - pinned to absolute bottom
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 8,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  // Individual tab item
   tabItem: {
-    paddingTop: 4,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  // Icon container with fixed size
+  iconContainer: {
+    width: ICON_SIZE + 8,
+    height: ICON_SIZE + 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Tab label
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
   },
 });
