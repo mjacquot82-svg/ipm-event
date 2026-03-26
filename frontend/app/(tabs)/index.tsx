@@ -1246,15 +1246,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 0,
-    paddingBottom: 140, // Account for taller nav bar (ad + icons)
+    paddingBottom: 180, // Critical: allows SOS/Alerts buttons to scroll clear of floating ad
   },
   headerBanner: {
     width: '100%',
   },
   bannerImage: {
     width: '100%',
-    height: 180, // Fixed height: 180, fully visible
+    height: 180,
     resizeMode: 'contain',
+    marginTop: 20, // Space between top ad and IPM branding
   },
   section: {
     paddingHorizontal: 20,

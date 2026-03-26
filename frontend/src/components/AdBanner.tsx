@@ -1,5 +1,5 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// AD BANNER COMPONENT - POLISHED STYLES
+// AD BANNER COMPONENT - FINALIZED STYLES
 
 import React from 'react';
 import {
@@ -34,25 +34,24 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
   };
 
   const isTop = position === 'top';
-  const bannerHeight = isTop ? 80 : 50;
 
   if (isTop) {
-    // TOP BANNER - Simple style
+    // TOP AD - 92% width, centered, borderRadius: 12, consistent with Quick Actions
     return (
       <View style={styles.topContainer} pointerEvents={pointerEvents}>
         <TouchableOpacity
-          style={[styles.topBanner, { height: bannerHeight }]}
+          style={styles.topBanner}
           onPress={handlePress}
           activeOpacity={0.9}
         >
           {adUnit.imageUrl ? (
             <Image
               source={{ uri: adUnit.imageUrl }}
-              style={[styles.bannerImage, { height: bannerHeight }]}
+              style={styles.topBannerImage}
               resizeMode="cover"
             />
           ) : (
-            <View style={[styles.placeholder, { height: bannerHeight }]}>
+            <View style={styles.topPlaceholder}>
               <Text style={styles.placeholderText}>{adUnit.placeholderText}</Text>
             </View>
           )}
@@ -61,11 +60,11 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
     );
   }
 
-  // BOTTOM BANNER - Polished floating style
+  // BOTTOM AD - Floating pill, 92% width, borderRadius: 12, centered
   return (
     <View style={styles.bottomContainer} pointerEvents={pointerEvents}>
       <TouchableOpacity
-        style={styles.floatingBanner}
+        style={styles.bottomBanner}
         onPress={handlePress}
         activeOpacity={0.9}
       >
@@ -86,69 +85,81 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
 };
 
 const styles = StyleSheet.create({
-  // TOP BANNER STYLES
+  // TOP AD CONTAINER
   topContainer: {
+    width: '100%',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingHorizontal: '4%', // Creates the 92% effect with centering
+    marginTop: 8, // Small margin so it doesn't touch the very top
   },
+  
+  // TOP BANNER - 92% width, borderRadius: 12
   topBanner: {
-    width: 320,
-    borderRadius: 4,
+    width: '100%', // Will be 92% due to container padding
+    height: 80,
+    borderRadius: 12,
     overflow: 'hidden',
-    marginVertical: 4,
+    alignSelf: 'center',
   },
-  bannerImage: {
-    width: 320,
+  
+  topBannerImage: {
+    width: '100%',
+    height: 80,
+    borderRadius: 12,
   },
-  placeholder: {
-    width: 320,
-    backgroundColor: colors.primary,
+  
+  topPlaceholder: {
+    width: '100%',
+    height: 80,
+    backgroundColor: '#8B1538', // IPM branding red
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 4,
+    borderRadius: 12,
   },
-  placeholderText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-
-  // BOTTOM BANNER - POLISHED FLOATING STYLES
+  
+  // BOTTOM AD CONTAINER
   bottomContainer: {
+    width: '100%',
     alignItems: 'center',
-    backgroundColor: 'transparent', // Transparent area around the ad
+    backgroundColor: 'transparent',
   },
-  floatingBanner: {
-    width: 320,
+  
+  // BOTTOM BANNER - Floating, 92% width, borderRadius: 12
+  bottomBanner: {
+    width: '92%',
     height: 50,
     alignSelf: 'center',
-    // Floating container styles
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: 'white',
+    borderRadius: 12,
     overflow: 'hidden',
-    // Shadow/Elevation for "pop" effect
+    // Shadow for floating effect
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
     elevation: 8,
   },
+  
   bottomBannerImage: {
-    width: 320,
+    width: '100%',
     height: 50,
-    borderRadius: 10,
+    borderRadius: 12,
   },
+  
   bottomPlaceholder: {
-    width: 320,
+    width: '100%',
     height: 50,
-    backgroundColor: colors.primary,
+    backgroundColor: '#8B1538', // IPM branding red - same as top
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 12,
+  },
+  
+  // PLACEHOLDER TEXT
+  placeholderText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });
 
