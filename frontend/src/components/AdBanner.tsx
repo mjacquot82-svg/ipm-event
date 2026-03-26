@@ -1,5 +1,5 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// AD BANNER COMPONENT - CLEAN DEFAULTS
+// AD BANNER COMPONENT - WITH POINTER EVENTS SUPPORT
 
 import React from 'react';
 import {
@@ -16,9 +16,10 @@ import colors from '../theme/colors';
 interface AdBannerProps {
   adUnit: AdUnit;
   position: 'top' | 'bottom';
+  pointerEvents?: 'box-none' | 'none' | 'auto';
 }
 
-const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position }) => {
+const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = 'auto' }) => {
   if (!adUnit.enabled) return null;
 
   const handlePress = async () => {
@@ -33,10 +34,13 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position }) => {
   };
 
   const isTop = position === 'top';
-  const bannerHeight = isTop ? 80 : 50; // Top: 80, Bottom: 50
+  const bannerHeight = isTop ? 80 : 50;
 
   return (
-    <View style={isTop ? styles.topContainer : styles.bottomContainer}>
+    <View 
+      style={isTop ? styles.topContainer : styles.bottomContainer}
+      pointerEvents={pointerEvents}
+    >
       <TouchableOpacity
         style={[styles.banner, { height: bannerHeight }]}
         onPress={handlePress}
@@ -61,30 +65,25 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position }) => {
 };
 
 const styles = StyleSheet.create({
-  // TOP CONTAINER - has background
   topContainer: {
     alignItems: 'center',
     backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  // BOTTOM CONTAINER - NO background (transparent)
   bottomContainer: {
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
-  // BANNER TOUCHABLE
   banner: {
     width: 320,
     borderRadius: 4,
     overflow: 'hidden',
     marginVertical: 4,
   },
-  // BANNER IMAGE
   bannerImage: {
     width: 320,
   },
-  // PLACEHOLDER
   placeholder: {
     width: 320,
     backgroundColor: colors.primary,
@@ -92,7 +91,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 4,
   },
-  // PLACEHOLDER TEXT
   placeholderText: {
     color: '#FFFFFF',
     fontSize: 12,

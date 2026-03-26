@@ -129,7 +129,11 @@ export default function TabLayout() {
           style={styles.floatingAd}
           pointerEvents="box-none"
         >
-          <AdBanner adUnit={adCampaignsConfig.bottomBanner} position="bottom" />
+          <AdBanner 
+            adUnit={adCampaignsConfig.bottomBanner} 
+            position="bottom"
+            pointerEvents="box-none"
+          />
         </View>
       )}
     </View>
@@ -181,6 +185,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 999,
+    elevation: 999, // Android requires elevation alongside zIndex
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
