@@ -29,8 +29,8 @@ const adCampaignsConfig: AdCampaignsConfig = {
   topBanner: {
     id: 'top-banner',
     name: 'Sponsor Spotlight',
-    imageUrl: 'https://i.imgur.com/q1QPC1L.jpeg',  // Real sponsor artwork
-    targetUrl: 'https://ipm2026.ca/sponsors',
+    imageUrl: 'https://i.imgur.com/q1QPC1L.jpeg',
+    targetUrl: 'https://www.jenniferjacquotphotography.com/',
     placeholderText: 'SPONSOR SPOTLIGHT (320x80) - CLICK HERE',
     width: 320,
     height: 80,
@@ -42,8 +42,8 @@ const adCampaignsConfig: AdCampaignsConfig = {
   bottomBanner: {
     id: 'bottom-banner',
     name: 'Official Souvenirs',
-    imageUrl: 'https://i.imgur.com/Gpojrf0.jpeg',  // Real souvenirs artwork
-    targetUrl: 'https://ipm26.itemorder.com/shop/home/',
+    imageUrl: 'https://i.imgur.com/Gpojrf0.jpeg',
+    targetUrl: 'https://www.jenniferjacquotphotography.com/',
     placeholderText: 'OFFICIAL SOUVENIRS (320x50) - CLICK HERE',
     width: 320,
     height: 50,
@@ -55,8 +55,8 @@ const adCampaignsConfig: AdCampaignsConfig = {
   interstitial: {
     id: 'interstitial',
     name: 'Full-Screen Spotlight',
-    imageUrl: null,  // Set to image URL when you have artwork
-    targetUrl: 'https://www.tix123.com/tickets/?code=IPMRE26',
+    imageUrl: 'https://i.imgur.com/kUSq75w.jpeg',
+    targetUrl: 'https://www.jenniferjacquotphotography.com/',
     placeholderText: 'FULL-SCREEN SPOTLIGHT AD\n(CLICK TO DISMISS)',
     width: 390,
     height: 844,
