@@ -1255,7 +1255,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 180,
     resizeMode: 'contain',
-    marginTop: 20, // Space between top ad and IPM branding
+    marginTop: 15, // Space between top ad and IPM branding
   },
   section: {
     paddingHorizontal: 20,

@@ -1,5 +1,5 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// AD BANNER COMPONENT - FINALIZED STYLES
+// AD BANNER COMPONENT - FINAL VERSION WITH REAL ASSETS
 
 import React from 'react';
 import {
@@ -36,7 +36,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
   const isTop = position === 'top';
 
   if (isTop) {
-    // TOP AD - 92% width, centered, borderRadius: 12, consistent with Quick Actions
+    // TOP AD - 92% width, borderRadius: 12, shadow
     return (
       <View style={styles.topContainer} pointerEvents={pointerEvents}>
         <TouchableOpacity
@@ -48,7 +48,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
             <Image
               source={{ uri: adUnit.imageUrl }}
               style={styles.topBannerImage}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           ) : (
             <View style={styles.topPlaceholder}>
@@ -60,7 +60,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
     );
   }
 
-  // BOTTOM AD - Floating pill, 92% width, borderRadius: 12, centered
+  // BOTTOM AD - 92% width, borderRadius: 12, shadow
   return (
     <View style={styles.bottomContainer} pointerEvents={pointerEvents}>
       <TouchableOpacity
@@ -72,7 +72,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
           <Image
             source={{ uri: adUnit.imageUrl }}
             style={styles.bottomBannerImage}
-            resizeMode="cover"
+            resizeMode="contain"
           />
         ) : (
           <View style={styles.bottomPlaceholder}>
@@ -85,76 +85,79 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
 };
 
 const styles = StyleSheet.create({
-  // TOP AD CONTAINER
+  // TOP AD CONTAINER - marginTop: 10
   topContainer: {
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: '4%', // Creates the 92% effect with centering
-    marginTop: 8, // Small margin so it doesn't touch the very top
+    paddingHorizontal: '4%', // Creates 92% width effect
+    marginTop: 10,
   },
   
-  // TOP BANNER - 92% width, borderRadius: 12
+  // TOP BANNER - borderRadius: 12, shadow matching Quick Actions
   topBanner: {
-    width: '100%', // Will be 92% due to container padding
+    width: '100%',
     height: 80,
     borderRadius: 12,
     overflow: 'hidden',
     alignSelf: 'center',
+    backgroundColor: '#8B1538',
+    // Shadow matching Quick Actions buttons
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   
   topBannerImage: {
     width: '100%',
     height: 80,
-    borderRadius: 12,
   },
   
   topPlaceholder: {
     width: '100%',
     height: 80,
-    backgroundColor: '#8B1538', // IPM branding red
+    backgroundColor: '#8B1538',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 12,
   },
   
   // BOTTOM AD CONTAINER
   bottomContainer: {
     width: '100%',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    paddingHorizontal: '4%', // Creates 92% width effect
   },
   
-  // BOTTOM BANNER - Floating, 92% width, borderRadius: 12
+  // BOTTOM BANNER - borderRadius: 12, shadow matching Quick Actions
   bottomBanner: {
-    width: '92%',
+    width: '100%',
     height: 50,
     alignSelf: 'center',
     borderRadius: 12,
     overflow: 'hidden',
-    // Shadow for floating effect
+    backgroundColor: '#8B1538',
+    // Shadow matching Quick Actions buttons
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   
   bottomBannerImage: {
     width: '100%',
     height: 50,
-    borderRadius: 12,
   },
   
   bottomPlaceholder: {
     width: '100%',
     height: 50,
-    backgroundColor: '#8B1538', // IPM branding red - same as top
+    backgroundColor: '#8B1538',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 12,
   },
   
-  // PLACEHOLDER TEXT
   placeholderText: {
     color: '#FFFFFF',
     fontSize: 12,
