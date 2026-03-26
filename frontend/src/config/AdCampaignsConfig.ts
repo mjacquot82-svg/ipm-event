@@ -29,7 +29,7 @@ const adCampaignsConfig: AdCampaignsConfig = {
   topBanner: {
     id: 'top-banner',
     name: 'Sponsor Spotlight',
-    imageUrl: 'https://i.imgur.com/q1QPC1L.jpeg',
+    imageUrl: 'https://i.imgur.com/1NGdr0x.jpeg',
     targetUrl: 'https://www.jenniferjacquotphotography.com/',
     placeholderText: 'SPONSOR SPOTLIGHT (320x80) - CLICK HERE',
     width: 320,
@@ -42,7 +42,7 @@ const adCampaignsConfig: AdCampaignsConfig = {
   bottomBanner: {
     id: 'bottom-banner',
     name: 'Official Souvenirs',
-    imageUrl: 'https://i.imgur.com/Gpojrf0.jpeg',
+    imageUrl: 'https://i.imgur.com/1WFMq8v.jpeg',
     targetUrl: 'https://www.jenniferjacquotphotography.com/',
     placeholderText: 'OFFICIAL SOUVENIRS (320x50) - CLICK HERE',
     width: 320,
@@ -55,7 +55,7 @@ const adCampaignsConfig: AdCampaignsConfig = {
   interstitial: {
     id: 'interstitial',
     name: 'Full-Screen Spotlight',
-    imageUrl: 'https://i.imgur.com/kUSq75w.jpeg',
+    imageUrl: 'https://i.imgur.com/XpU6coq.jpeg',
     targetUrl: 'https://www.jenniferjacquotphotography.com/',
     placeholderText: 'FULL-SCREEN SPOTLIGHT AD\n(CLICK TO DISMISS)',
     width: 390,
