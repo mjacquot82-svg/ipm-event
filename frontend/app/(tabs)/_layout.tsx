@@ -3,7 +3,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { StyleSheet, View, Platform, TouchableOpacity, Text, Dimensions } from 'react-native';
+import { StyleSheet, View, Platform, TouchableOpacity, Text } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../src/theme/colors';
 import AdBanner from '../../src/components/AdBanner';
@@ -52,17 +52,17 @@ export default function TabLayout() {
     // ROOT CONTAINER - Standard View for manual control
     <View style={styles.rootContainer}>
       
-      {/* CONTENT UNDERLAY - 100% height, NO padding/margin bottom */}
+      {/* CONTENT UNDERLAY - flex: 1, zIndex: 1 - Main content layer */}
       <View style={styles.contentUnderlay}>
         
-        {/* Tab Navigator - NO paddingBottom */}
+        {/* Tab Navigator - Content has flex: 1 */}
         <Tabs
           tabBar={() => <EmptyTabBar />}
           screenOptions={{
             headerShown: false,
           }}
           sceneContainerStyle={{
-            // Only top padding for the top ad + safe area
+            flex: 1,
             paddingTop: TOP_BANNER_HEIGHT + topInset,
             backgroundColor: colors.background,
           }}
@@ -76,7 +76,7 @@ export default function TabLayout() {
         </Tabs>
       </View>
 
-      {/* FIXED TOP BANNER - Wrapped in SafeAreaView for status bar */}
+      {/* FIXED TOP BANNER - Wrapped in SafeAreaView for status bar, zIndex: 100 */}
       {adCampaignsConfig.topBanner.enabled && (
         <SafeAreaView edges={['top']} style={styles.topSafeArea}>
           <View style={styles.fixedTopBanner}>
@@ -85,7 +85,7 @@ export default function TabLayout() {
         </SafeAreaView>
       )}
 
-      {/* FIXED BOTTOM NAV BAR - position: absolute, bottom: 0, height: 60 */}
+      {/* FIXED BOTTOM NAV BAR - position: absolute, bottom: 0, height: 60, zIndex: 100 */}
       <View style={[
         styles.fixedNavBar,
         { 
@@ -96,9 +96,12 @@ export default function TabLayout() {
         <TabBarContent />
       </View>
 
-      {/* GLOBAL FLOATING BOTTOM AD - position: absolute, bottom: 85, zIndex: 9999 */}
+      {/* GLOBAL FLOATING BOTTOM AD - position: absolute, bottom: 85, zIndex: 999, pointerEvents: box-none */}
       {adCampaignsConfig.bottomBanner.enabled && (
-        <View style={styles.globalFloatingBottomAd}>
+        <View 
+          style={styles.globalFloatingBottomAd}
+          pointerEvents="box-none"
+        >
           <AdBanner adUnit={adCampaignsConfig.bottomBanner} position="bottom" />
         </View>
       )}
@@ -172,16 +175,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  // CONTENT UNDERLAY - 100% height
+  // CONTENT UNDERLAY - flex: 1, zIndex: 1 (lowest layer)
   contentUnderlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
+    zIndex: 1,
   },
   
-  // TOP SAFE AREA - Ensures ad is below status bar
+  // TOP SAFE AREA - zIndex: 100
   topSafeArea: {
     position: 'absolute',
     top: 0,
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   
-  // FIXED NAV BAR - position: absolute, bottom: 0, height: 60
+  // FIXED NAV BAR - position: absolute, bottom: 0, height: 60, zIndex: 100
   fixedNavBar: {
     position: 'absolute',
     bottom: 0,
@@ -222,14 +222,15 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   
-  // GLOBAL FLOATING BOTTOM AD - position: absolute, bottom: 85, zIndex: 9999, alignSelf: center
+  // GLOBAL FLOATING BOTTOM AD - position: absolute, bottom: 85, zIndex: 999
+  // pointerEvents: 'box-none' allows clicks to pass through transparent areas
   globalFloatingBottomAd: {
     position: 'absolute',
     bottom: 85, // 60 nav + 25 spacing
     left: 0,
     right: 0,
-    zIndex: 9999,
-    alignItems: 'center', // Centers the 320px banner
+    zIndex: 999,
+    alignItems: 'center',
     backgroundColor: 'transparent',
   },
   

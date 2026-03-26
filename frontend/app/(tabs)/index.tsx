@@ -1252,7 +1252,7 @@ const styles = StyleSheet.create({
   },
   bannerImage: {
     width: '100%',
-    height: 240,
+    height: 200, // Fixed height as requested
     resizeMode: 'contain',
     marginVertical: 10, // Space between ad and logo
   },
