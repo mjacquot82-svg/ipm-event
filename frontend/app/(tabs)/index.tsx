@@ -353,16 +353,17 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* My Starred Events Section */}
-        {starredSessions.length > 0 && (
+        {/* Happening Now Section */}
+        {happeningNow.length > 0 && (
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.starredHeader}>
-                <Feather name="star" size={18} color={colors.accent} />
-                <Text style={styles.sectionTitleStarred}>{starredSessions.length} Starred Event{starredSessions.length > 1 ? 's' : ''}</Text>
+            <View style={styles.sectionHeaderLive}>
+              <View style={styles.liveIndicator}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
               </View>
+              <Text style={styles.sectionTitleLive}>Happening Now</Text>
             </View>
-            {starredSessions.slice(0, 3).map((session) => {
+            {happeningNow.map((session) => {
               const location = getLocationById(session.location_id);
               const typeColor = location ? getLocationTypeColor(location.type) : colors.primary;
               
@@ -370,10 +371,7 @@ export default function HomeScreen() {
                 <TouchableOpacity 
                   key={session.id} 
                   style={[styles.liveSessionCard, { borderColor: typeColor }]}
-                  onPress={() => {
-                    setSelectedItineraryEvent(session);
-                    setShowItineraryEventDetails(true);
-                  }}
+                  onPress={() => router.push('/(tabs)/map')}
                   activeOpacity={0.8}
                 >
                   <View style={styles.liveSessionContent}>
@@ -387,24 +385,28 @@ export default function HomeScreen() {
                       </View>
                     )}
                     <Text style={styles.liveTimeText}>
-                      {formatTime(session.start_time)} - {formatTime(session.end_time)}
+                      Until {formatTime(session.end_time)}
                     </Text>
                   </View>
-                  <View style={styles.goButton}>
-                    <Feather name="chevron-right" size={18} color={colors.accent} />
-                  </View>
+                  <TouchableOpacity style={styles.goButton}>
+                    <Feather name="navigation" size={18} color={colors.accent} />
+                  </TouchableOpacity>
                 </TouchableOpacity>
               );
             })}
-            {starredSessions.length > 3 && (
-              <TouchableOpacity 
-                style={styles.viewMoreButton}
-                onPress={() => setShowItinerary(true)}
-              >
-                <Text style={styles.viewMoreText}>View all {starredSessions.length} events</Text>
-                <Feather name="arrow-right" size={16} color={colors.primary} />
-              </TouchableOpacity>
-            )}
+          </View>
+        )}
+
+        {/* My Next Session (Starred) */}
+        {nextStarredSession && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.starredHeader}>
+                <Feather name="star" size={18} color={colors.accent} />
+                <Text style={styles.sectionTitleStarred}>My Next Session</Text>
+              </View>
+            </View>
+            {renderSessionCard(nextStarredSession, true)}
           </View>
         )}
 
