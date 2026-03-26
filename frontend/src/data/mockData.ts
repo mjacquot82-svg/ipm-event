@@ -23,6 +23,7 @@ export interface Vendor {
   name: string;
   description: string;
   location_id: string;
+  priority?: number;  // 1 = highest priority, 99 = lowest
 }
 
 export interface Session {

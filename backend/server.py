@@ -77,6 +77,7 @@ class Vendor(BaseModel):
     location: str
     hours_of_operation: str
     days_of_operation: str
+    priority: int = 99  # Default to 99 (lowest priority)
 
 class VendorsResponse(BaseModel):
     vendors: List[Vendor]
@@ -229,6 +230,13 @@ async def get_vendors():
             
             vendor_id = f"vendor_{idx}_{name.replace(' ', '_').lower()}"
             
+            # Parse priority - default to 99 if not present or invalid
+            priority_str = row.get('priority', '').strip()
+            try:
+                priority = int(priority_str) if priority_str else 99
+            except ValueError:
+                priority = 99
+            
             vendor = Vendor(
                 id=vendor_id,
                 name=name,
@@ -236,8 +244,12 @@ async def get_vendors():
                 location=row.get('Location', '').strip(),
                 hours_of_operation=row.get('Hours of Operation', '').strip(),
                 days_of_operation=row.get('Days of Operation', '').strip(),
+                priority=priority,
             )
             vendors.append(vendor)
+        
+        # Sort vendors by priority (1 at top, 99 at bottom)
+        vendors.sort(key=lambda v: v.priority)
         
         return VendorsResponse(
             vendors=vendors,
