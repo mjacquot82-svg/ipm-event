@@ -11,6 +11,7 @@ import {
   registerForPushNotificationsAsync, 
   addNotificationListeners 
 } from '../src/utils/notificationService';
+import { AdProvider } from '../src/context/AdContext';
 
 export default function RootLayout() {
   useEffect(() => {
@@ -48,10 +49,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <SafeAreaProvider>
-        <StatusBar style="dark" backgroundColor={colors.background} />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
+        <AdProvider>
+          <StatusBar style="dark" backgroundColor={colors.background} />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+        </AdProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
