@@ -373,6 +373,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   bottomPadding: {
-    height: 120,
+    height: 150, // Spacer to scroll content above floating ad
   },
 });

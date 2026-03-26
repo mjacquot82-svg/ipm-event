@@ -156,6 +156,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   bottomPadding: {
-    height: 120,
+    height: 150, // Spacer to scroll content above floating ad
   },
 });

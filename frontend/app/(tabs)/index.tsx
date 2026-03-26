@@ -1254,6 +1254,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 240,
     resizeMode: 'contain',
+    marginVertical: 10, // Space between ad and logo
   },
   section: {
     paddingHorizontal: 20,
@@ -1506,7 +1507,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   bottomPadding: {
-    height: 120,
+    height: 150, // Spacer to scroll content above floating ad
   },
   // Modal styles
   modalOverlay: {

@@ -32,7 +32,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position }) => {
   };
 
   const isTop = position === 'top';
-  const bannerHeight = isTop ? 100 : 50;
+  const bannerHeight = isTop ? 80 : 50; // Top: 80px, Bottom: 50px
 
   // Top banner has background, bottom banner is TRANSPARENT (floating)
   const containerStyle = isTop 

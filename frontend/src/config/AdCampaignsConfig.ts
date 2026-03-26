@@ -24,16 +24,16 @@ export interface AdCampaignsConfig {
 // ============================================
 
 const adCampaignsConfig: AdCampaignsConfig = {
-  // Top Masthead Banner (320x100)
+  // Top Masthead Banner (320x80) - Reduced height to not cut off logo
   // Appears at the top of every screen below the status bar
   topBanner: {
     id: 'top-banner',
     name: 'Sponsor Spotlight',
     imageUrl: null,  // Set to image URL when you have sponsor artwork
     targetUrl: 'https://ipm2026.ca/sponsors',
-    placeholderText: 'SPONSOR SPOTLIGHT (320x100) - CLICK HERE',
+    placeholderText: 'SPONSOR SPOTLIGHT (320x80) - CLICK HERE',
     width: 320,
-    height: 100,
+    height: 80,
     enabled: true,
   },
 
