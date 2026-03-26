@@ -32,11 +32,15 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position }) => {
   };
 
   const isTop = position === 'top';
-  const containerStyle = isTop ? styles.topContainer : styles.bottomContainer;
   const bannerHeight = isTop ? 100 : 50;
 
+  // Top banner has background, bottom banner is TRANSPARENT (floating)
+  const containerStyle = isTop 
+    ? [styles.container, styles.topContainer]
+    : [styles.container, styles.bottomContainer];
+
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={containerStyle}>
       <TouchableOpacity
         style={[styles.banner, { height: bannerHeight }]}
         onPress={handlePress}
@@ -62,24 +66,32 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position }) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
     alignItems: 'center',
-    backgroundColor: colors.background,
     zIndex: 100,
   },
+  // TOP BANNER - Has solid background
   topContainer: {
+    width: '100%',
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  // BOTTOM BANNER - TRANSPARENT background (truly floating)
   bottomContainer: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    backgroundColor: 'transparent',
+    // NO border, NO width: 100% - just the 320px banner floating
   },
   banner: {
     width: 320,
     overflow: 'hidden',
     borderRadius: 4,
     marginVertical: 4,
+    // Shadow to make it "pop" and look floating
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   bannerImage: {
     width: 320,
