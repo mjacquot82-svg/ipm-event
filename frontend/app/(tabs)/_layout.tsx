@@ -1,18 +1,16 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// 3-LAYER SANDWICH ARCHITECTURE
 
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { StyleSheet, View, Platform, TouchableOpacity, Text } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../src/theme/colors';
 import AdBanner from '../../src/components/AdBanner';
 import adCampaignsConfig from '../../src/config/AdCampaignsConfig';
 
 const ICON_SIZE = 24;
-const NAV_BAR_HEIGHT = 60; // Layer 2 fixed height
-const TOP_BANNER_HEIGHT = 80; // Top ad fixed height
+const NAV_BAR_HEIGHT = 60;
 
 function getIconName(routeName: string): keyof typeof Feather.glyphMap {
   switch (routeName) {
@@ -86,32 +84,37 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const topInset = insets.top || 0;
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
+  
+  // Top ad height: 80px ad + 8px padding = 88px
+  const topAdHeight = adCampaignsConfig.topBanner.enabled ? 88 : 0;
 
   return (
     <View style={styles.root}>
       
-      {/* TOP SPONSOR AD - Fixed height: 80 */}
+      {/* TOP AD - Fixed at very top, no gap */}
       {adCampaignsConfig.topBanner.enabled && (
-        <SafeAreaView edges={['top']} style={styles.topAdContainer}>
+        <View style={[styles.topAdWrapper, { paddingTop: topInset }]}>
           <AdBanner adUnit={adCampaignsConfig.topBanner} position="top" />
-        </SafeAreaView>
+        </View>
       )}
 
-      {/* LAYER 1: CONTENT - flex: 1, height: 100% */}
-      <Tabs
-        tabBar={() => <EmptyTabBar />}
-        screenOptions={{ headerShown: false }}
-        sceneContainerStyle={styles.sceneContainer}
-        initialRouteName="map"
-      >
-        <Tabs.Screen name="index" options={{ title: 'Home' }} />
-        <Tabs.Screen name="map" options={{ title: 'Map' }} />
-        <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
-        <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
-        <Tabs.Screen name="about" options={{ title: 'About' }} />
-      </Tabs>
+      {/* MAIN CONTENT - Tabs */}
+      <View style={[styles.contentArea, { marginTop: topAdHeight + topInset }]}>
+        <Tabs
+          tabBar={() => <EmptyTabBar />}
+          screenOptions={{ headerShown: false }}
+          sceneContainerStyle={styles.scene}
+          initialRouteName="map"
+        >
+          <Tabs.Screen name="index" options={{ title: 'Home' }} />
+          <Tabs.Screen name="map" options={{ title: 'Map' }} />
+          <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
+          <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
+          <Tabs.Screen name="about" options={{ title: 'About' }} />
+        </Tabs>
+      </View>
 
-      {/* LAYER 2: NAVIGATION - bottom: 0, height: 60, zIndex: 100 */}
+      {/* BOTTOM NAV - Fixed at bottom */}
       <View style={[
         styles.navBar,
         { height: NAV_BAR_HEIGHT + bottomInset, paddingBottom: bottomInset }
@@ -123,10 +126,10 @@ export default function TabLayout() {
         <TabItem routeName="about" />
       </View>
 
-      {/* LAYER 3: FLOATING AD - position: absolute, bottom: 80, zIndex: 999 */}
+      {/* BOTTOM AD - Fixed just above nav bar */}
       {adCampaignsConfig.bottomBanner.enabled && (
         <View 
-          style={styles.floatingAd}
+          style={[styles.bottomAdWrapper, { bottom: NAV_BAR_HEIGHT + bottomInset }]}
           pointerEvents="box-none"
         >
           <AdBanner 
@@ -141,14 +144,13 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  // ROOT CONTAINER
   root: {
     flex: 1,
     backgroundColor: colors.background,
   },
   
-  // TOP AD CONTAINER
-  topAdContainer: {
+  // TOP AD - No gap, flush with status bar
+  topAdWrapper: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -157,14 +159,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  // LAYER 1: CONTENT - flex: 1, height: 100%
-  sceneContainer: {
+  // CONTENT AREA
+  contentArea: {
     flex: 1,
-    height: '100%',
+  },
+  
+  scene: {
+    flex: 1,
     backgroundColor: colors.background,
   },
   
-  // LAYER 2: NAVIGATION - bottom: 0, height: 60, zIndex: 100
+  // BOTTOM NAV
   navBar: {
     position: 'absolute',
     bottom: 0,
@@ -178,26 +183,22 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   
-  // LAYER 3: FLOATING AD - position: absolute, bottom: 80, zIndex: 999
-  floatingAd: {
+  // BOTTOM AD - Just above nav bar
+  bottomAdWrapper: {
     position: 'absolute',
-    bottom: 80,
     left: 0,
     right: 0,
-    zIndex: 999,
-    elevation: 999, // Android requires elevation alongside zIndex
+    zIndex: 99,
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
   
-  // TAB ITEM
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   
-  // TAB LABEL
   tabLabel: {
     fontSize: 10,
     fontWeight: '600',
