@@ -34,6 +34,9 @@ import {
   eventInfo,
 } from '../../src/data/mockData';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
+import InterstitialAd from '../../src/components/InterstitialAd';
+import adCampaignsConfig from '../../src/config/AdCampaignsConfig';
+import { useAdContext } from '../../src/context/AdContext';
 
 // SOS Form initial state
 const initialSOSForm = {
@@ -57,6 +60,26 @@ export default function HomeScreen() {
   const [apiEvents, setApiEvents] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
+  
+  // Interstitial Ad state
+  const { hasSeenInterstitial, setHasSeenInterstitial } = useAdContext();
+  const [showInterstitial, setShowInterstitial] = useState(false);
+  
+  // Show interstitial on first app load (once per session)
+  useEffect(() => {
+    if (!hasSeenInterstitial && adCampaignsConfig.interstitial.enabled) {
+      // Small delay to let the home screen render first
+      const timer = setTimeout(() => {
+        setShowInterstitial(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [hasSeenInterstitial]);
+
+  const handleCloseInterstitial = () => {
+    setShowInterstitial(false);
+    setHasSeenInterstitial(true);
+  };
   
   // Vendors state
   const [showVendors, setShowVendors] = useState(false);
@@ -1232,6 +1255,13 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Interstitial Ad - Shows once per session on app open */}
+      <InterstitialAd
+        adUnit={adCampaignsConfig.interstitial}
+        visible={showInterstitial}
+        onClose={handleCloseInterstitial}
+      />
     </View>
   );
 }
