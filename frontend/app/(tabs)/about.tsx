@@ -373,6 +373,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   bottomPadding: {
-    height: 30,
+    height: 120,
   },
 });
