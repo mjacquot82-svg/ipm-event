@@ -10,7 +10,8 @@ import AdBanner from '../../src/components/AdBanner';
 import adCampaignsConfig from '../../src/config/AdCampaignsConfig';
 
 const ICON_SIZE = 24;
-const NAV_BAR_HEIGHT = 60;
+const NAV_ICONS_HEIGHT = 60;
+const AD_SECTION_HEIGHT = 58; // 50px ad + 8px padding
 
 function getIconName(routeName: string): keyof typeof Feather.glyphMap {
   switch (routeName) {
@@ -85,13 +86,17 @@ export default function TabLayout() {
   const topInset = insets.top || 0;
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
   
-  // Top ad height: 80px + 8px margin
+  // Top ad height
   const topAdHeight = adCampaignsConfig.topBanner.enabled ? 96 : 0;
+  
+  // Bottom bar total height = ad section + icons + safe area
+  const bottomAdEnabled = adCampaignsConfig.bottomBanner.enabled;
+  const totalBottomBarHeight = (bottomAdEnabled ? AD_SECTION_HEIGHT : 0) + NAV_ICONS_HEIGHT + bottomInset;
 
   return (
     <View style={styles.root}>
       
-      {/* TOP AD - 92% width, borderRadius: 12, small marginTop */}
+      {/* TOP AD */}
       {adCampaignsConfig.topBanner.enabled && (
         <View style={[styles.topAdWrapper, { paddingTop: topInset }]}>
           <AdBanner adUnit={adCampaignsConfig.topBanner} position="top" />
@@ -114,28 +119,27 @@ export default function TabLayout() {
         </Tabs>
       </View>
 
-      {/* BOTTOM NAV BAR - Fixed at bottom: 0 */}
+      {/* COMBINED BOTTOM BAR - Ad + Nav Icons */}
       <View style={[
-        styles.navBar,
-        { height: NAV_BAR_HEIGHT + bottomInset, paddingBottom: bottomInset }
+        styles.combinedBottomBar,
+        { height: totalBottomBarHeight, paddingBottom: bottomInset }
       ]}>
-        <TabItem routeName="index" />
-        <TabItem routeName="map" />
-        <TabItem routeName="schedule" />
-        <TabItem routeName="leaderboard" />
-        <TabItem routeName="about" />
-      </View>
-
-      {/* BOTTOM AD - Floating at bottom: 95, clear of tab bar labels */}
-      {adCampaignsConfig.bottomBanner.enabled && (
-        <View style={styles.floatingBottomAd} pointerEvents="box-none">
-          <AdBanner 
-            adUnit={adCampaignsConfig.bottomBanner} 
-            position="bottom"
-            pointerEvents="box-none"
-          />
+        {/* AD SECTION - Below the border line, above icons */}
+        {bottomAdEnabled && (
+          <View style={styles.adSection}>
+            <AdBanner adUnit={adCampaignsConfig.bottomBanner} position="bottom" />
+          </View>
+        )}
+        
+        {/* ICONS SECTION - At the very bottom */}
+        <View style={styles.iconsSection}>
+          <TabItem routeName="index" />
+          <TabItem routeName="map" />
+          <TabItem routeName="schedule" />
+          <TabItem routeName="leaderboard" />
+          <TabItem routeName="about" />
         </View>
-      )}
+      </View>
     </View>
   );
 }
@@ -146,7 +150,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  // TOP AD WRAPPER
   topAdWrapper: {
     position: 'absolute',
     top: 0,
@@ -156,7 +159,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  // CONTENT AREA
   contentArea: {
     flex: 1,
   },
@@ -166,29 +168,29 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  // BOTTOM NAV BAR - Fixed at bottom: 0, height: 60
-  navBar: {
+  // Combined bottom bar - contains ad + icons
+  combinedBottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: 'row',
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     zIndex: 100,
-    paddingTop: 8,
   },
   
-  // FLOATING BOTTOM AD - At bottom: 95, clear of tab bar labels
-  floatingBottomAd: {
-    position: 'absolute',
-    bottom: 95, // Clear of 60px tab bar + labels
-    left: 0,
-    right: 0,
-    zIndex: 99,
+  // Ad section - below border line, above icons
+  adSection: {
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    paddingVertical: 4,
+  },
+  
+  // Icons section - at the bottom
+  iconsSection: {
+    flexDirection: 'row',
+    height: 60,
+    paddingTop: 8,
   },
   
   tabItem: {
