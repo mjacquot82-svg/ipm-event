@@ -353,17 +353,16 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Happening Now Section */}
-        {happeningNow.length > 0 && (
+        {/* My Starred Events Section */}
+        {starredSessions.length > 0 && (
           <View style={styles.section}>
-            <View style={styles.sectionHeaderLive}>
-              <View style={styles.liveIndicator}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>LIVE</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.starredHeader}>
+                <Feather name="star" size={18} color={colors.accent} />
+                <Text style={styles.sectionTitleStarred}>{starredSessions.length} Starred Event{starredSessions.length > 1 ? 's' : ''}</Text>
               </View>
-              <Text style={styles.sectionTitleLive}>Happening Now</Text>
             </View>
-            {happeningNow.map((session) => {
+            {starredSessions.slice(0, 3).map((session) => {
               const location = getLocationById(session.location_id);
               const typeColor = location ? getLocationTypeColor(location.type) : colors.primary;
               
@@ -371,7 +370,10 @@ export default function HomeScreen() {
                 <TouchableOpacity 
                   key={session.id} 
                   style={[styles.liveSessionCard, { borderColor: typeColor }]}
-                  onPress={() => router.push('/(tabs)/map')}
+                  onPress={() => {
+                    setSelectedItineraryEvent(session);
+                    setShowItineraryEventDetails(true);
+                  }}
                   activeOpacity={0.8}
                 >
                   <View style={styles.liveSessionContent}>
@@ -385,28 +387,24 @@ export default function HomeScreen() {
                       </View>
                     )}
                     <Text style={styles.liveTimeText}>
-                      Until {formatTime(session.end_time)}
+                      {formatTime(session.start_time)} - {formatTime(session.end_time)}
                     </Text>
                   </View>
-                  <TouchableOpacity style={styles.goButton}>
-                    <Feather name="navigation" size={18} color={colors.accent} />
-                  </TouchableOpacity>
+                  <View style={styles.goButton}>
+                    <Feather name="chevron-right" size={18} color={colors.accent} />
+                  </View>
                 </TouchableOpacity>
               );
             })}
-          </View>
-        )}
-
-        {/* My Next Session (Starred) */}
-        {nextStarredSession && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.starredHeader}>
-                <Feather name="star" size={18} color={colors.accent} />
-                <Text style={styles.sectionTitleStarred}>My Next Session</Text>
-              </View>
-            </View>
-            {renderSessionCard(nextStarredSession, true)}
+            {starredSessions.length > 3 && (
+              <TouchableOpacity 
+                style={styles.viewMoreButton}
+                onPress={() => setShowItinerary(true)}
+              >
+                <Text style={styles.viewMoreText}>View all {starredSessions.length} events</Text>
+                <Feather name="arrow-right" size={16} color={colors.primary} />
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -1319,6 +1317,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.accent,
     fontWeight: '500',
+  },
+  viewMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    marginTop: 8,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    gap: 8,
+  },
+  viewMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   liveSessionCard: {
     flexDirection: 'row',
