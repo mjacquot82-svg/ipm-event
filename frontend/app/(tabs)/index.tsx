@@ -1246,16 +1246,15 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 0,
-    paddingBottom: 200, // THE SPACER - Critical for scrolling content above floating ad
+    paddingBottom: 180, // Empty space to scroll buttons above the floating ad
   },
   headerBanner: {
     width: '100%',
   },
   bannerImage: {
     width: '100%',
-    height: 200, // Fixed height as requested
+    height: 180, // Fixed height: 180, fully visible
     resizeMode: 'contain',
-    marginVertical: 10, // Space between ad and logo
   },
   section: {
     paddingHorizontal: 20,

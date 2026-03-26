@@ -1,4 +1,5 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
+// AD BANNER COMPONENT - CLEAN DEFAULTS
 
 import React from 'react';
 import {
@@ -32,15 +33,10 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position }) => {
   };
 
   const isTop = position === 'top';
-  const bannerHeight = isTop ? 80 : 50; // Top: 80px, Bottom: 50px
-
-  // Top banner has background, bottom banner is TRANSPARENT (floating)
-  const containerStyle = isTop 
-    ? [styles.container, styles.topContainer]
-    : [styles.container, styles.bottomContainer];
+  const bannerHeight = isTop ? 80 : 50; // Top: 80, Bottom: 50
 
   return (
-    <View style={containerStyle}>
+    <View style={isTop ? styles.topContainer : styles.bottomContainer}>
       <TouchableOpacity
         style={[styles.banner, { height: bannerHeight }]}
         onPress={handlePress}
@@ -54,7 +50,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position }) => {
           />
         ) : (
           <View style={[styles.placeholder, { height: bannerHeight }]}>
-            <Text style={[styles.placeholderText, isTop && styles.placeholderTextLarge]}>
+            <Text style={styles.placeholderText}>
               {adUnit.placeholderText}
             </Text>
           </View>
@@ -65,37 +61,30 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    zIndex: 100,
-  },
-  // TOP BANNER - Has solid background
+  // TOP CONTAINER - has background
   topContainer: {
-    width: '100%',
+    alignItems: 'center',
     backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  // BOTTOM BANNER - TRANSPARENT background (truly floating)
+  // BOTTOM CONTAINER - NO background (transparent)
   bottomContainer: {
+    alignItems: 'center',
     backgroundColor: 'transparent',
-    // NO border, NO width: 100% - just the 320px banner floating
   },
+  // BANNER TOUCHABLE
   banner: {
     width: 320,
-    overflow: 'hidden',
     borderRadius: 4,
+    overflow: 'hidden',
     marginVertical: 4,
-    // Shadow to make it "pop" and look floating
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
   },
+  // BANNER IMAGE
   bannerImage: {
     width: 320,
   },
+  // PLACEHOLDER
   placeholder: {
     width: 320,
     backgroundColor: colors.primary,
@@ -103,15 +92,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 4,
   },
+  // PLACEHOLDER TEXT
   placeholderText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  placeholderTextLarge: {
-    fontSize: 14,
   },
 });
 

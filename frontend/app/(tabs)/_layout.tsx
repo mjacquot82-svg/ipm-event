@@ -1,4 +1,5 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
+// 3-LAYER SANDWICH ARCHITECTURE
 
 import React from 'react';
 import { Tabs } from 'expo-router';
@@ -10,8 +11,8 @@ import AdBanner from '../../src/components/AdBanner';
 import adCampaignsConfig from '../../src/config/AdCampaignsConfig';
 
 const ICON_SIZE = 24;
-const NAV_BAR_HEIGHT = 60;
-const TOP_BANNER_HEIGHT = 88;
+const NAV_BAR_HEIGHT = 60; // Layer 2 fixed height
+const TOP_BANNER_HEIGHT = 80; // Top ad fixed height
 
 function getIconName(routeName: string): keyof typeof Feather.glyphMap {
   switch (routeName) {
@@ -37,18 +38,6 @@ function getLabel(routeName: string): string {
 
 function EmptyTabBar() {
   return null;
-}
-
-function TabBarContent() {
-  return (
-    <View style={styles.navBarInner}>
-      <TabItem routeName="index" />
-      <TabItem routeName="map" />
-      <TabItem routeName="schedule" />
-      <TabItem routeName="leaderboard" />
-      <TabItem routeName="about" />
-    </View>
-  );
 }
 
 function TabItem({ routeName }: { routeName: string }) {
@@ -78,13 +67,11 @@ function TabItem({ routeName }: { routeName: string }) {
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={styles.iconContainer}>
-        <Feather
-          name={iconName}
-          size={ICON_SIZE}
-          color={isFocused ? colors.tabActive : colors.tabInactive}
-        />
-      </View>
+      <Feather
+        name={iconName}
+        size={ICON_SIZE}
+        color={isFocused ? colors.tabActive : colors.tabInactive}
+      />
       <Text style={[
         styles.tabLabel,
         { color: isFocused ? colors.tabActive : colors.tabInactive }
@@ -101,28 +88,20 @@ export default function TabLayout() {
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
 
   return (
-    <View style={styles.rootContainer}>
+    <View style={styles.root}>
       
-      {/* TOP BANNER */}
+      {/* TOP SPONSOR AD - Fixed height: 80 */}
       {adCampaignsConfig.topBanner.enabled && (
-        <SafeAreaView edges={['top']} style={styles.topSafeArea}>
-          <View style={styles.fixedTopBanner}>
-            <AdBanner adUnit={adCampaignsConfig.topBanner} position="top" />
-          </View>
+        <SafeAreaView edges={['top']} style={styles.topAdContainer}>
+          <AdBanner adUnit={adCampaignsConfig.topBanner} position="top" />
         </SafeAreaView>
       )}
 
-      {/* TABS NAVIGATOR */}
+      {/* LAYER 1: CONTENT - flex: 1, height: 100% */}
       <Tabs
         tabBar={() => <EmptyTabBar />}
-        screenOptions={{
-          headerShown: false,
-        }}
-        sceneContainerStyle={{
-          flex: 1,
-          paddingTop: TOP_BANNER_HEIGHT + topInset,
-          backgroundColor: colors.background,
-        }}
+        screenOptions={{ headerShown: false }}
+        sceneContainerStyle={styles.sceneContainer}
         initialRouteName="map"
       >
         <Tabs.Screen name="index" options={{ title: 'Home' }} />
@@ -132,29 +111,22 @@ export default function TabLayout() {
         <Tabs.Screen name="about" options={{ title: 'About' }} />
       </Tabs>
 
-      {/* BOTTOM NAV BAR */}
+      {/* LAYER 2: NAVIGATION - bottom: 0, height: 60, zIndex: 100 */}
       <View style={[
-        styles.fixedNavBar,
-        { 
-          height: NAV_BAR_HEIGHT + bottomInset,
-          paddingBottom: bottomInset,
-        }
+        styles.navBar,
+        { height: NAV_BAR_HEIGHT + bottomInset, paddingBottom: bottomInset }
       ]}>
-        <TabBarContent />
+        <TabItem routeName="index" />
+        <TabItem routeName="map" />
+        <TabItem routeName="schedule" />
+        <TabItem routeName="leaderboard" />
+        <TabItem routeName="about" />
       </View>
 
-      {/* BOTTOM AD - HARD OVERLAY - VERY LAST ITEM - EXACT STYLES AS SPECIFIED */}
+      {/* LAYER 3: FLOATING AD - position: absolute, bottom: 80, zIndex: 999 */}
       {adCampaignsConfig.bottomBanner.enabled && (
         <View 
-          style={{ 
-            position: 'absolute', 
-            bottom: 100, 
-            left: 0, 
-            right: 0, 
-            zIndex: 9999, 
-            alignItems: 'center', 
-            backgroundColor: 'transparent' 
-          }}
+          style={styles.floatingAd}
           pointerEvents="box-none"
         >
           <AdBanner adUnit={adCampaignsConfig.bottomBanner} position="bottom" />
@@ -165,12 +137,14 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  rootContainer: {
+  // ROOT CONTAINER
+  root: {
     flex: 1,
     backgroundColor: colors.background,
   },
   
-  topSafeArea: {
+  // TOP AD CONTAINER
+  topAdContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -179,51 +153,49 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  fixedTopBanner: {
+  // LAYER 1: CONTENT - flex: 1, height: 100%
+  sceneContainer: {
+    flex: 1,
+    height: '100%',
     backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   
-  fixedNavBar: {
+  // LAYER 2: NAVIGATION - bottom: 0, height: 60, zIndex: 100
+  navBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    flexDirection: 'row',
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     zIndex: 100,
-    elevation: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
-  
-  navBarInner: {
-    flex: 1,
-    flexDirection: 'row',
     paddingTop: 8,
   },
   
+  // LAYER 3: FLOATING AD - position: absolute, bottom: 80, zIndex: 999
+  floatingAd: {
+    position: 'absolute',
+    bottom: 80,
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  
+  // TAB ITEM
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
   },
   
-  iconContainer: {
-    width: ICON_SIZE + 8,
-    height: ICON_SIZE + 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
+  // TAB LABEL
   tabLabel: {
     fontSize: 10,
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: 4,
   },
 });
