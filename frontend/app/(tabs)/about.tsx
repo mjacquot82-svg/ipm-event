@@ -32,15 +32,11 @@ export default function AboutScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Logo Header */}
         <View style={styles.logoSection}>
-          <View style={styles.logoCircle}>
-            <View style={styles.logoInner}>
-              <Text style={styles.logoCounty}>Bruce County</Text>
-              <Text style={styles.logoYear}>2026</Text>
-              <View style={styles.tractorIconContainer}>
-                <Feather name="truck" size={28} color={colors.textPrimary} />
-              </View>
-            </View>
-          </View>
+          <Image 
+            source={{ uri: 'https://customer-assets.emergentagent.com/job_95522952-d1fd-436e-88ee-22dc044a6280/artifacts/cwk6huub_image.png' }}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.eventTitle}>International Plowing Match</Text>
           <Text style={styles.eventSubtitle}>& Rural Expo</Text>
         </View>
@@ -152,38 +148,9 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 24,
   },
-  logoCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: colors.primary,
-    borderWidth: 4,
-    borderColor: colors.accent,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  logoInner: {
-    alignItems: 'center',
-  },
-  logoCounty: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    letterSpacing: 1,
-  },
-  logoYear: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginVertical: 2,
-  },
-  tractorIconContainer: {
-    marginTop: 4,
+  logoImage: {
+    width: 160,
+    height: 160,
   },
   eventTitle: {
     fontSize: 22,
