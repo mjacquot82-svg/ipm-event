@@ -1,19 +1,28 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Alert, Platform } from 'react-native';
+import { Alert, Platform, View } from 'react-native';
 import colors from '../src/theme/colors';
 import { 
   registerForPushNotificationsAsync, 
   addNotificationListeners 
 } from '../src/utils/notificationService';
 import { AdProvider } from '../src/context/AdContext';
+import InterstitialAd from '../src/components/InterstitialAd';
+import adCampaignsConfig from '../src/config/AdCampaignsConfig';
 
 export default function RootLayout() {
+  // Show interstitial immediately on app launch
+  const [showInterstitial, setShowInterstitial] = useState(adCampaignsConfig.interstitial.enabled);
+  
+  const handleCloseInterstitial = () => {
+    setShowInterstitial(false);
+  };
+
   useEffect(() => {
     // Register for push notifications on app start
     const initNotifications = async () => {
@@ -54,6 +63,13 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack>
+          
+          {/* Interstitial Ad - Shows immediately on app launch */}
+          <InterstitialAd
+            adUnit={adCampaignsConfig.interstitial}
+            visible={showInterstitial}
+            onClose={handleCloseInterstitial}
+          />
         </AdProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
