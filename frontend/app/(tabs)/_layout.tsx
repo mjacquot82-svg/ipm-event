@@ -107,10 +107,9 @@ export default function TabLayout() {
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
 
   return (
-    // ROOT CONTAINER
     <View style={styles.rootContainer}>
       
-      {/* FIXED TOP BANNER - SafeAreaView keeps it below status bar */}
+      {/* TOP BANNER - SafeAreaView keeps it below status bar */}
       {adCampaignsConfig.topBanner.enabled && (
         <SafeAreaView edges={['top']} style={styles.topSafeArea}>
           <View style={styles.fixedTopBanner}>
@@ -119,7 +118,7 @@ export default function TabLayout() {
         </SafeAreaView>
       )}
 
-      {/* TABS NAVIGATOR - This is the main content area */}
+      {/* TABS NAVIGATOR - Main content area */}
       <Tabs
         tabBar={() => <EmptyTabBar />}
         screenOptions={{
@@ -139,7 +138,7 @@ export default function TabLayout() {
         <Tabs.Screen name="about" options={{ title: 'About' }} />
       </Tabs>
 
-      {/* FIXED BOTTOM NAV BAR - Absolute positioned at bottom: 0 */}
+      {/* BOTTOM NAV BAR - Fixed at bottom: 0 */}
       <View style={[
         styles.fixedNavBar,
         { 
@@ -150,9 +149,12 @@ export default function TabLayout() {
         <TabBarContent />
       </View>
 
-      {/* FLOATING BOTTOM AD - OVERLAY (not sibling) - Outside Tabs, absolute positioned */}
+      {/* BOTTOM AD - ROOT LEVEL OVERLAY - pointerEvents="box-none" allows clicks through transparent areas */}
       {adCampaignsConfig.bottomBanner.enabled && (
-        <View style={styles.floatingBottomAdOverlay}>
+        <View 
+          style={styles.bottomAdOverlay}
+          pointerEvents="box-none"
+        >
           <AdBanner adUnit={adCampaignsConfig.bottomBanner} position="bottom" />
         </View>
       )}
@@ -161,13 +163,11 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  // ROOT CONTAINER
   rootContainer: {
     flex: 1,
     backgroundColor: colors.background,
   },
   
-  // TOP SAFE AREA
   topSafeArea: {
     position: 'absolute',
     top: 0,
@@ -177,14 +177,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   
-  // FIXED TOP BANNER
   fixedTopBanner: {
     backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   
-  // FIXED NAV BAR - position: absolute, bottom: 0, height: 60
   fixedNavBar: {
     position: 'absolute',
     bottom: 0,
@@ -201,27 +199,25 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   
-  // Nav bar inner container
   navBarInner: {
     flex: 1,
     flexDirection: 'row',
     paddingTop: 8,
   },
   
-  // FLOATING BOTTOM AD - TRUE OVERLAY with exact styles
-  // position: absolute, bottom: 90, left: 0, right: 0, zIndex: 9999, alignItems: center
-  // backgroundColor: transparent so user sees content behind the gaps
-  floatingBottomAdOverlay: {
+  // BOTTOM AD OVERLAY - EXACT STYLES AS REQUESTED
+  // position: absolute, bottom: 90, left: 0, right: 0, height: 50, zIndex: 9999, backgroundColor: transparent, alignItems: center
+  bottomAdOverlay: {
     position: 'absolute',
-    bottom: 90, // Safely above 60px nav bar
+    bottom: 90,
     left: 0,
     right: 0,
+    height: 50,
     zIndex: 9999,
-    alignItems: 'center',
     backgroundColor: 'transparent',
+    alignItems: 'center',
   },
   
-  // Tab item
   tabItem: {
     flex: 1,
     alignItems: 'center',
@@ -229,7 +225,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   
-  // Icon container
   iconContainer: {
     width: ICON_SIZE + 8,
     height: ICON_SIZE + 8,
@@ -237,7 +232,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   
-  // Tab label
   tabLabel: {
     fontSize: 10,
     fontWeight: '600',

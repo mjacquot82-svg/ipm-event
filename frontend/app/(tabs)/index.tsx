@@ -1246,7 +1246,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 0,
-    paddingBottom: 160, // Space for floating ad overlay
+    paddingBottom: 180, // THE SPACER FIX - allows scrolling content above floating ad
   },
   headerBanner: {
     width: '100%',

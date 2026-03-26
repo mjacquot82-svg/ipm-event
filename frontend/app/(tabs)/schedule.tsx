@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   bottomPadding: {
-    height: 150, // Spacer to scroll content above floating ad
+    height: 180, // THE SPACER FIX - allows scrolling content above floating ad
   },
   locationBadge: {
     flexDirection: 'row',
