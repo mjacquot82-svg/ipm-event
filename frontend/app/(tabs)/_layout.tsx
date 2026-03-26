@@ -109,9 +109,8 @@ export default function TabLayout() {
           tabBar={() => <EmptyTabBar />}
           screenOptions={{ headerShown: false }}
           sceneContainerStyle={styles.scene}
-          initialRouteName="index"
         >
-          <Tabs.Screen name="index" options={{ title: 'Home' }} />
+          <Tabs.Screen name="index" options={{ title: 'Home', href: '/' }} />
           <Tabs.Screen name="map" options={{ title: 'Map' }} />
           <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
           <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />

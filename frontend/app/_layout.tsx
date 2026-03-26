@@ -1,7 +1,7 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -18,9 +18,12 @@ import adCampaignsConfig from '../src/config/AdCampaignsConfig';
 export default function RootLayout() {
   // Show interstitial immediately on app launch
   const [showInterstitial, setShowInterstitial] = useState(adCampaignsConfig.interstitial.enabled);
+  const router = useRouter();
   
   const handleCloseInterstitial = () => {
     setShowInterstitial(false);
+    // Navigate to home after closing the ad
+    router.replace('/');
   };
 
   useEffect(() => {
