@@ -1246,7 +1246,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 0,
-    paddingBottom: 220, // Extra space to scroll all buttons above the floating ad
+    paddingBottom: 180, // Extra space to scroll all content above the floating ad
   },
   headerBanner: {
     width: '100%',

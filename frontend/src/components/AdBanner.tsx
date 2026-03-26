@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     height: 50,
     alignSelf: 'center',
     // Floating container styles
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ddd',
     backgroundColor: 'white',
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   bottomBannerImage: {
     width: 320,
     height: 50,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   bottomPlaceholder: {
     width: 320,

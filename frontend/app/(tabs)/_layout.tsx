@@ -183,10 +183,10 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   
-  // BOTTOM AD - Floating 30px above nav bar (bottom: 90)
+  // BOTTOM AD - Floating 10px above nav bar (bottom: 70)
   bottomAdWrapper: {
     position: 'absolute',
-    bottom: 90, // 30px gap above 60px nav bar
+    bottom: 70, // 10px gap above 60px nav bar
     left: 0,
     right: 0,
     zIndex: 99,
