@@ -561,7 +561,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        <View style={styles.bottomPadding} />
+        {/* Bottom padding is now handled by contentContainerStyle */}
       </ScrollView>
 
       {/* My Itinerary Modal */}
@@ -1246,6 +1246,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 0,
+    paddingBottom: 160, // Space for floating ad overlay
   },
   headerBanner: {
     width: '100%',
