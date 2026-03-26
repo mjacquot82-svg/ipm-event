@@ -9,12 +9,10 @@ import colors from '../../src/theme/colors';
 import AdBanner from '../../src/components/AdBanner';
 import adCampaignsConfig from '../../src/config/AdCampaignsConfig';
 
-// Fixed dimensions
 const ICON_SIZE = 24;
 const NAV_BAR_HEIGHT = 60;
-const TOP_BANNER_HEIGHT = 88; // 80px banner + 8px padding
+const TOP_BANNER_HEIGHT = 88;
 
-// Helper function to get icon names
 function getIconName(routeName: string): keyof typeof Feather.glyphMap {
   switch (routeName) {
     case 'index': return 'home';
@@ -26,7 +24,6 @@ function getIconName(routeName: string): keyof typeof Feather.glyphMap {
   }
 }
 
-// Helper function to get display labels
 function getLabel(routeName: string): string {
   switch (routeName) {
     case 'index': return 'Home';
@@ -38,12 +35,10 @@ function getLabel(routeName: string): string {
   }
 }
 
-// Empty tab bar - we render our own
 function EmptyTabBar() {
   return null;
 }
 
-// Separate component for tab bar content
 function TabBarContent() {
   return (
     <View style={styles.navBarInner}>
@@ -56,7 +51,6 @@ function TabBarContent() {
   );
 }
 
-// Individual tab item with navigation
 function TabItem({ routeName }: { routeName: string }) {
   const { usePathname, useRouter } = require('expo-router');
   const router = useRouter();
@@ -109,7 +103,7 @@ export default function TabLayout() {
   return (
     <View style={styles.rootContainer}>
       
-      {/* TOP BANNER - SafeAreaView keeps it below status bar */}
+      {/* TOP BANNER */}
       {adCampaignsConfig.topBanner.enabled && (
         <SafeAreaView edges={['top']} style={styles.topSafeArea}>
           <View style={styles.fixedTopBanner}>
@@ -118,7 +112,7 @@ export default function TabLayout() {
         </SafeAreaView>
       )}
 
-      {/* TABS NAVIGATOR - Main content area */}
+      {/* TABS NAVIGATOR */}
       <Tabs
         tabBar={() => <EmptyTabBar />}
         screenOptions={{
@@ -138,7 +132,7 @@ export default function TabLayout() {
         <Tabs.Screen name="about" options={{ title: 'About' }} />
       </Tabs>
 
-      {/* BOTTOM NAV BAR - Fixed at bottom: 0 */}
+      {/* BOTTOM NAV BAR */}
       <View style={[
         styles.fixedNavBar,
         { 
@@ -149,10 +143,18 @@ export default function TabLayout() {
         <TabBarContent />
       </View>
 
-      {/* BOTTOM AD - ROOT LEVEL OVERLAY - pointerEvents="box-none" allows clicks through transparent areas */}
+      {/* BOTTOM AD - HARD OVERLAY - VERY LAST ITEM - EXACT STYLES AS SPECIFIED */}
       {adCampaignsConfig.bottomBanner.enabled && (
         <View 
-          style={styles.bottomAdOverlay}
+          style={{ 
+            position: 'absolute', 
+            bottom: 100, 
+            left: 0, 
+            right: 0, 
+            zIndex: 9999, 
+            alignItems: 'center', 
+            backgroundColor: 'transparent' 
+          }}
           pointerEvents="box-none"
         >
           <AdBanner adUnit={adCampaignsConfig.bottomBanner} position="bottom" />
@@ -203,19 +205,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     paddingTop: 8,
-  },
-  
-  // BOTTOM AD OVERLAY - EXACT STYLES AS REQUESTED
-  // position: absolute, bottom: 90, left: 0, right: 0, height: 50, zIndex: 9999, backgroundColor: transparent, alignItems: center
-  bottomAdOverlay: {
-    position: 'absolute',
-    bottom: 90,
-    left: 0,
-    right: 0,
-    height: 50,
-    zIndex: 9999,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
   },
   
   tabItem: {
