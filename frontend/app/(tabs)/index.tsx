@@ -1246,7 +1246,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 0,
-    paddingBottom: 180, // Extra space to scroll all content above the floating ad
+    paddingBottom: 140, // Account for taller nav bar (ad + icons)
   },
   headerBanner: {
     width: '100%',
