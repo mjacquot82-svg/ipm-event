@@ -15,6 +15,42 @@ import { AdProvider } from '../src/context/AdContext';
 import InterstitialAd from '../src/components/InterstitialAd';
 import adCampaignsConfig from '../src/config/AdCampaignsConfig';
 
+// Initialize Webpushr for web platform
+const initWebpushr = () => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // @ts-ignore
+    if (typeof window.webpushr !== 'undefined') return;
+    
+    // @ts-ignore
+    window.webpushr = window.webpushr || function() {
+      // @ts-ignore
+      (window.webpushr.q = window.webpushr.q || []).push(arguments);
+    };
+    
+    const script = document.createElement('script');
+    script.id = 'webpushr-jssdk';
+    script.async = true;
+    script.src = 'https://cdn.webpushr.com/app.min.js';
+    
+    const firstScript = document.getElementsByTagName('script')[0];
+    if (firstScript && firstScript.parentNode) {
+      firstScript.parentNode.insertBefore(script, firstScript);
+    } else {
+      document.head.appendChild(script);
+    }
+    
+    // Setup webpushr after script loads
+    script.onload = () => {
+      // @ts-ignore
+      window.webpushr('setup', {
+        'key': 'a6963b4f85a16f74d745ecab166025a2',
+        'sw': '/api/webpushr-sw.js',
+        'scope': '/'
+      });
+    };
+  }
+};
+
 export default function RootLayout() {
   // Show interstitial immediately on app launch
   const [showInterstitial, setShowInterstitial] = useState(adCampaignsConfig.interstitial.enabled);
@@ -27,6 +63,9 @@ export default function RootLayout() {
   };
 
   useEffect(() => {
+    // Initialize Webpushr for web platform
+    initWebpushr();
+    
     // Register for push notifications on app start
     const initNotifications = async () => {
       const token = await registerForPushNotificationsAsync();
