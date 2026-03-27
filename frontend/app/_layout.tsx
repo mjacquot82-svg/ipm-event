@@ -12,6 +12,7 @@ import {
   addNotificationListeners 
 } from '../src/utils/notificationService';
 import { AdProvider } from '../src/context/AdContext';
+import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
 
 // Initialize Webpushr for web platform (active on all pages including Coming Soon)
 const initWebpushr = () => {
@@ -93,6 +94,9 @@ export default function RootLayout() {
             <Stack.Screen name="preview-2026" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack>
+          
+          {/* PWA Install Prompt - Shows on web only */}
+          <PWAInstallPrompt />
         </AdProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
