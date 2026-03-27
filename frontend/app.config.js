@@ -32,7 +32,13 @@ export default {
     },
     web: {
       bundler: "metro",
-      favicon: "./assets/images/favicon.png"
+      favicon: "./assets/images/favicon.png",
+      output: "single",
+      build: {
+        babel: {
+          include: []
+        }
+      }
     },
     plugins: [
       "expo-router",
