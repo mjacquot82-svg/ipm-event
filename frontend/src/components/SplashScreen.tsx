@@ -21,9 +21,9 @@ export default function SplashScreen({ onFinish }) {
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <Animated.Image
-        source={require('../../assets/images/splash-screen.png')}
+        source={require('../../assets/images/splash-icon.png')} // Changed to splash-icon.png
         style={styles.backgroundImage}
-        resizeMode="cover"
+        resizeMode="contain" // Changed to 'contain' so your icon doesn't stretch
       />
     </Animated.View>
   );
