@@ -1,5 +1,5 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// PWA Install Prompt - Simple Manual Instructions for Live Demo
+// PWA Install Prompt - Native Browser Install Trigger
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -11,7 +11,6 @@ import {
   Modal,
   Platform,
   Animated,
-  Dimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,6 +19,35 @@ import colors from '../theme/colors';
 const DISMISS_KEY = 'pwa_install_dismissed_at';
 const DISMISS_DURATION = 24 * 60 * 60 * 1000;
 
+// CRITICAL: Store the install prompt event globally
+// This MUST be outside the component to persist across renders
+declare global {
+  interface Window {
+    deferredPWAPrompt: any;
+    pwaPromptCaptured: boolean;
+  }
+}
+
+// Initialize global tracking
+if (typeof window !== 'undefined') {
+  window.pwaPromptCaptured = false;
+  
+  // Capture the beforeinstallprompt event IMMEDIATELY
+  window.addEventListener('beforeinstallprompt', (e: Event) => {
+    console.log('🎯 [PWA] beforeinstallprompt event CAPTURED!');
+    e.preventDefault(); // Prevent the mini-infobar from appearing
+    window.deferredPWAPrompt = e;
+    window.pwaPromptCaptured = true;
+  });
+
+  // Listen for successful install
+  window.addEventListener('appinstalled', () => {
+    console.log('✅ [PWA] App was installed!');
+    window.deferredPWAPrompt = null;
+    window.pwaPromptCaptured = false;
+  });
+}
+
 interface PWAInstallPromptProps {
   onDismiss?: () => void;
 }
@@ -27,6 +55,8 @@ interface PWAInstallPromptProps {
 export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
   const [visible, setVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [hasNativePrompt, setHasNativePrompt] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const slideAnim = useRef(new Animated.Value(400)).current;
 
   useEffect(() => {
@@ -44,19 +74,29 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
         }
       } catch (e) {}
 
-      // Check if already installed
+      // Check if already installed (standalone mode)
       const standalone = 
         window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as any).standalone === true;
       
-      if (standalone) return;
+      if (standalone) {
+        console.log('[PWA] Already installed, not showing prompt');
+        return;
+      }
 
       // Detect iOS
       const userAgent = window.navigator.userAgent.toLowerCase();
-      setIsIOS(/iphone|ipad|ipod/.test(userAgent));
+      const iosDevice = /iphone|ipad|ipod/.test(userAgent);
+      setIsIOS(iosDevice);
 
-      // Show prompt after delay
+      // Check if we captured the native prompt
+      setHasNativePrompt(!!window.deferredPWAPrompt);
+      console.log('[PWA] Native prompt available:', !!window.deferredPWAPrompt);
+
+      // Show our UI after a delay
       setTimeout(() => {
+        // Re-check if prompt is available (might have been captured after init)
+        setHasNativePrompt(!!window.deferredPWAPrompt);
         setVisible(true);
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -68,7 +108,61 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
     };
 
     init();
+
+    // Also check periodically if the prompt becomes available
+    const checkInterval = setInterval(() => {
+      if (window.deferredPWAPrompt && !hasNativePrompt) {
+        console.log('[PWA] Native prompt became available');
+        setHasNativePrompt(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(checkInterval);
   }, []);
+
+  const triggerNativeInstall = async () => {
+    console.log('[PWA] Install button clicked');
+    console.log('[PWA] deferredPWAPrompt exists:', !!window.deferredPWAPrompt);
+    
+    if (!window.deferredPWAPrompt) {
+      console.log('[PWA] No native prompt available');
+      // Fallback - show instructions
+      setHasNativePrompt(false);
+      return;
+    }
+
+    setInstalling(true);
+
+    try {
+      // IMPORTANT: prompt() must be called directly from a user gesture
+      const promptEvent = window.deferredPWAPrompt;
+      console.log('[PWA] Calling prompt()...');
+      
+      // Show the native install prompt
+      promptEvent.prompt();
+      
+      // Wait for the user to respond
+      const { outcome } = await promptEvent.userChoice;
+      console.log('[PWA] User choice:', outcome);
+      
+      if (outcome === 'accepted') {
+        console.log('[PWA] User accepted installation');
+        handleDismiss();
+      } else {
+        console.log('[PWA] User dismissed installation');
+        setInstalling(false);
+      }
+      
+      // Clear the prompt - it can only be used once
+      window.deferredPWAPrompt = null;
+      setHasNativePrompt(false);
+      
+    } catch (error) {
+      console.error('[PWA] Error triggering install:', error);
+      setInstalling(false);
+      setHasNativePrompt(false);
+    }
+  };
 
   const handleDismiss = async () => {
     try {
@@ -124,69 +218,6 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
             <Text style={styles.title}>Install IPM 2026</Text>
             <Text style={styles.subtitle}>Add to your home screen for the best experience</Text>
 
-            {/* Instructions */}
-            <View style={styles.instructionsBox}>
-              {isIOS ? (
-                // iOS Instructions
-                <>
-                  <View style={styles.step}>
-                    <View style={styles.stepIconBox}>
-                      <Feather name="share" size={22} color="#FFFFFF" />
-                    </View>
-                    <View style={styles.stepTextBox}>
-                      <Text style={styles.stepTitle}>Step 1</Text>
-                      <Text style={styles.stepDesc}>
-                        Tap the <Text style={styles.highlight}>Share</Text> button at the bottom of Safari
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  <View style={styles.stepDivider} />
-                  
-                  <View style={styles.step}>
-                    <View style={[styles.stepIconBox, { backgroundColor: colors.accent }]}>
-                      <Feather name="plus-square" size={22} color="#FFFFFF" />
-                    </View>
-                    <View style={styles.stepTextBox}>
-                      <Text style={styles.stepTitle}>Step 2</Text>
-                      <Text style={styles.stepDesc}>
-                        Scroll and tap <Text style={styles.highlight}>"Add to Home Screen"</Text>
-                      </Text>
-                    </View>
-                  </View>
-                </>
-              ) : (
-                // Android/Chrome Instructions
-                <>
-                  <View style={styles.step}>
-                    <View style={styles.stepIconBox}>
-                      <Feather name="more-vertical" size={22} color="#FFFFFF" />
-                    </View>
-                    <View style={styles.stepTextBox}>
-                      <Text style={styles.stepTitle}>Step 1</Text>
-                      <Text style={styles.stepDesc}>
-                        Tap the <Text style={styles.highlight}>⋮ menu</Text> in the top-right corner
-                      </Text>
-                    </View>
-                  </View>
-                  
-                  <View style={styles.stepDivider} />
-                  
-                  <View style={styles.step}>
-                    <View style={[styles.stepIconBox, { backgroundColor: colors.accent }]}>
-                      <Feather name="download" size={22} color="#FFFFFF" />
-                    </View>
-                    <View style={styles.stepTextBox}>
-                      <Text style={styles.stepTitle}>Step 2</Text>
-                      <Text style={styles.stepDesc}>
-                        Tap <Text style={styles.highlight}>"Install app"</Text> or <Text style={styles.highlight}>"Add to Home screen"</Text>
-                      </Text>
-                    </View>
-                  </View>
-                </>
-              )}
-            </View>
-
             {/* Benefits */}
             <View style={styles.benefitsRow}>
               <View style={styles.benefit}>
@@ -203,13 +234,84 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
               </View>
             </View>
 
-            {/* Got It Button */}
+            {/* Show native install button OR manual instructions */}
+            {(hasNativePrompt && !isIOS) ? (
+              // Native install available - show install button
+              <TouchableOpacity 
+                style={[styles.installButton, installing && styles.installButtonDisabled]} 
+                onPress={triggerNativeInstall}
+                activeOpacity={0.8}
+                disabled={installing}
+              >
+                {installing ? (
+                  <Text style={styles.installButtonText}>Installing...</Text>
+                ) : (
+                  <>
+                    <Feather name="download" size={20} color="#FFFFFF" />
+                    <Text style={styles.installButtonText}>Install Now</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              // Manual instructions for iOS or when native prompt not available
+              <View style={styles.instructionsBox}>
+                {isIOS ? (
+                  <>
+                    <View style={styles.step}>
+                      <View style={styles.stepIconBox}>
+                        <Feather name="share" size={20} color="#FFFFFF" />
+                      </View>
+                      <View style={styles.stepTextBox}>
+                        <Text style={styles.stepDesc}>
+                          Tap <Text style={styles.highlight}>Share</Text> at the bottom
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.step}>
+                      <View style={[styles.stepIconBox, { backgroundColor: colors.accent }]}>
+                        <Feather name="plus-square" size={20} color="#FFFFFF" />
+                      </View>
+                      <View style={styles.stepTextBox}>
+                        <Text style={styles.stepDesc}>
+                          Then <Text style={styles.highlight}>"Add to Home Screen"</Text>
+                        </Text>
+                      </View>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.step}>
+                      <View style={styles.stepIconBox}>
+                        <Feather name="more-vertical" size={20} color="#FFFFFF" />
+                      </View>
+                      <View style={styles.stepTextBox}>
+                        <Text style={styles.stepDesc}>
+                          Tap <Text style={styles.highlight}>⋮ menu</Text> (top-right)
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.step}>
+                      <View style={[styles.stepIconBox, { backgroundColor: colors.accent }]}>
+                        <Feather name="download" size={20} color="#FFFFFF" />
+                      </View>
+                      <View style={styles.stepTextBox}>
+                        <Text style={styles.stepDesc}>
+                          Then <Text style={styles.highlight}>"Install app"</Text>
+                        </Text>
+                      </View>
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
+
+            {/* Dismiss Button */}
             <TouchableOpacity 
-              style={styles.gotItButton} 
+              style={styles.dismissButton} 
               onPress={handleDismiss}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
-              <Text style={styles.gotItText}>Got It</Text>
+              <Text style={styles.dismissButtonText}>Not Now</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -259,8 +361,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
   },
   logo: {
     width: 48,
@@ -275,59 +375,13 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 20,
-  },
-  instructionsBox: {
-    width: '100%',
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    padding: 16,
     marginBottom: 16,
-  },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stepIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepTextBox: {
-    flex: 1,
-    marginLeft: 14,
-  },
-  stepTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  stepDesc: {
-    fontSize: 15,
-    color: colors.textPrimary,
-    lineHeight: 20,
-  },
-  stepDivider: {
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    marginVertical: 14,
-    marginLeft: 58,
-  },
-  highlight: {
-    fontWeight: '700',
-    color: colors.primary,
   },
   benefitsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 20,
-    gap: 20,
+    gap: 16,
   },
   benefit: {
     flexDirection: 'row',
@@ -338,18 +392,66 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
   },
-  gotItButton: {
+  installButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.primary,
     paddingVertical: 16,
-    paddingHorizontal: 48,
+    paddingHorizontal: 32,
     borderRadius: 14,
     width: '100%',
     maxWidth: 280,
+    marginBottom: 8,
+    gap: 10,
   },
-  gotItText: {
+  installButtonDisabled: {
+    backgroundColor: colors.textSecondary,
+  },
+  installButtonText: {
     color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '600',
-    textAlign: 'center',
+  },
+  instructionsBox: {
+    width: '100%',
+    backgroundColor: colors.background,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    gap: 12,
+  },
+  step: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stepIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stepTextBox: {
+    flex: 1,
+  },
+  stepDesc: {
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  highlight: {
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  dismissButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  dismissButtonText: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: '500',
   },
 });
