@@ -1,5 +1,5 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// PWA Install Prompt Component
+// PWA Install Prompt Component - Simplified for Live Demo
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -18,143 +18,74 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors from '../theme/colors';
 
 const DISMISS_KEY = 'pwa_install_dismissed_at';
-const DISMISS_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const DISMISS_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 interface PWAInstallPromptProps {
   onInstall?: () => void;
   onDismiss?: () => void;
 }
 
-// Store the deferred prompt globally so it persists across re-renders
-let globalDeferredPrompt: any = null;
+// Global storage for the deferred prompt
+let deferredInstallPrompt: any = null;
+
+// Capture the event as early as possible
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    console.log('[PWA] beforeinstallprompt captured globally');
+  });
+}
 
 export default function PWAInstallPrompt({ onInstall, onDismiss }: PWAInstallPromptProps) {
   const [visible, setVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [canInstall, setCanInstall] = useState(false);
+  const [showIOSTooltip, setShowIOSTooltip] = useState(false);
+  const [installStatus, setInstallStatus] = useState<'idle' | 'checking' | 'fallback'>('idle');
   const slideAnim = useRef(new Animated.Value(300)).current;
+  const tooltipAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
-    const checkInstallability = async () => {
-      console.log('[PWA Install] Checking installability...');
-      
-      // Check if already dismissed within 24 hours
+    const init = async () => {
+      // Check dismiss status
       try {
         const dismissedAt = await AsyncStorage.getItem(DISMISS_KEY);
         if (dismissedAt) {
           const dismissTime = parseInt(dismissedAt, 10);
           if (Date.now() - dismissTime < DISMISS_DURATION) {
-            console.log('[PWA Install] Dismissed within 24 hours, not showing');
             return;
           }
         }
-      } catch (e) {
-        console.log('[PWA Install] Error checking dismiss status:', e);
-      }
+      } catch (e) {}
 
-      // Check if running as standalone (already installed)
+      // Check if already installed
       const standalone = 
         window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as any).standalone === true;
       
-      setIsStandalone(standalone);
-      console.log('[PWA Install] Is standalone (installed):', standalone);
-      
-      if (standalone) {
-        console.log('[PWA Install] Already installed, not showing prompt');
-        return;
-      }
+      if (standalone) return;
 
-      // Detect iOS
+      // Detect device
       const userAgent = window.navigator.userAgent.toLowerCase();
-      const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-      setIsIOS(isIOSDevice);
-      console.log('[PWA Install] Is iOS device:', isIOSDevice);
+      const iosDevice = /iphone|ipad|ipod/.test(userAgent);
+      setIsIOS(iosDevice);
 
-      // For iOS, show the manual install instructions after delay
-      if (isIOSDevice) {
-        setTimeout(() => {
-          console.log('[PWA Install] Showing iOS instructions');
-          setVisible(true);
-          animateIn();
-        }, 2000);
-        return;
-      }
-    };
-
-    // Set up beforeinstallprompt listener FIRST
-    const handleBeforeInstall = (e: Event) => {
-      console.log('[PWA Install] beforeinstallprompt event fired!');
-      e.preventDefault();
-      globalDeferredPrompt = e;
-      setCanInstall(true);
-      console.log('[PWA Install] Deferred prompt saved:', !!globalDeferredPrompt);
-      
-      // Show our custom prompt
+      // Show prompt after delay
       setTimeout(() => {
-        console.log('[PWA Install] Showing custom install prompt');
         setVisible(true);
-        animateIn();
-      }, 2000);
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 50,
+          friction: 9,
+        }).start();
+      }, 2500);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    console.log('[PWA Install] beforeinstallprompt listener added');
-
-    // Check if the event was already fired before we added listener
-    // This can happen if the component mounts after page load
-    if (globalDeferredPrompt) {
-      console.log('[PWA Install] Found existing deferred prompt');
-      setCanInstall(true);
-    }
-
-    // Run the installability check
-    checkInstallability();
-
-    // For non-iOS browsers without beforeinstallprompt support, 
-    // show the prompt anyway after a delay (for awareness)
-    const fallbackTimer = setTimeout(() => {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-      const standalone = 
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true;
-      
-      if (!isIOSDevice && !standalone && !visible) {
-        console.log('[PWA Install] Fallback: Showing prompt without beforeinstallprompt');
-        setVisible(true);
-        animateIn();
-      }
-    }, 4000);
-
-    // Listen for app installed event
-    const handleAppInstalled = () => {
-      console.log('[PWA Install] App was installed!');
-      globalDeferredPrompt = null;
-      setCanInstall(false);
-      setVisible(false);
-    };
-
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-      clearTimeout(fallbackTimer);
-    };
+    init();
   }, []);
-
-  const animateIn = () => {
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 50,
-      friction: 9,
-    }).start();
-  };
 
   const animateOut = (callback?: () => void) => {
     Animated.timing(slideAnim, {
@@ -163,61 +94,78 @@ export default function PWAInstallPrompt({ onInstall, onDismiss }: PWAInstallPro
       useNativeDriver: true,
     }).start(() => {
       setVisible(false);
+      setShowIOSTooltip(false);
       callback?.();
     });
   };
 
-  const handleInstall = async () => {
-    console.log('[PWA Install] Install button clicked');
-    console.log('[PWA Install] globalDeferredPrompt exists:', !!globalDeferredPrompt);
-    console.log('[PWA Install] canInstall state:', canInstall);
+  // iOS: Show tooltip pointing to Share button
+  const handleIOSInstall = () => {
+    setShowIOSTooltip(true);
+    Animated.sequence([
+      Animated.timing(tooltipAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(tooltipAnim, {
+            toValue: 0.7,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(tooltipAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+        { iterations: 3 }
+      ),
+    ]).start();
+  };
+
+  // Android: Trigger install with fallback
+  const handleAndroidInstall = async () => {
+    console.log('[PWA] Install button clicked');
+    console.log('[PWA] deferredInstallPrompt:', !!deferredInstallPrompt);
     
-    if (globalDeferredPrompt) {
+    setInstallStatus('checking');
+
+    // Small delay to show "Checking..." state
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    if (deferredInstallPrompt) {
       try {
-        console.log('[PWA Install] Calling prompt()...');
-        // Show the native install prompt
-        globalDeferredPrompt.prompt();
+        // MUST call prompt() synchronously from user gesture
+        console.log('[PWA] Calling prompt()');
+        deferredInstallPrompt.prompt();
         
-        console.log('[PWA Install] Waiting for user choice...');
-        // Wait for the user's response
-        const { outcome } = await globalDeferredPrompt.userChoice;
-        console.log('[PWA Install] User choice:', outcome);
+        const result = await deferredInstallPrompt.userChoice;
+        console.log('[PWA] User choice:', result.outcome);
         
-        if (outcome === 'accepted') {
-          console.log('[PWA Install] User ACCEPTED the install prompt');
-        } else {
-          console.log('[PWA Install] User DISMISSED the install prompt');
-        }
-        
-        // Clear the deferred prompt - it can only be used once
-        globalDeferredPrompt = null;
-        setCanInstall(false);
-      } catch (error) {
-        console.error('[PWA Install] Error during prompt:', error);
-      }
-    } else {
-      console.log('[PWA Install] No deferred prompt available - showing browser instructions');
-      // If no deferred prompt, guide user to use browser menu
-      if (typeof window !== 'undefined') {
-        alert('To install this app:\n\n1. Open browser menu (⋮ or ⋯)\n2. Select "Install app" or "Add to Home Screen"');
+        deferredInstallPrompt = null;
+        animateOut(onInstall);
+        return;
+      } catch (err) {
+        console.error('[PWA] Prompt error:', err);
       }
     }
-    
-    animateOut(onInstall);
+
+    // Fallback: Show manual instructions
+    console.log('[PWA] Showing fallback instructions');
+    setInstallStatus('fallback');
   };
 
   const handleDismiss = async () => {
-    console.log('[PWA Install] Dismiss button clicked');
     try {
       await AsyncStorage.setItem(DISMISS_KEY, Date.now().toString());
-      console.log('[PWA Install] Dismiss time saved');
-    } catch (e) {
-      console.log('[PWA Install] Error saving dismiss time:', e);
-    }
+    } catch (e) {}
     animateOut(onDismiss);
   };
 
-  if (Platform.OS !== 'web' || !visible || isStandalone) {
+  if (Platform.OS !== 'web' || !visible) {
     return null;
   }
 
@@ -234,16 +182,34 @@ export default function PWAInstallPrompt({ onInstall, onDismiss }: PWAInstallPro
           activeOpacity={1} 
           onPress={handleDismiss}
         />
+        
+        {/* iOS Share Tooltip */}
+        {isIOS && showIOSTooltip && (
+          <Animated.View 
+            style={[
+              styles.iosTooltip,
+              { opacity: tooltipAnim, transform: [{ scale: tooltipAnim }] }
+            ]}
+          >
+            <View style={styles.tooltipArrow} />
+            <View style={styles.tooltipContent}>
+              <Feather name="share" size={24} color={colors.primary} />
+              <Text style={styles.tooltipText}>
+                Tap <Text style={styles.bold}>Share</Text>, then{'\n'}
+                <Text style={styles.bold}>"Add to Home Screen"</Text>
+              </Text>
+            </View>
+          </Animated.View>
+        )}
+
         <Animated.View 
           style={[
             styles.container,
             { transform: [{ translateY: slideAnim }] }
           ]}
         >
-          {/* Handle bar */}
           <View style={styles.handleBar} />
           
-          {/* Content */}
           <View style={styles.content}>
             {/* Logo */}
             <View style={styles.logoContainer}>
@@ -254,66 +220,99 @@ export default function PWAInstallPrompt({ onInstall, onDismiss }: PWAInstallPro
               />
             </View>
 
-            {/* Title */}
             <Text style={styles.title}>Install IPM 2026</Text>
             
-            {/* Description */}
             <Text style={styles.description}>
-              Install the IPM 2026 Official App for offline access and live alerts!
+              Get offline access and live event alerts!
             </Text>
 
             {isIOS ? (
-              // iOS Instructions
-              <View style={styles.iosInstructions}>
-                <View style={styles.instructionStep}>
-                  <View style={styles.stepIcon}>
-                    <Feather name="share" size={20} color={colors.primary} />
+              // iOS Flow
+              <>
+                {!showIOSTooltip ? (
+                  <TouchableOpacity 
+                    style={styles.installButton} 
+                    onPress={handleIOSInstall}
+                    activeOpacity={0.8}
+                  >
+                    <Feather name="download" size={20} color="#FFFFFF" />
+                    <Text style={styles.installButtonText}>Add to Home Screen</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.iosInstructions}>
+                    <View style={styles.instructionRow}>
+                      <View style={styles.stepNumber}><Text style={styles.stepText}>1</Text></View>
+                      <Text style={styles.instructionText}>
+                        Tap the <Text style={styles.bold}>Share</Text> button below
+                      </Text>
+                      <Feather name="arrow-up" size={20} color={colors.primary} />
+                    </View>
+                    <View style={styles.instructionRow}>
+                      <View style={styles.stepNumber}><Text style={styles.stepText}>2</Text></View>
+                      <Text style={styles.instructionText}>
+                        Select <Text style={styles.bold}>"Add to Home Screen"</Text>
+                      </Text>
+                    </View>
+                    <View style={styles.instructionRow}>
+                      <View style={styles.stepNumber}><Text style={styles.stepText}>3</Text></View>
+                      <Text style={styles.instructionText}>
+                        Tap <Text style={styles.bold}>"Add"</Text> to install
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={styles.instructionText}>
-                    Tap the <Text style={styles.bold}>Share</Text> button in Safari
-                  </Text>
-                </View>
-                <View style={styles.instructionStep}>
-                  <View style={styles.stepIcon}>
-                    <Feather name="plus-square" size={20} color={colors.primary} />
-                  </View>
-                  <Text style={styles.instructionText}>
-                    Select <Text style={styles.bold}>"Add to Home Screen"</Text>
-                  </Text>
-                </View>
-                <View style={styles.instructionStep}>
-                  <View style={styles.stepIcon}>
-                    <Feather name="check-circle" size={20} color={colors.accent} />
-                  </View>
-                  <Text style={styles.instructionText}>
-                    Tap <Text style={styles.bold}>"Add"</Text> to install
-                  </Text>
-                </View>
-              </View>
+                )}
+              </>
             ) : (
-              // Android/Chrome Install Button
-              <TouchableOpacity 
-                style={[
-                  styles.installButton,
-                  !canInstall && styles.installButtonAlt
-                ]} 
-                onPress={handleInstall}
-                activeOpacity={0.8}
-              >
-                <Feather name="download" size={20} color="#FFFFFF" />
-                <Text style={styles.installButtonText}>
-                  {canInstall ? 'Add to Home Screen' : 'Install via Browser Menu'}
-                </Text>
-              </TouchableOpacity>
+              // Android Flow
+              <>
+                {installStatus === 'idle' && (
+                  <TouchableOpacity 
+                    style={styles.installButton} 
+                    onPress={handleAndroidInstall}
+                    activeOpacity={0.8}
+                  >
+                    <Feather name="download" size={20} color="#FFFFFF" />
+                    <Text style={styles.installButtonText}>Add to Home Screen</Text>
+                  </TouchableOpacity>
+                )}
+
+                {installStatus === 'checking' && (
+                  <View style={styles.checkingContainer}>
+                    <Text style={styles.checkingText}>Checking...</Text>
+                  </View>
+                )}
+
+                {installStatus === 'fallback' && (
+                  <View style={styles.fallbackContainer}>
+                    <Text style={styles.fallbackTitle}>Almost there!</Text>
+                    <View style={styles.fallbackInstructions}>
+                      <View style={styles.instructionRow}>
+                        <View style={styles.stepNumber}><Text style={styles.stepText}>1</Text></View>
+                        <Text style={styles.instructionText}>
+                          Tap <Text style={styles.bold}>⋮</Text> menu (top right)
+                        </Text>
+                      </View>
+                      <View style={styles.instructionRow}>
+                        <View style={styles.stepNumber}><Text style={styles.stepText}>2</Text></View>
+                        <Text style={styles.instructionText}>
+                          Select <Text style={styles.bold}>"Install app"</Text> or{'\n'}
+                          <Text style={styles.bold}>"Add to Home screen"</Text>
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </>
             )}
 
-            {/* Dismiss Button */}
             <TouchableOpacity 
               style={styles.dismissButton} 
               onPress={handleDismiss}
               activeOpacity={0.7}
             >
-              <Text style={styles.dismissButtonText}>Not Now</Text>
+              <Text style={styles.dismissButtonText}>
+                {showIOSTooltip || installStatus === 'fallback' ? 'Done' : 'Not Now'}
+              </Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -322,7 +321,7 @@ export default function PWAInstallPrompt({ onInstall, onDismiss }: PWAInstallPro
   );
 }
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   overlay: {
@@ -360,37 +359,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoContainer: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
     borderRadius: 16,
     backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: 12,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 54,
+    height: 54,
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
     color: colors.primary,
-    marginBottom: 8,
-    textAlign: 'center',
+    marginBottom: 6,
   },
   description: {
     fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 22,
-    paddingHorizontal: 16,
+    marginBottom: 20,
   },
   installButton: {
     flexDirection: 'row',
@@ -401,11 +392,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 12,
     width: '100%',
-    maxWidth: 320,
-    marginBottom: 12,
-  },
-  installButtonAlt: {
-    backgroundColor: colors.textSecondary,
+    maxWidth: 300,
+    marginBottom: 8,
   },
   installButtonText: {
     color: '#FFFFFF',
@@ -422,40 +410,106 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
+  // iOS Tooltip
+  iosTooltip: {
+    position: 'absolute',
+    bottom: 100,
+    alignSelf: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 10,
+    zIndex: 100,
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    bottom: -10,
+    alignSelf: 'center',
+    left: '50%',
+    marginLeft: -10,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderTopWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#FFFFFF',
+  },
+  tooltipContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tooltipText: {
+    marginLeft: 12,
+    fontSize: 15,
+    color: colors.textPrimary,
+    lineHeight: 22,
+  },
+  // Instructions
   iosInstructions: {
     width: '100%',
     backgroundColor: colors.background,
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 8,
   },
-  instructionStep: {
+  instructionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
-  stepIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+  stepNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  },
+  stepText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   instructionText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: colors.textPrimary,
     lineHeight: 20,
   },
   bold: {
     fontWeight: '700',
     color: colors.primary,
+  },
+  // Android Checking/Fallback
+  checkingContainer: {
+    paddingVertical: 20,
+  },
+  checkingText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  fallbackContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  fallbackTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.accent,
+    marginBottom: 12,
+  },
+  fallbackInstructions: {
+    width: '100%',
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 16,
   },
 });
