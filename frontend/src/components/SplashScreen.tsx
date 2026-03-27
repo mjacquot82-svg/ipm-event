@@ -1,15 +1,8 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// App Splash Screen Component - Full Image Background
+// App Splash Screen Component - Only shows when installed as a PWA
 
-import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  StyleSheet,
-  Image,
-  Animated,
-  Dimensions,
-  Platform,
-} from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Image, Animated, Dimensions, Platform } from 'react-native';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -19,16 +12,25 @@ interface SplashScreenProps {
 export default function SplashScreen({ onFinish, duration = 2500 }: SplashScreenProps) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1.1)).current;
+  
+  // LOGIC GATE: Check if the app is "Installed/Standalone"
+  const isStandalone = typeof window !== 'undefined' && 
+    (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone);
 
   useEffect(() => {
-    // Subtle zoom out animation for the background
+    // If we are just on the website, skip the splash screen immediately
+    if (!isStandalone) {
+      onFinish();
+      return;
+    }
+
+    // Otherwise, run the animation for the installed app
     Animated.timing(scaleAnim, {
       toValue: 1,
       duration: duration,
       useNativeDriver: true,
     }).start();
 
-    // After duration, fade out and call onFinish
     const timer = setTimeout(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -40,12 +42,17 @@ export default function SplashScreen({ onFinish, duration = 2500 }: SplashScreen
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onFinish]);
+  }, [duration, onFinish, isStandalone]);
+
+  // If it's the website, render nothing (shows the "Coming Soon" page instantly)
+  if (!isStandalone) {
+    return null;
+  }
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <Animated.Image
-        source={require('../../assets/images/ipm-final-v1.jpg')}
+        source={require('../../assets/images/splash-screen.jpg')}
         style={[
           styles.backgroundImage,
           { transform: [{ scale: scaleAnim }] }
@@ -61,7 +68,7 @@ const { width, height } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#1a0a0a', // Dark fallback matching image edges
+    backgroundColor: '#1a0a0a', 
     zIndex: 9999,
   },
   backgroundImage: {
