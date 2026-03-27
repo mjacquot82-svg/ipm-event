@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -475,6 +475,19 @@ async def send_sos_push_notification(push_token: str, title: str, body: str, dat
 
 # Include the router in the main app
 app.include_router(api_router)
+
+# Serve dist.zip for download
+@api_router.get("/download-dist")
+async def download_dist():
+    """Download the dist folder as a zip file"""
+    zip_path = ROOT_DIR / "dist.zip"
+    if zip_path.exists():
+        return FileResponse(
+            path=str(zip_path),
+            filename="ipm2026-dist.zip",
+            media_type="application/zip"
+        )
+    raise HTTPException(status_code=404, detail="dist.zip not found")
 
 # Serve Webpushr service worker at root level (not under /api)
 @app.get("/webpushr-sw.js", response_class=PlainTextResponse)
