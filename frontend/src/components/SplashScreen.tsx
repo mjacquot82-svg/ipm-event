@@ -61,7 +61,7 @@ const { width, height } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#1a0a0a', // Dark fallback matching image edges
+    backgroundColor: '#1C0F0A', // Dark brown matching the image edges
     zIndex: 9999,
   },
   backgroundImage: {
