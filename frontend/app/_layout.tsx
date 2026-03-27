@@ -12,10 +12,8 @@ import {
   addNotificationListeners 
 } from '../src/utils/notificationService';
 import { AdProvider } from '../src/context/AdContext';
-import InterstitialAd from '../src/components/InterstitialAd';
-import adCampaignsConfig from '../src/config/AdCampaignsConfig';
 
-// Initialize Webpushr for web platform
+// Initialize Webpushr for web platform (active on all pages including Coming Soon)
 const initWebpushr = () => {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     // @ts-ignore
@@ -50,16 +48,6 @@ const initWebpushr = () => {
 };
 
 export default function RootLayout() {
-  // Show interstitial immediately on app launch
-  const [showInterstitial, setShowInterstitial] = useState(adCampaignsConfig.interstitial.enabled);
-  const router = useRouter();
-  
-  const handleCloseInterstitial = () => {
-    setShowInterstitial(false);
-    // Navigate to home after closing the ad
-    router.replace('/');
-  };
-
   useEffect(() => {
     // Initialize Webpushr for web platform
     initWebpushr();
@@ -101,15 +89,10 @@ export default function RootLayout() {
         <AdProvider>
           <StatusBar style="dark" backgroundColor={colors.background} />
           <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="coming-soon" options={{ headerShown: false }} />
+            <Stack.Screen name="preview-2026" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack>
-          
-          {/* Interstitial Ad - Shows immediately on app launch */}
-          <InterstitialAd
-            adUnit={adCampaignsConfig.interstitial}
-            visible={showInterstitial}
-            onClose={handleCloseInterstitial}
-          />
         </AdProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
