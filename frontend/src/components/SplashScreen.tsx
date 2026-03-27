@@ -1,51 +1,48 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// This version bypasses the splash screen entirely for web browsers.
+// Static Splash Screen - No animation, just the IPM Final image for the App.
 
 import React, { useEffect } from 'react';
-import { StyleSheet, Animated, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, Image, Dimensions, Platform } from 'react-native';
 
-export default function SplashScreen({ onFinish }) {
-  const fadeAnim = React.useRef(new Animated.Value(1)).current;
+interface SplashScreenProps {
+  onFinish: () => void;
+  duration?: number;
+}
 
-  // Check if we are in a regular web browser (not the installed app)
+export default function SplashScreen({ onFinish, duration = 2000 }: SplashScreenProps) {
+  
+  // Logic Gate: Skip for web browsers, show for the installed App
   const isWebBrowser = Platform.OS === 'web' && 
     typeof window !== 'undefined' && 
     !window.matchMedia('(display-mode: standalone)').matches;
 
   useEffect(() => {
-    // If it's the website, tell the app we are "finished" immediately
     if (isWebBrowser) {
       onFinish();
       return;
     }
 
-    // Only run this timer for the installed App version
+    // Simple timer to hold the image before entering the app
     const timer = setTimeout(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => {
-        onFinish();
-      });
-    }, 2000);
+      onFinish();
+    }, duration);
 
     return () => clearTimeout(timer);
-  }, [onFinish, isWebBrowser]);
+  }, [onFinish, isWebBrowser, duration]);
 
-  // If it's the website, return nothing. The "Coming Soon" page shows instantly.
+  // If it's the website, show nothing (Coming Soon page loads instantly)
   if (isWebBrowser) {
     return null;
   }
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <Animated.Image
-        source={require('../../assets/images/splash-icon.png')}
+    <View style={styles.container}>
+      <Image
+        source={require('../../assets/images/ipm-final-v1.jpg')}
         style={styles.backgroundImage}
-        resizeMode="contain"
+        resizeMode="cover"
       />
-    </Animated.View>
+    </View>
   );
 }
 
@@ -54,11 +51,14 @@ const { width, height } = Dimensions.get('window');
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
+    backgroundColor: '#000000', 
     zIndex: 9999,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backgroundImage: {
     width: width,
     height: height,
+    position: 'absolute',
   },
 });
