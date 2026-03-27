@@ -39,13 +39,11 @@ const initWebpushr = () => {
       document.head.appendChild(script);
     }
     
-    // Setup webpushr after script loads
+    // Setup webpushr after script loads - default setup (looks for /webpushr-sw.js)
     script.onload = () => {
       // @ts-ignore
       window.webpushr('setup', {
-        'key': 'a6963b4f85a16f74d745ecab166025a2',
-        'sw': '/api/webpushr-sw.js',
-        'scope': '/'
+        'key': 'a6963b4f85a16f74d745ecab166025a2'
       });
     };
   }
