@@ -165,7 +165,25 @@ async def download_dist():
         return FileResponse(
             path=str(zip_path),
             filename="ipm2026-dist.zip",
-            media_type="application/zip"
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": "attachment; filename=ipm2026-dist.zip"
+            }
+        )
+    raise HTTPException(status_code=404, detail="dist.zip not found")
+
+@api_router.get("/dist.zip")
+async def download_dist_zip():
+    """Download the dist folder as a zip file for Netlify deployment"""
+    zip_path = ROOT_DIR / "dist.zip"
+    if zip_path.exists():
+        return FileResponse(
+            path=str(zip_path),
+            filename="ipm2026-dist.zip",
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": "attachment; filename=ipm2026-dist.zip"
+            }
         )
     raise HTTPException(status_code=404, detail="dist.zip not found")
 
@@ -487,6 +505,19 @@ async def send_sos_push_notification(push_token: str, title: str, body: str, dat
 
 # Include the router in the main app
 app.include_router(api_router)
+
+# Direct download endpoint (not through api_router)
+@app.get("/download")
+async def download_dist_direct():
+    """Download the dist folder as a zip file for Netlify deployment"""
+    zip_path = ROOT_DIR / "dist.zip"
+    if zip_path.exists():
+        return FileResponse(
+            path=str(zip_path),
+            filename="ipm2026-dist.zip",
+            media_type="application/zip"
+        )
+    raise HTTPException(status_code=404, detail="dist.zip not found")
 
 # Serve Webpushr service worker at root level (not under /api)
 @app.get("/webpushr-sw.js", response_class=PlainTextResponse)
