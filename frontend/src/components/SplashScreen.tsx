@@ -1,8 +1,8 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 // App Splash Screen Component - Only shows when installed as a PWA
 
-import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Image, Animated, Dimensions, Platform } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, Animated, Dimensions, Platform } from 'react-native';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -13,18 +13,18 @@ export default function SplashScreen({ onFinish, duration = 2500 }: SplashScreen
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1.1)).current;
   
-  // LOGIC GATE: Check if the app is "Installed/Standalone"
+  // This check identifies if the user is viewing the "Installed" App version
   const isStandalone = typeof window !== 'undefined' && 
     (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone);
 
   useEffect(() => {
-    // If we are just on the website, skip the splash screen immediately
+    // BOTTOM LINE: If NOT the installed app, skip straight to the "Coming Soon" site
     if (!isStandalone) {
       onFinish();
       return;
     }
 
-    // Otherwise, run the animation for the installed app
+    // Otherwise, run the animation for the App
     Animated.timing(scaleAnim, {
       toValue: 1,
       duration: duration,
@@ -44,7 +44,7 @@ export default function SplashScreen({ onFinish, duration = 2500 }: SplashScreen
     return () => clearTimeout(timer);
   }, [duration, onFinish, isStandalone]);
 
-  // If it's the website, render nothing (shows the "Coming Soon" page instantly)
+  // If it's the website, don't show the splash image at all
   if (!isStandalone) {
     return null;
   }
@@ -52,7 +52,7 @@ export default function SplashScreen({ onFinish, duration = 2500 }: SplashScreen
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <Animated.Image
-        source={require('../../assets/images/splash-screen.png\\\')}
+        source={require('../../assets/images/splash-screen.png')}
         style={[
           styles.backgroundImage,
           { transform: [{ scale: scaleAnim }] }
