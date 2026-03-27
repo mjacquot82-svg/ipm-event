@@ -14,9 +14,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import colors from '../../src/theme/colors';
-import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
-import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
+import colors from '../../../src/theme/colors';
+import { getFavorites, toggleFavorite } from '../../../src/utils/favoritesStorage';
+import { syncStarredEventsWithBackend } from '../../../src/utils/notificationService';
 
 // API Event type from Google Sheets
 interface ScheduleEvent {

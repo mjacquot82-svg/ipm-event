@@ -3,8 +3,8 @@
 import React from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import MapComponent from '../../src/components/MapComponent';
-import colors from '../../src/theme/colors';
+import MapComponent from '../../../src/components/MapComponent';
+import colors from '../../../src/theme/colors';
 
 export default function MapScreen() {
   // Get location parameter from navigation

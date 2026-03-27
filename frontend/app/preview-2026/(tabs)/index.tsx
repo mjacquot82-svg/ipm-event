@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
-import colors from '../../src/theme/colors';
+import colors from '../../../src/theme/colors';
 import { 
   sessions, 
   locations, 
@@ -32,8 +32,8 @@ import {
   getLocationTypeIcon,
   Session,
   eventInfo,
-} from '../../src/data/mockData';
-import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
+} from '../../../src/data/mockData';
+import { getFavorites, toggleFavorite } from '../../../src/utils/favoritesStorage';
 
 // SOS Form initial state
 const initialSOSForm = {
@@ -348,7 +348,7 @@ export default function HomeScreen() {
         {/* Header Banner Image */}
         <View style={styles.headerBanner}>
           <Image
-            source={require('../../assets/images/ipm-2026-banner.png')}
+            source={require('../../../assets/images/ipm-2026-banner.png')}
             style={styles.bannerImage}
           />
         </View>

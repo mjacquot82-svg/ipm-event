@@ -13,8 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
-import colors from '../../src/theme/colors';
-import { eventInfo, locations, sessions } from '../../src/data/mockData';
+import colors from '../../../src/theme/colors';
+import { eventInfo, locations, sessions } from '../../../src/data/mockData';
 
 export default function AboutScreen() {
   const openMaps = () => {

@@ -5,9 +5,9 @@ import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { StyleSheet, View, Platform, TouchableOpacity, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import colors from '../../src/theme/colors';
-import AdBanner from '../../src/components/AdBanner';
-import adCampaignsConfig from '../../src/config/AdCampaignsConfig';
+import colors from '../../../src/theme/colors';
+import AdBanner from '../../../src/components/AdBanner';
+import adCampaignsConfig from '../../../src/config/AdCampaignsConfig';
 
 const ICON_SIZE = 24;
 const NAV_ICONS_HEIGHT = 60;
