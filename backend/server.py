@@ -1,4 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi.responses import PlainTextResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -31,6 +32,9 @@ EVENTS_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{EVENTS_SHEET_ID
 
 VENDORS_SHEET_ID = "12FhDHOZDUaI41oZGeIvSopFxlfFi7X8OxKNSVaBmBgg"
 VENDORS_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{VENDORS_SHEET_ID}/export?format=csv"
+
+# Webpushr Service Worker content
+WEBPUSHR_SW_CONTENT = "importScripts('https://cdn.webpushr.com/sw-server.min.js');"
 
 # Cron job settings
 CHECK_INTERVAL_SECONDS = 300  # Check every 5 minutes
@@ -139,6 +143,19 @@ class SOSReportResponse(BaseModel):
 @api_router.get("/")
 async def root():
     return {"message": "Hello World"}
+
+# Serve Webpushr service worker via API route
+@api_router.get("/webpushr-sw.js", response_class=PlainTextResponse)
+async def serve_webpushr_service_worker_api():
+    """Serve Webpushr service worker via API route"""
+    return PlainTextResponse(
+        content=WEBPUSHR_SW_CONTENT,
+        media_type="application/javascript",
+        headers={
+            "Service-Worker-Allowed": "/",
+            "Cache-Control": "no-cache"
+        }
+    )
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
@@ -458,6 +475,19 @@ async def send_sos_push_notification(push_token: str, title: str, body: str, dat
 
 # Include the router in the main app
 app.include_router(api_router)
+
+# Serve Webpushr service worker at root level (not under /api)
+@app.get("/webpushr-sw.js", response_class=PlainTextResponse)
+async def serve_webpushr_service_worker():
+    """Serve Webpushr service worker from root"""
+    return PlainTextResponse(
+        content=WEBPUSHR_SW_CONTENT,
+        media_type="application/javascript",
+        headers={
+            "Service-Worker-Allowed": "/",
+            "Cache-Control": "no-cache"
+        }
+    )
 
 app.add_middleware(
     CORSMiddleware,
