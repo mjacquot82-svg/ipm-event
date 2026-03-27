@@ -52,7 +52,7 @@ export default function SplashScreen({ onFinish, duration = 2500 }: SplashScreen
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <Animated.Image
-        source={require('../../assets/images/splash-screen.jpg')}
+        source={require('../../assets/images/splash-screen.png\\\')}
         style={[
           styles.backgroundImage,
           { transform: [{ scale: scaleAnim }] }
