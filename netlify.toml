@@ -1,0 +1,8 @@
+[build]
+  publish = "frontend/dist"
+  command = "cd frontend && npm install && npx expo export --platform web && cp public/_redirects dist/ && cp public/webpushr-sw.js dist/ && cp public/robots.txt dist/ && cp web/manifest.json dist/ && mkdir -p dist/assets/images && cp assets/images/icon.png dist/assets/images/"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
