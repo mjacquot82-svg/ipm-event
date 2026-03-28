@@ -3,7 +3,7 @@
   "short_name": "IPM",
   "icons": [
     {
-      "src": "/v2-icon.png",
+      "src": "/red.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
