@@ -1,1 +1,16 @@
-
+{
+  "name": "IPM 2026",
+  "short_name": "IPM",
+  "icons": [
+    {
+      "src": "/v2-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000"
+}
