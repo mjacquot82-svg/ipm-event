@@ -1,15 +1,11 @@
 [build]
+  base = "frontend"
   publish = "dist"
-  command = "npm install && npx expo export --platform web && cp public/_redirects dist/ && cp public/webpushr-sw.js dist/ && cp public/robots.txt dist/ && cp web/manifest.json dist/ && cp web/index.html dist/ && cp web/v2-icon.png dist/"
+  command = "npm install && npx expo export --platform web"
 
 [[redirects]]
   from = "/preview"
   to = "/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/preview/*"
-  to = "/:splat"
   status = 200
 
 [[redirects]]
