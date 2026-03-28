@@ -4,6 +4,12 @@
     "slug": "ipm-2026",
     "version": "1.0.0",
     "icon": "./assets/images/v2-icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/images/v2-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
     "web": {
       "favicon": "./assets/images/v2-icon.png",
       "backgroundColor": "#000000",
