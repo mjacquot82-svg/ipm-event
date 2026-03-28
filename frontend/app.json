@@ -4,21 +4,21 @@
     "slug": "ipm-2026",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo-black",
+    "icon": "./assets/images/logo-black.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/images/logo-black",
+      "image": "./assets/images/logo-black.png",
       "resizeMode": "cover",
       "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ipm2026.app",
-      "icon": "./assets/images/logo-black"
+      "icon": "./assets/images/logo-black.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo-black",
+        "foregroundImage": "./assets/images/logo-black.png",
         "backgroundColor": "#000000"
       },
       "package": "com.ipm2026.app"
