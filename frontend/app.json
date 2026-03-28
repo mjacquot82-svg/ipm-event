@@ -3,7 +3,6 @@
     "name": "IPM 2026",
     "slug": "ipm-2026",
     "version": "1.0.0",
-    "orientation": "portrait",
     "icon": "./assets/images/v2-icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
@@ -11,47 +10,16 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.mjacquot.ipm2026",
-      "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to show where you are on the IPM 2026 event map."
-      }
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/v2-icon.png",
         "backgroundColor": "#000000"
-      },
-      "package": "com.mjacquot.ipm2026",
-      "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ]
+      }
     },
     "web": {
-      "favicon": "./assets/images/v2-icon.png",
-      "bundler": "metro"
+      "favicon": "./assets/images/v2-icon.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-splash-screen",
-      "expo-location",
-      [
-        "@rnmapbox/maps",
-        {
-          "RNMapboxMapsImpl": "mapbox",
-          "RNMapboxMapsDownloadToken": "sk.eyJ1IjoibWphY3F1b3QiLCJhIjoiY204Zms5dmphMHRrcTJqcHh0ZnozdjJzcyJ9.Z01o7fIeYfS99pGq_T8ZLQ"
-        }
-      ]
-    ],
     "extra": {
-      "router": {
-        "origin": false
-      },
       "eas": {
         "projectId": "c9d3deed-60fb-43d2-91d8-b8dff6d61a12"
       },
