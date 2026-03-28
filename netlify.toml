@@ -1,6 +1,6 @@
 [build]
   publish = "dist"
-  command = "npm install && npx expo export --platform web && cp public/_redirects dist/ && cp public/webpushr-sw.js dist/ && cp public/robots.txt dist/ && cp web/manifest.json dist/ && cp web/red.png dist/"
+  command = "npm install && npx expo export --platform web && cp public/_redirects dist/ && cp public/webpushr-sw.js dist/ && cp public/robots.txt dist/ && cp web/manifest.json dist/ && cp web/index.html dist/ && cp web/v2-icon.png dist/ && mkdir -p dist/preview && cp web/manifest.json dist/preview/ && cp web/v2-icon.png dist/preview/ && cp web/index.html dist/preview/"
 
 [[redirects]]
   from = "/*"
