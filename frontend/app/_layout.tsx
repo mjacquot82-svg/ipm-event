@@ -14,6 +14,8 @@ import {
 import { AdProvider } from '../src/context/AdContext';
 import InterstitialAd from '../src/components/InterstitialAd';
 import adCampaignsConfig from '../src/config/AdCampaignsConfig';
+import SplashScreen from '../src/components/SplashScreen';
+import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
 
 // Initialize Webpushr for web platform
 const initWebpushr = () => {
@@ -50,14 +52,22 @@ const initWebpushr = () => {
 };
 
 export default function RootLayout() {
-  // Show interstitial immediately on app launch
-  const [showInterstitial, setShowInterstitial] = useState(adCampaignsConfig.interstitial.enabled);
+  // Splash screen state
+  const [showSplash, setShowSplash] = useState(true);
+  // Show interstitial after splash
+  const [showInterstitial, setShowInterstitial] = useState(false);
   const router = useRouter();
+  
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    // Show interstitial after splash if enabled
+    if (adCampaignsConfig.interstitial.enabled) {
+      setShowInterstitial(true);
+    }
+  };
   
   const handleCloseInterstitial = () => {
     setShowInterstitial(false);
-    // Navigate to home after closing the ad
-    router.replace('/');
   };
 
   useEffect(() => {
@@ -104,12 +114,25 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack>
           
-          {/* Interstitial Ad - Shows immediately on app launch */}
-          <InterstitialAd
-            adUnit={adCampaignsConfig.interstitial}
-            visible={showInterstitial}
-            onClose={handleCloseInterstitial}
-          />
+          {/* Splash Screen - Shows for 2.5 seconds on app launch */}
+          {showSplash && (
+            <SplashScreen 
+              onFinish={handleSplashFinish} 
+              duration={2500} 
+            />
+          )}
+          
+          {/* Interstitial Ad - Shows after splash */}
+          {!showSplash && showInterstitial && (
+            <InterstitialAd
+              adUnit={adCampaignsConfig.interstitial}
+              visible={showInterstitial}
+              onClose={handleCloseInterstitial}
+            />
+          )}
+          
+          {/* PWA Install Prompt - Shows on web only after splash and interstitial */}
+          {!showSplash && !showInterstitial && <PWAInstallPrompt />}
         </AdProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
