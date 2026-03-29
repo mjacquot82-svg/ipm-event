@@ -4,6 +4,6 @@
 import { Redirect } from 'expo-router';
 
 export default function Index() {
-  // This is the "Front Door" that bounces users to your actual content
+  // We point to the folder name exactly as it appears in your screenshot
   return <Redirect href="/preview-2026" />;
 }
