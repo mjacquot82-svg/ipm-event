@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  Image,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -40,6 +41,14 @@ export default function HomeScreen() {
         <Text style={styles.subText}>International Plowing Match</Text>
       </View>
 
+      <View style={styles.bannerContainer}>
+        <Image
+          source={require('../../assets/images/ipm-2026-banner.png')}
+          style={styles.bannerImage}
+          resizeMode="cover"
+        />
+      </View>
+
       {/* 3x3 Quick Actions Grid */}
       <View style={styles.grid}>
         <GridItem
@@ -60,7 +69,6 @@ export default function HomeScreen() {
           color="#EF6C00"
           onPress={() => router.push('/vendors')}
         />
-
         <GridItem
           label="Tickets"
           icon="tag"
@@ -79,7 +87,6 @@ export default function HomeScreen() {
           color="#6A1B9A"
           onPress={() => router.push('/news')}
         />
-
         <GridItem
           label="Favorites"
           icon="star"
@@ -135,6 +142,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#E8F1E8',
     textAlign: 'center',
+  },
+  bannerContainer: {
+    width: '100%',
+    marginBottom: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  bannerImage: {
+    width: '100%',
+    height: 140,
   },
   grid: {
     flexDirection: 'row',
