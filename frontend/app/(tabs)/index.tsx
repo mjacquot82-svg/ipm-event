@@ -1,13 +1,14 @@
 // © 2026 1001538341 ONTARIO INC.
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   Linking,
   Image,
+  Pressable,
+  Animated,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -20,13 +21,40 @@ type GridItemProps = {
 };
 
 function GridItem({ label, icon, color, onPress }: GridItemProps) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.94,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 6,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 8,
+    }).start();
+  };
+
   return (
-    <TouchableOpacity style={styles.gridItem} onPress={onPress} activeOpacity={0.8}>
-      <View style={[styles.iconWrap, { backgroundColor: color }]}>
-        <Feather name={icon} size={24} color="#fff" />
-      </View>
-      <Text style={styles.gridLabel}>{label}</Text>
-    </TouchableOpacity>
+    <Animated.View style={[styles.gridItem, { transform: [{ scale: scaleAnim }] }]}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.gridPressable}
+      >
+        <View style={[styles.iconWrap, { backgroundColor: color }]}>
+          <Feather name={icon} size={22} color="#fff" />
+        </View>
+        <Text style={styles.gridLabel}>{label}</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -41,6 +69,12 @@ export default function HomeScreen() {
           style={styles.bannerImage}
           resizeMode="cover"
         />
+        <View style={styles.bannerOverlay} />
+
+        <View style={styles.bannerTextWrap}>
+          <Text style={styles.bannerTitle}>IPM 2026</Text>
+          <Text style={styles.bannerSubtitle}>International Plowing Match</Text>
+        </View>
       </View>
 
       <View style={styles.grid}>
@@ -99,10 +133,6 @@ export default function HomeScreen() {
           onPress={() => router.push('/sos')}
         />
       </View>
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Lindsay, Ontario • Sept 2026</Text>
-      </View>
     </ScrollView>
   );
 }
@@ -114,18 +144,38 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 16,
     paddingBottom: 40,
   },
   bannerContainer: {
     width: '100%',
-    marginBottom: 20,
-    borderRadius: 20,
+    height: 220,
+    borderRadius: 24,
     overflow: 'hidden',
+    marginTop: 10,
+    marginBottom: 20,
   },
   bannerImage: {
     width: '100%',
-    height: 180,
+    height: '100%',
+  },
+  bannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  bannerTextWrap: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+  },
+  bannerTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  bannerSubtitle: {
+    fontSize: 14,
+    color: '#E5E7EB',
+    marginTop: 4,
   },
   grid: {
     flexDirection: 'row',
@@ -133,39 +183,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   gridItem: {
-    width: '30%',
+    width: '31%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    paddingVertical: 18,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    marginBottom: 16,
+    borderRadius: 20,
+    marginBottom: 14,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 2,
   },
+  gridPressable: {
+    alignItems: 'center',
+    paddingVertical: 18,
+    borderRadius: 20,
+  },
   iconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 50,
+    height: 50,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   gridLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#1F2937',
     textAlign: 'center',
-  },
-  footer: {
-    marginTop: 12,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#6B7280',
   },
 });
