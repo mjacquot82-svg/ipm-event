@@ -3,10 +3,9 @@
 
 import { Redirect, useSegments } from 'expo-router';
 
-export default function RootIndex() {
-  const segments = useSegments();
-  
-  // This captures anyone coming in from /preview or the main root
-  // and sends them straight to your 2026 Preview content.
+import { Redirect } from 'expo-router';
+
+export default function PreviewPage() {
+  // This sends anyone at /preview straight to the 2026 content
   return <Redirect href="/preview-2026" />;
 }
