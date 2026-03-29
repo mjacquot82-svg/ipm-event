@@ -4,5 +4,5 @@
 import { Redirect } from 'expo-router';
 
 export default function Index() {
-  return <Redirect href="/coming-soon" />;
+  return <Redirect href="/home" />; // Or whatever your main page is named
 }
