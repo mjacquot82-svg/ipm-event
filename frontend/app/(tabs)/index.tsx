@@ -91,7 +91,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  ccontainer: {
+  container: {
   flex: 1,
   backgroundColor: '#ECE8E1', // slightly warmer than current
 },
