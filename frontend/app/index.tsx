@@ -4,6 +4,6 @@
 import { Redirect } from 'expo-router';
 
 export default function Index() {
-  // We point to the folder name exactly as it appears in your screenshot
-  return <Redirect href="/preview-2026" />;
+  // This sends the user straight into your Tab system
+  return <Redirect href="/(tabs)" />;
 }
