@@ -1,9 +1,6 @@
-import { View, Text } from 'react-native';
+import { Redirect } from 'expo-router';
 
-export default function TestPage() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'yellow' }}>
-      <Text style={{ fontSize: 24 }}>IPM APP IS ALIVE</Text>
-    </View>
-  );
+export default function Index() {
+  // This bounces the user from the "Front Door" to the 2026 page
+  return <Redirect href="/preview-2026" />;
 }
