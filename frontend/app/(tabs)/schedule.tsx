@@ -39,7 +39,7 @@ interface ScheduleResponse {
   total_count: number;
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
 
 export default function ScheduleScreen() {
   const router = useRouter();
