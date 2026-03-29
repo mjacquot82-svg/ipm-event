@@ -91,30 +91,33 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F7F4ED',
-  },
+  ccontainer: {
+  flex: 1,
+  backgroundColor: '#ECE8E1', // slightly warmer than current
+},
 
   // 🔥 Banner (edge to edge)
   bannerContainer: {
-    width: '100%',
-    height: 220,
-  },
-  bannerImage: {
-    width: '100%',
-    height: '100%',
-  },
-  bannerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.15)',
-  },
+  marginHorizontal: 16,   // 👈 matches grid + ads
+  marginTop: 10,
+  marginBottom: 16,
+  borderRadius: 16,
+  overflow: 'hidden',
+  height: 180,
+},
+bannerImage: {
+  width: '100%',
+  height: '100%',
+},
+bannerOverlay: {
+  ...StyleSheet.absoluteFillObject,
+  backgroundColor: 'rgba(0,0,0,0.15)',
+},
 
   // 🔹 Grid wrapper controls alignment
   gridWrapper: {
-    paddingHorizontal: 16,
-    marginTop: 16,
-  },
+  paddingHorizontal: 16,
+},
 
   grid: {
     flexDirection: 'row',
