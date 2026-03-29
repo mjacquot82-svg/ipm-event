@@ -92,27 +92,32 @@ export default function RootLayout() {
     return cleanup;
   }, []);
 
-  return (
+return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <SafeAreaProvider>
         <AdProvider>
           <StatusBar style="dark" backgroundColor={colors.background} />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="coming-soon" options={{ headerShown: false }} />
-            <Stack.Screen name="preview-2026" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack>
           
-          {/* Splash Screen - Shows for 2 seconds on app launch */}
-          {showSplash && (
+          {/* If splash is showing, we ONLY show the splash. 
+              This prevents the "White Screen" crash caused by the background 
+              navigation trying to load before the app is ready. */}
+          {showSplash ? (
             <SplashScreen 
               onFinish={handleSplashFinish} 
               duration={2000} 
             />
+          ) : (
+            <>
+              <Stack screenOptions={{ headerShown: false }}>
+                {/* We set the name to index to match your app/index.tsx redirect */}
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="preview-2026" options={{ headerShown: false }} />
+                <Stack.Screen name="coming-soon" options={{ headerShown: false }} />
+              </Stack>
+              <PWAInstallPrompt />
+            </>
           )}
-          
-          {/* PWA Install Prompt - Shows on web only after splash */}
-          {!showSplash && <PWAInstallPrompt />}
         </AdProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
