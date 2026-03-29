@@ -1,11 +1,11 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useEffect, useState } from 'react';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Alert, Platform, View } from 'react-native';
+import { Platform } from 'react-native';
 import colors from '../src/theme/colors';
 import { 
   registerForPushNotificationsAsync, 
@@ -15,7 +15,7 @@ import { AdProvider } from '../src/context/AdContext';
 import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
 import SplashScreen from '../src/components/SplashScreen';
 
-// Initialize Webpushr for web platform (active on all pages including Coming Soon)
+// Initialize Webpushr for web platform
 const initWebpushr = () => {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     // @ts-ignore
@@ -39,7 +39,6 @@ const initWebpushr = () => {
       document.head.appendChild(script);
     }
     
-    // Setup webpushr after script loads - default setup (looks for /webpushr-sw.js)
     script.onload = () => {
       // @ts-ignore
       window.webpushr('setup', {
@@ -50,7 +49,6 @@ const initWebpushr = () => {
 };
 
 export default function RootLayout() {
-  // Splash screen state
   const [showSplash, setShowSplash] = useState(true);
   
   const handleSplashFinish = () => {
@@ -58,10 +56,8 @@ export default function RootLayout() {
   };
 
   useEffect(() => {
-    // Initialize Webpushr for web platform
     initWebpushr();
     
-    // Register for push notifications on app start
     const initNotifications = async () => {
       const token = await registerForPushNotificationsAsync();
       if (token) {
@@ -71,36 +67,25 @@ export default function RootLayout() {
 
     initNotifications();
 
-    // Set up notification listeners
     const cleanup = addNotificationListeners(
       (notification) => {
-        // Handle notification received while app is in foreground
         console.log('Notification received:', notification);
       },
       (response) => {
-        // Handle notification tapped
         console.log('Notification tapped:', response);
-        const data = response.notification.request.content.data;
-        // You can navigate to specific screens based on notification data here
-        if (data?.eventId) {
-          // Navigate to event details or schedule
-          console.log('Should navigate to event:', data.eventId);
-        }
       }
     );
 
     return cleanup;
   }, []);
 
-return (
+  return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <SafeAreaProvider>
         <AdProvider>
           <StatusBar style="dark" backgroundColor={colors.background} />
           
-          {/* If splash is showing, we ONLY show the splash. 
-              This prevents the "White Screen" crash caused by the background 
-              navigation trying to load before the app is ready. */}
+          {/* LOGIC: Show ONLY Splash first. Once done, show the App Stack. */}
           {showSplash ? (
             <SplashScreen 
               onFinish={handleSplashFinish} 
@@ -109,7 +94,7 @@ return (
           ) : (
             <>
               <Stack screenOptions={{ headerShown: false }}>
-                {/* We set the name to index to match your app/index.tsx redirect */}
+                {/* 'index' must be here to match your app/index.tsx redirect */}
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="preview-2026" options={{ headerShown: false }} />
