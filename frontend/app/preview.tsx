@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 
-export default function Index() {
-  // This bounces the user from the "Front Door" to the 2026 page
+export default function PreviewRoot() {
+  // This handles the theipm.ca/preview URL and sends it to the folder
   return <Redirect href="/preview-2026" />;
 }
