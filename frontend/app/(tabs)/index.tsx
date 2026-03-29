@@ -18,7 +18,7 @@ const { width } = Dimensions.get('window');
 export default function HomeScreen() {
   const router = useRouter();
 
-  // The Exact 9-Button Grid from your screenshot
+  // Exact 9-Button Grid from your screenshot
   const quickActions = [
     { id: 'map', label: 'Map', icon: 'map', color: '#A52A2A', type: 'feather' },
     { id: 'schedule', label: 'Schedule', icon: 'calendar', color: '#DAA520', type: 'feather' },
@@ -48,7 +48,7 @@ export default function HomeScreen() {
             key={action.id}
             style={[
               styles.actionCard, 
-              action.isOutline && { borderWidth: 1.5, borderColor: action.color, elevation: 0 }
+              action.isOutline && { borderWidth: 1.5, borderColor: action.color, elevation: 0, shadowOpacity: 0 }
             ]}
             onPress={() => {}}
           >
@@ -123,38 +123,3 @@ const styles = StyleSheet.create({
   },
   grid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  actionCard: {
-    width: '31%',
-    aspectRatio: 1,
-    backgroundColor: 'white',
-    borderRadius: 15,
-    marginBottom: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Shadow for standard cards
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  iconWrapper: {
-    marginBottom: 6,
-  },
-  actionLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  comingUpHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 15,
-    marginBottom: 10,
-  },
-  seeAll: {
-    color: '#DAA520',
-    fontWeight: 'bold
