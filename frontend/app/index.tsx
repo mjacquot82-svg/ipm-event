@@ -1,7 +1,12 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 // Root index - Redirects to Coming Soon page
-import { Redirect } from 'expo-router';
 
-export default function RootIndex() {
-  return <Redirect href="/preview-2026" />;
+import { View, Text } from 'react-native';
+
+export default function TestPage() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'yellow' }}>
+      <Text style={{ fontSize: 24 }}>IPM APP IS ALIVE</Text>
+    </View>
+  );
 }
