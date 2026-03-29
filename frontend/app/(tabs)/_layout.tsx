@@ -1,7 +1,7 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React from 'react';
-import { Tabs, usePathname, useRouter } from 'expo-router'; // Moved hooks here
+import { Tabs, usePathname, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { StyleSheet, View, Platform, TouchableOpacity, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
