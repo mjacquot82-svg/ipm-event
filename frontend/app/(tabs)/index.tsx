@@ -130,24 +130,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 24,
     alignItems: 'center',
-  },
-  welcomeText: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  subText: {
-    marginTop: 6,
-    fontSize: 16,
-    color: '#E8F1E8',
-    textAlign: 'center',
-  },
-  bannerContainer: {
-    width: '100%',
-    marginBottom: 20,
-    borderRadius: 16,
-    overflow: 'hidden',
+  
+  
+
   },
   bannerImage: {
     width: '100%',
