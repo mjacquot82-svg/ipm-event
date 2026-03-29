@@ -9,7 +9,6 @@ import colors from '../../src/theme/colors';
 export default function HomeScreen() {
   const router = useRouter();
 
-  // The 9-Button Grid Configuration (3x3)
   const quickActions = [
     { id: 'map', label: 'Map', icon: 'map', color: '#2E7D32', route: '/map' },
     { id: 'schedule', label: 'Schedule', icon: 'calendar', color: '#1565C0', route: '/schedule' },
@@ -24,13 +23,11 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Branded Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>IPM 2026</Text>
         <Text style={styles.headerSubtitle}>International Plowing Match</Text>
       </View>
 
-      {/* 3x3 Grid Layout */}
       <View style={styles.grid}>
         {quickActions.map((action) => (
           <TouchableOpacity 
@@ -46,7 +43,6 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* Event Progress / Welcome Card */}
       <View style={styles.statusCard}>
         <Text style={styles.statusTitle}>Welcome to Walkerton</Text>
         <Text style={styles.statusText}>The 2026 Rural Expo is officially underway. Tap a tile above to begin.</Text>
@@ -61,7 +57,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 12, paddingTop: 60 },
   header: { alignItems: 'center', marginBottom: 20 },
-  headerTitle: { fontSize: 28, fontWeight: '900', color: colors.primary, letterSpacing: 1 },
+  headerTitle: { fontSize: 28, fontWeight: '900', color: colors.primary },
   headerSubtitle: { fontSize: 14, color: colors.textSecondary, textTransform: 'uppercase' },
   grid: { 
     flexDirection: 'row', 
@@ -70,9 +66,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4
   },
   actionCard: {
-    width: '31%', // Exactly 3 columns with margins
+    width: '31%',
     backgroundColor: colors.surface,
-    aspectRatio: 1, // Keep it square
+    aspectRatio: 1,
     borderRadius: 15,
     padding: 10,
     marginBottom: 12,
@@ -84,9 +80,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   iconCircle: { 
-    width: 48, 
-    height: 48, 
-    borderRadius: 24, 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22, 
     alignItems: 'center', 
     justifyContent: 'center', 
     marginBottom: 8 
@@ -106,4 +102,6 @@ const styles = StyleSheet.create({
     borderLeftColor: colors.primary 
   },
   statusTitle: { fontWeight: 'bold', fontSize: 16, color: colors.text },
-  statusText: { fontSize: 13, color: colors.textSecondary, marginTop:
+  statusText: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
+  footerSpacer: { height: 80 }
+});
