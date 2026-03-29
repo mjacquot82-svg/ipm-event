@@ -35,12 +35,6 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header / Banner Area */}
-      <View style={styles.titleContainer}>
-  <Text style={styles.welcomeText}>IPM 2026</Text>
-  <Text style={styles.subText}>International Plowing Match</Text>
-</View>>
-
       <View style={styles.bannerContainer}>
         <Image
           source={require('../../assets/images/ipm-2026-banner.png')}
@@ -49,7 +43,6 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* 3x3 Quick Actions Grid */}
       <View style={styles.grid}>
         <GridItem
           label="Map"
@@ -120,23 +113,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F4ED',
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 40,
   },
-  header: {
-    backgroundColor: '#234F2E',
+  bannerContainer: {
+    width: '100%',
+    marginBottom: 20,
     borderRadius: 20,
-    paddingVertical: 28,
-    paddingHorizontal: 20,
-    marginBottom: 24,
-    alignItems: 'center',
-  
-  
-
+    overflow: 'hidden',
   },
   bannerImage: {
     width: '100%',
-    height: 140,
+    height: 180,
   },
   grid: {
     flexDirection: 'row',
