@@ -36,10 +36,10 @@ export default function HomeScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header / Banner Area */}
-      <View style={styles.header}>
-        <Text style={styles.welcomeText}>IPM 2026</Text>
-        <Text style={styles.subText}>International Plowing Match</Text>
-      </View>
+      <View style={styles.titleContainer}>
+  <Text style={styles.welcomeText}>IPM 2026</Text>
+  <Text style={styles.subText}>International Plowing Match</Text>
+</View>>
 
       <View style={styles.bannerContainer}>
         <Image
