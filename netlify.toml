@@ -4,11 +4,6 @@
   command = "npm install && npx expo export --platform web"
 
 [[redirects]]
-  from = "/preview"
-  to = "/index.html"
-  status = 200
-
-[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
