@@ -81,7 +81,7 @@ export default function HomeScreen() {
           <GridItem label="Camping" icon="compass" color="#556B2F" onPress={() => Linking.openURL('https://letscamp.ca/')} />
           <GridItem label="News" icon="rss" color="#6A1B9A" onPress={() => router.push('/news')} />
 
-          <GridItem label="Favorites" icon="star" color="#FBC02D" onPress={() => router.push('/favorites')} />
+          <GridItem label="Itinerary" icon="clipboard" color="#FBC02D" onPress={() => router.push('/itinerary')} />
           <GridItem label="Photos" icon="camera" color="#00838F" onPress={() => router.push('/photos')} />
           <GridItem label="SOS" icon="alert-circle" color="#D32F2F" onPress={() => router.push('/sos')} />
         </View>
