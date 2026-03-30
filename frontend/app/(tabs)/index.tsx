@@ -485,7 +485,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => setShowItinerary(true)}
+              onPress={() => router.push('/(tabs)/itinerary')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.utility }]}>

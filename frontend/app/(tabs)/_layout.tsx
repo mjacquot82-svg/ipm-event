@@ -115,6 +115,7 @@ export default function TabLayout() {
           <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
           <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
           <Tabs.Screen name="about" options={{ title: 'About' }} />
+          <Tabs.Screen name="itinerary" options={{ title: 'Itinerary', href: null }} />
         </Tabs>
       </View>
 
