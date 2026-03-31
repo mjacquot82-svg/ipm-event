@@ -425,7 +425,7 @@ export default function HomeScreen() {
         {/* Header Banner Image */}
         <View style={styles.headerBanner}>
           <Image
-            source={require('../../assets/images/ipm-2026-banner.png')}
+            source={require('../../assets/images/ipm-2026-banner-new.png')}
             style={styles.bannerImage}
           />
         </View>
