@@ -24,19 +24,31 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
 
   // For web, use standard HTML picture element with string paths
   if (Platform.OS === 'web') {
+    // Desktop: tight layout with no spacing
+    // Mobile: preserve current spacing
+    const wrapperStyle: React.CSSProperties = {
+      width: '100%',
+      paddingLeft: '4%',
+      paddingRight: '4%',
+      paddingTop: isMobile ? undefined : 0,
+      paddingBottom: isMobile ? undefined : 0,
+      marginTop: isMobile ? undefined : 0,
+      marginBottom: isMobile ? undefined : 0,
+      boxSizing: 'border-box' as const,
+      lineHeight: 0,
+    };
+
     return (
-      <div style={{
-        width: '100%',
-        paddingLeft: '4%',
-        paddingRight: '4%',
-        boxSizing: 'border-box' as const,
-      }}>
+      <div style={wrapperStyle}>
         <style>
           {`
             .banner-wrapper {
               width: 100%;
               height: auto;
+              padding: 0;
+              margin: 0;
               line-height: 0;
+              font-size: 0;
             }
             .banner-image {
               width: 100%;
@@ -45,19 +57,24 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
               object-fit: contain;
               object-position: center;
               border-radius: 12px;
+              padding: 0;
+              margin: 0;
             }
-            /* Desktop: tighter spacing */
+            /* Desktop: zero spacing */
             @media (min-width: 768px) {
-              .banner-wrapper {
-                margin-top: -8px;
-                margin-bottom: -8px;
+              .banner-outer-wrapper {
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
               }
-            }
-            /* Mobile: keep current spacing */
-            @media (max-width: 767px) {
               .banner-wrapper {
-                margin-top: 0;
-                margin-bottom: 0;
+                padding: 0 !important;
+                margin: 0 !important;
+              }
+              .banner-image {
+                margin: 0 !important;
+                padding: 0 !important;
               }
             }
           `}
