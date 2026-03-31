@@ -18,9 +18,9 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
   const { width } = useWindowDimensions();
   const isMobile = width < BREAKPOINT;
 
-  // Desktop aspect ratio: 1800/180 = 10
-  // Mobile aspect ratio: 1080/500 = 2.16
-  const aspectRatio = isMobile ? (1080 / 500) : (1800 / 180);
+  // Desktop aspect ratio: 1800/180 = 10 (very wide)
+  // Mobile: use a shorter height to reduce empty space
+  const aspectRatio = isMobile ? 2.5 : 10; // Mobile shows image in 2.5:1 ratio
   const imageSource = isMobile ? mobileBanner : desktopBanner;
 
   return (
@@ -31,7 +31,7 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
           styles.image,
           { aspectRatio }
         ]}
-        resizeMode="contain"
+        resizeMode="cover"
       />
     </View>
   );
@@ -46,7 +46,6 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     borderRadius: 12,
-    // No fixed height - let aspectRatio control it
   },
 });
 
