@@ -36,6 +36,7 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
             .banner-wrapper {
               width: 100%;
               height: auto;
+              line-height: 0;
             }
             .banner-image {
               width: 100%;
@@ -44,6 +45,20 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
               object-fit: contain;
               object-position: center;
               border-radius: 12px;
+            }
+            /* Desktop: tighter spacing */
+            @media (min-width: 768px) {
+              .banner-wrapper {
+                margin-top: -8px;
+                margin-bottom: -8px;
+              }
+            }
+            /* Mobile: keep current spacing */
+            @media (max-width: 767px) {
+              .banner-wrapper {
+                margin-top: 0;
+                margin-bottom: 0;
+              }
             }
           `}
         </style>
