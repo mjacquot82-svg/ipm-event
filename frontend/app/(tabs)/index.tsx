@@ -1346,10 +1346,12 @@ const styles = StyleSheet.create({
   },
   bannerImage: {
     width: '100%',
-    height: 220, // Fixed height for mobile
+    aspectRatio: 1.5, // Wider aspect ratio to show more of the image
+    minHeight: 180, // Minimum height on small screens
+    maxHeight: 350, // Cap on large screens
     borderRadius: 12, // Match ad spots
     overflow: 'hidden',
-    resizeMode: 'cover', // Fill the space, crop if needed
+    resizeMode: 'cover',
   },
   section: {
     paddingHorizontal: 20,
