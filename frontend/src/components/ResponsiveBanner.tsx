@@ -6,9 +6,13 @@ import { View, Image, StyleSheet, useWindowDimensions, Platform } from 'react-na
 
 const BREAKPOINT = 768;
 
-// Import images for React Native
-const desktopBanner = require('../../assets/images/ipm-banner-desktop.png');
-const mobileBanner = require('../../assets/images/ipm-banner-mobile.png');
+// Image paths for web (served from public folder)
+const DESKTOP_IMAGE_PATH = '/images/ipm-banner-desktop.png';
+const MOBILE_IMAGE_PATH = '/images/ipm-banner-mobile.png';
+
+// Import images for React Native (native platforms only)
+const desktopBannerNative = require('../../assets/images/ipm-banner-desktop.png');
+const mobileBannerNative = require('../../assets/images/ipm-banner-mobile.png');
 
 interface ResponsiveBannerProps {
   style?: any;
@@ -18,14 +22,14 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
   const { width } = useWindowDimensions();
   const isMobile = width < BREAKPOINT;
 
-  // For web, use HTML picture element with proper CSS
+  // For web, use standard HTML picture element with string paths
   if (Platform.OS === 'web') {
     return (
       <div style={{
         width: '100%',
         paddingLeft: '4%',
         paddingRight: '4%',
-        boxSizing: 'border-box',
+        boxSizing: 'border-box' as const,
       }}>
         <style>
           {`
@@ -46,14 +50,14 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
         <picture className="banner-wrapper">
           <source 
             media="(max-width: 767px)" 
-            srcSet={Image.resolveAssetSource(mobileBanner).uri} 
+            srcSet={MOBILE_IMAGE_PATH} 
           />
           <source 
             media="(min-width: 768px)" 
-            srcSet={Image.resolveAssetSource(desktopBanner).uri} 
+            srcSet={DESKTOP_IMAGE_PATH} 
           />
           <img 
-            src={Image.resolveAssetSource(desktopBanner).uri} 
+            src={DESKTOP_IMAGE_PATH} 
             alt="IPM 2026 Banner" 
             className="banner-image"
           />
@@ -64,7 +68,7 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
 
   // For native platforms, use React Native Image with proper aspect ratio
   const aspectRatio = isMobile ? (1080 / 500) : (1800 / 180);
-  const imageSource = isMobile ? mobileBanner : desktopBanner;
+  const imageSource = isMobile ? mobileBannerNative : desktopBannerNative;
 
   return (
     <View style={[styles.container, style]}>
