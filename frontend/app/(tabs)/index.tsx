@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   Platform,
-  Image,
   Linking,
   Modal,
   Pressable,
@@ -21,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import colors from '../../src/theme/colors';
+import ResponsiveBanner from '../../src/components/ResponsiveBanner';
 import { 
   sessions, 
   locations, 
@@ -422,13 +422,8 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Header Banner Image */}
-        <View style={styles.headerBanner}>
-          <Image
-            source={require('../../assets/images/ipm-2026-banner-new.png')}
-            style={styles.bannerImage}
-          />
-        </View>
+        {/* Header Banner Image - Responsive */}
+        <ResponsiveBanner />
 
         {/* Happening Now Section */}
         {happeningNow.length > 0 && (
@@ -1339,20 +1334,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 180, // Critical: allows SOS/Alerts buttons to scroll clear of floating ad
   },
-  headerBanner: {
-    width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: '4%', // Match ad spots (92% width)
-  },
-  bannerImage: {
-    width: '100%',
-    aspectRatio: 1.5, // Wider aspect ratio to show more of the image
-    minHeight: 180, // Minimum height on small screens
-    maxHeight: 350, // Cap on large screens
-    borderRadius: 12, // Match ad spots
-    overflow: 'hidden',
-    resizeMode: 'cover',
-  },
+  // Old banner styles removed - now using ResponsiveBanner component
   section: {
     paddingHorizontal: 20,
     marginTop: 24,
