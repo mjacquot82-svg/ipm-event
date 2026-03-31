@@ -1346,7 +1346,8 @@ const styles = StyleSheet.create({
   },
   bannerImage: {
     width: '100%',
-    height: 200,
+    aspectRatio: 1.2, // Responsive height based on width (slightly wider than tall)
+    maxHeight: 400, // Cap height on very large screens
     borderRadius: 12,
     resizeMode: 'cover',
   },
