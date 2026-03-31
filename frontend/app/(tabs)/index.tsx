@@ -1341,12 +1341,14 @@ const styles = StyleSheet.create({
   },
   headerBanner: {
     width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: '4%', // Match ad spots (92% width)
   },
   bannerImage: {
     width: '100%',
-    height: 180,
-    resizeMode: 'contain',
-    marginTop: 15, // Space between top ad and IPM branding
+    height: 200,
+    borderRadius: 12,
+    resizeMode: 'cover',
   },
   section: {
     paddingHorizontal: 20,
