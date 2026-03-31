@@ -587,11 +587,6 @@ export default function HomeScreen() {
               </View>
               <Text style={[styles.actionTitle, { color: '#D32F2F' }]}>SOS</Text>
             </TouchableOpacity>
-            
-            {/* SOS FIX BUILD marker */}
-            <View style={{ position: 'absolute', top: -8, right: -8, backgroundColor: '#00FF00', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4, zIndex: 999 }}>
-              <Text style={{ fontSize: 8, fontWeight: '700', color: '#000' }}>SOS FIX BUILD</Text>
-            </View>
 
             {activeSOSReports.length > 0 && (
               <TouchableOpacity
