@@ -74,17 +74,34 @@ export default function HomeScreen() {
   const [activeSOSReports, setActiveSOSReports] = useState<any[]>([]);
   const [showActiveAlerts, setShowActiveAlerts] = useState(false);
 
+  // Check if backend is available
+  const [backendAvailable, setBackendAvailable] = useState(true);
+
   // Fetch events from API
   const fetchApiEvents = async () => {
     try {
       const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-      const response = await fetch(`${API_BASE_URL}/api/schedule`);
+      if (!API_BASE_URL) {
+        console.warn('Backend URL not configured');
+        setBackendAvailable(false);
+        return;
+      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch(`${API_BASE_URL}/api/schedule`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const data = await response.json();
         setApiEvents(data.events || []);
+        setBackendAvailable(true);
       }
-    } catch (error) {
-      console.error('Error fetching events:', error);
+    } catch (error: any) {
+      console.warn('Backend unavailable:', error?.message || 'Network error');
+      setBackendAvailable(false);
     }
   };
 
@@ -93,7 +110,18 @@ export default function HomeScreen() {
     setVendorsLoading(true);
     try {
       const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-      const response = await fetch(`${API_BASE_URL}/api/vendors`);
+      if (!API_BASE_URL) {
+        setBackendAvailable(false);
+        return;
+      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch(`${API_BASE_URL}/api/vendors`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const data = await response.json();
         const vendorList = data.vendors || [];
@@ -102,9 +130,11 @@ export default function HomeScreen() {
         // Extract unique types for filter
         const types = ['All', ...new Set(vendorList.map((v: any) => v.type).filter(Boolean))];
         setVendorTypes(types as string[]);
+        setBackendAvailable(true);
       }
-    } catch (error) {
-      console.error('Error fetching vendors:', error);
+    } catch (error: any) {
+      console.warn('Vendors fetch failed:', error?.message || 'Network error');
+      setBackendAvailable(false);
     } finally {
       setVendorsLoading(false);
     }
@@ -114,18 +144,41 @@ export default function HomeScreen() {
   const fetchActiveSOSReports = async () => {
     try {
       const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-      const response = await fetch(`${API_BASE_URL}/api/sos/active`);
+      if (!API_BASE_URL) {
+        setBackendAvailable(false);
+        return;
+      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch(`${API_BASE_URL}/api/sos/active`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const data = await response.json();
         setActiveSOSReports(data || []);
+        setBackendAvailable(true);
       }
-    } catch (error) {
-      console.error('Error fetching SOS reports:', error);
+    } catch (error: any) {
+      console.warn('SOS reports fetch failed:', error?.message || 'Network error');
+      setBackendAvailable(false);
     }
   };
 
   // Submit SOS report
   const submitSOSReport = async () => {
+    // Check backend availability first
+    if (!backendAvailable) {
+      Alert.alert(
+        'Service Unavailable',
+        'The SOS service is currently offline. Please contact event staff directly for emergencies.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     // Validate form
     if (!sosForm.name || !sosForm.sex || !sosForm.age || !sosForm.last_location) {
       Alert.alert('Missing Information', 'Please fill in at least Name, Sex, Age, and Last Location.');
@@ -135,11 +188,20 @@ export default function HomeScreen() {
     setSOSSubmitting(true);
     try {
       const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      if (!API_BASE_URL) {
+        throw new Error('Backend not configured');
+      }
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
       const response = await fetch(`${API_BASE_URL}/api/sos/report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sosForm),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         // Close the form immediately
@@ -155,9 +217,14 @@ export default function HomeScreen() {
       } else {
         Alert.alert('Error', 'Failed to send alert. Please try again or contact event staff directly.');
       }
-    } catch (error) {
-      console.error('Error submitting SOS:', error);
-      Alert.alert('Error', 'Failed to send alert. Please contact event staff directly.');
+    } catch (error: any) {
+      console.warn('SOS submit failed:', error?.message || 'Network error');
+      setBackendAvailable(false);
+      Alert.alert(
+        'Connection Error',
+        'Unable to send SOS alert online. Please contact event staff directly for emergencies.\n\nFind the nearest Information Tent or Security personnel.',
+        [{ text: 'OK' }]
+      );
     } finally {
       setSOSSubmitting(false);
     }
@@ -167,16 +234,26 @@ export default function HomeScreen() {
   const cancelSOSReport = async (reportId: string) => {
     try {
       const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      if (!API_BASE_URL) {
+        throw new Error('Backend not configured');
+      }
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
       const response = await fetch(`${API_BASE_URL}/api/sos/cancel/${reportId}`, {
         method: 'POST',
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         Alert.alert('Person Found', 'Thank you! The alert has been cancelled and all attendees notified.');
         fetchActiveSOSReports();
       }
-    } catch (error) {
-      console.error('Error cancelling SOS:', error);
+    } catch (error: any) {
+      console.warn('SOS cancel failed:', error?.message || 'Network error');
+      Alert.alert('Connection Error', 'Unable to cancel alert. Please try again or contact event staff.');
     }
   };
 

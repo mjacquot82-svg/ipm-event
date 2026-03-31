@@ -38,18 +38,33 @@ export default function ItineraryScreen() {
   const [apiEvents, setApiEvents] = useState<Event[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [backendAvailable, setBackendAvailable] = useState(true);
 
   // Fetch events from API
   const fetchApiEvents = async () => {
     try {
       const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-      const response = await fetch(`${API_BASE_URL}/api/schedule`);
+      if (!API_BASE_URL) {
+        setBackendAvailable(false);
+        return;
+      }
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch(`${API_BASE_URL}/api/schedule`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const data = await response.json();
         setApiEvents(data.events || []);
+        setBackendAvailable(true);
       }
-    } catch (error) {
-      console.error('Error fetching events:', error);
+    } catch (error: any) {
+      console.warn('Events fetch failed:', error?.message || 'Network error');
+      setBackendAvailable(false);
     } finally {
       setLoading(false);
     }
