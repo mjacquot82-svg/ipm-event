@@ -573,7 +573,13 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[styles.actionCard, styles.sosCard]}
-              onPress={() => setShowSOSWarning(true)}
+              onPress={() => {
+                try {
+                  setShowSOSWarning(true);
+                } catch (err) {
+                  console.warn('SOS click error:', err);
+                }
+              }}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: '#D32F2F' }]}>
@@ -581,6 +587,11 @@ export default function HomeScreen() {
               </View>
               <Text style={[styles.actionTitle, { color: '#D32F2F' }]}>SOS</Text>
             </TouchableOpacity>
+            
+            {/* SOS FIX BUILD marker */}
+            <View style={{ position: 'absolute', top: -8, right: -8, backgroundColor: '#00FF00', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 4, zIndex: 999 }}>
+              <Text style={{ fontSize: 8, fontWeight: '700', color: '#000' }}>SOS FIX BUILD</Text>
+            </View>
 
             {activeSOSReports.length > 0 && (
               <TouchableOpacity
@@ -1020,114 +1031,119 @@ export default function HomeScreen() {
       </Modal>
 
       {/* SOS Warning Modal */}
-      <Modal
-        visible={showSOSWarning}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowSOSWarning(false)}
-      >
-        <View style={styles.sosModalOverlay}>
-          <View style={styles.sosModalContent}>
-            <View style={styles.sosWarningIcon}>
-              <Feather name="alert-triangle" size={48} color="#D32F2F" />
-            </View>
-            <Text style={styles.sosWarningTitle}>Missing Person Alert</Text>
-            <Text style={styles.sosWarningText}>
-              Only press the SOS button if you are seriously missing a person. This will send an emergency alert to ALL event attendees.
-            </Text>
-            <TouchableOpacity
-              style={styles.sosButton}
-              onPress={() => {
-                setShowSOSWarning(false);
-                setShowSOSConfirm(true);
-              }}
-            >
-              <Feather name="alert-circle" size={24} color="#FFFFFF" />
-              <Text style={styles.sosButtonText}>SOS - Report Missing Person</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.sosCancelButton}
-              onPress={() => setShowSOSWarning(false)}
-            >
-              <Text style={styles.sosCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* SOS Confirmation Modal */}
-      <Modal
-        visible={showSOSConfirm}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowSOSConfirm(false)}
-      >
-        <View style={styles.sosModalOverlay}>
-          <View style={styles.sosModalContent}>
-            <Feather name="alert-octagon" size={48} color="#D32F2F" />
-            <Text style={styles.sosWarningTitle}>Are you sure?</Text>
-            <Text style={styles.sosWarningText}>
-              This will send an emergency notification to thousands of event attendees. Please confirm this is a real emergency.
-            </Text>
-            <TouchableOpacity
-              style={styles.sosButton}
-              onPress={() => {
-                setShowSOSConfirm(false);
-                setShowSOSForm(true);
-              }}
-            >
-              <Text style={styles.sosButtonText}>Yes, Continue</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.sosCancelButton}
-              onPress={() => setShowSOSConfirm(false)}
-            >
-              <Text style={styles.sosCancelText}>No, Go Back</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* SOS Form Modal */}
-      <Modal
-        visible={showSOSForm}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowSOSForm(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: '95%' }]}>
-            <View style={styles.modalHeader}>
-              <View style={styles.modalTitleRow}>
-                <Feather name="alert-triangle" size={24} color="#D32F2F" />
-                <Text style={[styles.modalTitle, { color: '#D32F2F' }]}>Missing Person Details</Text>
+      {showSOSWarning && (
+        <Modal
+          visible={true}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setShowSOSWarning(false)}
+        >
+          <View style={styles.sosModalOverlay}>
+            <View style={styles.sosModalContent}>
+              <View style={styles.sosWarningIcon}>
+                <Feather name="alert-triangle" size={48} color="#D32F2F" />
               </View>
-              <TouchableOpacity 
+              <Text style={styles.sosWarningTitle}>Missing Person Alert</Text>
+              <Text style={styles.sosWarningText}>
+                Only press the SOS button if you are seriously missing a person. This will send an emergency alert to ALL event attendees.
+              </Text>
+              <TouchableOpacity
+                style={styles.sosButton}
                 onPress={() => {
-                  setShowSOSForm(false);
-                  setSOSForm(initialSOSForm);
+                  setShowSOSWarning(false);
+                  setTimeout(() => setShowSOSConfirm(true), 100);
                 }}
-                style={styles.modalCloseButton}
               >
-                <Feather name="x" size={24} color={colors.textMuted} />
+                <Feather name="alert-circle" size={24} color="#FFFFFF" />
+                <Text style={styles.sosButtonText}>SOS - Report Missing Person</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sosCancelButton}
+                onPress={() => setShowSOSWarning(false)}
+              >
+                <Text style={styles.sosCancelText}>Cancel</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </Modal>
+      )}
 
-            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-              <Text style={styles.formLabel}>Name *</Text>
-              <TextInput
-                style={styles.formInput}
-                value={sosForm.name}
-                onChangeText={(text) => setSOSForm({...sosForm, name: text})}
-                placeholder="Full name of missing person"
-                placeholderTextColor={colors.textMuted}
-              />
+      {/* SOS Confirmation Modal */}
+      {showSOSConfirm && (
+        <Modal
+          visible={true}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setShowSOSConfirm(false)}
+        >
+          <View style={styles.sosModalOverlay}>
+            <View style={styles.sosModalContent}>
+              <Feather name="alert-octagon" size={48} color="#D32F2F" />
+              <Text style={styles.sosWarningTitle}>Are you sure?</Text>
+              <Text style={styles.sosWarningText}>
+                This will send an emergency notification to thousands of event attendees. Please confirm this is a real emergency.
+              </Text>
+              <TouchableOpacity
+                style={styles.sosButton}
+                onPress={() => {
+                  setShowSOSConfirm(false);
+                  setTimeout(() => setShowSOSForm(true), 100);
+                }}
+              >
+                <Text style={styles.sosButtonText}>Yes, Continue</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sosCancelButton}
+                onPress={() => setShowSOSConfirm(false)}
+              >
+                <Text style={styles.sosCancelText}>No, Go Back</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
 
-              <Text style={styles.formLabel}>Sex *</Text>
-              <View style={styles.formButtonRow}>
-                {['Male', 'Female', 'Other'].map((sex) => (
-                  <TouchableOpacity
-                    key={sex}
+      {/* SOS Form Modal */}
+      {showSOSForm && (
+        <Modal
+          visible={true}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowSOSForm(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxHeight: '95%' }]}>
+              <View style={styles.modalHeader}>
+                <View style={styles.modalTitleRow}>
+                  <Feather name="alert-triangle" size={24} color="#D32F2F" />
+                  <Text style={[styles.modalTitle, { color: '#D32F2F' }]}>Missing Person Details</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => {
+                    setShowSOSForm(false);
+                    setSOSForm(initialSOSForm);
+                  }}
+                  style={styles.modalCloseButton}
+                >
+                  <Feather name="x" size={24} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                <Text style={styles.formLabel}>Name *</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={sosForm.name}
+                  onChangeText={(text) => setSOSForm({...sosForm, name: text})}
+                  placeholder="Full name of missing person"
+                  placeholderTextColor={colors.textMuted}
+                />
+
+                <Text style={styles.formLabel}>Sex *</Text>
+                <View style={styles.formButtonRow}>
+                  {['Male', 'Female', 'Other'].map((sex) => (
+                    <TouchableOpacity
+                      key={sex}
                     style={[
                       styles.formSelectButton,
                       sosForm.sex === sex && styles.formSelectButtonActive
@@ -1239,28 +1255,30 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+      )}
 
       {/* Active Alerts Modal */}
-      <Modal
-        visible={showActiveAlerts}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowActiveAlerts(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View style={styles.modalTitleRow}>
-                <Feather name="bell" size={24} color="#FF5722" />
-                <Text style={[styles.modalTitle, { color: '#FF5722' }]}>Active Alerts</Text>
+      {showActiveAlerts && (
+        <Modal
+          visible={true}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowActiveAlerts(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <View style={styles.modalTitleRow}>
+                  <Feather name="bell" size={24} color="#FF5722" />
+                  <Text style={[styles.modalTitle, { color: '#FF5722' }]}>Active Alerts</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => setShowActiveAlerts(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <Feather name="x" size={24} color={colors.textMuted} />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity 
-                onPress={() => setShowActiveAlerts(false)}
-                style={styles.modalCloseButton}
-              >
-                <Feather name="x" size={24} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
 
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               {activeSOSReports.length === 0 ? (
@@ -1309,6 +1327,7 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+      )}
     </View>
   );
 }
