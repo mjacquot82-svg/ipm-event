@@ -954,11 +954,4 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
-```
 
-**Key endpoints that require PIN (2026):**
-- `POST /api/sos/resolve/{id}` - Resolve an alert
-- `POST /api/sos/archive/{id}` - Archive an alert (removes from home page)
-- `POST /api/sos/admin/{id}` - Get reporter contact info
-
-**To change the PIN**, set the `ADMIN_PIN` environment variable in Railway.
