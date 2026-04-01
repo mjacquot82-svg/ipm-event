@@ -18,16 +18,8 @@ interface SplashScreenProps {
 
 export default function SplashScreen({ onFinish, duration = 2500 }: SplashScreenProps) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const scaleAnim = useRef(new Animated.Value(1.1)).current;
 
   useEffect(() => {
-    // Subtle zoom out animation for the background
-    Animated.timing(scaleAnim, {
-      toValue: 1,
-      duration: duration,
-      useNativeDriver: true,
-    }).start();
-
     // After duration, fade out and call onFinish
     const timer = setTimeout(() => {
       Animated.timing(fadeAnim, {
@@ -44,12 +36,9 @@ export default function SplashScreen({ onFinish, duration = 2500 }: SplashScreen
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <Animated.Image
+      <Image
         source={require('../../assets/images/splash-screen.jpg')}
-        style={[
-          styles.backgroundImage,
-          { transform: [{ scale: scaleAnim }] }
-        ]}
+        style={styles.backgroundImage}
         resizeMode="cover"
       />
     </Animated.View>

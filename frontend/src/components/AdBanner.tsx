@@ -20,18 +20,21 @@ interface AdBannerProps {
 }
 
 // Define colors and ad IDs for each route
-const routeConfig: Record<string, { color: string; adId: number; name: string }> = {
-  '/': { color: '#8B1538', adId: 1, name: 'Home' },           // Maroon
-  '/index': { color: '#8B1538', adId: 1, name: 'Home' },      // Maroon
-  '/map': { color: '#2E7D32', adId: 2, name: 'Map' },         // Green
-  '/schedule': { color: '#1565C0', adId: 3, name: 'Schedule' }, // Blue
-  '/leaderboard': { color: '#F57C00', adId: 4, name: 'Leaderboard' }, // Orange
-  '/about': { color: '#7B1FA2', adId: 5, name: 'About' },     // Purple
-  '/itinerary': { color: '#00838F', adId: 6, name: 'Itinerary' }, // Teal
+// Each page has a TOP ad and BOTTOM ad
+// TOP ads: 1, 3, 5, 7, 9, 11 (odd numbers)
+// BOTTOM ads: 2, 4, 6, 8, 10, 12 (even numbers)
+const routeConfig: Record<string, { color: string; topAdId: number; bottomAdId: number; name: string }> = {
+  '/': { color: '#8B1538', topAdId: 1, bottomAdId: 2, name: 'Home' },           // Maroon
+  '/index': { color: '#8B1538', topAdId: 1, bottomAdId: 2, name: 'Home' },      // Maroon
+  '/map': { color: '#2E7D32', topAdId: 3, bottomAdId: 4, name: 'Map' },         // Green
+  '/schedule': { color: '#1565C0', topAdId: 5, bottomAdId: 6, name: 'Schedule' }, // Blue
+  '/leaderboard': { color: '#F57C00', topAdId: 7, bottomAdId: 8, name: 'Leaderboard' }, // Orange
+  '/about': { color: '#7B1FA2', topAdId: 9, bottomAdId: 10, name: 'About' },     // Purple
+  '/itinerary': { color: '#00838F', topAdId: 11, bottomAdId: 12, name: 'Itinerary' }, // Teal
 };
 
 // Default config for unknown routes
-const defaultConfig = { color: '#616161', adId: 0, name: 'Unknown' }; // Grey
+const defaultConfig = { color: '#616161', topAdId: 0, bottomAdId: 0, name: 'Unknown' }; // Grey
 
 const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = 'auto' }) => {
   const pathname = usePathname();
@@ -53,7 +56,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
   };
 
   const isTop = position === 'top';
-  const adSpotNumber = isTop ? config.adId : config.adId + 10; // Bottom ads get +10 to differentiate
+  const adSpotNumber = isTop ? config.topAdId : config.bottomAdId;
 
   if (isTop) {
     // TOP AD - 92% width, borderRadius: 12, shadow
