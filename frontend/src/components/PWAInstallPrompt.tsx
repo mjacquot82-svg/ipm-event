@@ -59,8 +59,25 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
   const [installing, setInstalling] = useState(false);
   const slideAnim = useRef(new Animated.Value(400)).current;
 
+  // Detect if device is mobile (not desktop)
+  const isMobileDevice = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const mobileKeywords = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+    const isMobile = mobileKeywords.test(userAgent);
+    // Also check screen width as a fallback
+    const isSmallScreen = window.innerWidth < 768;
+    return isMobile || isSmallScreen;
+  };
+
   useEffect(() => {
     if (Platform.OS !== 'web') return;
+    
+    // Don't show on desktop
+    if (!isMobileDevice()) {
+      console.log('[PWA] Desktop detected, not showing install prompt');
+      return;
+    }
 
     const init = async () => {
       // Check dismiss status
