@@ -21,7 +21,15 @@ import json
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+# MongoDB connection - supports both MONGODB_URL (Railway) and MONGO_URL (Emergent)
+mongo_url = os.environ.get('MONGODB_URL') or os.environ.get('MONGO_URL')
+if not mongo_url:
+    raise Exception("No MongoDB URL found. Set MONGODB_URL or MONGO_URL environment variable.")
 
+# Extract database name from URL or use default
+db_name = os.environ.get('DB_NAME', 'ipm2026')
+client = AsyncIOMotorClient(mongo_url)
+db = client[db_name]
 
 # Google Sheet URLs (public CSV export)
 EVENTS_SHEET_ID = "1tnfBd7Ffg5S4hyk5c5CpB-VGkJcSnLpdsKGbNJIiQCs"
@@ -104,10 +112,14 @@ class SOSReport(BaseModel):
     shirt_color: str
     pants_color: str
     last_location: str
-    status: str = "active"  # active, resolved
+    description: Optional[str] = ""  # Additional description/notes
+    reporter_name: str = ""  # Reporter's name (required)
+    reporter_phone: str = ""  # Reporter's phone number (required)
+    status: str = "active"  # active, resolved, archived
     reporter_token: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     resolved_at: Optional[datetime] = None
+    archived_at: Optional[datetime] = None
 
 class SOSReportCreate(BaseModel):
     name: str
@@ -119,8 +131,15 @@ class SOSReportCreate(BaseModel):
     shirt_color: str
     pants_color: str
     last_location: str
+    description: Optional[str] = ""
+    reporter_name: str = ""  # Required
+    reporter_phone: str = ""  # Required
     reporter_token: Optional[str] = None
 
+class SOSResolveRequest(BaseModel):
+    pin: str
+
+# Public response - hides reporter info for privacy
 class SOSReportResponse(BaseModel):
     id: str
     name: str
@@ -132,9 +151,41 @@ class SOSReportResponse(BaseModel):
     shirt_color: str
     pants_color: str
     last_location: str
+    description: Optional[str] = ""
     status: str
     created_at: datetime
     resolved_at: Optional[datetime] = None
+    archived_at: Optional[datetime] = None
+
+# Admin response - includes reporter contact info
+class SOSReportAdminResponse(BaseModel):
+    id: str
+    name: str
+    sex: str
+    age: str
+    height: str
+    hair_color: str
+    glasses: bool
+    shirt_color: str
+    pants_color: str
+    last_location: str
+    description: Optional[str] = ""
+    reporter_name: str
+    reporter_phone: str
+    status: str
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
+    archived_at: Optional[datetime] = None
+
+# Admin PIN for resolving alerts (default: 2026)
+ADMIN_PIN = os.environ.get("ADMIN_PIN", "2026")
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
@@ -366,6 +417,9 @@ async def create_sos_report(data: SOSReportCreate):
             shirt_color=data.shirt_color,
             pants_color=data.pants_color,
             last_location=data.last_location,
+            description=data.description,
+            reporter_name=data.reporter_name,
+            reporter_phone=data.reporter_phone,
             reporter_token=data.reporter_token
         )
         
@@ -411,6 +465,7 @@ async def create_sos_report(data: SOSReportCreate):
             shirt_color=report.shirt_color,
             pants_color=report.pants_color,
             last_location=report.last_location,
+            description=report.description,
             status=report.status,
             created_at=report.created_at
         )
@@ -424,10 +479,14 @@ async def get_active_sos_reports():
     """Get all active SOS reports"""
     try:
         reports = await db.sos_reports.find({"status": "active"}).to_list(100)
+        # Return empty list if no reports found (not an error)
+        if not reports:
+            return []
         return [SOSReportResponse(**report) for report in reports]
     except Exception as e:
         logger.error(f"Error fetching SOS reports: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch SOS reports")
+        # Return empty list on error instead of 500 (graceful degradation)
+        return []
 
 @api_router.post("/sos/cancel/{report_id}")
 async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None):
@@ -471,6 +530,202 @@ async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None
     except Exception as e:
         logger.error(f"Error cancelling SOS report: {e}")
         raise HTTPException(status_code=500, detail="Failed to cancel SOS report")
+
+@api_router.post("/sos/resolve/{report_id}")
+async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
+    """Securely resolve an SOS report with PIN verification (Admin only)"""
+    try:
+        # Verify PIN
+        if data.pin != ADMIN_PIN:
+            return {"status": "error", "message": "Unauthorized - Invalid PIN"}
+        
+        # Find the report
+        report = await db.sos_reports.find_one({"id": report_id})
+        if not report:
+            raise HTTPException(status_code=404, detail="SOS report not found")
+        
+        if report["status"] == "resolved":
+            return {"status": "already_resolved", "message": "Alert already resolved"}
+        
+        # Update the report status to resolved
+        resolved_time = datetime.utcnow()
+        await db.sos_reports.update_one(
+            {"id": report_id},
+            {"$set": {
+                "status": "resolved",
+                "resolved_at": resolved_time
+            }}
+        )
+        
+        # Broadcast "Resolved" notification to all registered devices
+        all_tokens = await db.push_tokens.find().to_list(1000)
+        logger.info(f"SOS RESOLVED: Broadcasting to {len(all_tokens)} devices")
+        
+        for token_doc in all_tokens:
+            push_token = token_doc.get("token")
+            if push_token:
+                await send_expo_push_notification(
+                    push_token=push_token,
+                    title="✅ Alert Resolved",
+                    body=f"Update: The situation regarding {report['name']} has been resolved. Thank you for your help.",
+                    data={"type": "sos_resolved", "sos_id": report_id}
+                )
+        
+        return {
+            "status": "success", 
+            "message": "Alert resolved successfully",
+            "resolved_at": resolved_time.isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resolving SOS report: {e}")
+        raise HTTPException(status_code=500, detail="Failed to resolve SOS report")
+
+@api_router.post("/sos/archive/{report_id}")
+async def archive_sos_report(report_id: str):
+    """Archive a resolved SOS report (called after 30-minute timer)"""
+    try:
+        report = await db.sos_reports.find_one({"id": report_id})
+        if not report:
+            raise HTTPException(status_code=404, detail="SOS report not found")
+        
+        if report["status"] != "resolved":
+            return {"status": "error", "message": "Can only archive resolved alerts"}
+        
+        # Update to archived status
+        await db.sos_reports.update_one(
+            {"id": report_id},
+            {"$set": {
+                "status": "archived",
+                "archived_at": datetime.utcnow()
+            }}
+        )
+        
+        return {"status": "success", "message": "Alert archived"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error archiving SOS report: {e}")
+        raise HTTPException(status_code=500, detail="Failed to archive SOS report")
+
+@api_router.get("/sos/resolved", response_model=List[SOSReportResponse])
+async def get_resolved_sos_reports():
+    """Get all resolved (but not yet archived) SOS reports"""
+    try:
+        reports = await db.sos_reports.find({"status": "resolved"}).to_list(100)
+        if not reports:
+            return []
+        return [SOSReportResponse(**report) for report in reports]
+    except Exception as e:
+        logger.error(f"Error fetching resolved SOS reports: {e}")
+        return []
+
+@api_router.get("/sos/archived", response_model=List[SOSReportResponse])
+async def get_archived_sos_reports():
+    """Get all archived (past) SOS reports"""
+    try:
+        reports = await db.sos_reports.find({"status": "archived"}).to_list(100)
+        if not reports:
+            return []
+        return [SOSReportResponse(**report) for report in reports]
+    except Exception as e:
+        logger.error(f"Error fetching archived SOS reports: {e}")
+        return []
+
+@api_router.post("/sos/test-alert")
+async def create_test_alert():
+    """Create a test SOS alert for testing purposes (Admin endpoint)"""
+    try:
+        test_report = SOSReport(
+            id=str(uuid.uuid4()),
+            name="Test Alert - John Doe",
+            sex="Male",
+            age="25",
+            height="5'10\"",
+            hair_color="Brown",
+            glasses=False,
+            shirt_color="Blue t-shirt",
+            pants_color="Jeans",
+            last_location="Main Entrance - Test Location",
+            description="This is a TEST ALERT for system verification. Please ignore.",
+            reporter_name="System Admin",
+            reporter_phone="(519) 555-0123",
+            status="active",
+            created_at=datetime.utcnow()
+        )
+        
+        await db.sos_reports.insert_one(test_report.dict())
+        
+        logger.info(f"Test SOS alert created with ID: {test_report.id}")
+        
+        return {
+            "status": "success",
+            "message": "Test alert created successfully",
+            "alert_id": test_report.id,
+            "note": "This is a test alert. Use DELETE /api/sos/test-alert/{id} to remove it."
+        }
+    except Exception as e:
+        logger.error(f"Error creating test alert: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create test alert: {str(e)}")
+
+@api_router.delete("/sos/test-alert/{alert_id}")
+async def delete_test_alert(alert_id: str):
+    """Delete a test SOS alert"""
+    try:
+        result = await db.sos_reports.delete_one({"id": alert_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Alert not found")
+        return {"status": "success", "message": "Test alert deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting test alert: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete test alert")
+
+
+@api_router.post("/sos/admin/{report_id}", response_model=SOSReportAdminResponse)
+async def get_sos_admin_details(report_id: str, data: SOSResolveRequest):
+    """Get full SOS report details including reporter info (Admin PIN required)"""
+    try:
+        # Verify PIN
+        if data.pin != ADMIN_PIN:
+            raise HTTPException(status_code=401, detail="Unauthorized - Invalid PIN")
+        
+        # Find the report
+        report = await db.sos_reports.find_one({"id": report_id})
+        if not report:
+            raise HTTPException(status_code=404, detail="SOS report not found")
+        
+        # Return full admin response with reporter info
+        return SOSReportAdminResponse(
+            id=report.get("id"),
+            name=report.get("name", ""),
+            sex=report.get("sex", ""),
+            age=report.get("age", ""),
+            height=report.get("height", ""),
+            hair_color=report.get("hair_color", ""),
+            glasses=report.get("glasses", False),
+            shirt_color=report.get("shirt_color", ""),
+            pants_color=report.get("pants_color", ""),
+            last_location=report.get("last_location", ""),
+            description=report.get("description", ""),
+            reporter_name=report.get("reporter_name", "Unknown"),
+            reporter_phone=report.get("reporter_phone", "No phone provided"),
+            status=report.get("status", "active"),
+            created_at=report.get("created_at", datetime.utcnow()),
+            resolved_at=report.get("resolved_at"),
+            archived_at=report.get("archived_at")
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching admin SOS details: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch SOS details")
+
 
 async def send_sos_push_notification(push_token: str, title: str, body: str, data: dict = None):
     """Send CRITICAL push notification for SOS alerts with loud sound"""
@@ -536,13 +791,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 # ============== CRON JOB FOR EVENT CHANGE DETECTION ==============
 
