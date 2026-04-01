@@ -1,6 +1,3 @@
-Here's the complete `server.py`:
-
-```python
 from fastapi import FastAPI, APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse, FileResponse
 from dotenv import load_dotenv
