@@ -563,7 +563,7 @@ export default function HomeScreen() {
               <View style={[styles.actionIcon, { backgroundColor: colors.utility }]}>
                 <Feather name="clipboard" size={22} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionTitle}>Itinerary</Text>
+              <Text style={styles.actionTitle}>Personal Itinerary</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -616,28 +616,6 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-
-        {/* Starred Sessions Banner */}
-        {favorites.length > 0 && (
-          <View style={styles.section}>
-            <TouchableOpacity 
-              style={styles.starredBanner}
-              onPress={() => router.push('/(tabs)/schedule')}
-              activeOpacity={0.8}
-            >
-              <View style={styles.starredBannerContent}>
-                <Feather name="star" size={24} color={colors.accent} />
-                <View style={styles.starredBannerText}>
-                  <Text style={styles.starredBannerTitle}>
-                    {favorites.length} Starred Event{favorites.length > 1 ? 's' : ''}
-                  </Text>
-                  <Text style={styles.starredBannerSubtitle}>View your personal schedule</Text>
-                </View>
-              </View>
-              <Feather name="chevron-right" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* Bottom padding is now handled by contentContainerStyle */}
       </ScrollView>
