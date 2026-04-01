@@ -783,7 +783,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.countdownContent}>
               <Text style={styles.countdownLabel}>IPM 2026 Starts In</Text>
-              <CountdownTimer targetDate="2026-09-15T09:00:00" />
+              <CountdownTimer targetDate="2026-09-22T09:00:00" />
             </View>
           </View>
         </View>
