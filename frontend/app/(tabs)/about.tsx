@@ -33,7 +33,7 @@ export default function AboutScreen() {
         {/* Logo Header */}
         <View style={styles.logoSection}>
           <Image 
-            source={{ uri: 'https://customer-assets.emergentagent.com/job_95522952-d1fd-436e-88ee-22dc044a6280/artifacts/cwk6huub_image.png' }}
+            source={require('../../assets/images/about-logo.png')}
             style={styles.logoImage}
             resizeMode="contain"
           />
