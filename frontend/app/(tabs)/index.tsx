@@ -75,6 +75,35 @@ const isValidPhone = (phone: string): boolean => {
   return digits.length === 10;
 };
 
+// Test Vendor Data for IPM 2026
+const TEST_VENDORS = [
+  { id: '1', name: 'Ontario Tractor Co.', booth: 'A-101', type: 'Equipment', description: 'Large Farm Equipment & Tractors' },
+  { id: '2', name: 'The Pretzel Stand', booth: 'B-5', type: 'Food', description: 'Fresh Pretzels & Snacks' },
+  { id: '3', name: 'IPM Official Merch', booth: '300', type: 'Retail', description: 'Clothing, Souvenirs & Memorabilia' },
+  { id: '4', name: 'Huron County Seeds', booth: 'A-205', type: 'Agriculture', description: 'Premium Seeds & Crop Solutions' },
+  { id: '5', name: 'Farm Fresh Lemonade', booth: 'F-12', type: 'Food', description: 'Ice Cold Drinks & Refreshments' },
+  { id: '6', name: 'John Deere Showcase', booth: 'A-100', type: 'Equipment', description: 'Latest Farming Machinery Demos' },
+  { id: '7', name: 'Heritage Crafts', booth: 'C-45', type: 'Retail', description: 'Handmade Rural Arts & Crafts' },
+  { id: '8', name: 'BBQ Pit Masters', booth: 'F-20', type: 'Food', description: 'Smoked Meats & BBQ Platters' },
+  { id: '9', name: 'AgriTech Solutions', booth: 'A-310', type: 'Technology', description: 'Smart Farming Technology' },
+  { id: '10', name: 'The Fudge Factory', booth: 'B-8', type: 'Food', description: 'Homemade Fudge & Sweet Treats' },
+  { id: '11', name: 'Rural Insurance Group', booth: 'C-102', type: 'Services', description: 'Farm & Property Insurance' },
+  { id: '12', name: 'Livestock Supplies Ltd.', booth: 'A-250', type: 'Agriculture', description: 'Animal Feed & Care Products' },
+  { id: '13', name: 'Country Kitchen', booth: 'F-15', type: 'Food', description: 'Home-style Meals & Pies' },
+  { id: '14', name: 'Solar Farm Systems', booth: 'A-320', type: 'Technology', description: 'Renewable Energy for Farms' },
+  { id: '15', name: 'Boots & Saddles', booth: 'C-60', type: 'Retail', description: 'Western Wear & Riding Gear' },
+];
+
+// Category colors for vendors
+const VENDOR_CATEGORY_COLORS: Record<string, string> = {
+  'Equipment': '#2196F3',
+  'Food': '#FF9800',
+  'Retail': '#9C27B0',
+  'Agriculture': '#4CAF50',
+  'Technology': '#00BCD4',
+  'Services': '#607D8B',
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -87,10 +116,21 @@ export default function HomeScreen() {
   
   // Vendors state
   const [showVendors, setShowVendors] = useState(false);
-  const [vendors, setVendors] = useState<any[]>([]);
-  const [vendorTypes, setVendorTypes] = useState<string[]>([]);
+  const [vendorSearchQuery, setVendorSearchQuery] = useState('');
   const [selectedVendorType, setSelectedVendorType] = useState<string>('All');
-  const [vendorsLoading, setVendorsLoading] = useState(false);
+  
+  // Get unique vendor types from test data
+  const vendorTypes = ['All', ...Array.from(new Set(TEST_VENDORS.map(v => v.type)))];
+  
+  // Filter vendors based on search and type
+  const filteredVendors = TEST_VENDORS.filter(vendor => {
+    const matchesSearch = vendorSearchQuery.trim() === '' || 
+      vendor.name.toLowerCase().includes(vendorSearchQuery.toLowerCase()) ||
+      vendor.booth.toLowerCase().includes(vendorSearchQuery.toLowerCase()) ||
+      vendor.description.toLowerCase().includes(vendorSearchQuery.toLowerCase());
+    const matchesType = selectedVendorType === 'All' || vendor.type === selectedVendorType;
+    return matchesSearch && matchesType;
+  });
   
   // SOS state
   const [showSOSWarning, setShowSOSWarning] = useState(false);
@@ -733,7 +773,8 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={styles.actionCard}
               onPress={() => {
-                fetchVendors();
+                setVendorSearchQuery('');
+                setSelectedVendorType('All');
                 setShowVendors(true);
               }}
               activeOpacity={0.8}
@@ -1139,6 +1180,25 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Search Bar */}
+            <View style={styles.vendorSearchContainer}>
+              <Feather name="search" size={18} color={colors.textMuted} />
+              <TextInput
+                style={styles.vendorSearchInput}
+                placeholder="Search by name or booth..."
+                placeholderTextColor={colors.textMuted}
+                value={vendorSearchQuery}
+                onChangeText={setVendorSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {vendorSearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setVendorSearchQuery('')}>
+                  <Feather name="x-circle" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+
             {/* Filter Chips */}
             <ScrollView 
               horizontal 
@@ -1163,54 +1223,37 @@ export default function HomeScreen() {
               ))}
             </ScrollView>
 
+            {/* Results Count */}
+            <Text style={styles.vendorResultsCount}>
+              {filteredVendors.length} {filteredVendors.length === 1 ? 'vendor' : 'vendors'} found
+            </Text>
+
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-              {vendorsLoading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={styles.loadingText}>Loading vendors...</Text>
-                </View>
-              ) : filteredVendors.length === 0 ? (
+              {filteredVendors.length === 0 ? (
                 <View style={styles.emptyItinerary}>
-                  <Feather name="shopping-bag" size={48} color={colors.textMuted} />
+                  <Feather name="search" size={48} color={colors.textMuted} />
                   <Text style={styles.emptyItineraryTitle}>No vendors found</Text>
+                  <Text style={styles.emptyItinerarySubtitle}>Try a different search term</Text>
                 </View>
               ) : (
                 filteredVendors.map((vendor) => (
                   <View key={vendor.id} style={styles.vendorCard}>
                     <View style={styles.vendorHeader}>
-                      <Text style={styles.vendorName}>{vendor.name}</Text>
-                      <View style={styles.vendorTypeBadge}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.vendorName}>{vendor.name}</Text>
+                        <View style={styles.vendorBoothRow}>
+                          <Feather name="map-pin" size={14} color={colors.primary} />
+                          <Text style={styles.vendorBoothText}>Booth {vendor.booth}</Text>
+                        </View>
+                      </View>
+                      <View style={[
+                        styles.vendorTypeBadge, 
+                        { backgroundColor: VENDOR_CATEGORY_COLORS[vendor.type] || colors.primary }
+                      ]}>
                         <Text style={styles.vendorTypeText}>{vendor.type}</Text>
                       </View>
                     </View>
-                    {vendor.location && (
-                      <TouchableOpacity 
-                        style={styles.vendorRow}
-                        onPress={() => {
-                          setShowVendors(false);
-                          router.push({
-                            pathname: '/(tabs)/map',
-                            params: { location: vendor.location, showOnly: 'true' }
-                          });
-                        }}
-                      >
-                        <Feather name="map-pin" size={14} color={colors.primary} />
-                        <Text style={[styles.vendorDetail, { color: colors.primary }]}>{vendor.location}</Text>
-                        <Feather name="external-link" size={12} color={colors.primary} style={{ marginLeft: 4 }} />
-                      </TouchableOpacity>
-                    )}
-                    {vendor.hours_of_operation && (
-                      <View style={styles.vendorRow}>
-                        <Feather name="clock" size={14} color={colors.textMuted} />
-                        <Text style={styles.vendorDetail}>{vendor.hours_of_operation}</Text>
-                      </View>
-                    )}
-                    {vendor.days_of_operation && (
-                      <View style={styles.vendorRow}>
-                        <Feather name="calendar" size={14} color={colors.textMuted} />
-                        <Text style={styles.vendorDetail}>{vendor.days_of_operation}</Text>
-                      </View>
-                    )}
+                    <Text style={styles.vendorDescription}>{vendor.description}</Text>
                   </View>
                 ))
               )}
@@ -2694,5 +2737,49 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  // Vendor search styles
+  vendorSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 10,
+  },
+  vendorSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.textPrimary,
+    ...Platform.select({
+      web: { outlineStyle: 'none' } as any,
+    }),
+  },
+  vendorResultsCount: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  vendorBoothRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  vendorBoothText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  vendorDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 8,
+    lineHeight: 20,
   },
 });
