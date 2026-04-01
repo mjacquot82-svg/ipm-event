@@ -25,15 +25,10 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
   // Calculate actual image width (92% of screen - accounting for 4% padding each side)
   const imageWidth = screenWidth * 0.92;
   
-  // Desktop banner: 1800x180 (aspect ratio 10:1 - very thin)
-  // Mobile banner: 1080x500 (aspect ratio 2.16:1)
-  // Calculate height based on width and EXACT aspect ratio to prevent cropping
-  const desktopAspectRatio = 1800 / 180; // = 10
-  const mobileAspectRatio = 1080 / 500;  // = 2.16
-  
-  const desktopHeight = imageWidth / desktopAspectRatio;
-  const mobileHeight = imageWidth / mobileAspectRatio;
-  const imageHeight = isDesktop ? desktopHeight : mobileHeight;
+  // Use aspectRatio to maintain natural proportions
+  // Desktop banner: 1800x180 = 10:1 aspect ratio
+  // Mobile banner: 1080x500 = 2.16:1 aspect ratio
+  const aspectRatio = isDesktop ? (1800 / 180) : (1080 / 500);
   
   // Choose image based on screen width
   const imageSource = Platform.select({
@@ -54,10 +49,10 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
         source={imageSource}
         style={{
           width: imageWidth,
-          height: imageHeight,
+          aspectRatio: aspectRatio,
           borderRadius: 12,
         }}
-        resizeMode="stretch"
+        resizeMode="cover"
       />
     </View>
   );
