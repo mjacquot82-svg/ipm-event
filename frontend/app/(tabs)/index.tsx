@@ -1,6 +1,6 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,12 +15,15 @@ import {
   ActivityIndicator,
   TextInput,
   Alert,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors from '../../src/theme/colors';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
+import PinKeypad from '../../src/components/PinKeypad';
 import { 
   sessions, 
   locations, 
@@ -72,7 +75,15 @@ export default function HomeScreen() {
   const [sosForm, setSOSForm] = useState(initialSOSForm);
   const [sosSubmitting, setSOSSubmitting] = useState(false);
   const [activeSOSReports, setActiveSOSReports] = useState<any[]>([]);
+  const [resolvedSOSReports, setResolvedSOSReports] = useState<any[]>([]);
+  const [archivedSOSReports, setArchivedSOSReports] = useState<any[]>([]);
   const [showActiveAlerts, setShowActiveAlerts] = useState(false);
+  
+  // Admin mode state
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [showPinKeypad, setShowPinKeypad] = useState(false);
+  const [selectedReportForResolve, setSelectedReportForResolve] = useState<string | null>(null);
+  const [countdowns, setCountdowns] = useState<Record<string, number>>({});
 
   // Check if backend is available
   const [backendAvailable, setBackendAvailable] = useState(true);
@@ -151,6 +162,7 @@ export default function HomeScreen() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       
+      // Fetch active alerts
       const response = await fetch(`${API_BASE_URL}/api/sos/active`, {
         signal: controller.signal
       });
@@ -161,10 +173,142 @@ export default function HomeScreen() {
         setActiveSOSReports(data || []);
         setBackendAvailable(true);
       }
+      
+      // Fetch resolved alerts
+      const resolvedResponse = await fetch(`${API_BASE_URL}/api/sos/resolved`);
+      if (resolvedResponse.ok) {
+        const resolvedData = await resolvedResponse.json();
+        setResolvedSOSReports(resolvedData || []);
+      }
+      
+      // Fetch archived alerts
+      const archivedResponse = await fetch(`${API_BASE_URL}/api/sos/archived`);
+      if (archivedResponse.ok) {
+        const archivedData = await archivedResponse.json();
+        setArchivedSOSReports(archivedData || []);
+      }
     } catch (error: any) {
       console.warn('SOS reports fetch failed:', error?.message || 'Network error');
       setBackendAvailable(false);
     }
+  };
+  
+  // Check admin mode on mount
+  useEffect(() => {
+    const checkAdminMode = async () => {
+      try {
+        const adminMode = await AsyncStorage.getItem('admin_mode');
+        setIsAdminMode(adminMode === 'true');
+      } catch (e) {
+        console.error('Error checking admin mode:', e);
+      }
+    };
+    checkAdminMode();
+  }, []);
+  
+  // Toggle admin mode (called by long press on Alerts title)
+  const toggleAdminMode = async () => {
+    try {
+      const newMode = !isAdminMode;
+      await AsyncStorage.setItem('admin_mode', newMode.toString());
+      setIsAdminMode(newMode);
+      Alert.alert(
+        newMode ? '🔓 Admin Mode Enabled' : '🔒 Admin Mode Disabled',
+        newMode ? 'You can now resolve alerts.' : 'Resolve button hidden.'
+      );
+    } catch (e) {
+      console.error('Error toggling admin mode:', e);
+    }
+  };
+  
+  // Resolve alert with PIN
+  const handleResolveAlert = (reportId: string) => {
+    setSelectedReportForResolve(reportId);
+    setShowPinKeypad(true);
+  };
+  
+  // Handle PIN success
+  const handlePinSuccess = async () => {
+    setShowPinKeypad(false);
+    
+    if (!selectedReportForResolve) return;
+    
+    try {
+      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      const response = await fetch(`${API_BASE_URL}/api/sos/resolve/${selectedReportForResolve}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: '2026' }),
+      });
+      
+      if (response.ok) {
+        Alert.alert('✅ Alert Resolved', 'The alert has been marked as resolved. A notification has been sent to all attendees.');
+        fetchActiveSOSReports();
+      } else {
+        Alert.alert('Error', 'Failed to resolve alert. Please try again.');
+      }
+    } catch (e) {
+      console.error('Error resolving alert:', e);
+      Alert.alert('Error', 'Network error. Please try again.');
+    }
+    
+    setSelectedReportForResolve(null);
+  };
+  
+  // Archive alert (called when countdown reaches 0)
+  const archiveAlert = async (alertId: string) => {
+    try {
+      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+      await fetch(`${API_BASE_URL}/api/sos/archive/${alertId}`, {
+        method: 'POST',
+      });
+      fetchActiveSOSReports();
+    } catch (e) {
+      console.error('Error archiving alert:', e);
+    }
+  };
+  
+  // Countdown timer for resolved alerts
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountdowns(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(id => {
+          if (updated[id] > 0) {
+            updated[id] -= 1;
+          } else {
+            archiveAlert(id);
+            delete updated[id];
+          }
+        });
+        return updated;
+      });
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Initialize countdowns for resolved alerts
+  useEffect(() => {
+    resolvedSOSReports.forEach(alert => {
+      if (!countdowns[alert.id] && alert.resolved_at) {
+        const resolvedTime = new Date(alert.resolved_at).getTime();
+        const now = Date.now();
+        const elapsed = Math.floor((now - resolvedTime) / 1000);
+        const remaining = Math.max(0, 30 * 60 - elapsed); // 30 minutes
+        
+        if (remaining > 0) {
+          setCountdowns(prev => ({ ...prev, [alert.id]: remaining }));
+        }
+      }
+    });
+  }, [resolvedSOSReports]);
+  
+  // Format countdown
+  const formatCountdown = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Submit SOS report
@@ -1236,10 +1380,16 @@ export default function HomeScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <View style={styles.modalTitleRow}>
+                <TouchableOpacity 
+                  style={styles.modalTitleRow}
+                  onLongPress={toggleAdminMode}
+                  delayLongPress={1000}
+                >
                   <Feather name="bell" size={24} color="#FF5722" />
-                  <Text style={[styles.modalTitle, { color: '#FF5722' }]}>Active Alerts</Text>
-                </View>
+                  <Text style={[styles.modalTitle, { color: '#FF5722' }]}>
+                    Alert Management {isAdminMode ? '🔓' : ''}
+                  </Text>
+                </TouchableOpacity>
                 <TouchableOpacity 
                   onPress={() => setShowActiveAlerts(false)}
                   style={styles.modalCloseButton}
@@ -1249,53 +1399,132 @@ export default function HomeScreen() {
               </View>
 
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-              {activeSOSReports.length === 0 ? (
+              {/* ACTIVE ALERTS - RED */}
+              {activeSOSReports.length > 0 && (
+                <View style={styles.alertSection}>
+                  <Text style={styles.alertSectionTitle}>🚨 Active Alerts</Text>
+                  {activeSOSReports.map((report) => (
+                    <View key={report.id} style={[styles.alertCard, styles.alertCardActive]}>
+                      <View style={styles.alertHeader}>
+                        <Feather name="alert-triangle" size={20} color="#FFFFFF" />
+                        <Text style={[styles.alertTitle, { color: '#FFFFFF' }]}>Missing: {report.name}</Text>
+                      </View>
+                      <View style={styles.alertDetails}>
+                        <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Sex: {report.sex} | Age: {report.age}</Text>
+                        {report.height && <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Height: {report.height}</Text>}
+                        {report.hair_color && <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Hair: {report.hair_color}</Text>}
+                        <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Glasses: {report.glasses ? 'Yes' : 'No'}</Text>
+                        {report.shirt_color && <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Shirt: {report.shirt_color}</Text>}
+                        {report.pants_color && <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Pants: {report.pants_color}</Text>}
+                        <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Last seen: {report.last_location}</Text>
+                      </View>
+                      
+                      {/* Admin Resolve Button */}
+                      {isAdminMode && (
+                        <TouchableOpacity
+                          style={styles.resolveButton}
+                          onPress={() => handleResolveAlert(report.id)}
+                        >
+                          <Feather name="shield" size={18} color="#FFFFFF" />
+                          <Text style={styles.resolveButtonText}>Resolve Alert (Admin)</Text>
+                        </TouchableOpacity>
+                      )}
+                      
+                      {/* Regular Cancel Button */}
+                      <TouchableOpacity
+                        style={styles.foundButton}
+                        onPress={() => {
+                          Alert.alert(
+                            'Person Found?',
+                            'Confirm that this person has been found and cancel the alert?',
+                            [
+                              { text: 'No', style: 'cancel' },
+                              { text: 'Yes, Person Found', onPress: () => cancelSOSReport(report.id) }
+                            ]
+                          );
+                        }}
+                      >
+                        <Feather name="check-circle" size={18} color="#FFFFFF" />
+                        <Text style={styles.foundButtonText}>Person Found - Cancel Alert</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+              
+              {/* RESOLVED ALERTS - GREEN */}
+              {resolvedSOSReports.length > 0 && (
+                <View style={styles.alertSection}>
+                  <Text style={[styles.alertSectionTitle, { color: '#16A34A' }]}>✅ Resolved Alerts</Text>
+                  {resolvedSOSReports.map((report) => (
+                    <View key={report.id} style={[styles.alertCard, styles.alertCardResolved]}>
+                      <View style={styles.alertHeader}>
+                        <Feather name="check-circle" size={20} color="#FFFFFF" />
+                        <Text style={[styles.alertTitle, { color: '#FFFFFF' }]}>RESOLVED: {report.name}</Text>
+                      </View>
+                      <Text style={[styles.alertDetail, { color: '#FFFFFF', marginTop: 8 }]}>
+                        This person has been found safely.
+                      </Text>
+                      {countdowns[report.id] && (
+                        <Text style={[styles.alertDetail, { color: 'rgba(255,255,255,0.9)', marginTop: 8, fontStyle: 'italic' }]}>
+                          Moving to archive in {formatCountdown(countdowns[report.id])}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+              
+              {/* ARCHIVED ALERTS */}
+              {archivedSOSReports.length > 0 && (
+                <View style={styles.alertSection}>
+                  <Text style={[styles.alertSectionTitle, { color: colors.textMuted }]}>📁 Past Alerts</Text>
+                  {archivedSOSReports.map((report) => (
+                    <View key={report.id} style={[styles.alertCard, styles.alertCardArchived]}>
+                      <View style={styles.alertHeader}>
+                        <Feather name="archive" size={20} color={colors.textMuted} />
+                        <Text style={[styles.alertTitle, { color: colors.textMuted }]}>{report.name}</Text>
+                      </View>
+                      <Text style={[styles.alertDetail, { color: colors.textMuted }]}>
+                        Resolved and archived
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              
+              {/* EMPTY STATE */}
+              {activeSOSReports.length === 0 && resolvedSOSReports.length === 0 && archivedSOSReports.length === 0 && (
                 <View style={styles.emptyItinerary}>
                   <Feather name="check-circle" size={48} color={colors.success} />
-                  <Text style={styles.emptyItineraryTitle}>No Active Alerts</Text>
+                  <Text style={styles.emptyItineraryTitle}>No Alerts</Text>
                   <Text style={styles.emptyItineraryText}>There are currently no missing person alerts.</Text>
                 </View>
-              ) : (
-                activeSOSReports.map((report) => (
-                  <View key={report.id} style={styles.alertCard}>
-                    <View style={styles.alertHeader}>
-                      <Feather name="alert-triangle" size={20} color="#D32F2F" />
-                      <Text style={styles.alertTitle}>Missing: {report.name}</Text>
-                    </View>
-                    <View style={styles.alertDetails}>
-                      <Text style={styles.alertDetail}>Sex: {report.sex} | Age: {report.age}</Text>
-                      {report.height && <Text style={styles.alertDetail}>Height: {report.height}</Text>}
-                      {report.hair_color && <Text style={styles.alertDetail}>Hair: {report.hair_color}</Text>}
-                      <Text style={styles.alertDetail}>Glasses: {report.glasses ? 'Yes' : 'No'}</Text>
-                      {report.shirt_color && <Text style={styles.alertDetail}>Shirt: {report.shirt_color}</Text>}
-                      {report.pants_color && <Text style={styles.alertDetail}>Pants: {report.pants_color}</Text>}
-                      <Text style={styles.alertDetail}>Last seen: {report.last_location}</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.foundButton}
-                      onPress={() => {
-                        Alert.alert(
-                          'Person Found?',
-                          'Confirm that this person has been found and cancel the alert?',
-                          [
-                            { text: 'No', style: 'cancel' },
-                            { text: 'Yes, Person Found', onPress: () => cancelSOSReport(report.id) }
-                          ]
-                        );
-                      }}
-                    >
-                      <Feather name="check-circle" size={18} color="#FFFFFF" />
-                      <Text style={styles.foundButtonText}>Person Found - Cancel Alert</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))
               )}
+              
+              {/* Admin Mode Hint */}
+              <Text style={styles.adminHint}>
+                💡 Long press the title to toggle admin mode
+              </Text>
+              
               <View style={{ height: 40 }} />
             </ScrollView>
           </View>
         </View>
       </Modal>
       )}
+      
+      {/* PIN Keypad Modal */}
+      <PinKeypad
+        visible={showPinKeypad}
+        onClose={() => {
+          setShowPinKeypad(false);
+          setSelectedReportForResolve(null);
+        }}
+        onSuccess={handlePinSuccess}
+        correctPin="2026"
+        title="Enter Admin PIN"
+      />
     </View>
   );
 }
