@@ -7,6 +7,7 @@ import { StyleSheet, View, Platform, TouchableOpacity, Text } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../src/theme/colors';
 import AdBanner from '../../src/components/AdBanner';
+import AlertBanner from '../../src/components/AlertBanner';
 import adCampaignsConfig from '../../src/config/AdCampaignsConfig';
 
 const ICON_SIZE = 24;
@@ -100,6 +101,9 @@ export default function TabLayout() {
           <AdBanner adUnit={adCampaignsConfig.topBanner} position="top" />
         </View>
       )}
+
+      {/* ALERT BANNER - Pinned below top ad when active */}
+      <AlertBanner />
 
       {/* MAIN CONTENT - Tabs - fills remaining space */}
       <View style={styles.contentArea}>

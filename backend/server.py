@@ -107,10 +107,11 @@ class SOSReport(BaseModel):
     shirt_color: str
     pants_color: str
     last_location: str
-    status: str = "active"  # active, resolved
+    status: str = "active"  # active, resolved, archived
     reporter_token: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     resolved_at: Optional[datetime] = None
+    archived_at: Optional[datetime] = None
 
 class SOSReportCreate(BaseModel):
     name: str
@@ -123,6 +124,9 @@ class SOSReportCreate(BaseModel):
     pants_color: str
     last_location: str
     reporter_token: Optional[str] = None
+
+class SOSResolveRequest(BaseModel):
+    pin: str
 
 class SOSReportResponse(BaseModel):
     id: str
@@ -138,6 +142,10 @@ class SOSReportResponse(BaseModel):
     status: str
     created_at: datetime
     resolved_at: Optional[datetime] = None
+    archived_at: Optional[datetime] = None
+
+# Admin PIN for resolving alerts (default: 2026)
+ADMIN_PIN = os.environ.get("ADMIN_PIN", "2026")
 
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
@@ -474,6 +482,106 @@ async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None
     except Exception as e:
         logger.error(f"Error cancelling SOS report: {e}")
         raise HTTPException(status_code=500, detail="Failed to cancel SOS report")
+
+@api_router.post("/sos/resolve/{report_id}")
+async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
+    """Securely resolve an SOS report with PIN verification (Admin only)"""
+    try:
+        # Verify PIN
+        if data.pin != ADMIN_PIN:
+            return {"status": "error", "message": "Unauthorized - Invalid PIN"}
+        
+        # Find the report
+        report = await db.sos_reports.find_one({"id": report_id})
+        if not report:
+            raise HTTPException(status_code=404, detail="SOS report not found")
+        
+        if report["status"] == "resolved":
+            return {"status": "already_resolved", "message": "Alert already resolved"}
+        
+        # Update the report status to resolved
+        resolved_time = datetime.utcnow()
+        await db.sos_reports.update_one(
+            {"id": report_id},
+            {"$set": {
+                "status": "resolved",
+                "resolved_at": resolved_time
+            }}
+        )
+        
+        # Broadcast "Resolved" notification to all registered devices
+        all_tokens = await db.push_tokens.find().to_list(1000)
+        logger.info(f"SOS RESOLVED: Broadcasting to {len(all_tokens)} devices")
+        
+        for token_doc in all_tokens:
+            push_token = token_doc.get("token")
+            if push_token:
+                await send_expo_push_notification(
+                    push_token=push_token,
+                    title="✅ Alert Resolved",
+                    body=f"Update: The situation regarding {report['name']} has been resolved. Thank you for your help.",
+                    data={"type": "sos_resolved", "sos_id": report_id}
+                )
+        
+        return {
+            "status": "success", 
+            "message": "Alert resolved successfully",
+            "resolved_at": resolved_time.isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resolving SOS report: {e}")
+        raise HTTPException(status_code=500, detail="Failed to resolve SOS report")
+
+@api_router.post("/sos/archive/{report_id}")
+async def archive_sos_report(report_id: str):
+    """Archive a resolved SOS report (called after 30-minute timer)"""
+    try:
+        report = await db.sos_reports.find_one({"id": report_id})
+        if not report:
+            raise HTTPException(status_code=404, detail="SOS report not found")
+        
+        if report["status"] != "resolved":
+            return {"status": "error", "message": "Can only archive resolved alerts"}
+        
+        # Update to archived status
+        await db.sos_reports.update_one(
+            {"id": report_id},
+            {"$set": {
+                "status": "archived",
+                "archived_at": datetime.utcnow()
+            }}
+        )
+        
+        return {"status": "success", "message": "Alert archived"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error archiving SOS report: {e}")
+        raise HTTPException(status_code=500, detail="Failed to archive SOS report")
+
+@api_router.get("/sos/resolved", response_model=List[SOSReportResponse])
+async def get_resolved_sos_reports():
+    """Get all resolved (but not yet archived) SOS reports"""
+    try:
+        reports = await db.sos_reports.find({"status": "resolved"}).to_list(100)
+        return [SOSReportResponse(**report) for report in reports]
+    except Exception as e:
+        logger.error(f"Error fetching resolved SOS reports: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch resolved SOS reports")
+
+@api_router.get("/sos/archived", response_model=List[SOSReportResponse])
+async def get_archived_sos_reports():
+    """Get all archived (past) SOS reports"""
+    try:
+        reports = await db.sos_reports.find({"status": "archived"}).to_list(100)
+        return [SOSReportResponse(**report) for report in reports]
+    except Exception as e:
+        logger.error(f"Error fetching archived SOS reports: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch archived SOS reports")
 
 async def send_sos_push_notification(push_token: str, title: str, body: str, data: dict = None):
     """Send CRITICAL push notification for SOS alerts with loud sound"""
