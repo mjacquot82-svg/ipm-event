@@ -41,9 +41,12 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
       ? desktopBannerNative 
       : mobileBannerNative,
   });
+  
+  // On mobile, add small top margin to ensure no overlap with top ad
+  const topMargin = isDesktop ? 0 : 8;
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { marginTop: topMargin }, style]}>
       <Image
         source={imageSource}
         style={[
@@ -63,8 +66,6 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     alignItems: 'center',
-    paddingVertical: 0,
-    marginTop: 0,
   },
   image: {
     borderRadius: 12,
