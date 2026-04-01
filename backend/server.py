@@ -1,3 +1,6 @@
+Here's the complete `server.py`:
+
+```python
 from fastapi import FastAPI, APIRouter, HTTPException
 from fastapi.responses import PlainTextResponse, FileResponse
 from dotenv import load_dotenv
@@ -562,7 +565,7 @@ async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
         logger.info(f"SOS RESOLVED: Broadcasting to {len(all_tokens)} devices")
         
         for token_doc in all_tokens:
-            push_token = token_doc.get("token")
+            push_token = token_doc.get("push_token")
             if push_token:
                 await send_expo_push_notification(
                     push_token=push_token,
@@ -584,17 +587,18 @@ async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
         raise HTTPException(status_code=500, detail="Failed to resolve SOS report")
 
 @api_router.post("/sos/archive/{report_id}")
-async def archive_sos_report(report_id: str):
-    """Archive a resolved SOS report (called after 30-minute timer)"""
+async def archive_sos_report(report_id: str, data: SOSResolveRequest):
+    """Archive an SOS report with PIN verification (Admin only)"""
     try:
+        # Verify PIN
+        if data.pin != ADMIN_PIN:
+            return {"status": "error", "message": "Unauthorized - Invalid PIN"}
+        
         report = await db.sos_reports.find_one({"id": report_id})
         if not report:
             raise HTTPException(status_code=404, detail="SOS report not found")
         
-        if report["status"] != "resolved":
-            return {"status": "error", "message": "Can only archive resolved alerts"}
-        
-        # Update to archived status
+        # Update to archived status (can archive any status now with admin PIN)
         await db.sos_reports.update_one(
             {"id": report_id},
             {"$set": {
@@ -603,7 +607,7 @@ async def archive_sos_report(report_id: str):
             }}
         )
         
-        return {"status": "success", "message": "Alert archived"}
+        return {"status": "success", "message": "Alert archived successfully"}
         
     except HTTPException:
         raise
@@ -953,3 +957,11 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+```
+
+**Key endpoints that require PIN (2026):**
+- `POST /api/sos/resolve/{id}` - Resolve an alert
+- `POST /api/sos/archive/{id}` - Archive an alert (removes from home page)
+- `POST /api/sos/admin/{id}` - Get reporter contact info
+
+**To change the PIN**, set the `ADMIN_PIN` environment variable in Railway.
