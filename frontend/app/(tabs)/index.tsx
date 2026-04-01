@@ -805,18 +805,18 @@ export default function HomeScreen() {
               <Text style={[styles.actionTitle, { color: '#D32F2F' }]}>SOS</Text>
             </TouchableOpacity>
 
-            {activeSOSReports.length > 0 && (
-              <TouchableOpacity
-                style={[styles.actionCard, styles.alertCard]}
-                onPress={() => setShowActiveAlerts(true)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: '#FF5722' }]}>
-                  <Feather name="bell" size={22} color="#FFFFFF" />
-                </View>
-                <Text style={[styles.actionTitle, { color: '#FF5722' }]}>Alerts ({activeSOSReports.length})</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={[styles.actionCard, styles.alertCard]}
+              onPress={() => setShowActiveAlerts(true)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: activeSOSReports.length > 0 ? '#FF5722' : '#9E9E9E' }]}>
+                <Feather name="bell" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={[styles.actionTitle, { color: activeSOSReports.length > 0 ? '#FF5722' : '#9E9E9E' }]}>
+                Alerts ({activeSOSReports.length})
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
