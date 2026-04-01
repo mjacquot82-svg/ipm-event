@@ -1331,7 +1331,7 @@ export default function HomeScreen() {
 
                 <Text style={styles.formLabel}>Sex *</Text>
                 <View style={styles.formButtonRow}>
-                  {['Male', 'Female', 'Other'].map((sex) => (
+                  {['Male', 'Female'].map((sex) => (
                     <TouchableOpacity
                       key={sex}
                     style={[
