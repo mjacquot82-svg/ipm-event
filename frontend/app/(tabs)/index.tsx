@@ -1484,8 +1484,8 @@ export default function HomeScreen() {
       </Modal>
       )}
 
-      {/* Active Alerts Modal */}
-      {showActiveAlerts && (
+      {/* Active Alerts Modal - Hide when PIN keypad is showing */}
+      {showActiveAlerts && !showPinKeypad && !showAdminDetail && (
         <Modal
           visible={true}
           animationType="slide"
