@@ -519,11 +519,6 @@ export default function HomeScreen() {
     }
   };
 
-  // Get filtered vendors
-  const filteredVendors = selectedVendorType === 'All' 
-    ? vendors 
-    : vendors.filter(v => v.type === selectedVendorType);
-
   useEffect(() => {
     fetchApiEvents();
     fetchActiveSOSReports();
