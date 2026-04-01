@@ -55,8 +55,8 @@ const initWebpushr = () => {
 };
 
 export default function RootLayout() {
-  // Splash screen state
-  const [showSplash, setShowSplash] = useState(true);
+  // Splash screen state - Set to false to disable splash screen
+  const [showSplash, setShowSplash] = useState(false);
   // Show interstitial after splash
   const [showInterstitial, setShowInterstitial] = useState(false);
   const router = useRouter();
