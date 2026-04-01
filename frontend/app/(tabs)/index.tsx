@@ -782,7 +782,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/')}
+              onPress={() => openLink('https://www.tix123.com/tickets/?code=IPMRE26')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.stage }]}>
