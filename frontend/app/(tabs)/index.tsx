@@ -49,6 +49,30 @@ const initialSOSForm = {
   shirt_color: '',
   pants_color: '',
   last_location: '',
+  description: '',
+  reporter_name: '',
+  reporter_phone: '',
+};
+
+// Phone formatting helper - formats to (519) XXX-XXXX
+const formatPhoneNumber = (text: string): string => {
+  // Remove all non-digits
+  const digits = text.replace(/\D/g, '');
+  
+  // Limit to 10 digits
+  const limited = digits.slice(0, 10);
+  
+  // Format based on length
+  if (limited.length === 0) return '';
+  if (limited.length <= 3) return `(${limited}`;
+  if (limited.length <= 6) return `(${limited.slice(0, 3)}) ${limited.slice(3)}`;
+  return `(${limited.slice(0, 3)}) ${limited.slice(3, 6)}-${limited.slice(6)}`;
+};
+
+// Validate phone number (must be 10 digits)
+const isValidPhone = (phone: string): boolean => {
+  const digits = phone.replace(/\D/g, '');
+  return digits.length === 10;
 };
 
 export default function HomeScreen() {
@@ -84,6 +108,11 @@ export default function HomeScreen() {
   const [showPinKeypad, setShowPinKeypad] = useState(false);
   const [selectedReportForResolve, setSelectedReportForResolve] = useState<string | null>(null);
   const [countdowns, setCountdowns] = useState<Record<string, number>>({});
+  
+  // Admin detail view state
+  const [showAdminDetail, setShowAdminDetail] = useState(false);
+  const [selectedAlertForAdmin, setSelectedAlertForAdmin] = useState<any | null>(null);
+  const [adminPinAction, setAdminPinAction] = useState<'resolve' | 'view' | null>(null);
 
   // Check if backend is available
   const [backendAvailable, setBackendAvailable] = useState(true);
@@ -224,6 +253,14 @@ export default function HomeScreen() {
   // Resolve alert with PIN
   const handleResolveAlert = (reportId: string) => {
     setSelectedReportForResolve(reportId);
+    setAdminPinAction('resolve');
+    setShowPinKeypad(true);
+  };
+  
+  // View admin details with PIN
+  const handleViewAdminDetails = (report: any) => {
+    setSelectedAlertForAdmin(report);
+    setAdminPinAction('view');
     setShowPinKeypad(true);
   };
   
@@ -231,28 +268,57 @@ export default function HomeScreen() {
   const handlePinSuccess = async () => {
     setShowPinKeypad(false);
     
-    if (!selectedReportForResolve) return;
-    
-    try {
-      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-      const response = await fetch(`${API_BASE_URL}/api/sos/resolve/${selectedReportForResolve}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: '2026' }),
-      });
-      
-      if (response.ok) {
-        Alert.alert('✅ Alert Resolved', 'The alert has been marked as resolved. A notification has been sent to all attendees.');
-        fetchActiveSOSReports();
-      } else {
-        Alert.alert('Error', 'Failed to resolve alert. Please try again.');
+    if (adminPinAction === 'resolve' && selectedReportForResolve) {
+      // Resolve the alert
+      try {
+        const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        const response = await fetch(`${API_BASE_URL}/api/sos/resolve/${selectedReportForResolve}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: '2026' }),
+        });
+        
+        if (response.ok) {
+          Alert.alert('✅ Alert Resolved', 'The alert has been marked as resolved. A notification has been sent to all attendees.');
+          fetchActiveSOSReports();
+        } else {
+          Alert.alert('Error', 'Failed to resolve alert. Please try again.');
+        }
+      } catch (e) {
+        console.error('Error resolving alert:', e);
+        Alert.alert('Error', 'Network error. Please try again.');
       }
-    } catch (e) {
-      console.error('Error resolving alert:', e);
-      Alert.alert('Error', 'Network error. Please try again.');
+      setSelectedReportForResolve(null);
+    } else if (adminPinAction === 'view' && selectedAlertForAdmin) {
+      // Fetch and show admin details
+      try {
+        const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+        const response = await fetch(`${API_BASE_URL}/api/sos/admin/${selectedAlertForAdmin.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: '2026' }),
+        });
+        
+        if (response.ok) {
+          const adminData = await response.json();
+          setSelectedAlertForAdmin(adminData);
+          setShowAdminDetail(true);
+        } else {
+          Alert.alert('Error', 'Failed to fetch alert details. Please try again.');
+        }
+      } catch (e) {
+        console.error('Error fetching admin details:', e);
+        Alert.alert('Error', 'Network error. Please try again.');
+      }
     }
     
-    setSelectedReportForResolve(null);
+    setAdminPinAction(null);
+  };
+  
+  // Call reporter
+  const callReporter = (phone: string) => {
+    const phoneDigits = phone.replace(/\D/g, '');
+    Linking.openURL(`tel:${phoneDigits}`);
   };
   
   // Archive alert (called when countdown reaches 0)
@@ -323,9 +389,21 @@ export default function HomeScreen() {
       return;
     }
 
-    // Validate form
+    // Validate required fields including reporter info
     if (!sosForm.name || !sosForm.sex || !sosForm.age || !sosForm.last_location) {
-      Alert.alert('Missing Information', 'Please fill in at least Name, Sex, Age, and Last Location.');
+      Alert.alert('Missing Information', 'Please fill in Name, Sex, Age, and Last Location of the missing person.');
+      return;
+    }
+    
+    // Validate reporter info
+    if (!sosForm.reporter_name || !sosForm.reporter_phone) {
+      Alert.alert('Reporter Information Required', 'Please provide your name and phone number so we can contact you.');
+      return;
+    }
+    
+    // Validate phone number format
+    if (!isValidPhone(sosForm.reporter_phone)) {
+      Alert.alert('Invalid Phone Number', 'Please enter a valid 10-digit phone number.');
       return;
     }
 
@@ -1345,14 +1423,51 @@ export default function HomeScreen() {
                 multiline
               />
 
+              <Text style={styles.formLabel}>Additional Description</Text>
+              <TextInput
+                style={[styles.formInput, { height: 80, textAlignVertical: 'top' }]}
+                value={sosForm.description}
+                onChangeText={(text) => setSOSForm({...sosForm, description: text})}
+                placeholder="Any other details that may help identify the person"
+                placeholderTextColor={colors.textMuted}
+                multiline
+              />
+
+              <View style={styles.formDivider} />
+              <Text style={styles.formSectionTitle}>Your Contact Information</Text>
+              <Text style={styles.formSectionSubtitle}>This info is private and only visible to event staff</Text>
+
+              <Text style={styles.formLabel}>Your Name *</Text>
+              <TextInput
+                style={styles.formInput}
+                value={sosForm.reporter_name}
+                onChangeText={(text) => setSOSForm({...sosForm, reporter_name: text})}
+                placeholder="Enter your full name"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              <Text style={styles.formLabel}>Your Phone Number *</Text>
+              <TextInput
+                style={styles.formInput}
+                value={sosForm.reporter_phone}
+                onChangeText={(text) => setSOSForm({...sosForm, reporter_phone: formatPhoneNumber(text)})}
+                placeholder="(519) XXX-XXXX"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="phone-pad"
+                maxLength={14}
+              />
+
               <View style={{ height: 20 }} />
             </ScrollView>
 
             <View style={styles.eventModalFooter}>
               <TouchableOpacity
-                style={[styles.sosButton, sosSubmitting && { opacity: 0.6 }]}
+                style={[
+                  styles.sosButton, 
+                  (sosSubmitting || !sosForm.reporter_name || !isValidPhone(sosForm.reporter_phone)) && { opacity: 0.5, backgroundColor: colors.textMuted }
+                ]}
                 onPress={submitSOSReport}
-                disabled={sosSubmitting}
+                disabled={sosSubmitting || !sosForm.reporter_name || !isValidPhone(sosForm.reporter_phone)}
               >
                 {sosSubmitting ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -1409,6 +1524,8 @@ export default function HomeScreen() {
                         <Feather name="alert-triangle" size={20} color="#FFFFFF" />
                         <Text style={[styles.alertTitle, { color: '#FFFFFF' }]}>Missing: {report.name}</Text>
                       </View>
+                      
+                      {/* PUBLIC INFO - Only name, description, last seen */}
                       <View style={styles.alertDetails}>
                         <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Sex: {report.sex} | Age: {report.age}</Text>
                         {report.height && <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Height: {report.height}</Text>}
@@ -1416,19 +1533,24 @@ export default function HomeScreen() {
                         <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Glasses: {report.glasses ? 'Yes' : 'No'}</Text>
                         {report.shirt_color && <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Shirt: {report.shirt_color}</Text>}
                         {report.pants_color && <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Pants: {report.pants_color}</Text>}
-                        <Text style={[styles.alertDetail, { color: '#FFFFFF' }]}>Last seen: {report.last_location}</Text>
+                        <Text style={[styles.alertDetail, { color: '#FFFFFF', fontWeight: '600', marginTop: 8 }]}>
+                          📍 Last seen: {report.last_location}
+                        </Text>
+                        {report.description && (
+                          <Text style={[styles.alertDetail, { color: '#FFFFFF', marginTop: 4 }]}>
+                            📝 {report.description}
+                          </Text>
+                        )}
                       </View>
                       
-                      {/* Admin Resolve Button */}
-                      {isAdminMode && (
-                        <TouchableOpacity
-                          style={styles.resolveButton}
-                          onPress={() => handleResolveAlert(report.id)}
-                        >
-                          <Feather name="shield" size={18} color="#FFFFFF" />
-                          <Text style={styles.resolveButtonText}>Resolve Alert (Admin)</Text>
-                        </TouchableOpacity>
-                      )}
+                      {/* HIDDEN ADMIN BUTTON - requires PIN to view reporter info */}
+                      <TouchableOpacity
+                        style={styles.adminButton}
+                        onPress={() => handleViewAdminDetails(report)}
+                      >
+                        <Feather name="shield" size={16} color="rgba(255,255,255,0.8)" />
+                        <Text style={styles.adminButtonText}>Admin</Text>
+                      </TouchableOpacity>
                       
                       {/* Regular Cancel Button */}
                       <TouchableOpacity
@@ -1470,6 +1592,15 @@ export default function HomeScreen() {
                           Moving to archive in {formatCountdown(countdowns[report.id])}
                         </Text>
                       )}
+                      
+                      {/* HIDDEN ADMIN BUTTON */}
+                      <TouchableOpacity
+                        style={[styles.adminButton, { borderColor: 'rgba(255,255,255,0.3)' }]}
+                        onPress={() => handleViewAdminDetails(report)}
+                      >
+                        <Feather name="shield" size={16} color="rgba(255,255,255,0.8)" />
+                        <Text style={styles.adminButtonText}>Admin</Text>
+                      </TouchableOpacity>
                     </View>
                   ))}
                 </View>
@@ -1514,16 +1645,121 @@ export default function HomeScreen() {
       </Modal>
       )}
       
+      {/* Admin Detail Modal - Shows reporter info after PIN verification */}
+      {showAdminDetail && selectedAlertForAdmin && (
+        <Modal
+          visible={true}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => {
+            setShowAdminDetail(false);
+            setSelectedAlertForAdmin(null);
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { maxHeight: '70%' }]}>
+              <View style={styles.modalHeader}>
+                <View style={styles.modalTitleRow}>
+                  <Feather name="shield" size={24} color={colors.primary} />
+                  <Text style={[styles.modalTitle, { color: colors.primary }]}>Admin View</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => {
+                    setShowAdminDetail(false);
+                    setSelectedAlertForAdmin(null);
+                  }}
+                  style={styles.modalCloseButton}
+                >
+                  <Feather name="x" size={24} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                {/* Alert Info */}
+                <View style={styles.adminDetailSection}>
+                  <Text style={styles.adminDetailLabel}>Missing Person</Text>
+                  <Text style={styles.adminDetailValue}>{selectedAlertForAdmin.name}</Text>
+                </View>
+                
+                <View style={styles.adminDetailSection}>
+                  <Text style={styles.adminDetailLabel}>Status</Text>
+                  <Text style={[
+                    styles.adminDetailValue, 
+                    { color: selectedAlertForAdmin.status === 'active' ? '#D32F2F' : '#16A34A' }
+                  ]}>
+                    {selectedAlertForAdmin.status === 'active' ? '🔴 ACTIVE' : '✅ RESOLVED'}
+                  </Text>
+                </View>
+                
+                <View style={styles.adminDetailSection}>
+                  <Text style={styles.adminDetailLabel}>Last Seen</Text>
+                  <Text style={styles.adminDetailValue}>{selectedAlertForAdmin.last_location}</Text>
+                </View>
+
+                {selectedAlertForAdmin.description && (
+                  <View style={styles.adminDetailSection}>
+                    <Text style={styles.adminDetailLabel}>Description</Text>
+                    <Text style={styles.adminDetailValue}>{selectedAlertForAdmin.description}</Text>
+                  </View>
+                )}
+
+                {/* Reporter Info - Private */}
+                <View style={styles.adminDivider} />
+                <Text style={styles.adminPrivateLabel}>🔒 Private Reporter Information</Text>
+                
+                <View style={styles.adminDetailSection}>
+                  <Text style={styles.adminDetailLabel}>Reporter Name</Text>
+                  <Text style={styles.adminDetailValue}>{selectedAlertForAdmin.reporter_name || 'Not provided'}</Text>
+                </View>
+                
+                <View style={styles.adminDetailSection}>
+                  <Text style={styles.adminDetailLabel}>Reporter Phone</Text>
+                  <Text style={styles.adminDetailValue}>{selectedAlertForAdmin.reporter_phone || 'Not provided'}</Text>
+                </View>
+
+                {/* Call Button */}
+                {selectedAlertForAdmin.reporter_phone && (
+                  <TouchableOpacity
+                    style={styles.callButton}
+                    onPress={() => callReporter(selectedAlertForAdmin.reporter_phone)}
+                  >
+                    <Feather name="phone" size={20} color="#FFFFFF" />
+                    <Text style={styles.callButtonText}>Call Reporter</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Resolve Button (if active) */}
+                {selectedAlertForAdmin.status === 'active' && (
+                  <TouchableOpacity
+                    style={styles.resolveButtonLarge}
+                    onPress={() => {
+                      setShowAdminDetail(false);
+                      handleResolveAlert(selectedAlertForAdmin.id);
+                    }}
+                  >
+                    <Feather name="check-circle" size={20} color="#FFFFFF" />
+                    <Text style={styles.resolveButtonLargeText}>Resolve This Alert</Text>
+                  </TouchableOpacity>
+                )}
+
+                <View style={{ height: 20 }} />
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
+      
       {/* PIN Keypad Modal */}
       <PinKeypad
         visible={showPinKeypad}
         onClose={() => {
           setShowPinKeypad(false);
           setSelectedReportForResolve(null);
+          setAdminPinAction(null);
         }}
         onSuccess={handlePinSuccess}
         correctPin="2026"
-        title="Enter Admin PIN"
+        title={adminPinAction === 'resolve' ? 'Enter PIN to Resolve' : 'Enter Admin PIN'}
       />
     </View>
   );
@@ -2363,5 +2599,100 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     marginTop: 16,
+  },
+  // Form section styles
+  formDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 20,
+  },
+  formSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  formSectionSubtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: 16,
+    fontStyle: 'italic',
+  },
+  // Admin button on alert cards
+  adminButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    borderRadius: 8,
+    gap: 6,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    alignSelf: 'flex-start',
+  },
+  adminButtonText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  // Admin detail modal styles
+  adminDetailSection: {
+    marginBottom: 16,
+  },
+  adminDetailLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  adminDetailValue: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    fontWeight: '500',
+  },
+  adminDivider: {
+    height: 2,
+    backgroundColor: colors.primary,
+    marginVertical: 20,
+    opacity: 0.3,
+  },
+  adminPrivateLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary,
+    marginBottom: 16,
+  },
+  callButton: {
+    backgroundColor: '#16A34A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    gap: 10,
+    marginTop: 8,
+  },
+  callButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  resolveButtonLarge: {
+    backgroundColor: '#D32F2F',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    gap: 10,
+    marginTop: 16,
+  },
+  resolveButtonLargeText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

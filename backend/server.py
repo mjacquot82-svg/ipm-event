@@ -107,6 +107,9 @@ class SOSReport(BaseModel):
     shirt_color: str
     pants_color: str
     last_location: str
+    description: Optional[str] = ""  # Additional description/notes
+    reporter_name: str  # Reporter's name (required)
+    reporter_phone: str  # Reporter's phone number (required)
     status: str = "active"  # active, resolved, archived
     reporter_token: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -123,11 +126,15 @@ class SOSReportCreate(BaseModel):
     shirt_color: str
     pants_color: str
     last_location: str
+    description: Optional[str] = ""
+    reporter_name: str  # Required
+    reporter_phone: str  # Required
     reporter_token: Optional[str] = None
 
 class SOSResolveRequest(BaseModel):
     pin: str
 
+# Public response - hides reporter info for privacy
 class SOSReportResponse(BaseModel):
     id: str
     name: str
@@ -139,6 +146,27 @@ class SOSReportResponse(BaseModel):
     shirt_color: str
     pants_color: str
     last_location: str
+    description: Optional[str] = ""
+    status: str
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
+    archived_at: Optional[datetime] = None
+
+# Admin response - includes reporter contact info
+class SOSReportAdminResponse(BaseModel):
+    id: str
+    name: str
+    sex: str
+    age: str
+    height: str
+    hair_color: str
+    glasses: bool
+    shirt_color: str
+    pants_color: str
+    last_location: str
+    description: Optional[str] = ""
+    reporter_name: str
+    reporter_phone: str
     status: str
     created_at: datetime
     resolved_at: Optional[datetime] = None
@@ -582,6 +610,48 @@ async def get_archived_sos_reports():
     except Exception as e:
         logger.error(f"Error fetching archived SOS reports: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch archived SOS reports")
+
+
+@api_router.post("/sos/admin/{report_id}", response_model=SOSReportAdminResponse)
+async def get_sos_admin_details(report_id: str, data: SOSResolveRequest):
+    """Get full SOS report details including reporter info (Admin PIN required)"""
+    try:
+        # Verify PIN
+        if data.pin != ADMIN_PIN:
+            raise HTTPException(status_code=401, detail="Unauthorized - Invalid PIN")
+        
+        # Find the report
+        report = await db.sos_reports.find_one({"id": report_id})
+        if not report:
+            raise HTTPException(status_code=404, detail="SOS report not found")
+        
+        # Return full admin response with reporter info
+        return SOSReportAdminResponse(
+            id=report.get("id"),
+            name=report.get("name", ""),
+            sex=report.get("sex", ""),
+            age=report.get("age", ""),
+            height=report.get("height", ""),
+            hair_color=report.get("hair_color", ""),
+            glasses=report.get("glasses", False),
+            shirt_color=report.get("shirt_color", ""),
+            pants_color=report.get("pants_color", ""),
+            last_location=report.get("last_location", ""),
+            description=report.get("description", ""),
+            reporter_name=report.get("reporter_name", "Unknown"),
+            reporter_phone=report.get("reporter_phone", "No phone provided"),
+            status=report.get("status", "active"),
+            created_at=report.get("created_at", datetime.utcnow()),
+            resolved_at=report.get("resolved_at"),
+            archived_at=report.get("archived_at")
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching admin SOS details: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch SOS details")
+
 
 async def send_sos_push_notification(push_token: str, title: str, body: str, data: dict = None):
     """Send CRITICAL push notification for SOS alerts with loud sound"""
