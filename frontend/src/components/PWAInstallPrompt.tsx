@@ -58,8 +58,10 @@ interface PWAInstallPromptProps {
 export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
   const [visible, setVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const [hasNativePrompt, setHasNativePrompt] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const [showManualInstructions, setShowManualInstructions] = useState(false);
   const slideAnim = useRef(new Animated.Value(400)).current;
 
   // Detect if device is mobile (not desktop)
@@ -104,14 +106,17 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
         return;
       }
 
-      // Detect iOS
+      // Detect iOS and Android
       const userAgent = window.navigator.userAgent.toLowerCase();
       const iosDevice = /iphone|ipad|ipod/.test(userAgent);
+      const androidDevice = /android/.test(userAgent);
       setIsIOS(iosDevice);
+      setIsAndroid(androidDevice);
 
       // Check if we captured the native prompt
       setHasNativePrompt(!!window.deferredPWAPrompt);
       console.log('[PWA] Native prompt available:', !!window.deferredPWAPrompt);
+      console.log('[PWA] Device: iOS=', iosDevice, 'Android=', androidDevice);
 
       // Show our UI after a delay
       setTimeout(() => {
@@ -155,9 +160,9 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
     console.log('[PWA] deferredPWAPrompt exists:', !!window.deferredPWAPrompt);
     
     if (!window.deferredPWAPrompt) {
-      console.log('[PWA] No native prompt available');
-      // Fallback - show instructions
-      setHasNativePrompt(false);
+      console.log('[PWA] No native prompt available - showing manual instructions');
+      // Show manual instructions instead
+      setShowManualInstructions(true);
       return;
     }
 
@@ -190,7 +195,8 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
     } catch (error) {
       console.error('[PWA] Error triggering install:', error);
       setInstalling(false);
-      setHasNativePrompt(false);
+      // Show manual instructions as fallback
+      setShowManualInstructions(true);
     }
   };
 
@@ -265,25 +271,8 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
             </View>
 
             {/* Show native install button OR manual instructions */}
-            {(hasNativePrompt && !isIOS) ? (
-              // Native install available - show install button
-              <TouchableOpacity 
-                style={[styles.installButton, installing && styles.installButtonDisabled]} 
-                onPress={triggerNativeInstall}
-                activeOpacity={0.8}
-                disabled={installing}
-              >
-                {installing ? (
-                  <Text style={styles.installButtonText}>Installing...</Text>
-                ) : (
-                  <>
-                    <Feather name="download" size={20} color="#FFFFFF" />
-                    <Text style={styles.installButtonText}>Install Now</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            ) : (
-              // Manual instructions for iOS or when native prompt not available
+            {showManualInstructions ? (
+              // Show manual instructions after install attempt failed
               <View style={styles.instructionsBox}>
                 {isIOS ? (
                   <>
@@ -333,6 +322,47 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
                   </>
                 )}
               </View>
+            ) : isIOS ? (
+              // iOS always shows manual instructions (no native prompt support)
+              <View style={styles.instructionsBox}>
+                <View style={styles.step}>
+                  <View style={styles.stepIconBox}>
+                    <Feather name="share" size={20} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.stepTextBox}>
+                    <Text style={styles.stepDesc}>
+                      Tap <Text style={styles.highlight}>Share</Text> at the bottom
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.step}>
+                  <View style={[styles.stepIconBox, { backgroundColor: colors.accent }]}>
+                    <Feather name="plus-square" size={20} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.stepTextBox}>
+                    <Text style={styles.stepDesc}>
+                      Then <Text style={styles.highlight}>"Add to Home Screen"</Text>
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ) : (
+              // Android - always show install button first, will fallback to instructions if needed
+              <TouchableOpacity 
+                style={[styles.installButton, installing && styles.installButtonDisabled]} 
+                onPress={triggerNativeInstall}
+                activeOpacity={0.8}
+                disabled={installing}
+              >
+                {installing ? (
+                  <Text style={styles.installButtonText}>Installing...</Text>
+                ) : (
+                  <>
+                    <Feather name="download" size={20} color="#FFFFFF" />
+                    <Text style={styles.installButtonText}>Install Now</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             )}
 
             {/* Dismiss Button */}
