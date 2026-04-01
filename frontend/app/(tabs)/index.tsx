@@ -16,6 +16,7 @@ import {
   TextInput,
   Alert,
   Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -185,6 +186,12 @@ const VENDOR_CATEGORY_COLORS: Record<string, string> = {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
+  const isDesktop = screenWidth >= 768;
+  
+  // Calculate section width to match banner (92% of screen, capped same as banner)
+  const sectionWidth = isDesktop ? screenWidth * 0.92 : undefined;
+  
   const [favorites, setFavorites] = useState<string[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -769,7 +776,7 @@ export default function HomeScreen() {
         <ResponsiveBanner />
 
         {/* Countdown to Event - Styled like Quick Actions */}
-        <View style={styles.section}>
+        <View style={[styles.section, isDesktop && { width: sectionWidth, alignSelf: 'center', paddingHorizontal: 0 }]}>
           <View style={styles.countdownCard}>
             <View style={styles.countdownIcon}>
               <Feather name="clock" size={28} color="#FFFFFF" />
@@ -783,7 +790,7 @@ export default function HomeScreen() {
 
         {/* My Next Session (Starred) */}
         {nextStarredSession && (
-          <View style={styles.section}>
+          <View style={[styles.section, isDesktop && { width: sectionWidth, alignSelf: 'center', paddingHorizontal: 0 }]}>
             <View style={styles.sectionHeader}>
               <View style={styles.starredHeader}>
                 <Feather name="star" size={18} color={colors.accent} />
@@ -795,7 +802,7 @@ export default function HomeScreen() {
         )}
 
         {/* Quick Actions - 3 column grid */}
-        <View style={styles.section}>
+        <View style={[styles.section, isDesktop && { width: sectionWidth, alignSelf: 'center', paddingHorizontal: 0 }]}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             <TouchableOpacity
@@ -913,7 +920,7 @@ export default function HomeScreen() {
 
         {/* Happening Now Section - Moved after Quick Actions */}
         {happeningNow.length > 0 && (
-          <View style={styles.section}>
+          <View style={[styles.section, isDesktop && { width: sectionWidth, alignSelf: 'center', paddingHorizontal: 0 }]}>
             <View style={styles.sectionHeaderLive}>
               <View style={styles.liveIndicator}>
                 <View style={styles.liveDot} />
@@ -956,7 +963,7 @@ export default function HomeScreen() {
         )}
 
         {/* Upcoming Sessions */}
-        <View style={styles.section}>
+        <View style={[styles.section, isDesktop && { width: sectionWidth, alignSelf: 'center', paddingHorizontal: 0 }]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Coming Up</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/schedule')}>
