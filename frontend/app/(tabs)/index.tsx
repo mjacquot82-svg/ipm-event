@@ -38,6 +38,85 @@ import {
 } from '../../src/data/mockData';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 
+// Countdown Timer Component
+const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const difference = new Date(targetDate).getTime() - new Date().getTime();
+      
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+        });
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  return (
+    <View style={countdownStyles.container}>
+      <View style={countdownStyles.unit}>
+        <Text style={countdownStyles.number}>{timeLeft.days}</Text>
+        <Text style={countdownStyles.label}>Days</Text>
+      </View>
+      <Text style={countdownStyles.separator}>:</Text>
+      <View style={countdownStyles.unit}>
+        <Text style={countdownStyles.number}>{String(timeLeft.hours).padStart(2, '0')}</Text>
+        <Text style={countdownStyles.label}>Hours</Text>
+      </View>
+      <Text style={countdownStyles.separator}>:</Text>
+      <View style={countdownStyles.unit}>
+        <Text style={countdownStyles.number}>{String(timeLeft.minutes).padStart(2, '0')}</Text>
+        <Text style={countdownStyles.label}>Mins</Text>
+      </View>
+      <Text style={countdownStyles.separator}>:</Text>
+      <View style={countdownStyles.unit}>
+        <Text style={countdownStyles.number}>{String(timeLeft.seconds).padStart(2, '0')}</Text>
+        <Text style={countdownStyles.label}>Secs</Text>
+      </View>
+    </View>
+  );
+};
+
+const countdownStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unit: {
+    alignItems: 'center',
+    minWidth: 45,
+  },
+  number: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  label: {
+    fontSize: 10,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  separator: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.primary,
+    marginHorizontal: 4,
+    marginBottom: 14,
+  },
+});
+
 // SOS Form initial state
 const initialSOSForm = {
   name: '',
@@ -689,49 +768,18 @@ export default function HomeScreen() {
         {/* Header Banner Image - Responsive */}
         <ResponsiveBanner />
 
-        {/* Happening Now Section */}
-        {happeningNow.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderLive}>
-              <View style={styles.liveIndicator}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>LIVE</Text>
-              </View>
-              <Text style={styles.sectionTitleLive}>Happening Now</Text>
+        {/* Countdown to Event - Styled like Quick Actions */}
+        <View style={styles.section}>
+          <View style={styles.countdownCard}>
+            <View style={styles.countdownIcon}>
+              <Feather name="clock" size={28} color="#FFFFFF" />
             </View>
-            {happeningNow.map((session) => {
-              const location = getLocationById(session.location_id);
-              const typeColor = location ? getLocationTypeColor(location.type) : colors.primary;
-              
-              return (
-                <TouchableOpacity 
-                  key={session.id} 
-                  style={[styles.liveSessionCard, { borderColor: typeColor }]}
-                  onPress={() => router.push('/(tabs)/map')}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.liveSessionContent}>
-                    <Text style={styles.liveSessionTitle}>{session.title}</Text>
-                    {location && (
-                      <View style={styles.liveLocationRow}>
-                        <Feather name="map-pin" size={14} color={typeColor} />
-                        <Text style={[styles.liveLocationText, { color: typeColor }]}>
-                          {location.name}
-                        </Text>
-                      </View>
-                    )}
-                    <Text style={styles.liveTimeText}>
-                      Until {formatTime(session.end_time)}
-                    </Text>
-                  </View>
-                  <TouchableOpacity style={styles.goButton}>
-                    <Feather name="navigation" size={18} color={colors.accent} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              );
-            })}
+            <View style={styles.countdownContent}>
+              <Text style={styles.countdownLabel}>IPM 2026 Starts In</Text>
+              <CountdownTimer targetDate="2026-09-15T09:00:00" />
+            </View>
           </View>
-        )}
+        </View>
 
         {/* My Next Session (Starred) */}
         {nextStarredSession && (
@@ -862,6 +910,50 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Happening Now Section - Moved after Quick Actions */}
+        {happeningNow.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderLive}>
+              <View style={styles.liveIndicator}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+              <Text style={styles.sectionTitleLive}>Happening Now</Text>
+            </View>
+            {happeningNow.map((session) => {
+              const location = getLocationById(session.location_id);
+              const typeColor = location ? getLocationTypeColor(location.type) : colors.primary;
+              
+              return (
+                <TouchableOpacity 
+                  key={session.id} 
+                  style={[styles.liveSessionCard, { borderColor: typeColor }]}
+                  onPress={() => router.push('/(tabs)/map')}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.liveSessionContent}>
+                    <Text style={styles.liveSessionTitle}>{session.title}</Text>
+                    {location && (
+                      <View style={styles.liveLocationRow}>
+                        <Feather name="map-pin" size={14} color={typeColor} />
+                        <Text style={[styles.liveLocationText, { color: typeColor }]}>
+                          {location.name}
+                        </Text>
+                      </View>
+                    )}
+                    <Text style={styles.liveTimeText}>
+                      Until {formatTime(session.end_time)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={styles.goButton}>
+                    <Feather name="navigation" size={18} color={colors.accent} />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
         {/* Upcoming Sessions */}
         <View style={styles.section}>
@@ -2783,5 +2875,49 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 8,
     lineHeight: 20,
+  },
+  // Countdown card styles
+  countdownCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
+      } as any,
+    }),
+  },
+  countdownIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  countdownContent: {
+    flex: 1,
+  },
+  countdownLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textMuted,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
