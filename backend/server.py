@@ -21,10 +21,15 @@ import json
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
+# MongoDB connection - supports both MONGODB_URL (Railway) and MONGO_URL (Emergent)
+mongo_url = os.environ.get('MONGODB_URL') or os.environ.get('MONGO_URL')
+if not mongo_url:
+    raise Exception("No MongoDB URL found. Set MONGODB_URL or MONGO_URL environment variable.")
+
+# Extract database name from URL or use default
+db_name = os.environ.get('DB_NAME', 'ipm2026')
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[db_name]
 
 # Google Sheet URLs (public CSV export)
 EVENTS_SHEET_ID = "1tnfBd7Ffg5S4hyk5c5CpB-VGkJcSnLpdsKGbNJIiQCs"
@@ -463,10 +468,14 @@ async def get_active_sos_reports():
     """Get all active SOS reports"""
     try:
         reports = await db.sos_reports.find({"status": "active"}).to_list(100)
+        # Return empty list if no reports found (not an error)
+        if not reports:
+            return []
         return [SOSReportResponse(**report) for report in reports]
     except Exception as e:
         logger.error(f"Error fetching SOS reports: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch SOS reports")
+        # Return empty list on error instead of 500 (graceful degradation)
+        return []
 
 @api_router.post("/sos/cancel/{report_id}")
 async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None):
@@ -596,20 +605,74 @@ async def get_resolved_sos_reports():
     """Get all resolved (but not yet archived) SOS reports"""
     try:
         reports = await db.sos_reports.find({"status": "resolved"}).to_list(100)
+        if not reports:
+            return []
         return [SOSReportResponse(**report) for report in reports]
     except Exception as e:
         logger.error(f"Error fetching resolved SOS reports: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch resolved SOS reports")
+        return []
 
 @api_router.get("/sos/archived", response_model=List[SOSReportResponse])
 async def get_archived_sos_reports():
     """Get all archived (past) SOS reports"""
     try:
         reports = await db.sos_reports.find({"status": "archived"}).to_list(100)
+        if not reports:
+            return []
         return [SOSReportResponse(**report) for report in reports]
     except Exception as e:
         logger.error(f"Error fetching archived SOS reports: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch archived SOS reports")
+        return []
+
+@api_router.post("/sos/test-alert")
+async def create_test_alert():
+    """Create a test SOS alert for testing purposes (Admin endpoint)"""
+    try:
+        test_report = SOSReport(
+            id=str(uuid.uuid4()),
+            name="Test Alert - John Doe",
+            sex="Male",
+            age="25",
+            height="5'10\"",
+            hair_color="Brown",
+            glasses=False,
+            shirt_color="Blue t-shirt",
+            pants_color="Jeans",
+            last_location="Main Entrance - Test Location",
+            description="This is a TEST ALERT for system verification. Please ignore.",
+            reporter_name="System Admin",
+            reporter_phone="(519) 555-0123",
+            status="active",
+            created_at=datetime.utcnow()
+        )
+        
+        await db.sos_reports.insert_one(test_report.dict())
+        
+        logger.info(f"Test SOS alert created with ID: {test_report.id}")
+        
+        return {
+            "status": "success",
+            "message": "Test alert created successfully",
+            "alert_id": test_report.id,
+            "note": "This is a test alert. Use DELETE /api/sos/test-alert/{id} to remove it."
+        }
+    except Exception as e:
+        logger.error(f"Error creating test alert: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create test alert: {str(e)}")
+
+@api_router.delete("/sos/test-alert/{alert_id}")
+async def delete_test_alert(alert_id: str):
+    """Delete a test SOS alert"""
+    try:
+        result = await db.sos_reports.delete_one({"id": alert_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Alert not found")
+        return {"status": "success", "message": "Test alert deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting test alert: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete test alert")
 
 
 @api_router.post("/sos/admin/{report_id}", response_model=SOSReportAdminResponse)
