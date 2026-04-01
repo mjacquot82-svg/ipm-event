@@ -83,7 +83,8 @@ function TabItem({ routeName }: { routeName: string }) {
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const topInset = insets.top || 0;
+  // Force topInset to 0 on web to prevent gap issues
+  const topInset = Platform.OS === 'web' ? 0 : (insets.top || 0);
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
   
   // Top ad height = banner height (80) + marginTop (10) = 90

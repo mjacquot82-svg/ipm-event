@@ -1,5 +1,5 @@
 // Responsive Banner Component
-// Uses window.innerWidth directly for web
+// Uses matchMedia API for reliable responsive image switching
 
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { View, Image, StyleSheet, useWindowDimensions, Platform } from 'react-native';
@@ -19,71 +19,70 @@ interface ResponsiveBannerProps {
 }
 
 const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
-  // For native, use useWindowDimensions
-  const dimensions = useWindowDimensions();
+  // Use matchMedia API for reliable breakpoint detection on web
+  const [isDesktop, setIsDesktop] = useState(false);
   
-  // For web, we'll check window.innerWidth synchronously
-  const getIsMobile = (): boolean => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      return window.innerWidth < BREAKPOINT;
-    }
-    return dimensions.width < BREAKPOINT;
-  };
-  
-  const [isMobile, setIsMobile] = useState(getIsMobile);
-  
-  // Use layout effect for immediate update before paint
   useLayoutEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const handleResize = () => {
-        setIsMobile(window.innerWidth < BREAKPOINT);
+      // Create media query
+      const mediaQuery = window.matchMedia(`(min-width: ${BREAKPOINT}px)`);
+      
+      // Set initial value
+      setIsDesktop(mediaQuery.matches);
+      
+      // Listen for changes
+      const handler = (e: MediaQueryListEvent) => {
+        setIsDesktop(e.matches);
       };
       
-      // Update immediately
-      handleResize();
-      
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
+      // Use addEventListener for modern browsers
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handler);
+        return () => mediaQuery.removeEventListener('change', handler);
+      } else {
+        // Fallback for older browsers
+        mediaQuery.addListener(handler);
+        return () => mediaQuery.removeListener(handler);
+      }
     }
   }, []);
-  
-  // For web
+
+  // For web: show one image based on matchMedia result
   if (Platform.OS === 'web') {
-    const imageSrc = isMobile ? MOBILE_IMAGE_PATH : DESKTOP_IMAGE_PATH;
+    const imageSrc = isDesktop ? DESKTOP_IMAGE_PATH : MOBILE_IMAGE_PATH;
     
     return (
-      <div style={{
-        width: '100%',
-        paddingLeft: '4%',
-        paddingRight: '4%',
-        boxSizing: 'border-box' as const,
-        lineHeight: 0,
-        margin: 0,
-        padding: 0,
-        paddingInline: '4%',
-      }}>
+      <div 
+        style={{
+          width: '100%',
+          margin: 0,
+          padding: '0 4%',
+          lineHeight: 0,
+          boxSizing: 'border-box' as const,
+        }}
+      >
         <img 
-          src={imageSrc}
-          alt="IPM 2026 Banner" 
+          src={imageSrc} 
+          alt="IPM Banner" 
           style={{
             width: '100%',
             height: 'auto',
             display: 'block',
-            objectFit: 'contain' as const,
-            objectPosition: 'center',
-            borderRadius: 12,
             margin: 0,
             padding: 0,
+            objectFit: 'contain' as const,
+            borderRadius: 12,
           }}
         />
       </div>
     );
   }
 
-  // For native platforms
-  const isNativeMobile = dimensions.width < BREAKPOINT;
-  const aspectRatio = isNativeMobile ? (1080 / 500) : (1800 / 180);
-  const imageSource = isNativeMobile ? mobileBannerNative : desktopBannerNative;
+  // For native platforms, use React Native Image with useWindowDimensions
+  const { width } = useWindowDimensions();
+  const isMobile = width < BREAKPOINT;
+  const aspectRatio = isMobile ? (1080 / 500) : (1800 / 180);
+  const imageSource = isMobile ? mobileBannerNative : desktopBannerNative;
 
   return (
     <View style={[styles.container, style]}>
