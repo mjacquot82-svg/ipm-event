@@ -526,7 +526,7 @@ export default function HomeScreen() {
     // Auto-scroll on desktop to show banner better
     if (Platform.OS === 'web') {
       setTimeout(() => {
-        window.scrollTo({ top: 50, behavior: 'smooth' });
+        window.scrollTo({ top: 25, behavior: 'smooth' });
       }, 100);
     }
   }, []);
