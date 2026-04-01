@@ -88,10 +88,8 @@ export default function TabLayout() {
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
   
   // Top ad height = banner height (80) + marginTop (10) = 90
-  // On web, reduce offset by 5px to minimize visual gap with the thin desktop banner
-  const topAdHeight = adCampaignsConfig.topBanner.enabled 
-    ? (Platform.OS === 'web' ? 90 : 90) 
-    : 0;
+  // On web, keep 90px offset to prevent overlap - gap is from other sources
+  const topAdHeight = adCampaignsConfig.topBanner.enabled ? 90 : 0;
   
   // Combined bottom bar height = ad + icons + safe area
   const bottomAdEnabled = adCampaignsConfig.bottomBanner.enabled;
