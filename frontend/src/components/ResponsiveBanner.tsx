@@ -26,10 +26,13 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
   const imageWidth = screenWidth * 0.92;
   
   // Desktop banner: 1800x180 (aspect ratio 10:1 - very thin)
-  // Mobile banner: 1080x500 (aspect ratio ~2.16:1)
-  // Calculate height based on width and aspect ratio
-  const desktopHeight = imageWidth / 10; // 1800/180 = 10
-  const mobileHeight = imageWidth / 2.16; // 1080/500 = 2.16
+  // Mobile banner: 1080x500 (aspect ratio 2.16:1)
+  // Calculate height based on width and EXACT aspect ratio to prevent cropping
+  const desktopAspectRatio = 1800 / 180; // = 10
+  const mobileAspectRatio = 1080 / 500;  // = 2.16
+  
+  const desktopHeight = imageWidth / desktopAspectRatio;
+  const mobileHeight = imageWidth / mobileAspectRatio;
   const imageHeight = isDesktop ? desktopHeight : mobileHeight;
   
   // Choose image based on screen width
@@ -42,21 +45,19 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
       : mobileBannerNative,
   });
   
-  // On mobile, add small top margin for visual separation (not to fix overlap - that's fixed in layout)
+  // On mobile, add small top margin for visual separation
   const topMargin = isDesktop ? 0 : 4;
 
   return (
     <View style={[styles.container, { marginTop: topMargin }, style]}>
       <Image
         source={imageSource}
-        style={[
-          styles.image, 
-          { 
-            width: imageWidth,
-            height: imageHeight,
-          }
-        ]}
-        resizeMode="cover"
+        style={{
+          width: imageWidth,
+          height: imageHeight,
+          borderRadius: 12,
+        }}
+        resizeMode="stretch"
       />
     </View>
   );
