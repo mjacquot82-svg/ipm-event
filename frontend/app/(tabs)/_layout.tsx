@@ -149,13 +149,14 @@ const styles = StyleSheet.create({
   },
   
   topAdWrapper: {
-    // No longer absolute - now in normal flex flow
-    // This ensures content stacks below it properly
+    // Normal flex flow - content stacks below this properly
     backgroundColor: colors.background,
+    zIndex: 10, // Ensure ad stays on top during any animations
   },
   
   contentArea: {
     flex: 1,
+    overflow: 'hidden', // Prevent content from overflowing into ad area
   },
   
   scene: {

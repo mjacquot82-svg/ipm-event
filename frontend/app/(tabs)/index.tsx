@@ -1331,7 +1331,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 0,
+    paddingTop: 4, // Small padding to ensure no overlap with top ad
     paddingBottom: 180, // Critical: allows SOS/Alerts buttons to scroll clear of floating ad
   },
   // Old banner styles removed - now using ResponsiveBanner component
