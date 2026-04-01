@@ -1,5 +1,5 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// AD BANNER COMPONENT - FINAL VERSION WITH REAL ASSETS
+// AD BANNER COMPONENT - DYNAMIC VERSION WITH ROUTE-BASED COLORS
 
 import React from 'react';
 import {
@@ -10,8 +10,8 @@ import {
   Image,
   Linking,
 } from 'react-native';
+import { usePathname } from 'expo-router';
 import { AdUnit } from '../config/AdCampaignsConfig';
-import colors from '../theme/colors';
 
 interface AdBannerProps {
   adUnit: AdUnit;
@@ -19,7 +19,26 @@ interface AdBannerProps {
   pointerEvents?: 'box-none' | 'none' | 'auto';
 }
 
+// Define colors and ad IDs for each route
+const routeConfig: Record<string, { color: string; adId: number; name: string }> = {
+  '/': { color: '#8B1538', adId: 1, name: 'Home' },           // Maroon
+  '/index': { color: '#8B1538', adId: 1, name: 'Home' },      // Maroon
+  '/map': { color: '#2E7D32', adId: 2, name: 'Map' },         // Green
+  '/schedule': { color: '#1565C0', adId: 3, name: 'Schedule' }, // Blue
+  '/leaderboard': { color: '#F57C00', adId: 4, name: 'Leaderboard' }, // Orange
+  '/about': { color: '#7B1FA2', adId: 5, name: 'About' },     // Purple
+  '/itinerary': { color: '#00838F', adId: 6, name: 'Itinerary' }, // Teal
+};
+
+// Default config for unknown routes
+const defaultConfig = { color: '#616161', adId: 0, name: 'Unknown' }; // Grey
+
 const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = 'auto' }) => {
+  const pathname = usePathname();
+  
+  // Get route config based on current path
+  const config = routeConfig[pathname] || defaultConfig;
+  
   if (!adUnit.enabled) return null;
 
   const handlePress = async () => {
@@ -34,13 +53,14 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
   };
 
   const isTop = position === 'top';
+  const adSpotNumber = isTop ? config.adId : config.adId + 10; // Bottom ads get +10 to differentiate
 
   if (isTop) {
     // TOP AD - 92% width, borderRadius: 12, shadow
     return (
       <View style={styles.topContainer} pointerEvents={pointerEvents}>
         <TouchableOpacity
-          style={styles.topBanner}
+          style={[styles.topBanner, { backgroundColor: config.color }]}
           onPress={handlePress}
           activeOpacity={0.9}
         >
@@ -51,8 +71,9 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
               resizeMode="cover"
             />
           ) : (
-            <View style={styles.topPlaceholder}>
-              <Text style={styles.placeholderText}>{adUnit.placeholderText}</Text>
+            <View style={[styles.topPlaceholder, { backgroundColor: config.color }]}>
+              <Text style={styles.adSpotNumber}>AD SPOT #{adSpotNumber}</Text>
+              <Text style={styles.pageName}>{config.name} - Top</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -64,7 +85,7 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
   return (
     <View style={styles.bottomContainer} pointerEvents={pointerEvents}>
       <TouchableOpacity
-        style={styles.bottomBanner}
+        style={[styles.bottomBanner, { backgroundColor: config.color }]}
         onPress={handlePress}
         activeOpacity={0.9}
       >
@@ -75,8 +96,9 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
             resizeMode="cover"
           />
         ) : (
-          <View style={styles.bottomPlaceholder}>
-            <Text style={styles.placeholderText}>{adUnit.placeholderText}</Text>
+          <View style={[styles.bottomPlaceholder, { backgroundColor: config.color }]}>
+            <Text style={styles.adSpotNumberSmall}>AD SPOT #{adSpotNumber}</Text>
+            <Text style={styles.pageNameSmall}>{config.name} - Bottom</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -100,7 +122,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     alignSelf: 'center',
-    backgroundColor: '#8B1538',
     // Shadow matching Quick Actions buttons
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -117,7 +138,6 @@ const styles = StyleSheet.create({
   topPlaceholder: {
     width: '100%',
     height: 80,
-    backgroundColor: '#8B1538',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -136,7 +156,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#8B1538',
     // Shadow matching Quick Actions buttons
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -153,15 +172,42 @@ const styles = StyleSheet.create({
   bottomPlaceholder: {
     width: '100%',
     height: 50,
-    backgroundColor: '#8B1538',
     justifyContent: 'center',
     alignItems: 'center',
   },
   
-  placeholderText: {
+  // Ad spot number - large and bold for top
+  adSpotNumber: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '900',
+    textAlign: 'center',
+    letterSpacing: 1,
+  },
+  
+  // Page name - smaller subtitle for top
+  pageName: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  
+  // Ad spot number - smaller for bottom
+  adSpotNumberSmall: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '900',
+    textAlign: 'center',
+    letterSpacing: 1,
+  },
+  
+  // Page name - smaller for bottom
+  pageNameSmall: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 8,
+    fontWeight: '600',
     textAlign: 'center',
   },
 });
