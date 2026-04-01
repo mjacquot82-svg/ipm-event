@@ -423,9 +423,7 @@ export default function HomeScreen() {
         }
       >
         {/* Header Banner Image - Responsive */}
-        <View style={{ marginTop: Platform.OS === 'web' ? -100 : 0 }}>
-          <ResponsiveBanner />
-        </View>
+        <ResponsiveBanner />
 
         {/* Happening Now Section */}
         {happeningNow.length > 0 && (

@@ -1,9 +1,8 @@
-// Responsive Banner Component
-// Uses react-responsive with @expo/match-media polyfill for reliable responsive image switching
+// Responsive Banner Component  
+// Use dangerouslySetInnerHTML to inject pure HTML that React Native Web cannot modify
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Image, StyleSheet, useWindowDimensions, Platform } from 'react-native';
-import { useMediaQuery } from 'react-responsive';
 
 const BREAKPOINT = 768;
 
@@ -20,37 +19,39 @@ interface ResponsiveBannerProps {
 }
 
 const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
-  // Use react-responsive hook (works with @expo/match-media polyfill)
-  const isDesktop = useMediaQuery({ minWidth: BREAKPOINT });
-
-  // For web: show appropriate image based on media query
+  // For web: inject pure HTML using dangerouslySetInnerHTML
   if (Platform.OS === 'web') {
-    const imageSrc = isDesktop ? DESKTOP_IMAGE_PATH : MOBILE_IMAGE_PATH;
-    
-    return (
-      <div 
-        style={{
-          width: '100%',
-          margin: 0,
-          padding: '0 4%',
-          lineHeight: 0,
-          boxSizing: 'border-box' as const,
-        }}
-      >
-        <img 
-          src={imageSrc} 
-          alt="IPM Banner" 
-          style={{
-            width: '100%',
-            height: 'auto',
-            display: 'block',
-            margin: 0,
-            padding: 0,
-            objectFit: 'contain' as const,
-            borderRadius: 12,
-          }}
-        />
+    const bannerHTML = `
+      <style>
+        .ipm-rb-wrap {
+          width: 100%;
+          padding: 0 4%;
+          box-sizing: border-box;
+          line-height: 0;
+          margin-top: 8px;
+        }
+        .ipm-rb-wrap img {
+          width: 100%;
+          height: auto;
+          display: block;
+          border-radius: 12px;
+          object-fit: contain;
+        }
+        .ipm-rb-mob { display: block; }
+        .ipm-rb-desk { display: none; }
+        @media screen and (min-width: ${BREAKPOINT}px) {
+          .ipm-rb-mob { display: none !important; }
+          .ipm-rb-desk { display: block !important; }
+        }
+      </style>
+      <div class="ipm-rb-wrap">
+        <img src="${MOBILE_IMAGE_PATH}" alt="IPM 2026 Banner" class="ipm-rb-mob" />
+        <img src="${DESKTOP_IMAGE_PATH}" alt="IPM 2026 Banner" class="ipm-rb-desk" />
       </div>
+    `;
+
+    return (
+      <div dangerouslySetInnerHTML={{ __html: bannerHTML }} />
     );
   }
 
