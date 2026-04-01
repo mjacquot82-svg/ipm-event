@@ -19,12 +19,20 @@ interface ResponsiveBannerProps {
 }
 
 const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= BREAKPOINT;
+  const { width: screenWidth } = useWindowDimensions();
+  const isDesktop = screenWidth >= BREAKPOINT;
+  
+  // Calculate actual image width (92% of screen - accounting for 4% padding each side)
+  const imageWidth = screenWidth * 0.92;
+  
+  // Desktop banner: 1800x180 (aspect ratio 10:1 - very thin)
+  // Mobile banner: 1080x500 (aspect ratio ~2.16:1)
+  // Calculate height based on width and aspect ratio
+  const desktopHeight = imageWidth / 10; // 1800/180 = 10
+  const mobileHeight = imageWidth / 2.16; // 1080/500 = 2.16
+  const imageHeight = isDesktop ? desktopHeight : mobileHeight;
   
   // Choose image based on screen width
-  // For web: use URI paths (served from public folder)
-  // For native: use require() imported assets
   const imageSource = Platform.select({
     web: isDesktop 
       ? { uri: DESKTOP_IMAGE_URI } 
@@ -33,17 +41,19 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
       ? desktopBannerNative 
       : mobileBannerNative,
   });
-  
-  // Desktop banner: 1800x180 = aspect ratio 10
-  // Mobile banner: 1080x500 = aspect ratio 2.16
-  const aspectRatio = isDesktop ? (1800 / 180) : (1080 / 500);
 
   return (
     <View style={[styles.container, style]}>
       <Image
         source={imageSource}
-        style={[styles.image, { aspectRatio }]}
-        resizeMode="contain"
+        style={[
+          styles.image, 
+          { 
+            width: imageWidth,
+            height: imageHeight,
+          }
+        ]}
+        resizeMode="cover"
       />
     </View>
   );
@@ -52,10 +62,11 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    paddingHorizontal: '4%',
+    alignItems: 'center',
+    paddingVertical: 0,
+    marginTop: 0,
   },
   image: {
-    width: '100%',
     borderRadius: 12,
   },
 });
