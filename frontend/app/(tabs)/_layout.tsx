@@ -18,7 +18,7 @@ function getIconName(routeName: string): keyof typeof Feather.glyphMap {
     case 'index': return 'home';
     case 'map': return 'map';
     case 'schedule': return 'calendar';
-    case 'leaderboard': return 'bar-chart-2';
+    case 'vendors': return 'shopping-bag';
     case 'about': return 'award';
     default: return 'circle';
   }
@@ -29,7 +29,7 @@ function getLabel(routeName: string): string {
     case 'index': return 'Home';
     case 'map': return 'Map';
     case 'schedule': return 'Schedule';
-    case 'leaderboard': return 'Leaderboard';
+    case 'vendors': return 'Vendors';
     case 'about': return 'About';
     default: return routeName;
   }
@@ -111,9 +111,10 @@ export default function TabLayout() {
           <Tabs.Screen name="index" options={{ title: 'Home', href: '/' }} />
           <Tabs.Screen name="map" options={{ title: 'Map' }} />
           <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
-          <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
+          <Tabs.Screen name="vendors" options={{ title: 'Vendors' }} />
           <Tabs.Screen name="about" options={{ title: 'About' }} />
           <Tabs.Screen name="itinerary" options={{ title: 'Itinerary', href: null }} />
+          <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard', href: null }} />
         </Tabs>
       </View>
 
@@ -134,7 +135,7 @@ export default function TabLayout() {
           <TabItem routeName="index" />
           <TabItem routeName="map" />
           <TabItem routeName="schedule" />
-          <TabItem routeName="leaderboard" />
+          <TabItem routeName="vendors" />
           <TabItem routeName="about" />
         </View>
       </View>
