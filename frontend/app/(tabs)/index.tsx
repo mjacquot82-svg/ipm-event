@@ -522,6 +522,13 @@ export default function HomeScreen() {
   useEffect(() => {
     fetchApiEvents();
     fetchActiveSOSReports();
+    
+    // Auto-scroll on desktop to show banner better
+    if (Platform.OS === 'web') {
+      setTimeout(() => {
+        window.scrollTo({ top: 50, behavior: 'smooth' });
+      }, 100);
+    }
   }, []);
 
   useFocusEffect(
