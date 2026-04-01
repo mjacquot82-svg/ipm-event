@@ -87,10 +87,6 @@ export default function TabLayout() {
   const topInset = Platform.OS === 'web' ? 0 : (insets.top || 0);
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
   
-  // Top ad height = banner height (80) + marginTop (10) = 90
-  // On web, use exact offset to minimize gap
-  const topAdHeight = adCampaignsConfig.topBanner.enabled ? 90 : 0;
-  
   // Combined bottom bar height = ad + icons + safe area
   const bottomAdEnabled = adCampaignsConfig.bottomBanner.enabled;
   const totalBottomBarHeight = (bottomAdEnabled ? AD_SECTION_HEIGHT : 0) + NAV_ICONS_HEIGHT + bottomInset;
@@ -98,15 +94,15 @@ export default function TabLayout() {
   return (
     <View style={styles.root}>
       
-      {/* TOP AD */}
+      {/* TOP AD - Now in normal flow, not absolute positioned */}
       {adCampaignsConfig.topBanner.enabled && (
         <View style={[styles.topAdWrapper, { paddingTop: topInset }]}>
           <AdBanner adUnit={adCampaignsConfig.topBanner} position="top" />
         </View>
       )}
 
-      {/* MAIN CONTENT - Tabs */}
-      <View style={[styles.contentArea, { marginTop: topAdHeight + topInset }]}>
+      {/* MAIN CONTENT - Tabs - fills remaining space */}
+      <View style={styles.contentArea}>
         <Tabs
           tabBar={() => <EmptyTabBar />}
           screenOptions={{ headerShown: false }}
@@ -153,12 +149,9 @@ const styles = StyleSheet.create({
   },
   
   topAdWrapper: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    // Remove background - ad has its own background color
+    // No longer absolute - now in normal flex flow
+    // This ensures content stacks below it properly
+    backgroundColor: colors.background,
   },
   
   contentArea: {

@@ -42,8 +42,8 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
       : mobileBannerNative,
   });
   
-  // On mobile, add small top margin to ensure no overlap with top ad
-  const topMargin = isDesktop ? 0 : 8;
+  // On mobile, add small top margin for visual separation (not to fix overlap - that's fixed in layout)
+  const topMargin = isDesktop ? 0 : 4;
 
   return (
     <View style={[styles.container, { marginTop: topMargin }, style]}>
