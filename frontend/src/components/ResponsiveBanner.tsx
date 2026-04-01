@@ -27,7 +27,7 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
   
   // Use aspectRatio to maintain natural proportions
   // Desktop banner: 1920x640 = 3:1 aspect ratio
-  // Mobile banner: 1080x620 = 1.74:1 aspect ratio
+  // Mobile banner: 1080x620 = 1.74:1 aspect ratio (original with white border)
   const aspectRatio = isDesktop ? (1920 / 640) : (1080 / 620);
   
   // Choose image based on screen width
