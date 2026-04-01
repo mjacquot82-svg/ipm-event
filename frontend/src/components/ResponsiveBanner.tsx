@@ -1,16 +1,16 @@
 // Responsive Banner Component  
-// Use dangerouslySetInnerHTML to inject pure HTML that React Native Web cannot modify
+// React Native Web compatible - uses useWindowDimensions for responsive behavior
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Image, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 
 const BREAKPOINT = 768;
 
-// Image paths for web (served from public folder)
-const DESKTOP_IMAGE_PATH = '/images/ipm-banner-desktop.png';
-const MOBILE_IMAGE_PATH = '/images/ipm-banner-mobile.png';
+// Image paths - use URI format for web, require for native
+const DESKTOP_IMAGE_URI = '/images/ipm-banner-desktop.png';
+const MOBILE_IMAGE_URI = '/images/ipm-banner-mobile.png';
 
-// Import images for React Native (native platforms only)
+// Native asset imports (only used on native platforms)
 const desktopBannerNative = require('../../assets/images/ipm-banner-desktop.png');
 const mobileBannerNative = require('../../assets/images/ipm-banner-mobile.png');
 
@@ -19,47 +19,24 @@ interface ResponsiveBannerProps {
 }
 
 const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
-  // For web: inject pure HTML using dangerouslySetInnerHTML
-  if (Platform.OS === 'web') {
-    const bannerHTML = `
-      <style>
-        .ipm-rb-wrap {
-          width: 100%;
-          padding: 0 4%;
-          box-sizing: border-box;
-          line-height: 0;
-          margin-top: 8px;
-        }
-        .ipm-rb-wrap img {
-          width: 100%;
-          height: auto;
-          display: block;
-          border-radius: 12px;
-          object-fit: contain;
-        }
-        .ipm-rb-mob { display: block; }
-        .ipm-rb-desk { display: none; }
-        @media screen and (min-width: ${BREAKPOINT}px) {
-          .ipm-rb-mob { display: none !important; }
-          .ipm-rb-desk { display: block !important; }
-        }
-      </style>
-      <div class="ipm-rb-wrap">
-        <img src="${MOBILE_IMAGE_PATH}" alt="IPM 2026 Banner" class="ipm-rb-mob" />
-        <img src="${DESKTOP_IMAGE_PATH}" alt="IPM 2026 Banner" class="ipm-rb-desk" />
-      </div>
-    `;
-
-    return (
-      <div dangerouslySetInnerHTML={{ __html: bannerHTML }} />
-    );
-  }
-
-  // For native platforms, use React Native Image with useWindowDimensions
   const { width } = useWindowDimensions();
-  const isMobile = width < BREAKPOINT;
-  const aspectRatio = isMobile ? (1080 / 500) : (1800 / 180);
-  const imageSource = isMobile ? mobileBannerNative : desktopBannerNative;
+  const isDesktop = width >= BREAKPOINT;
+  
+  // Choose image based on screen width
+  // For web: use URI paths (served from public folder)
+  // For native: use require() imported assets
+  const imageSource = Platform.select({
+    web: isDesktop 
+      ? { uri: DESKTOP_IMAGE_URI } 
+      : { uri: MOBILE_IMAGE_URI },
+    default: isDesktop 
+      ? desktopBannerNative 
+      : mobileBannerNative,
+  });
+  
+  // Desktop banner: 1800x180 = aspect ratio 10
+  // Mobile banner: 1080x500 = aspect ratio 2.16
+  const aspectRatio = isDesktop ? (1800 / 180) : (1080 / 500);
 
   return (
     <View style={[styles.container, style]}>
@@ -75,7 +52,6 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    alignItems: 'center',
     paddingHorizontal: '4%',
   },
   image: {
