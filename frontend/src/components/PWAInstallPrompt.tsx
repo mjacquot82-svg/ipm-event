@@ -38,6 +38,9 @@ if (typeof window !== 'undefined') {
     e.preventDefault(); // Prevent the mini-infobar from appearing
     window.deferredPWAPrompt = e;
     window.pwaPromptCaptured = true;
+    
+    // Dispatch a custom event so our component knows
+    window.dispatchEvent(new CustomEvent('pwa-prompt-ready'));
   });
 
   // Listen for successful install
@@ -126,6 +129,13 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
 
     init();
 
+    // Listen for the custom event when prompt becomes available
+    const handlePromptReady = () => {
+      console.log('[PWA] Received pwa-prompt-ready event');
+      setHasNativePrompt(true);
+    };
+    window.addEventListener('pwa-prompt-ready', handlePromptReady);
+
     // Also check periodically if the prompt becomes available
     const checkInterval = setInterval(() => {
       if (window.deferredPWAPrompt && !hasNativePrompt) {
@@ -134,7 +144,10 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
       }
     }, 1000);
 
-    return () => clearInterval(checkInterval);
+    return () => {
+      clearInterval(checkInterval);
+      window.removeEventListener('pwa-prompt-ready', handlePromptReady);
+    };
   }, []);
 
   const triggerNativeInstall = async () => {
