@@ -41,7 +41,16 @@ const PinKeypad: React.FC<PinKeypadProps> = ({
     }
   }, [visible]);
 
+  // Vibrate on key press (short haptic feedback)
+  const vibrateOnPress = () => {
+    if (Platform.OS !== 'web') {
+      Vibration.vibrate(30); // Short 30ms vibration for button press
+    }
+  };
+
   const handleKeyPress = (key: string) => {
+    vibrateOnPress(); // Vibrate on each key press
+    
     if (pin.length < 4) {
       const newPin = pin + key;
       setPin(newPin);
@@ -51,13 +60,17 @@ const PinKeypad: React.FC<PinKeypadProps> = ({
       if (newPin.length === 4) {
         setTimeout(() => {
           if (newPin === correctPin) {
+            // Success vibration pattern
+            if (Platform.OS !== 'web') {
+              Vibration.vibrate([0, 50, 50, 50]); // Double vibrate for success
+            }
             onSuccess();
             setPin('');
           } else {
             // Wrong PIN - shake and vibrate
             setError(true);
             if (Platform.OS !== 'web') {
-              Vibration.vibrate(200);
+              Vibration.vibrate(300); // Longer vibration for error
             }
             
             Animated.sequence([
@@ -76,6 +89,7 @@ const PinKeypad: React.FC<PinKeypadProps> = ({
   };
 
   const handleBackspace = () => {
+    vibrateOnPress(); // Vibrate on backspace too
     setPin(pin.slice(0, -1));
     setError(false);
   };
@@ -178,9 +192,11 @@ const PinKeypad: React.FC<PinKeypadProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 9999,
+    elevation: 9999,
   },
   container: {
     backgroundColor: colors.surface,
@@ -189,6 +205,8 @@ const styles = StyleSheet.create({
     width: '85%',
     maxWidth: 320,
     alignItems: 'center',
+    zIndex: 10000,
+    elevation: 10000,
   },
   header: {
     width: '100%',
