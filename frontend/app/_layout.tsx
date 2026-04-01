@@ -1,5 +1,8 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
+// Import polyfill for matchMedia on web (MUST be first)
+import '@expo/match-media';
+
 import React, { useEffect, useState } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

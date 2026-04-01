@@ -1,8 +1,9 @@
 // Responsive Banner Component
-// Uses matchMedia API for reliable responsive image switching
+// Uses react-responsive with @expo/match-media polyfill for reliable responsive image switching
 
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React from 'react';
 import { View, Image, StyleSheet, useWindowDimensions, Platform } from 'react-native';
+import { useMediaQuery } from 'react-responsive';
 
 const BREAKPOINT = 768;
 
@@ -19,35 +20,10 @@ interface ResponsiveBannerProps {
 }
 
 const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
-  // Use matchMedia API for reliable breakpoint detection on web
-  const [isDesktop, setIsDesktop] = useState(false);
-  
-  useLayoutEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      // Create media query
-      const mediaQuery = window.matchMedia(`(min-width: ${BREAKPOINT}px)`);
-      
-      // Set initial value
-      setIsDesktop(mediaQuery.matches);
-      
-      // Listen for changes
-      const handler = (e: MediaQueryListEvent) => {
-        setIsDesktop(e.matches);
-      };
-      
-      // Use addEventListener for modern browsers
-      if (mediaQuery.addEventListener) {
-        mediaQuery.addEventListener('change', handler);
-        return () => mediaQuery.removeEventListener('change', handler);
-      } else {
-        // Fallback for older browsers
-        mediaQuery.addListener(handler);
-        return () => mediaQuery.removeListener(handler);
-      }
-    }
-  }, []);
+  // Use react-responsive hook (works with @expo/match-media polyfill)
+  const isDesktop = useMediaQuery({ minWidth: BREAKPOINT });
 
-  // For web: show one image based on matchMedia result
+  // For web: show appropriate image based on media query
   if (Platform.OS === 'web') {
     const imageSrc = isDesktop ? DESKTOP_IMAGE_PATH : MOBILE_IMAGE_PATH;
     
