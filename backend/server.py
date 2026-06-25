@@ -24,12 +24,17 @@ load_dotenv(ROOT_DIR / '.env')
 # MongoDB connection - supports both MONGODB_URL (Railway) and MONGO_URL (Emergent)
 mongo_url = os.environ.get('MONGODB_URL') or os.environ.get('MONGO_URL')
 if not mongo_url:
-    raise Exception("No MongoDB URL found. Set MONGODB_URL or MONGO_URL environment variable.")
-
-# Extract database name from URL or use default
-db_name = os.environ.get('DB_NAME', 'ipm2026')
-client = AsyncIOMotorClient(mongo_url)
-db = client[db_name]
+    logging.warning(
+        "No MongoDB URL found. Mongo-backed features are disabled. "
+        "Set MONGODB_URL or MONGO_URL to enable SOS, push tokens, starred-event sync, and notifications."
+    )
+    client = None
+    db = None
+else:
+    # Extract database name from URL or use default
+    db_name = os.environ.get('DB_NAME', 'ipm2026')
+    client = AsyncIOMotorClient(mongo_url)
+    db = client[db_name]
 
 # Google Sheet URLs (public CSV export)
 EVENTS_SHEET_ID = "1tnfBd7Ffg5S4hyk5c5CpB-VGkJcSnLpdsKGbNJIiQCs"
@@ -187,6 +192,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def require_mongodb():
+    if db is None:
+        raise HTTPException(
+            status_code=503,
+            detail="MongoDB is unavailable. This feature is disabled."
+        )
+    return db
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
@@ -237,14 +250,16 @@ async def download_dist_zip():
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
+    database = require_mongodb()
     status_dict = input.dict()
     status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
+    _ = await database.status_checks.insert_one(status_obj.dict())
     return status_obj
 
 @api_router.get("/status", response_model=List[StatusCheck])
 async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
+    database = require_mongodb()
+    status_checks = await database.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
 
 @api_router.get("/schedule", response_model=ScheduleResponse)
@@ -362,9 +377,10 @@ async def get_vendors():
 @api_router.post("/register-push-token")
 async def register_push_token(data: PushTokenRegister):
     """Register a device's push notification token"""
+    database = require_mongodb()
     try:
         # Upsert the token (update if exists, insert if not)
-        await db.push_tokens.update_one(
+        await database.push_tokens.update_one(
             {"device_id": data.device_id},
             {
                 "$set": {
@@ -383,8 +399,9 @@ async def register_push_token(data: PushTokenRegister):
 @api_router.post("/update-starred-events")
 async def update_starred_events(data: StarredEventsUpdate):
     """Update the list of starred events for a user (for notification tracking)"""
+    database = require_mongodb()
     try:
-        await db.user_starred_events.update_one(
+        await database.user_starred_events.update_one(
             {"push_token": data.push_token},
             {
                 "$set": {
@@ -405,6 +422,7 @@ async def update_starred_events(data: StarredEventsUpdate):
 @api_router.post("/sos/report", response_model=SOSReportResponse)
 async def create_sos_report(data: SOSReportCreate):
     """Create an SOS missing person report and broadcast to all users"""
+    database = require_mongodb()
     try:
         # Create the report
         report = SOSReport(
@@ -424,7 +442,7 @@ async def create_sos_report(data: SOSReportCreate):
         )
         
         # Save to database
-        await db.sos_reports.insert_one(report.dict())
+        await database.sos_reports.insert_one(report.dict())
         
         # Build notification message
         glasses_text = "Wears glasses" if data.glasses else "No glasses"
@@ -439,7 +457,7 @@ async def create_sos_report(data: SOSReportCreate):
         )
         
         # Get all registered push tokens
-        all_tokens = await db.push_tokens.find().to_list(10000)
+        all_tokens = await database.push_tokens.find().to_list(10000)
         
         logger.info(f"SOS: Broadcasting alert to {len(all_tokens)} devices")
         
@@ -477,8 +495,9 @@ async def create_sos_report(data: SOSReportCreate):
 @api_router.get("/sos/active", response_model=List[SOSReportResponse])
 async def get_active_sos_reports():
     """Get all active SOS reports"""
+    database = require_mongodb()
     try:
-        reports = await db.sos_reports.find({"status": "active"}).to_list(100)
+        reports = await database.sos_reports.find({"status": "active"}).to_list(100)
         # Return empty list if no reports found (not an error)
         if not reports:
             return []
@@ -491,14 +510,15 @@ async def get_active_sos_reports():
 @api_router.post("/sos/cancel/{report_id}")
 async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None):
     """Cancel/resolve an SOS report (person found)"""
+    database = require_mongodb()
     try:
         # Find the report
-        report = await db.sos_reports.find_one({"id": report_id})
+        report = await database.sos_reports.find_one({"id": report_id})
         if not report:
             raise HTTPException(status_code=404, detail="SOS report not found")
         
         # Update status
-        await db.sos_reports.update_one(
+        await database.sos_reports.update_one(
             {"id": report_id},
             {
                 "$set": {
@@ -509,7 +529,7 @@ async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None
         )
         
         # Notify all users that the person was found
-        all_tokens = await db.push_tokens.find().to_list(10000)
+        all_tokens = await database.push_tokens.find().to_list(10000)
         
         logger.info(f"SOS: Broadcasting FOUND alert to {len(all_tokens)} devices")
         
@@ -534,13 +554,14 @@ async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None
 @api_router.post("/sos/resolve/{report_id}")
 async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
     """Securely resolve an SOS report with PIN verification (Admin only)"""
+    database = require_mongodb()
     try:
         # Verify PIN
         if data.pin != ADMIN_PIN:
             return {"status": "error", "message": "Unauthorized - Invalid PIN"}
         
         # Find the report
-        report = await db.sos_reports.find_one({"id": report_id})
+        report = await database.sos_reports.find_one({"id": report_id})
         if not report:
             raise HTTPException(status_code=404, detail="SOS report not found")
         
@@ -549,7 +570,7 @@ async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
         
         # Update the report status to resolved
         resolved_time = datetime.utcnow()
-        await db.sos_reports.update_one(
+        await database.sos_reports.update_one(
             {"id": report_id},
             {"$set": {
                 "status": "resolved",
@@ -558,7 +579,7 @@ async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
         )
         
         # Broadcast "Resolved" notification to all registered devices
-        all_tokens = await db.push_tokens.find().to_list(1000)
+        all_tokens = await database.push_tokens.find().to_list(1000)
         logger.info(f"SOS RESOLVED: Broadcasting to {len(all_tokens)} devices")
         
         for token_doc in all_tokens:
@@ -586,17 +607,18 @@ async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
 @api_router.post("/sos/archive/{report_id}")
 async def archive_sos_report(report_id: str, data: SOSResolveRequest):
     """Archive an SOS report with PIN verification (Admin only)"""
+    database = require_mongodb()
     try:
         # Verify PIN
         if data.pin != ADMIN_PIN:
             return {"status": "error", "message": "Unauthorized - Invalid PIN"}
         
-        report = await db.sos_reports.find_one({"id": report_id})
+        report = await database.sos_reports.find_one({"id": report_id})
         if not report:
             raise HTTPException(status_code=404, detail="SOS report not found")
         
         # Update to archived status (can archive any status now with admin PIN)
-        await db.sos_reports.update_one(
+        await database.sos_reports.update_one(
             {"id": report_id},
             {"$set": {
                 "status": "archived",
@@ -615,8 +637,9 @@ async def archive_sos_report(report_id: str, data: SOSResolveRequest):
 @api_router.get("/sos/resolved", response_model=List[SOSReportResponse])
 async def get_resolved_sos_reports():
     """Get all resolved (but not yet archived) SOS reports"""
+    database = require_mongodb()
     try:
-        reports = await db.sos_reports.find({"status": "resolved"}).to_list(100)
+        reports = await database.sos_reports.find({"status": "resolved"}).to_list(100)
         if not reports:
             return []
         return [SOSReportResponse(**report) for report in reports]
@@ -627,8 +650,9 @@ async def get_resolved_sos_reports():
 @api_router.get("/sos/archived", response_model=List[SOSReportResponse])
 async def get_archived_sos_reports():
     """Get all archived (past) SOS reports"""
+    database = require_mongodb()
     try:
-        reports = await db.sos_reports.find({"status": "archived"}).to_list(100)
+        reports = await database.sos_reports.find({"status": "archived"}).to_list(100)
         if not reports:
             return []
         return [SOSReportResponse(**report) for report in reports]
@@ -639,6 +663,7 @@ async def get_archived_sos_reports():
 @api_router.post("/sos/test-alert")
 async def create_test_alert():
     """Create a test SOS alert for testing purposes (Admin endpoint)"""
+    database = require_mongodb()
     try:
         test_report = SOSReport(
             id=str(uuid.uuid4()),
@@ -658,7 +683,7 @@ async def create_test_alert():
             created_at=datetime.utcnow()
         )
         
-        await db.sos_reports.insert_one(test_report.dict())
+        await database.sos_reports.insert_one(test_report.dict())
         
         logger.info(f"Test SOS alert created with ID: {test_report.id}")
         
@@ -675,8 +700,9 @@ async def create_test_alert():
 @api_router.delete("/sos/test-alert/{alert_id}")
 async def delete_test_alert(alert_id: str):
     """Delete a test SOS alert"""
+    database = require_mongodb()
     try:
-        result = await db.sos_reports.delete_one({"id": alert_id})
+        result = await database.sos_reports.delete_one({"id": alert_id})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Alert not found")
         return {"status": "success", "message": "Test alert deleted"}
@@ -690,13 +716,14 @@ async def delete_test_alert(alert_id: str):
 @api_router.post("/sos/admin/{report_id}", response_model=SOSReportAdminResponse)
 async def get_sos_admin_details(report_id: str, data: SOSResolveRequest):
     """Get full SOS report details including reporter info (Admin PIN required)"""
+    database = require_mongodb()
     try:
         # Verify PIN
         if data.pin != ADMIN_PIN:
             raise HTTPException(status_code=401, detail="Unauthorized - Invalid PIN")
         
         # Find the report
-        report = await db.sos_reports.find_one({"id": report_id})
+        report = await database.sos_reports.find_one({"id": report_id})
         if not report:
             raise HTTPException(status_code=404, detail="SOS report not found")
         
@@ -860,6 +887,10 @@ async def send_expo_push_notification(push_token: str, title: str, body: str, da
 async def check_for_event_changes():
     """Check Google Sheet for changes and notify users"""
     global cached_events_hash
+    if db is None:
+        logger.warning("Cron: MongoDB unavailable; skipping event change detection")
+        return
+    database = db
     
     logger.info("Cron: Checking for event changes...")
     
@@ -873,9 +904,9 @@ async def check_for_event_changes():
     if not cached_events_hash:
         cached_events_hash = new_hash
         # Store events in DB for comparison
-        await db.cached_events.delete_many({})
+        await database.cached_events.delete_many({})
         for event in events:
-            await db.cached_events.insert_one(event)
+            await database.cached_events.insert_one(event)
         logger.info(f"Cron: Initial cache set with {len(events)} events")
         return
     
@@ -887,7 +918,7 @@ async def check_for_event_changes():
     logger.info("Cron: Changes detected! Finding affected events...")
     
     # Find what changed
-    old_events = await db.cached_events.find().to_list(1000)
+    old_events = await database.cached_events.find().to_list(1000)
     old_events_dict = {e['id']: e for e in old_events}
     
     changed_event_ids = []
@@ -903,9 +934,9 @@ async def check_for_event_changes():
     
     # Update cache
     cached_events_hash = new_hash
-    await db.cached_events.delete_many({})
+    await database.cached_events.delete_many({})
     for event in events:
-        await db.cached_events.insert_one(event)
+        await database.cached_events.insert_one(event)
     
     if not changed_event_ids:
         logger.info("Cron: Hash changed but no event content changes detected")
@@ -919,7 +950,7 @@ async def check_for_event_changes():
             continue
         
         # Find users who starred this event
-        starred_users = await db.user_starred_events.find({
+        starred_users = await database.user_starred_events.find({
             "starred_event_ids": event_id
         }).to_list(1000)
         
@@ -948,10 +979,13 @@ async def cron_scheduler():
 @app.on_event("startup")
 async def startup_event():
     """Start the cron job when the server starts"""
+    if db is None:
+        logger.warning("MongoDB unavailable; event change notification cron is disabled")
+        return
     logger.info("Starting cron scheduler for event change detection...")
     asyncio.create_task(cron_scheduler())
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    client.close()
-
+    if client is not None:
+        client.close()
