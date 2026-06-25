@@ -11,22 +11,12 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { getFavorites, toggleFavorite } from '../src/utils/favoritesStorage';
-
-type ScheduleEvent = {
-  id: string;
-  title: string;
-  description: string;
-  start_date: string;
-  start_time: string;
-  end_time: string;
-  category: string;
-  latitude: number | null;
-  longitude: number | null;
-  days_active: string;
-  location_name: string | null;
-};
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+import CachedDataBanner from '../src/components/CachedDataBanner';
+import {
+  CachedApiSource,
+  ScheduleEvent,
+  getScheduleData,
+} from '../src/services/spreadsheetDataService';
 
 export default function ItineraryScreen() {
   const router = useRouter();
@@ -34,6 +24,8 @@ export default function ItineraryScreen() {
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<CachedApiSource>('network');
+  const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
 
   const loadFavorites = async () => {
     const storedFavorites = await getFavorites();
@@ -45,13 +37,10 @@ export default function ItineraryScreen() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/schedule`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch schedule');
-      }
-
-      const data = await response.json();
-      setEvents(data.events || []);
+      const result = await getScheduleData();
+      setEvents(result.data.events || []);
+      setDataSource(result.source);
+      setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
     } catch (err) {
       setError('Unable to load itinerary.');
     } finally {
@@ -119,6 +108,10 @@ export default function ItineraryScreen() {
           {starredEvents.length} starred event{starredEvents.length === 1 ? '' : 's'}
         </Text>
       </View>
+
+      {dataSource === 'cache' && (
+        <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
+      )}
 
       <FlatList
         data={starredEvents}

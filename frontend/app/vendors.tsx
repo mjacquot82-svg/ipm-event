@@ -7,16 +7,12 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
-
-type Vendor = {
-  id: string;
-  name: string;
-  type: string;
-  location: string;
-  hours_of_operation: string;
-  days_of_operation: string;
-  priority: number;
-};
+import CachedDataBanner from '../src/components/CachedDataBanner';
+import {
+  CachedApiSource,
+  Vendor,
+  getVendorsData,
+} from '../src/services/spreadsheetDataService';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
@@ -24,6 +20,8 @@ export default function VendorsScreen() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<CachedApiSource>('network');
+  const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
 
   useEffect(() => {
     fetchVendors();
@@ -34,13 +32,10 @@ export default function VendorsScreen() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/vendors`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch vendors');
-      }
-
-      const data = await response.json();
-      setVendors(data.vendors || []);
+      const result = await getVendorsData();
+      setVendors(result.data.vendors || []);
+      setDataSource(result.source);
+      setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
     } catch (err) {
       setError('Unable to load vendors');
     } finally {
@@ -76,6 +71,10 @@ export default function VendorsScreen() {
         <Text style={styles.title}>Vendors</Text>
         <Text style={styles.subtitle}>{vendors.length} vendors</Text>
       </View>
+
+      {dataSource === 'cache' && (
+        <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
+      )}
 
       <FlatList
         data={vendors}

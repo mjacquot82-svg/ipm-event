@@ -1,11 +1,10 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React from 'react';
+import { reloadAppAsync } from 'expo';
 import { useRouter } from 'expo-router';
 import {
-  DevSettings,
   Image,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -22,19 +21,15 @@ type ErrorBoundaryState = {
   hasError: boolean;
 };
 
-type ReloadableDevSettings = typeof DevSettings & {
-  reload?: () => void;
-};
-
-function reloadApp() {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.location.reload();
-    return;
-  }
-
-  const reload = (DevSettings as ReloadableDevSettings).reload;
-  if (typeof reload === 'function') {
-    reload();
+async function reloadApp() {
+  try {
+    await reloadAppAsync('User requested reload from error boundary');
+  } catch (error) {
+    if (error instanceof Error) {
+      logError(error);
+    } else {
+      logError(new Error('Unable to reload app from error boundary'));
+    }
   }
 }
 
@@ -43,7 +38,7 @@ function ErrorFallback({ onReset }: { onReset: () => void }) {
 
   const handleReturnHome = () => {
     onReset();
-    router.replace('/');
+    router.replace('/coming-soon');
   };
 
   return (

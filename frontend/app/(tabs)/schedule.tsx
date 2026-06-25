@@ -17,29 +17,12 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
-
-// API Event type from Google Sheets
-interface ScheduleEvent {
-  id: string;
-  title: string;
-  description: string;
-  start_date: string;
-  start_time: string;
-  end_time: string;
-  category: string;
-  latitude: number | null;
-  longitude: number | null;
-  days_active: string;
-  location_name: string | null;
-}
-
-interface ScheduleResponse {
-  events: ScheduleEvent[];
-  last_updated: string;
-  total_count: number;
-}
-
-const API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
+import CachedDataBanner from '../../src/components/CachedDataBanner';
+import {
+  CachedApiSource,
+  ScheduleEvent,
+  getScheduleData,
+} from '../../src/services/spreadsheetDataService';
 
 export default function ScheduleScreen() {
   const router = useRouter();
@@ -48,6 +31,7 @@ export default function ScheduleScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -64,15 +48,10 @@ export default function ScheduleScreen() {
       }
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/schedule`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch schedule');
-      }
-
-      const data: ScheduleResponse = await response.json();
-      setEvents(data.events);
-      setLastUpdated(data.last_updated);
+      const result = await getScheduleData();
+      setEvents(result.data.events);
+      setLastUpdated(result.lastSuccessfulUpdate);
+      setDataSource(result.source);
     } catch (err) {
       console.error('Error fetching schedule:', err);
       setError('Unable to load schedule. Pull down to retry.');
@@ -220,6 +199,10 @@ export default function ScheduleScreen() {
           )}
         </View>
       </View>
+
+      {dataSource === 'cache' && (
+        <CachedDataBanner lastSuccessfulUpdate={lastUpdated} />
+      )}
 
       {/* Filter Pills */}
       <View style={styles.filterContainer}>

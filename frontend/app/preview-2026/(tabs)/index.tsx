@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import colors from '../../../src/theme/colors';
-import { 
+import {
   sessions, 
   locations, 
   getLocationById, 
@@ -34,6 +34,12 @@ import {
   eventInfo,
 } from '../../../src/data/mockData';
 import { getFavorites, toggleFavorite } from '../../../src/utils/favoritesStorage';
+import CachedDataBanner from '../../../src/components/CachedDataBanner';
+import {
+  CachedApiSource,
+  getScheduleData,
+  getVendorsData,
+} from '../../../src/services/spreadsheetDataService';
 
 // SOS Form initial state
 const initialSOSForm = {
@@ -55,6 +61,8 @@ export default function HomeScreen() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showItinerary, setShowItinerary] = useState(false);
   const [apiEvents, setApiEvents] = useState<any[]>([]);
+  const [apiEventsSource, setApiEventsSource] = useState<CachedApiSource>('network');
+  const [apiEventsLastUpdated, setApiEventsLastUpdated] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [showEventDetails, setShowEventDetails] = useState(false);
   
@@ -64,6 +72,8 @@ export default function HomeScreen() {
   const [vendorTypes, setVendorTypes] = useState<string[]>([]);
   const [selectedVendorType, setSelectedVendorType] = useState<string>('All');
   const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [vendorsSource, setVendorsSource] = useState<CachedApiSource>('network');
+  const [vendorsLastUpdated, setVendorsLastUpdated] = useState<string | null>(null);
   
   // SOS state
   const [showSOSWarning, setShowSOSWarning] = useState(false);
@@ -77,12 +87,10 @@ export default function HomeScreen() {
   // Fetch events from API
   const fetchApiEvents = async () => {
     try {
-      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-      const response = await fetch(`${API_BASE_URL}/api/schedule`);
-      if (response.ok) {
-        const data = await response.json();
-        setApiEvents(data.events || []);
-      }
+      const result = await getScheduleData();
+      setApiEvents(result.data.events || []);
+      setApiEventsSource(result.source);
+      setApiEventsLastUpdated(result.lastSuccessfulUpdate);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
@@ -92,17 +100,15 @@ export default function HomeScreen() {
   const fetchVendors = async () => {
     setVendorsLoading(true);
     try {
-      const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
-      const response = await fetch(`${API_BASE_URL}/api/vendors`);
-      if (response.ok) {
-        const data = await response.json();
-        const vendorList = data.vendors || [];
-        setVendors(vendorList);
-        
-        // Extract unique types for filter
-        const types = ['All', ...new Set(vendorList.map((v: any) => v.type).filter(Boolean))];
-        setVendorTypes(types as string[]);
-      }
+      const result = await getVendorsData();
+      const vendorList = result.data.vendors || [];
+      setVendors(vendorList);
+      setVendorsSource(result.source);
+      setVendorsLastUpdated(result.lastSuccessfulUpdate);
+      
+      // Extract unique types for filter
+      const types = ['All', ...new Set(vendorList.map((v: any) => v.type).filter(Boolean))];
+      setVendorTypes(types as string[]);
     } catch (error) {
       console.error('Error fetching vendors:', error);
     } finally {
@@ -588,6 +594,10 @@ export default function HomeScreen() {
             </View>
 
             {/* Itinerary Content */}
+            {apiEventsSource === 'cache' && (
+              <CachedDataBanner lastSuccessfulUpdate={apiEventsLastUpdated} />
+            )}
+
             <ScrollView 
               style={styles.modalScroll}
               showsVerticalScrollIndicator={false}
@@ -860,6 +870,10 @@ export default function HomeScreen() {
                 <Feather name="x" size={24} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
+
+            {vendorsSource === 'cache' && (
+              <CachedDataBanner lastSuccessfulUpdate={vendorsLastUpdated} />
+            )}
 
             {/* Filter Chips */}
             <ScrollView 
