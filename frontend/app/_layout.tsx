@@ -12,6 +12,7 @@ import {
   addNotificationListeners 
 } from '../src/utils/notificationService';
 import { AdProvider } from '../src/context/AdContext';
+import ErrorBoundary from '../src/components/ErrorBoundary';
 import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
 import SplashScreen from '../src/components/SplashScreen';
 
@@ -83,26 +84,28 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <SafeAreaProvider>
         <AdProvider>
-          <StatusBar style="dark" backgroundColor={colors.background} />
-          
-          {/* LOGIC: Show ONLY Splash first. Once done, show the App Stack. */}
-          {showSplash ? (
-            <SplashScreen 
-              onFinish={handleSplashFinish} 
-              duration={2000} 
-            />
-          ) : (
-            <>
-              <Stack screenOptions={{ headerShown: false }}>
-                {/* 'index' must be here to match your app/index.tsx redirect */}
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="preview-2026" options={{ headerShown: false }} />
-                <Stack.Screen name="coming-soon" options={{ headerShown: false }} />
-              </Stack>
-              <PWAInstallPrompt />
-            </>
-          )}
+          <ErrorBoundary>
+            <StatusBar style="dark" backgroundColor={colors.background} />
+            
+            {/* LOGIC: Show ONLY Splash first. Once done, show the App Stack. */}
+            {showSplash ? (
+              <SplashScreen 
+                onFinish={handleSplashFinish} 
+                duration={2000} 
+              />
+            ) : (
+              <>
+                <Stack screenOptions={{ headerShown: false }}>
+                  {/* 'index' must be here to match your app/index.tsx redirect */}
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="preview-2026" options={{ headerShown: false }} />
+                  <Stack.Screen name="coming-soon" options={{ headerShown: false }} />
+                </Stack>
+                <PWAInstallPrompt />
+              </>
+            )}
+          </ErrorBoundary>
         </AdProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
