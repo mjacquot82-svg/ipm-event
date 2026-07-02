@@ -50,25 +50,12 @@ const initWebpushr = () => {
 };
 
 export default function RootLayout() {
-  const [showSplash, setShowSplash] = useState(true);
-  
-  const handleSplashFinish = () => {
-    setShowSplash(false);
-  };
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     initWebpushr();
-    
-    const initNotifications = async () => {
-      const token = await registerForPushNotificationsAsync();
-      if (token) {
-        console.log('Push notification token:', token);
-      }
-    };
 
-    initNotifications();
-
-    const cleanup = addNotificationListeners(
+    const cleanupNotifications = addNotificationListeners(
       (notification) => {
         console.log('Notification received:', notification);
       },
@@ -77,7 +64,19 @@ export default function RootLayout() {
       }
     );
 
-    return cleanup;
+    registerForPushNotificationsAsync().then((token) => {
+      if (token) {
+        console.log('Push notification token:', token);
+      }
+    }).catch((error) => {
+      console.warn('Push notification registration failed:', error);
+    });
+
+    setIsInitializing(false);
+
+    return () => {
+      cleanupNotifications();
+    };
   }, []);
 
   return (
@@ -87,12 +86,8 @@ export default function RootLayout() {
           <ErrorBoundary>
             <StatusBar style="dark" backgroundColor={colors.background} />
             
-            {/* LOGIC: Show ONLY Splash first. Once done, show the App Stack. */}
-            {showSplash ? (
-              <SplashScreen 
-                onFinish={handleSplashFinish} 
-                duration={2000} 
-              />
+            {isInitializing ? (
+              <SplashScreen />
             ) : (
               <>
                 <Stack screenOptions={{ headerShown: false }}>

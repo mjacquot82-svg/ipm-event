@@ -6,9 +6,9 @@
     "icon": "./assets/images/v2-icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/images/v2-icon.png",
+      "image": "./assets/images/ipm-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#F5F5F0"
     },
     "web": {
       "favicon": "./assets/images/v2-icon.png",

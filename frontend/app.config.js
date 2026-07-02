@@ -46,10 +46,10 @@ export default {
       [
         "expo-splash-screen",
         {
-          image: "./assets/images/splash-icon.png",
+          image: "./assets/images/ipm-logo.png",
           imageWidth: 280,
           resizeMode: "contain",
-          backgroundColor: "#2D2926"
+          backgroundColor: "#F5F5F0"
         }
       ],
       [
