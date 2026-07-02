@@ -48,6 +48,64 @@ export type BroadcastsResponse = {
   total_count: number;
 };
 
+export type AdminScheduleEvent = {
+  id: string;
+  row_number: number;
+  title: string;
+  description: string;
+  start_date: string;
+  start_time: string;
+  end_time: string;
+  category: string;
+  latitude: number | null;
+  longitude: number | null;
+  days_active: string;
+  location_name: string | null;
+};
+
+export type AdminScheduleResponse = {
+  events: AdminScheduleEvent[];
+  last_updated: string;
+  total_count: number;
+};
+
+export type ScheduleEventPayload = {
+  title: string;
+  description?: string;
+  start_date: string;
+  start_time: string;
+  end_time: string;
+  category?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  days_active?: string;
+  location_name?: string | null;
+};
+
+export type ScheduleImportProblem = {
+  row_number: number;
+  errors: string[];
+  values: Record<string, string>;
+};
+
+export type ScheduleImportRow = {
+  row_number: number;
+  data: ScheduleEventPayload;
+};
+
+export type ScheduleImportRequest = {
+  rows: ScheduleImportRow[];
+  problems: ScheduleImportProblem[];
+};
+
+export type ScheduleImportResponse = {
+  imported_count: number;
+  problem_count: number;
+  problems: ScheduleImportProblem[];
+  events: AdminScheduleEvent[];
+  last_updated: string;
+};
+
 export type LoginPayload = {
   username: string;
   password: string;
@@ -161,5 +219,42 @@ export function createBroadcast(payload: CreateBroadcastPayload) {
       message: payload.message.trim(),
       priority: payload.priority,
     }),
+  });
+}
+
+export function listScheduleEvents() {
+  return adminRequest<AdminScheduleResponse>('/api/admin/schedule');
+}
+
+export function importSchedule(payload: ScheduleImportRequest) {
+  return adminRequest<ScheduleImportResponse>('/api/admin/schedule/import', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function createScheduleEvent(payload: ScheduleEventPayload) {
+  return adminRequest<AdminScheduleResponse>('/api/admin/schedule/events', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateScheduleEvent(eventId: string, payload: ScheduleEventPayload) {
+  return adminRequest<AdminScheduleResponse>(`/api/admin/schedule/events/${encodeURIComponent(eventId)}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteScheduleEvent(eventId: string) {
+  return adminRequest<AdminScheduleResponse>(`/api/admin/schedule/events/${encodeURIComponent(eventId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export function refreshScheduleEvents() {
+  return adminRequest<AdminScheduleResponse>('/api/admin/schedule/refresh', {
+    method: 'POST',
   });
 }

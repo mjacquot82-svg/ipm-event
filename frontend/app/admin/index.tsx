@@ -1,6 +1,7 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useCallback, useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   Pressable,
@@ -15,23 +16,45 @@ import { Redirect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../../src/theme/colors';
 import {
+  AdminScheduleEvent,
   Broadcast,
   BroadcastPriority,
   createBroadcast,
   createOrganizerUser,
+  createScheduleEvent,
+  deleteScheduleEvent,
   getCurrentOrganizer,
+  importSchedule,
+  listScheduleEvents,
   listBroadcasts,
   listOrganizerUsers,
   logoutOrganizer,
   OrganizerRole,
   OrganizerUser,
+  ScheduleEventPayload,
+  ScheduleImportProblem,
+  ScheduleImportRow,
+  updateScheduleEvent,
 } from '../../src/services/adminAuthService';
 
 const NAV_ITEMS = ['Dashboard', 'Communications', 'Schedule', 'Users', 'Settings'] as const;
 const ROLES: OrganizerRole[] = ['Owner', 'Communications', 'Schedule'];
 const BROADCAST_PRIORITIES: BroadcastPriority[] = ['Normal', 'Important', 'Emergency'];
+const SCHEDULE_MAPPING_STORAGE_KEY = 'organizer_schedule_import_mapping_v1';
+const PLATFORM_FIELDS = [
+  { key: 'title', label: 'Event Title', required: true },
+  { key: 'start_date', label: 'Date', required: true },
+  { key: 'start_time', label: 'Start Time', required: true },
+  { key: 'end_time', label: 'End Time', required: true },
+  { key: 'location_name', label: 'Location', required: false },
+  { key: 'category', label: 'Category', required: false },
+  { key: 'days_active', label: 'Days Active', required: false },
+  { key: 'description', label: 'Description', required: false },
+] as const;
 
 type AdminSection = (typeof NAV_ITEMS)[number];
+type PlatformFieldKey = (typeof PLATFORM_FIELDS)[number]['key'];
+type ImportMapping = Partial<Record<PlatformFieldKey, string>>;
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
@@ -56,6 +79,24 @@ export default function AdminDashboardScreen() {
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [broadcastPriority, setBroadcastPriority] = useState<BroadcastPriority>('Normal');
   const [sendBroadcastBusy, setSendBroadcastBusy] = useState(false);
+  const [scheduleEvents, setScheduleEvents] = useState<AdminScheduleEvent[]>([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduleSearch, setScheduleSearch] = useState('');
+  const [scheduleDayFilter, setScheduleDayFilter] = useState('All');
+  const [scheduleFormEvent, setScheduleFormEvent] = useState<AdminScheduleEvent | null>(null);
+  const [scheduleFormMode, setScheduleFormMode] = useState<'closed' | 'view' | 'add' | 'edit'>('closed');
+  const [scheduleForm, setScheduleForm] = useState<ScheduleEventPayload>(createEmptySchedulePayload());
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importHeaders, setImportHeaders] = useState<string[]>([]);
+  const [importRows, setImportRows] = useState<Record<string, string>[]>([]);
+  const [importMapping, setImportMapping] = useState<ImportMapping>({});
+  const [importProblems, setImportProblems] = useState<ScheduleImportProblem[]>([]);
+  const [importPreparedRows, setImportPreparedRows] = useState<ScheduleImportRow[]>([]);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -80,6 +121,19 @@ export default function AdminDashboardScreen() {
       setBroadcastsError(err instanceof Error ? err.message : 'Unable to load broadcast history');
     } finally {
       setBroadcastsLoading(false);
+    }
+  }, []);
+
+  const loadSchedule = useCallback(async () => {
+    setScheduleLoading(true);
+    setScheduleError(null);
+    try {
+      const result = await listScheduleEvents();
+      setScheduleEvents(result.events);
+    } catch (err) {
+      setScheduleError(err instanceof Error ? err.message : 'Unable to load schedule');
+    } finally {
+      setScheduleLoading(false);
     }
   }, []);
 
@@ -115,7 +169,20 @@ export default function AdminDashboardScreen() {
     if (isAuthenticated && activeSection === 'Communications') {
       loadBroadcasts();
     }
-  }, [activeSection, isAuthenticated, loadBroadcasts, loadUsers]);
+    if (isAuthenticated && activeSection === 'Schedule') {
+      loadSchedule();
+    }
+  }, [activeSection, isAuthenticated, loadBroadcasts, loadSchedule, loadUsers]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(SCHEDULE_MAPPING_STORAGE_KEY)
+      .then((value) => {
+        if (value) {
+          setImportMapping(JSON.parse(value) as ImportMapping);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -172,6 +239,87 @@ export default function AdminDashboardScreen() {
       setBroadcastsError(err instanceof Error ? err.message : 'Unable to send broadcast');
     } finally {
       setSendBroadcastBusy(false);
+    }
+  };
+
+  const openScheduleForm = (mode: 'view' | 'add' | 'edit', event?: AdminScheduleEvent) => {
+    setScheduleFormMode(mode);
+    setScheduleFormEvent(event || null);
+    setScheduleForm(event ? scheduleEventToPayload(event) : createEmptySchedulePayload());
+    setScheduleError(null);
+  };
+
+  const handleSaveScheduleEvent = async () => {
+    if (scheduleSaving || scheduleFormMode === 'view') {
+      return;
+    }
+    setScheduleSaving(true);
+    setScheduleError(null);
+    try {
+      const result =
+        scheduleFormMode === 'edit' && scheduleFormEvent
+          ? await updateScheduleEvent(scheduleFormEvent.id, scheduleForm)
+          : await createScheduleEvent(scheduleForm);
+      setScheduleEvents(result.events);
+      setScheduleFormMode('closed');
+      setScheduleFormEvent(null);
+    } catch (err) {
+      setScheduleError(err instanceof Error ? err.message : 'Unable to save schedule event');
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
+
+  const handleDeleteScheduleEvent = async (event: AdminScheduleEvent) => {
+    if (typeof window !== 'undefined' && !window.confirm(`Delete "${event.title}"?`)) {
+      return;
+    }
+    setScheduleError(null);
+    try {
+      const result = await deleteScheduleEvent(event.id);
+      setScheduleEvents(result.events);
+    } catch (err) {
+      setScheduleError(err instanceof Error ? err.message : 'Unable to delete schedule event');
+    }
+  };
+
+  const handlePrepareImport = async () => {
+    const parsed = parseScheduleImportText(importText);
+    const mapping = normalizeImportMapping(importMapping, parsed.headers);
+    const prepared = prepareScheduleImport(parsed.rows, mapping);
+    setImportHeaders(parsed.headers);
+    setImportRows(parsed.rows);
+    setImportMapping(mapping);
+    setImportPreparedRows(prepared.rows);
+    setImportProblems(prepared.problems);
+    setImportResult(null);
+    await AsyncStorage.setItem(SCHEDULE_MAPPING_STORAGE_KEY, JSON.stringify(mapping));
+  };
+
+  const handleRunImport = async () => {
+    if (importBusy) {
+      return;
+    }
+    const prepared =
+      importPreparedRows.length || importProblems.length
+        ? { rows: importPreparedRows, problems: importProblems }
+        : prepareScheduleImport(importRows, importMapping);
+    setImportBusy(true);
+    setScheduleError(null);
+    try {
+      await AsyncStorage.setItem(SCHEDULE_MAPPING_STORAGE_KEY, JSON.stringify(importMapping));
+      const result = await importSchedule({
+        rows: prepared.rows,
+        problems: prepared.problems,
+      });
+      setScheduleEvents(result.events);
+      setImportProblems(result.problems);
+      setImportPreparedRows(prepared.rows);
+      setImportResult(`✓ ${result.imported_count} events imported`);
+    } catch (err) {
+      setScheduleError(err instanceof Error ? err.message : 'Unable to import schedule');
+    } finally {
+      setImportBusy(false);
     }
   };
 
@@ -256,7 +404,45 @@ export default function AdminDashboardScreen() {
             onSend={handleSendBroadcast}
           />
         )}
-        {activeSection === 'Schedule' && <PlaceholderPanel title="Schedule" />}
+        {activeSection === 'Schedule' && (
+          <ScheduleManagementPanel
+            events={scheduleEvents}
+            loading={scheduleLoading}
+            error={scheduleError}
+            search={scheduleSearch}
+            dayFilter={scheduleDayFilter}
+            formMode={scheduleFormMode}
+            formEvent={scheduleFormEvent}
+            form={scheduleForm}
+            saving={scheduleSaving}
+            importOpen={importOpen}
+            importText={importText}
+            importHeaders={importHeaders}
+            importMapping={importMapping}
+            importProblems={importProblems}
+            importPreparedRows={importPreparedRows}
+            importBusy={importBusy}
+            importResult={importResult}
+            onRefresh={loadSchedule}
+            onSearchChange={setScheduleSearch}
+            onDayFilterChange={setScheduleDayFilter}
+            onOpenForm={openScheduleForm}
+            onCloseForm={() => setScheduleFormMode('closed')}
+            onFormChange={setScheduleForm}
+            onSave={handleSaveScheduleEvent}
+            onDelete={handleDeleteScheduleEvent}
+            onImportOpenChange={setImportOpen}
+            onImportTextChange={setImportText}
+            onImportMappingChange={(mapping) => {
+              setImportMapping(mapping);
+              const prepared = prepareScheduleImport(importRows, mapping);
+              setImportPreparedRows(prepared.rows);
+              setImportProblems(prepared.problems);
+            }}
+            onPrepareImport={handlePrepareImport}
+            onRunImport={handleRunImport}
+          />
+        )}
         {activeSection === 'Settings' && <SettingsPanel currentUser={currentUser} />}
         {activeSection === 'Users' && (
           <UsersPanel
@@ -340,11 +526,426 @@ function InfoPanel({
   );
 }
 
-function PlaceholderPanel({ title }: { title: string }) {
+function createEmptySchedulePayload(): ScheduleEventPayload {
+  return {
+    title: '',
+    description: '',
+    start_date: '',
+    start_time: '',
+    end_time: '',
+    category: 'Event',
+    latitude: null,
+    longitude: null,
+    days_active: '',
+    location_name: '',
+  };
+}
+
+function scheduleEventToPayload(event: AdminScheduleEvent): ScheduleEventPayload {
+  return {
+    title: event.title,
+    description: event.description,
+    start_date: event.start_date,
+    start_time: event.start_time,
+    end_time: event.end_time,
+    category: event.category,
+    latitude: event.latitude,
+    longitude: event.longitude,
+    days_active: event.days_active,
+    location_name: event.location_name || '',
+  };
+}
+
+function getScheduleDay(event: AdminScheduleEvent) {
+  return event.days_active || event.start_date || 'Unscheduled';
+}
+
+function parseScheduleImportText(value: string) {
+  const lines = value
+    .replace(/\r/g, '')
+    .split('\n')
+    .filter((line) => line.trim().length > 0);
+
+  if (lines.length === 0) {
+    return { headers: [], rows: [] as Record<string, string>[] };
+  }
+
+  const delimiter = lines[0].includes('\t') ? '\t' : ',';
+  const headers = splitImportLine(lines[0], delimiter).map((header) => header.trim()).filter(Boolean);
+  const rows = lines.slice(1).map((line) => {
+    const cells = splitImportLine(line, delimiter);
+    return headers.reduce<Record<string, string>>((row, header, index) => {
+      row[header] = (cells[index] || '').trim();
+      return row;
+    }, {});
+  });
+
+  return { headers, rows };
+}
+
+function splitImportLine(line: string, delimiter: string) {
+  if (delimiter === '\t') {
+    return line.split('\t');
+  }
+
+  const cells: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+    if (char === '"' && next === '"') {
+      current += '"';
+      index += 1;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      cells.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  cells.push(current);
+  return cells;
+}
+
+function normalizeImportMapping(mapping: ImportMapping, headers: string[]): ImportMapping {
+  const nextMapping: ImportMapping = { ...mapping };
+  const normalizedHeaders = headers.map((header) => ({ header, value: normalizeHeader(header) }));
+
+  PLATFORM_FIELDS.forEach((field) => {
+    if (nextMapping[field.key] && headers.includes(nextMapping[field.key] || '')) {
+      return;
+    }
+    const match = normalizedHeaders.find(({ value }) => {
+      if (field.key === 'title') return ['name', 'eventname', 'eventtitle', 'title'].includes(value);
+      if (field.key === 'start_date') return ['date', 'startdate', 'eventdate'].includes(value);
+      if (field.key === 'start_time') return ['start', 'starttime', 'eventstart'].includes(value);
+      if (field.key === 'end_time') return ['end', 'endtime', 'eventend'].includes(value);
+      if (field.key === 'location_name') return ['venue', 'location', 'locationname'].includes(value);
+      if (field.key === 'category') return ['category', 'type'].includes(value);
+      if (field.key === 'days_active') return ['daysactive', 'day', 'days'].includes(value);
+      if (field.key === 'description') return ['description', 'details', 'notes'].includes(value);
+      return false;
+    });
+    if (match) {
+      nextMapping[field.key] = match.header;
+    }
+  });
+
+  return nextMapping;
+}
+
+function normalizeHeader(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function prepareScheduleImport(rows: Record<string, string>[], mapping: ImportMapping) {
+  const preparedRows: ScheduleImportRow[] = [];
+  const problems: ScheduleImportProblem[] = [];
+
+  rows.forEach((row, index) => {
+    if (Object.values(row).every((value) => !value.trim())) {
+      return;
+    }
+
+    const payload = createEmptySchedulePayload();
+    PLATFORM_FIELDS.forEach((field) => {
+      const column = mapping[field.key];
+      const value = column ? row[column] || '' : '';
+      if (field.key === 'title') payload.title = value;
+      if (field.key === 'start_date') payload.start_date = value;
+      if (field.key === 'start_time') payload.start_time = value;
+      if (field.key === 'end_time') payload.end_time = value;
+      if (field.key === 'location_name') payload.location_name = value;
+      if (field.key === 'category') payload.category = value || 'Event';
+      if (field.key === 'days_active') payload.days_active = value;
+      if (field.key === 'description') payload.description = value;
+    });
+
+    const errors = [];
+    if (!payload.title.trim()) errors.push('Event Title is required');
+    if (!payload.start_date.trim()) errors.push('Date is required');
+    if (!payload.start_time.trim()) errors.push('Start Time is required');
+    if (!payload.end_time.trim()) errors.push('End Time is required');
+
+    if (errors.length) {
+      problems.push({ row_number: index + 2, errors, values: row });
+      return;
+    }
+
+    preparedRows.push({ row_number: index + 2, data: payload });
+  });
+
+  return { rows: preparedRows, problems };
+}
+
+function ScheduleManagementPanel({
+  events,
+  loading,
+  error,
+  search,
+  dayFilter,
+  formMode,
+  formEvent,
+  form,
+  saving,
+  importOpen,
+  importText,
+  importHeaders,
+  importMapping,
+  importProblems,
+  importPreparedRows,
+  importBusy,
+  importResult,
+  onRefresh,
+  onSearchChange,
+  onDayFilterChange,
+  onOpenForm,
+  onCloseForm,
+  onFormChange,
+  onSave,
+  onDelete,
+  onImportOpenChange,
+  onImportTextChange,
+  onImportMappingChange,
+  onPrepareImport,
+  onRunImport,
+}: {
+  events: AdminScheduleEvent[];
+  loading: boolean;
+  error: string | null;
+  search: string;
+  dayFilter: string;
+  formMode: 'closed' | 'view' | 'add' | 'edit';
+  formEvent: AdminScheduleEvent | null;
+  form: ScheduleEventPayload;
+  saving: boolean;
+  importOpen: boolean;
+  importText: string;
+  importHeaders: string[];
+  importMapping: ImportMapping;
+  importProblems: ScheduleImportProblem[];
+  importPreparedRows: ScheduleImportRow[];
+  importBusy: boolean;
+  importResult: string | null;
+  onRefresh: () => void;
+  onSearchChange: (value: string) => void;
+  onDayFilterChange: (value: string) => void;
+  onOpenForm: (mode: 'view' | 'add' | 'edit', event?: AdminScheduleEvent) => void;
+  onCloseForm: () => void;
+  onFormChange: (value: ScheduleEventPayload) => void;
+  onSave: () => void;
+  onDelete: (event: AdminScheduleEvent) => void;
+  onImportOpenChange: (value: boolean) => void;
+  onImportTextChange: (value: string) => void;
+  onImportMappingChange: (value: ImportMapping) => void;
+  onPrepareImport: () => void;
+  onRunImport: () => void;
+}) {
+  const days = ['All', ...Array.from(new Set(events.map(getScheduleDay))).filter(Boolean)];
+  const normalizedSearch = search.trim().toLowerCase();
+  const visibleEvents = events.filter((event) => {
+    const matchesSearch =
+      !normalizedSearch ||
+      [event.title, event.location_name || '', event.category, event.start_date]
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedSearch);
+    const matchesDay = dayFilter === 'All' || getScheduleDay(event) === dayFilter;
+    return matchesSearch && matchesDay;
+  });
+  const isReadOnly = formMode === 'view';
+
   return (
-    <View style={styles.panel}>
-      <Text style={styles.panelTitle}>{title}</Text>
-      <Text style={styles.panelText}>This area is protected and ready for the next milestone.</Text>
+    <View style={styles.scheduleLayout}>
+      <View style={styles.scheduleToolbar}>
+        <TextInput
+          value={search}
+          onChangeText={onSearchChange}
+          placeholder="Search"
+          placeholderTextColor={colors.textMuted}
+          style={[styles.input, styles.scheduleSearchInput]}
+        />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayFilterList}>
+          {days.map((day) => (
+            <Pressable
+              key={day}
+              style={[styles.dayFilterButton, dayFilter === day && styles.dayFilterButtonActive]}
+              onPress={() => onDayFilterChange(day)}
+            >
+              <Text style={[styles.dayFilterText, dayFilter === day && styles.dayFilterTextActive]}>{day}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        <Pressable style={styles.secondaryButton} onPress={() => onOpenForm('add')}>
+          <Feather name="plus" size={17} color={colors.primary} />
+          <Text style={styles.secondaryButtonText}>Add Event</Text>
+        </Pressable>
+        <Pressable style={styles.primaryButtonSmall} onPress={() => onImportOpenChange(!importOpen)}>
+          <Feather name="upload" size={17} color="#FFFFFF" />
+          <Text style={styles.primaryButtonText}>Import Schedule</Text>
+        </Pressable>
+      </View>
+
+      {error && (
+        <View style={styles.errorBox}>
+          <Feather name="alert-circle" size={16} color={colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      {importOpen && (
+        <View style={styles.panel}>
+          <Text style={styles.panelTitle}>Import Schedule</Text>
+          <TextInput
+            value={importText}
+            onChangeText={onImportTextChange}
+            placeholder="Paste rows from Excel, Google Sheets, or CSV"
+            placeholderTextColor={colors.textMuted}
+            style={[styles.input, styles.importTextArea]}
+            multiline
+            textAlignVertical="top"
+          />
+          <View style={styles.actionRow}>
+            <Pressable style={styles.secondaryButton} onPress={onPrepareImport}>
+              <Feather name="columns" size={17} color={colors.primary} />
+              <Text style={styles.secondaryButtonText}>Map Columns</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.primaryButtonSmall, importBusy && styles.primaryButtonDisabled]}
+              onPress={onRunImport}
+              disabled={importBusy || importPreparedRows.length === 0}
+            >
+              {importBusy ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Feather name="check" size={17} color="#FFFFFF" />
+                  <Text style={styles.primaryButtonText}>Import</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+
+          {importHeaders.length > 0 && (
+            <View style={styles.mappingGrid}>
+              {PLATFORM_FIELDS.map((field) => (
+                <View key={field.key} style={styles.mappingRow}>
+                  <Text style={styles.mappingLabel}>
+                    {field.label}{field.required ? ' *' : ''}
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mappingOptions}>
+                    <Pressable
+                      style={[styles.mappingOption, !importMapping[field.key] && styles.mappingOptionActive]}
+                      onPress={() => onImportMappingChange({ ...importMapping, [field.key]: undefined })}
+                    >
+                      <Text style={[styles.mappingOptionText, !importMapping[field.key] && styles.mappingOptionTextActive]}>
+                        None
+                      </Text>
+                    </Pressable>
+                    {importHeaders.map((header) => (
+                      <Pressable
+                        key={header}
+                        style={[styles.mappingOption, importMapping[field.key] === header && styles.mappingOptionActive]}
+                        onPress={() => onImportMappingChange({ ...importMapping, [field.key]: header })}
+                      >
+                        <Text style={[styles.mappingOptionText, importMapping[field.key] === header && styles.mappingOptionTextActive]}>
+                          {header}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {(importResult || importPreparedRows.length > 0 || importProblems.length > 0) && (
+            <View style={styles.importSummary}>
+              {importResult && <Text style={styles.importSuccess}>{importResult}</Text>}
+              {importPreparedRows.length > 0 && !importResult && (
+                <Text style={styles.importSuccess}>✓ {importPreparedRows.length} events ready</Text>
+              )}
+              {importProblems.length > 0 && (
+                <Text style={styles.importWarning}>⚠ {importProblems.length} rows require attention</Text>
+              )}
+              {importProblems.slice(0, 5).map((problem) => (
+                <Text key={problem.row_number} style={styles.problemText}>
+                  Row {problem.row_number}: {problem.errors.join(', ')}
+                </Text>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
+
+      {formMode !== 'closed' && (
+        <View style={styles.panel}>
+          <View style={styles.panelHeader}>
+            <Text style={styles.panelTitle}>
+              {formMode === 'add' ? 'Add Event' : formMode === 'edit' ? 'Edit Event' : 'Event Details'}
+            </Text>
+            <Pressable style={styles.iconButton} onPress={onCloseForm}>
+              <Feather name="x" size={18} color={colors.primary} />
+            </Pressable>
+          </View>
+          <View style={styles.formGrid}>
+            <TextInput value={form.title} onChangeText={(title) => onFormChange({ ...form, title })} placeholder="Event title" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
+            <TextInput value={form.start_date} onChangeText={(start_date) => onFormChange({ ...form, start_date })} placeholder="Date" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
+            <TextInput value={form.start_time} onChangeText={(start_time) => onFormChange({ ...form, start_time })} placeholder="Start time" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
+            <TextInput value={form.end_time} onChangeText={(end_time) => onFormChange({ ...form, end_time })} placeholder="End time" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
+            <TextInput value={form.location_name || ''} onChangeText={(location_name) => onFormChange({ ...form, location_name })} placeholder="Location" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
+            <TextInput value={form.category || ''} onChangeText={(category) => onFormChange({ ...form, category })} placeholder="Category" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
+            <TextInput value={form.days_active || ''} onChangeText={(days_active) => onFormChange({ ...form, days_active })} placeholder="Day" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
+            <TextInput value={form.description || ''} onChangeText={(description) => onFormChange({ ...form, description })} placeholder="Description" placeholderTextColor={colors.textMuted} style={[styles.input, styles.messageInput]} multiline editable={!isReadOnly} />
+          </View>
+          {formEvent && <Text style={styles.panelText}>Row {formEvent.row_number}</Text>}
+          {formMode !== 'view' && (
+            <Pressable style={[styles.primaryButton, saving && styles.primaryButtonDisabled]} onPress={onSave} disabled={saving}>
+              {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Save Event</Text>}
+            </Pressable>
+          )}
+        </View>
+      )}
+
+      <View style={styles.panel}>
+        <View style={styles.panelHeader}>
+          <Text style={styles.panelTitle}>Event List</Text>
+          <Pressable style={styles.iconButton} onPress={onRefresh}>
+            <Feather name="refresh-cw" size={18} color={colors.primary} />
+          </Pressable>
+        </View>
+        {loading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : (
+          <View style={styles.scheduleList}>
+            {visibleEvents.map((event) => (
+              <View key={event.id} style={styles.scheduleRow}>
+                <View style={styles.scheduleTitleCell}>
+                  <Text style={styles.scheduleEventTitle}>{event.title}</Text>
+                  <Text style={styles.scheduleMeta}>{event.start_date}</Text>
+                </View>
+                <Text style={styles.scheduleCell}>{event.start_time}</Text>
+                <Text style={styles.scheduleCell}>{event.location_name || 'No location'}</Text>
+                <View style={styles.scheduleActions}>
+                  <Pressable style={styles.textAction} onPress={() => onOpenForm('view', event)}>
+                    <Text style={styles.textActionLabel}>View</Text>
+                  </Pressable>
+                  <Pressable style={styles.textAction} onPress={() => onOpenForm('edit', event)}>
+                    <Text style={styles.textActionLabel}>Edit</Text>
+                  </Pressable>
+                  <Pressable style={styles.textAction} onPress={() => onDelete(event)}>
+                    <Text style={[styles.textActionLabel, styles.deleteActionLabel]}>Delete</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+            {visibleEvents.length === 0 && <Text style={styles.panelText}>No events found.</Text>}
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -843,6 +1444,199 @@ const styles = StyleSheet.create({
   },
   communicationsLayout: {
     gap: 16,
+  },
+  scheduleLayout: {
+    gap: 16,
+  },
+  scheduleToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  scheduleSearchInput: {
+    minWidth: 220,
+    flex: 1,
+  },
+  dayFilterList: {
+    gap: 8,
+    alignItems: 'center',
+  },
+  dayFilterButton: {
+    minHeight: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    backgroundColor: colors.surface,
+  },
+  dayFilterButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  dayFilterText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  dayFilterTextActive: {
+    color: '#FFFFFF',
+  },
+  secondaryButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.surface,
+  },
+  secondaryButtonText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  primaryButtonSmall: {
+    minHeight: 42,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
+  },
+  importTextArea: {
+    minHeight: 150,
+    marginTop: 14,
+    paddingTop: 12,
+  },
+  mappingGrid: {
+    marginTop: 14,
+    gap: 10,
+  },
+  mappingRow: {
+    gap: 6,
+  },
+  mappingLabel: {
+    color: colors.textPrimary,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  mappingOptions: {
+    gap: 8,
+  },
+  mappingOption: {
+    minHeight: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceElevated,
+  },
+  mappingOptionActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  mappingOptionText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  mappingOptionTextActive: {
+    color: '#FFFFFF',
+  },
+  importSummary: {
+    marginTop: 14,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceHighlight,
+    padding: 12,
+    gap: 6,
+  },
+  importSuccess: {
+    color: colors.success,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  importWarning: {
+    color: colors.warning,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  problemText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+  },
+  formGrid: {
+    gap: 10,
+    marginBottom: 12,
+  },
+  scheduleList: {
+    gap: 10,
+  },
+  scheduleRow: {
+    minHeight: 66,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceElevated,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  scheduleTitleCell: {
+    flex: 2,
+    minWidth: 220,
+  },
+  scheduleEventTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  scheduleMeta: {
+    marginTop: 3,
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  scheduleCell: {
+    minWidth: 110,
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  scheduleActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  textAction: {
+    minHeight: 34,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceHighlight,
+  },
+  textActionLabel: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  deleteActionLabel: {
+    color: colors.error,
   },
   readOnlyNotice: {
     marginTop: 14,

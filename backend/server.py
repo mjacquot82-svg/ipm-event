@@ -19,6 +19,11 @@ import json
 import secrets
 import base64
 import hmac
+import re
+import time
+from urllib.parse import quote
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
 
 
 ROOT_DIR = Path(__file__).parent
@@ -107,6 +112,52 @@ class ScheduleResponse(BaseModel):
     last_updated: datetime
     total_count: int
 
+class AdminScheduleEvent(ScheduleEvent):
+    row_number: int
+
+class AdminScheduleResponse(BaseModel):
+    events: List[AdminScheduleEvent]
+    last_updated: datetime
+    total_count: int
+
+class ScheduleEventPayload(BaseModel):
+    title: str
+    description: Optional[str] = ""
+    start_date: str
+    start_time: str
+    end_time: str
+    category: Optional[str] = "Event"
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    days_active: Optional[str] = ""
+    location_name: Optional[str] = None
+
+class ScheduleImportRow(BaseModel):
+    row_number: int
+    data: ScheduleEventPayload
+
+class ScheduleImportProblem(BaseModel):
+    row_number: int
+    errors: List[str]
+    values: Dict[str, str] = Field(default_factory=dict)
+
+class ScheduleImportRequest(BaseModel):
+    rows: List[ScheduleImportRow]
+    problems: List[ScheduleImportProblem] = Field(default_factory=list)
+
+class ScheduleImportResponse(BaseModel):
+    imported_count: int
+    problem_count: int
+    problems: List[ScheduleImportProblem]
+    events: List[AdminScheduleEvent]
+    last_updated: datetime
+
+class ScheduleRefreshResponse(BaseModel):
+    status: str
+    events: List[AdminScheduleEvent]
+    last_updated: datetime
+    total_count: int
+
 class Vendor(BaseModel):
     id: str
     name: str
@@ -185,6 +236,18 @@ class BroadcastsResponse(BaseModel):
     total_count: int
 
 SCHEDULE_REQUIRED_FIELDS = ("Name", "Start Date", "Event Start", "Event End")
+SCHEDULE_SHEET_HEADERS = (
+    "Name",
+    "Start Date",
+    "Event Start",
+    "Event End",
+    "Category",
+    "Days_Active",
+    "Description",
+    "Location",
+    "Lat",
+    "Long",
+)
 SCHEDULE_CONTENT_FIELDS = (
     "Name",
     "Start Date",
@@ -212,6 +275,219 @@ def is_valid_schedule_row(row: Dict[str, str]) -> bool:
     if not has_schedule_content(row):
         return False
     return all(get_schedule_cell(row, field) for field in SCHEDULE_REQUIRED_FIELDS)
+
+
+def schedule_event_id(row_index: int, name: str) -> str:
+    slug = name.replace(" ", "_").lower()
+    return f"gs_{row_index}_{slug}"
+
+
+def schedule_event_from_row(row: Dict[str, str], row_index: int) -> AdminScheduleEvent:
+    try:
+        lat = float(get_schedule_cell(row, "Lat")) if get_schedule_cell(row, "Lat") else None
+        lng = float(get_schedule_cell(row, "Long")) if get_schedule_cell(row, "Long") else None
+    except ValueError:
+        lat, lng = None, None
+
+    title = get_schedule_cell(row, "Name", "Untitled Event")
+    return AdminScheduleEvent(
+        id=schedule_event_id(row_index, title),
+        row_number=row_index + 2,
+        title=title,
+        description=get_schedule_cell(row, "Description"),
+        start_date=get_schedule_cell(row, "Start Date"),
+        start_time=get_schedule_cell(row, "Event Start"),
+        end_time=get_schedule_cell(row, "Event End"),
+        category=get_schedule_cell(row, "Category", "Event"),
+        latitude=lat,
+        longitude=lng,
+        days_active=get_schedule_cell(row, "Days_Active"),
+        location_name=get_schedule_cell(row, "Location"),
+    )
+
+
+def schedule_payload_to_sheet_row(payload: ScheduleEventPayload) -> List[str]:
+    return [
+        payload.title.strip(),
+        payload.start_date.strip(),
+        payload.start_time.strip(),
+        payload.end_time.strip(),
+        (payload.category or "Event").strip(),
+        (payload.days_active or "").strip(),
+        (payload.description or "").strip(),
+        (payload.location_name or "").strip(),
+        "" if payload.latitude is None else str(payload.latitude),
+        "" if payload.longitude is None else str(payload.longitude),
+    ]
+
+
+def get_schedule_row_number(event_id: str) -> int:
+    match = re.match(r"^gs_(\d+)_", event_id)
+    if not match:
+        raise HTTPException(status_code=400, detail="Invalid schedule event id")
+    return int(match.group(1)) + 2
+
+
+def get_google_service_account_info() -> dict:
+    raw_value = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
+    if not raw_value:
+        raise HTTPException(
+            status_code=503,
+            detail="Google Sheets write access is not configured",
+        )
+    try:
+        return json.loads(raw_value)
+    except json.JSONDecodeError:
+        try:
+            return json.loads(base64.b64decode(raw_value).decode("utf-8"))
+        except Exception as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Google Sheets service account configuration is invalid",
+            ) from exc
+
+
+def get_schedule_spreadsheet_id() -> str:
+    return os.environ.get("SCHEDULE_SHEET_ID", EVENTS_SHEET_ID)
+
+
+async def get_google_access_token() -> str:
+    service_account = get_google_service_account_info()
+    private_key = service_account.get("private_key")
+    client_email = service_account.get("client_email")
+    if not private_key or not client_email:
+        raise HTTPException(
+            status_code=503,
+            detail="Google Sheets service account is missing required fields",
+        )
+
+    now = int(time.time())
+    header = {"alg": "RS256", "typ": "JWT"}
+    claim = {
+        "iss": client_email,
+        "scope": "https://www.googleapis.com/auth/spreadsheets",
+        "aud": "https://oauth2.googleapis.com/token",
+        "iat": now,
+        "exp": now + 3600,
+    }
+
+    def encode_segment(value: dict) -> str:
+        data = json.dumps(value, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+    signing_input = f"{encode_segment(header)}.{encode_segment(claim)}".encode("ascii")
+    key = serialization.load_pem_private_key(private_key.encode("utf-8"), password=None)
+    signature = key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256())
+    assertion = f"{signing_input.decode('ascii')}.{base64.urlsafe_b64encode(signature).rstrip(b'=').decode('ascii')}"
+
+    async with httpx.AsyncClient() as http_client:
+        response = await http_client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                "assertion": assertion,
+            },
+            timeout=30.0,
+        )
+    if response.status_code >= 400:
+        logger.error("Google token request failed: %s", response.text)
+        raise HTTPException(status_code=502, detail="Google Sheets authentication failed")
+    return response.json()["access_token"]
+
+
+async def google_sheets_request(method: str, path: str, **kwargs) -> dict:
+    token = await get_google_access_token()
+    async with httpx.AsyncClient() as http_client:
+        response = await http_client.request(
+            method,
+            f"https://sheets.googleapis.com/v4/spreadsheets/{get_schedule_spreadsheet_id()}{path}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30.0,
+            **kwargs,
+        )
+    if response.status_code >= 400:
+        logger.error("Google Sheets API request failed: %s", response.text)
+        raise HTTPException(status_code=502, detail="Google Sheets write request failed")
+    return response.json() if response.content else {}
+
+
+async def get_schedule_sheet_title() -> str:
+    configured_title = os.environ.get("SCHEDULE_SHEET_NAME")
+    if configured_title:
+        return configured_title
+    metadata = await google_sheets_request("GET", "?fields=sheets.properties.title")
+    sheets = metadata.get("sheets", [])
+    if not sheets:
+        raise HTTPException(status_code=502, detail="Schedule spreadsheet has no sheets")
+    return sheets[0]["properties"]["title"]
+
+
+async def get_admin_schedule_events() -> AdminScheduleResponse:
+    async with httpx.AsyncClient(follow_redirects=True) as http_client:
+        response = await http_client.get(EVENTS_SHEET_CSV_URL, timeout=30.0)
+        response.raise_for_status()
+
+    reader = csv.DictReader(StringIO(response.text))
+    events = []
+    for idx, row in enumerate(reader):
+        if not is_valid_schedule_row(row):
+            if has_schedule_content(row):
+                logger.warning("Skipping invalid schedule row %s: missing required fields", idx + 2)
+            continue
+        events.append(schedule_event_from_row(row, idx))
+
+    return AdminScheduleResponse(
+        events=events,
+        last_updated=datetime.utcnow(),
+        total_count=len(events),
+    )
+
+
+async def replace_schedule_sheet(rows: List[ScheduleImportRow]) -> AdminScheduleResponse:
+    sheet_title = await get_schedule_sheet_title()
+    row_values = [SCHEDULE_SHEET_HEADERS] + [
+        schedule_payload_to_sheet_row(row.data) for row in rows
+    ]
+    clear_range = quote(f"{sheet_title}!A:J", safe="")
+    await google_sheets_request("POST", f"/values/{clear_range}:clear")
+    encoded_range = quote(f"{sheet_title}!A1:J{max(len(row_values), 1)}", safe="")
+    await google_sheets_request(
+        "PUT",
+        f"/values/{encoded_range}?valueInputOption=USER_ENTERED",
+        json={"values": row_values},
+    )
+    return await get_admin_schedule_events()
+
+
+async def append_schedule_event(payload: ScheduleEventPayload) -> AdminScheduleResponse:
+    sheet_title = await get_schedule_sheet_title()
+    encoded_range = quote(f"{sheet_title}!A:J", safe="")
+    await google_sheets_request(
+        "POST",
+        f"/values/{encoded_range}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS",
+        json={"values": [schedule_payload_to_sheet_row(payload)]},
+    )
+    return await get_admin_schedule_events()
+
+
+async def update_schedule_event_row(event_id: str, payload: ScheduleEventPayload) -> AdminScheduleResponse:
+    row_number = get_schedule_row_number(event_id)
+    sheet_title = await get_schedule_sheet_title()
+    encoded_range = quote(f"{sheet_title}!A{row_number}:J{row_number}", safe="")
+    await google_sheets_request(
+        "PUT",
+        f"/values/{encoded_range}?valueInputOption=USER_ENTERED",
+        json={"values": [schedule_payload_to_sheet_row(payload)]},
+    )
+    return await get_admin_schedule_events()
+
+
+async def clear_schedule_event_row(event_id: str) -> AdminScheduleResponse:
+    row_number = get_schedule_row_number(event_id)
+    sheet_title = await get_schedule_sheet_title()
+    encoded_range = quote(f"{sheet_title}!A{row_number}:J{row_number}", safe="")
+    await google_sheets_request("POST", f"/values/{encoded_range}:clear")
+    return await get_admin_schedule_events()
 
 
 def normalize_username(username: str) -> str:
@@ -308,6 +584,14 @@ def require_broadcast_sender_role(user: dict):
         raise HTTPException(
             status_code=403,
             detail="Your organizer role can view broadcasts but cannot send them",
+        )
+
+
+def require_schedule_manager_role(user: dict):
+    if user.get("role") not in ("Owner", "Schedule"):
+        raise HTTPException(
+            status_code=403,
+            detail="Your organizer role cannot manage schedule events",
         )
 
 
@@ -705,6 +989,73 @@ async def list_broadcasts(current_user: dict = Depends(get_current_organizer_use
         broadcasts=public_broadcasts,
         total_count=len(public_broadcasts),
     )
+
+
+@api_router.get("/admin/schedule", response_model=AdminScheduleResponse)
+async def list_admin_schedule(current_user: dict = Depends(get_current_organizer_user)):
+    require_schedule_manager_role(current_user)
+    try:
+        return await get_admin_schedule_events()
+    except httpx.HTTPError as e:
+        logger.error("Failed to fetch schedule sheet for admin: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch schedule data")
+
+
+@api_router.post("/admin/schedule/import", response_model=ScheduleImportResponse)
+async def import_admin_schedule(
+    data: ScheduleImportRequest,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_schedule_manager_role(current_user)
+    schedule = await replace_schedule_sheet(data.rows)
+    return ScheduleImportResponse(
+        imported_count=len(data.rows),
+        problem_count=len(data.problems),
+        problems=data.problems,
+        events=schedule.events,
+        last_updated=schedule.last_updated,
+    )
+
+
+@api_router.post("/admin/schedule/events", response_model=AdminScheduleResponse)
+async def create_admin_schedule_event(
+    data: ScheduleEventPayload,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_schedule_manager_role(current_user)
+    return await append_schedule_event(data)
+
+
+@api_router.put("/admin/schedule/events/{event_id}", response_model=AdminScheduleResponse)
+async def update_admin_schedule_event(
+    event_id: str,
+    data: ScheduleEventPayload,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_schedule_manager_role(current_user)
+    return await update_schedule_event_row(event_id, data)
+
+
+@api_router.delete("/admin/schedule/events/{event_id}", response_model=AdminScheduleResponse)
+async def delete_admin_schedule_event(
+    event_id: str,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_schedule_manager_role(current_user)
+    return await clear_schedule_event_row(event_id)
+
+
+@api_router.post("/admin/schedule/refresh", response_model=ScheduleRefreshResponse)
+async def refresh_admin_schedule(current_user: dict = Depends(get_current_organizer_user)):
+    require_schedule_manager_role(current_user)
+    schedule = await get_admin_schedule_events()
+    return ScheduleRefreshResponse(
+        status="success",
+        events=schedule.events,
+        last_updated=schedule.last_updated,
+        total_count=schedule.total_count,
+    )
+
 
 @api_router.get("/schedule", response_model=ScheduleResponse)
 async def get_schedule():
