@@ -1,0 +1,28 @@
+# Block all search engines from indexing
+User-agent: *
+Disallow: /
+
+# Explicitly block common crawlers
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: Slurp
+Disallow: /
+
+User-agent: DuckDuckBot
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: YandexBot
+Disallow: /
+
+User-agent: facebookexternalhit
+Disallow: /
+
+User-agent: Twitterbot
+Disallow: /
