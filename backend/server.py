@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import PlainTextResponse, FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -7,15 +7,18 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Literal
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 import httpx
 import csv
 from io import StringIO
 import asyncio
 import hashlib
 import json
+import secrets
+import base64
+import hmac
 
 
 ROOT_DIR = Path(__file__).parent
@@ -49,6 +52,26 @@ WEBPUSHR_SW_CONTENT = "importScripts('https://cdn.webpushr.com/sw-server.min.js'
 # Cron job settings
 CHECK_INTERVAL_SECONDS = 300  # Check every 5 minutes
 cached_events_hash: str = ""
+
+# Organizer portal authentication settings
+DEFAULT_EVENT_ID = os.environ.get("DEFAULT_EVENT_ID", "ipm-2026")
+ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
+ADMIN_SESSION_DAYS = int(os.environ.get("ADMIN_SESSION_DAYS", "7"))
+ADMIN_COOKIE_SECURE = os.environ.get("ADMIN_COOKIE_SECURE", "true").lower() == "true"
+PASSWORD_HASH_ITERATIONS = 260000
+DEFAULT_CORS_ORIGINS = [
+    "https://theipm.ca",
+    "https://www.theipm.ca",
+    "http://localhost:8081",
+    "http://localhost:19006",
+    "http://localhost:3000",
+]
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ORIGINS", ",".join(DEFAULT_CORS_ORIGINS)).split(",")
+    if origin.strip()
+]
+CORS_ORIGIN_REGEX = os.environ.get("CORS_ORIGIN_REGEX", r"https://.*\.netlify\.app")
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -98,6 +121,44 @@ class VendorsResponse(BaseModel):
     last_updated: datetime
     total_count: int
 
+OrganizerRole = Literal["Owner", "Communications", "Schedule"]
+
+class OrganizerUserPublic(BaseModel):
+    id: str
+    username: str
+    display_name: str
+    role: OrganizerRole
+    event_id: str
+    is_active: bool = True
+    created_at: datetime
+    updated_at: datetime
+    last_login_at: Optional[datetime] = None
+
+class OrganizerLoginRequest(BaseModel):
+    username: str
+    password: str
+    event_id: Optional[str] = None
+
+class OrganizerBootstrapRequest(BaseModel):
+    username: str
+    password: str
+    display_name: Optional[str] = None
+    event_id: Optional[str] = None
+
+class OrganizerCreateUserRequest(BaseModel):
+    username: str
+    password: str
+    display_name: Optional[str] = None
+    role: OrganizerRole
+    event_id: Optional[str] = None
+
+class OrganizerAuthResponse(BaseModel):
+    user: OrganizerUserPublic
+
+class OrganizerUsersResponse(BaseModel):
+    users: List[OrganizerUserPublic]
+    total_count: int
+
 SCHEDULE_REQUIRED_FIELDS = ("Name", "Start Date", "Event Start", "Event End")
 SCHEDULE_CONTENT_FIELDS = (
     "Name",
@@ -126,6 +187,92 @@ def is_valid_schedule_row(row: Dict[str, str]) -> bool:
     if not has_schedule_content(row):
         return False
     return all(get_schedule_cell(row, field) for field in SCHEDULE_REQUIRED_FIELDS)
+
+
+def normalize_username(username: str) -> str:
+    return username.strip().lower()
+
+
+def get_event_id(event_id: Optional[str] = None) -> str:
+    return (event_id or DEFAULT_EVENT_ID).strip()
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    password_hash = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt,
+        PASSWORD_HASH_ITERATIONS,
+    )
+    return "pbkdf2_sha256${}${}${}".format(
+        PASSWORD_HASH_ITERATIONS,
+        base64.b64encode(salt).decode("ascii"),
+        base64.b64encode(password_hash).decode("ascii"),
+    )
+
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    try:
+        algorithm, iterations, salt, expected_hash = stored_hash.split("$", 3)
+        if algorithm != "pbkdf2_sha256":
+            return False
+        password_hash = hashlib.pbkdf2_hmac(
+            "sha256",
+            password.encode("utf-8"),
+            base64.b64decode(salt.encode("ascii")),
+            int(iterations),
+        )
+        return hmac.compare_digest(
+            base64.b64encode(password_hash).decode("ascii"),
+            expected_hash,
+        )
+    except Exception:
+        return False
+
+
+def create_session_token() -> str:
+    return secrets.token_urlsafe(48)
+
+
+def hash_session_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def public_organizer_user(user: dict) -> OrganizerUserPublic:
+    return OrganizerUserPublic(
+        id=user["id"],
+        username=user["username"],
+        display_name=user.get("display_name") or user["username"],
+        role=user["role"],
+        event_id=user.get("event_id", DEFAULT_EVENT_ID),
+        is_active=user.get("is_active", True),
+        created_at=user.get("created_at", datetime.utcnow()),
+        updated_at=user.get("updated_at", datetime.utcnow()),
+        last_login_at=user.get("last_login_at"),
+    )
+
+
+def set_admin_session_cookie(response: Response, token: str, expires_at: datetime):
+    response.set_cookie(
+        key=ADMIN_SESSION_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=ADMIN_COOKIE_SECURE,
+        samesite="none" if ADMIN_COOKIE_SECURE else "lax",
+        expires=expires_at,
+        max_age=ADMIN_SESSION_DAYS * 24 * 60 * 60,
+        path="/",
+    )
+
+
+def clear_admin_session_cookie(response: Response):
+    response.delete_cookie(
+        key=ADMIN_SESSION_COOKIE_NAME,
+        path="/",
+        secure=ADMIN_COOKIE_SECURE,
+        samesite="none" if ADMIN_COOKIE_SECURE else "lax",
+    )
 
 
 class PushTokenRegister(BaseModel):
@@ -230,6 +377,52 @@ def require_mongodb():
         )
     return db
 
+
+async def get_current_organizer_user(request: Request) -> dict:
+    database = require_mongodb()
+    token = request.cookies.get(ADMIN_SESSION_COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    session = await database.organizer_sessions.find_one({
+        "token_hash": hash_session_token(token),
+        "expires_at": {"$gt": datetime.utcnow()},
+    })
+    if not session:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+
+    user = await database.organizer_users.find_one({
+        "id": session["user_id"],
+        "event_id": session["event_id"],
+        "is_active": True,
+    })
+    if not user:
+        await database.organizer_sessions.delete_one({"id": session["id"]})
+        raise HTTPException(status_code=401, detail="Organizer user is unavailable")
+
+    return user
+
+
+async def create_organizer_session(database, user: dict, response: Response) -> OrganizerUserPublic:
+    session_token = create_session_token()
+    expires_at = datetime.utcnow() + timedelta(days=ADMIN_SESSION_DAYS)
+    session = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "event_id": user.get("event_id", DEFAULT_EVENT_ID),
+        "token_hash": hash_session_token(session_token),
+        "created_at": datetime.utcnow(),
+        "expires_at": expires_at,
+    }
+    await database.organizer_sessions.insert_one(session)
+    await database.organizer_users.update_one(
+        {"id": user["id"]},
+        {"$set": {"last_login_at": datetime.utcnow(), "updated_at": datetime.utcnow()}},
+    )
+    set_admin_session_cookie(response, session_token, expires_at)
+    user["last_login_at"] = datetime.utcnow()
+    return public_organizer_user(user)
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
@@ -291,6 +484,118 @@ async def get_status_checks():
     database = require_mongodb()
     status_checks = await database.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
+
+
+@api_router.post("/admin/bootstrap", response_model=OrganizerAuthResponse)
+async def bootstrap_organizer_owner(data: OrganizerBootstrapRequest, response: Response):
+    database = require_mongodb()
+    event_id = get_event_id(data.event_id)
+    username = normalize_username(data.username)
+    if not username:
+        raise HTTPException(status_code=400, detail="Username is required")
+    if len(data.password) < 10:
+        raise HTTPException(status_code=400, detail="Password must be at least 10 characters")
+
+    existing_count = await database.organizer_users.count_documents({"event_id": event_id})
+    if existing_count > 0:
+        raise HTTPException(status_code=409, detail="Organizer users already exist for this event")
+
+    now = datetime.utcnow()
+    user = {
+        "id": str(uuid.uuid4()),
+        "username": username,
+        "display_name": data.display_name.strip() if data.display_name else username,
+        "password_hash": hash_password(data.password),
+        "role": "Owner",
+        "event_id": event_id,
+        "is_active": True,
+        "created_at": now,
+        "updated_at": now,
+        "last_login_at": None,
+    }
+    await database.organizer_users.insert_one(user)
+    public_user = await create_organizer_session(database, user, response)
+    return OrganizerAuthResponse(user=public_user)
+
+
+@api_router.post("/admin/auth/login", response_model=OrganizerAuthResponse)
+async def login_organizer(data: OrganizerLoginRequest, response: Response):
+    database = require_mongodb()
+    event_id = get_event_id(data.event_id)
+    username = normalize_username(data.username)
+
+    user = await database.organizer_users.find_one({
+        "username": username,
+        "event_id": event_id,
+        "is_active": True,
+    })
+    if not user or not verify_password(data.password, user.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    public_user = await create_organizer_session(database, user, response)
+    return OrganizerAuthResponse(user=public_user)
+
+
+@api_router.post("/admin/auth/logout")
+async def logout_organizer(request: Request, response: Response):
+    database = require_mongodb()
+    token = request.cookies.get(ADMIN_SESSION_COOKIE_NAME)
+    if token:
+        await database.organizer_sessions.delete_one({"token_hash": hash_session_token(token)})
+    clear_admin_session_cookie(response)
+    return {"status": "success"}
+
+
+@api_router.get("/admin/auth/me", response_model=OrganizerAuthResponse)
+async def get_organizer_me(current_user: dict = Depends(get_current_organizer_user)):
+    return OrganizerAuthResponse(user=public_organizer_user(current_user))
+
+
+@api_router.get("/admin/users", response_model=OrganizerUsersResponse)
+async def list_organizer_users(current_user: dict = Depends(get_current_organizer_user)):
+    database = require_mongodb()
+    users = await database.organizer_users.find({
+        "event_id": current_user.get("event_id", DEFAULT_EVENT_ID)
+    }).sort("created_at", 1).to_list(1000)
+    public_users = [public_organizer_user(user) for user in users]
+    return OrganizerUsersResponse(users=public_users, total_count=len(public_users))
+
+
+@api_router.post("/admin/users", response_model=OrganizerUserPublic)
+async def create_organizer_user(
+    data: OrganizerCreateUserRequest,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    database = require_mongodb()
+    event_id = get_event_id(data.event_id) if data.event_id else current_user.get("event_id", DEFAULT_EVENT_ID)
+    username = normalize_username(data.username)
+    if not username:
+        raise HTTPException(status_code=400, detail="Username is required")
+    if len(data.password) < 10:
+        raise HTTPException(status_code=400, detail="Password must be at least 10 characters")
+
+    existing_user = await database.organizer_users.find_one({
+        "username": username,
+        "event_id": event_id,
+    })
+    if existing_user:
+        raise HTTPException(status_code=409, detail="Organizer user already exists for this event")
+
+    now = datetime.utcnow()
+    user = {
+        "id": str(uuid.uuid4()),
+        "username": username,
+        "display_name": data.display_name.strip() if data.display_name else username,
+        "password_hash": hash_password(data.password),
+        "role": data.role,
+        "event_id": event_id,
+        "is_active": True,
+        "created_at": now,
+        "updated_at": now,
+        "last_login_at": None,
+    }
+    await database.organizer_users.insert_one(user)
+    return public_organizer_user(user)
 
 @api_router.get("/schedule", response_model=ScheduleResponse)
 async def get_schedule():
@@ -845,7 +1150,8 @@ async def serve_webpushr_service_worker():
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
+    allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -1013,6 +1319,21 @@ async def startup_event():
     if db is None:
         logger.warning("MongoDB unavailable; event change notification cron is disabled")
         return
+    await db.organizer_users.create_index(
+        [("event_id", 1), ("username", 1)],
+        unique=True,
+        name="organizer_event_username_unique",
+    )
+    await db.organizer_sessions.create_index(
+        "expires_at",
+        expireAfterSeconds=0,
+        name="organizer_session_expiry",
+    )
+    await db.organizer_sessions.create_index(
+        "token_hash",
+        unique=True,
+        name="organizer_session_token_unique",
+    )
     logger.info("Starting cron scheduler for event change detection...")
     asyncio.create_task(cron_scheduler())
 

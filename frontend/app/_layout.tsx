@@ -95,6 +95,7 @@ export default function RootLayout() {
                   <Stack.Screen name="index" options={{ headerShown: false }} />
                   <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                   <Stack.Screen name="preview-2026" options={{ headerShown: false }} />
+                  <Stack.Screen name="admin" options={{ headerShown: false }} />
                   <Stack.Screen name="coming-soon" options={{ headerShown: false }} />
                 </Stack>
                 <PWAInstallPrompt />
