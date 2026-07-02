@@ -1,6 +1,6 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -37,9 +37,17 @@ export default function ScheduleScreen() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
+  const isFetchingScheduleRef = useRef(false);
+  const hasFocusedScheduleRef = useRef(false);
 
   // Fetch schedule from API
-  const fetchSchedule = async (isRefresh = false) => {
+  const fetchSchedule = useCallback(async (isRefresh = false) => {
+    if (isFetchingScheduleRef.current) {
+      return;
+    }
+
+    isFetchingScheduleRef.current = true;
+
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -49,6 +57,11 @@ export default function ScheduleScreen() {
       setError(null);
 
       const result = await getScheduleData();
+      console.log('[PreviewScheduleScreen] schedule result:', {
+        source: result.source,
+        eventsReturned: result.data.events?.length,
+        eventsPassedToSetEvents: result.data.events?.length,
+      });
       setEvents(result.data.events);
       setLastUpdated(result.lastSuccessfulUpdate);
       setDataSource(result.source);
@@ -58,29 +71,33 @@ export default function ScheduleScreen() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      isFetchingScheduleRef.current = false;
     }
-  };
+  }, []);
 
   // Load on mount
   useEffect(() => {
     fetchSchedule();
+  }, [fetchSchedule]);
+
+  const loadFavorites = useCallback(async () => {
+    const storedFavorites = await getFavorites();
+    setFavorites(storedFavorites);
+    // Sync with backend for notifications
+    syncStarredEventsWithBackend(storedFavorites);
   }, []);
 
   // Refresh on focus
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
-      // Optionally refresh schedule on focus
-      // fetchSchedule(true);
-    }, [])
+      if (hasFocusedScheduleRef.current) {
+        fetchSchedule(true);
+      } else {
+        hasFocusedScheduleRef.current = true;
+      }
+    }, [fetchSchedule, loadFavorites])
   );
-
-  const loadFavorites = async () => {
-    const storedFavorites = await getFavorites();
-    setFavorites(storedFavorites);
-    // Sync with backend for notifications
-    syncStarredEventsWithBackend(storedFavorites);
-  };
 
   const handleToggleFavorite = async (eventId: string) => {
     const result = await toggleFavorite(eventId);
@@ -89,9 +106,9 @@ export default function ScheduleScreen() {
     syncStarredEventsWithBackend(result.favorites);
   };
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     fetchSchedule(true);
-  };
+  }, [fetchSchedule]);
 
   // Group events by date
   const groupedEvents = events.reduce((acc, event) => {
