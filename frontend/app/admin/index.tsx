@@ -15,8 +15,12 @@ import { Redirect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../../src/theme/colors';
 import {
+  Broadcast,
+  BroadcastPriority,
+  createBroadcast,
   createOrganizerUser,
   getCurrentOrganizer,
+  listBroadcasts,
   listOrganizerUsers,
   logoutOrganizer,
   OrganizerRole,
@@ -25,6 +29,7 @@ import {
 
 const NAV_ITEMS = ['Dashboard', 'Communications', 'Schedule', 'Users', 'Settings'] as const;
 const ROLES: OrganizerRole[] = ['Owner', 'Communications', 'Schedule'];
+const BROADCAST_PRIORITIES: BroadcastPriority[] = ['Normal', 'Important', 'Emergency'];
 
 type AdminSection = (typeof NAV_ITEMS)[number];
 
@@ -44,6 +49,13 @@ export default function AdminDashboardScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<OrganizerRole>('Schedule');
   const [createUserBusy, setCreateUserBusy] = useState(false);
+  const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
+  const [broadcastsLoading, setBroadcastsLoading] = useState(false);
+  const [broadcastsError, setBroadcastsError] = useState<string | null>(null);
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastPriority, setBroadcastPriority] = useState<BroadcastPriority>('Normal');
+  const [sendBroadcastBusy, setSendBroadcastBusy] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -55,6 +67,19 @@ export default function AdminDashboardScreen() {
       setUsersError(err instanceof Error ? err.message : 'Unable to load organizer users');
     } finally {
       setUsersLoading(false);
+    }
+  }, []);
+
+  const loadBroadcasts = useCallback(async () => {
+    setBroadcastsLoading(true);
+    setBroadcastsError(null);
+    try {
+      const result = await listBroadcasts();
+      setBroadcasts(result.broadcasts);
+    } catch (err) {
+      setBroadcastsError(err instanceof Error ? err.message : 'Unable to load broadcast history');
+    } finally {
+      setBroadcastsLoading(false);
     }
   }, []);
 
@@ -87,7 +112,10 @@ export default function AdminDashboardScreen() {
     if (isAuthenticated && activeSection === 'Users') {
       loadUsers();
     }
-  }, [activeSection, isAuthenticated, loadUsers]);
+    if (isAuthenticated && activeSection === 'Communications') {
+      loadBroadcasts();
+    }
+  }, [activeSection, isAuthenticated, loadBroadcasts, loadUsers]);
 
   const handleLogout = async () => {
     try {
@@ -120,6 +148,30 @@ export default function AdminDashboardScreen() {
       setUsersError(err instanceof Error ? err.message : 'Unable to create organizer user');
     } finally {
       setCreateUserBusy(false);
+    }
+  };
+
+  const handleSendBroadcast = async () => {
+    if (sendBroadcastBusy) {
+      return;
+    }
+
+    setSendBroadcastBusy(true);
+    setBroadcastsError(null);
+    try {
+      const broadcast = await createBroadcast({
+        title: broadcastTitle,
+        message: broadcastMessage,
+        priority: broadcastPriority,
+      });
+      setBroadcasts((current) => [broadcast, ...current]);
+      setBroadcastTitle('');
+      setBroadcastMessage('');
+      setBroadcastPriority('Normal');
+    } catch (err) {
+      setBroadcastsError(err instanceof Error ? err.message : 'Unable to send broadcast');
+    } finally {
+      setSendBroadcastBusy(false);
     }
   };
 
@@ -187,7 +239,23 @@ export default function AdminDashboardScreen() {
         </View>
 
         {activeSection === 'Dashboard' && <DashboardOverview currentUser={currentUser} />}
-        {activeSection === 'Communications' && <PlaceholderPanel title="Communications" />}
+        {activeSection === 'Communications' && (
+          <CommunicationsPanel
+            broadcasts={broadcasts}
+            loading={broadcastsLoading}
+            error={broadcastsError}
+            title={broadcastTitle}
+            message={broadcastMessage}
+            priority={broadcastPriority}
+            canSend={currentUser?.role === 'Owner' || currentUser?.role === 'Communications'}
+            sendBusy={sendBroadcastBusy}
+            onRefresh={loadBroadcasts}
+            onTitleChange={setBroadcastTitle}
+            onMessageChange={setBroadcastMessage}
+            onPriorityChange={setBroadcastPriority}
+            onSend={handleSendBroadcast}
+          />
+        )}
         {activeSection === 'Schedule' && <PlaceholderPanel title="Schedule" />}
         {activeSection === 'Settings' && <SettingsPanel currentUser={currentUser} />}
         {activeSection === 'Users' && (
@@ -228,6 +296,20 @@ function getSectionIcon(section: AdminSection): keyof typeof Feather.glyphMap {
   }
 }
 
+function formatAdminDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 function DashboardOverview({ currentUser }: { currentUser: OrganizerUser | null }) {
   return (
     <View style={styles.sectionGrid}>
@@ -263,6 +345,170 @@ function PlaceholderPanel({ title }: { title: string }) {
     <View style={styles.panel}>
       <Text style={styles.panelTitle}>{title}</Text>
       <Text style={styles.panelText}>This area is protected and ready for the next milestone.</Text>
+    </View>
+  );
+}
+
+function CommunicationsPanel({
+  broadcasts,
+  loading,
+  error,
+  title,
+  message,
+  priority,
+  canSend,
+  sendBusy,
+  onRefresh,
+  onTitleChange,
+  onMessageChange,
+  onPriorityChange,
+  onSend,
+}: {
+  broadcasts: Broadcast[];
+  loading: boolean;
+  error: string | null;
+  title: string;
+  message: string;
+  priority: BroadcastPriority;
+  canSend: boolean;
+  sendBusy: boolean;
+  onRefresh: () => void;
+  onTitleChange: (value: string) => void;
+  onMessageChange: (value: string) => void;
+  onPriorityChange: (value: BroadcastPriority) => void;
+  onSend: () => void;
+}) {
+  return (
+    <View style={styles.communicationsLayout}>
+      <View style={styles.panel}>
+        <Text style={styles.panelTitle}>New Broadcast</Text>
+        <Text style={styles.panelText}>Audience: Everyone</Text>
+
+        {!canSend && (
+          <View style={styles.readOnlyNotice}>
+            <Feather name="lock" size={16} color={colors.warning} />
+            <Text style={styles.readOnlyNoticeText}>
+              Schedule role has read-only access to Communications.
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.form}>
+          <TextInput
+            value={title}
+            onChangeText={onTitleChange}
+            placeholder="Title"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            editable={canSend}
+          />
+          <TextInput
+            value={message}
+            onChangeText={onMessageChange}
+            placeholder="Message"
+            placeholderTextColor={colors.textMuted}
+            style={[styles.input, styles.messageInput]}
+            editable={canSend}
+            multiline
+            textAlignVertical="top"
+          />
+
+          <View style={styles.prioritySelector}>
+            {BROADCAST_PRIORITIES.map((option) => {
+              const isSelected = option === priority;
+              return (
+                <Pressable
+                  key={option}
+                  style={[
+                    styles.priorityOption,
+                    isSelected && styles.priorityOptionSelected,
+                    !canSend && styles.optionDisabled,
+                  ]}
+                  onPress={() => onPriorityChange(option)}
+                  disabled={!canSend}
+                >
+                  <Text
+                    style={[
+                      styles.priorityOptionText,
+                      isSelected && styles.priorityOptionTextSelected,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={styles.previewBox}>
+            <Text style={styles.previewLabel}>Preview</Text>
+            <View style={styles.previewHeader}>
+              <Text style={styles.previewPriority}>{priority}</Text>
+              <Text style={styles.previewAudience}>Everyone</Text>
+            </View>
+            <Text style={styles.previewTitle}>{title || 'Broadcast title'}</Text>
+            <Text style={styles.previewMessage}>{message || 'Broadcast message will appear here.'}</Text>
+          </View>
+
+          {error && (
+            <View style={styles.errorBox}>
+              <Feather name="alert-circle" size={16} color={colors.error} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
+          <Pressable
+            style={[
+              styles.primaryButton,
+              (!canSend || sendBusy) && styles.primaryButtonDisabled,
+            ]}
+            onPress={onSend}
+            disabled={!canSend || sendBusy}
+          >
+            {sendBusy ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <>
+                <Feather name="send" size={18} color="#FFFFFF" />
+                <Text style={styles.primaryButtonText}>Send</Text>
+              </>
+            )}
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={[styles.panel, styles.historyPanel]}>
+        <View style={styles.panelHeader}>
+          <Text style={styles.panelTitle}>Broadcast History</Text>
+          <Pressable style={styles.iconButton} onPress={onRefresh}>
+            <Feather name="refresh-cw" size={18} color={colors.primary} />
+          </Pressable>
+        </View>
+
+        {loading ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : (
+          <View style={styles.broadcastList}>
+            {broadcasts.map((broadcast) => (
+              <View key={broadcast.id} style={styles.broadcastRow}>
+                <View style={styles.broadcastTitleCell}>
+                  <Text style={styles.broadcastTitle}>{broadcast.title}</Text>
+                  <Text style={styles.broadcastMeta}>{formatAdminDateTime(broadcast.sent_at)}</Text>
+                </View>
+                <Text style={styles.broadcastPriorityCell}>{broadcast.priority}</Text>
+                <Text style={styles.broadcastCell}>{broadcast.audience}</Text>
+                <Text style={styles.broadcastCell}>
+                  {broadcast.sender_username} ({broadcast.sender_role})
+                </Text>
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusBadgeText}>{broadcast.status}</Text>
+                </View>
+              </View>
+            ))}
+            {broadcasts.length === 0 && <Text style={styles.panelText}>No broadcasts have been sent yet.</Text>}
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -594,6 +840,160 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
+  },
+  communicationsLayout: {
+    gap: 16,
+  },
+  readOnlyNotice: {
+    marginTop: 14,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceHighlight,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  readOnlyNoticeText: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  messageInput: {
+    minHeight: 118,
+    paddingTop: 12,
+  },
+  prioritySelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  priorityOption: {
+    minHeight: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  priorityOptionSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  optionDisabled: {
+    opacity: 0.65,
+  },
+  priorityOptionText: {
+    color: colors.textSecondary,
+    fontWeight: '700',
+  },
+  priorityOptionTextSelected: {
+    color: '#FFFFFF',
+  },
+  previewBox: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+    padding: 14,
+    gap: 8,
+  },
+  previewLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  previewPriority: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceHighlight,
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  previewAudience: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceHighlight,
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  previewTitle: {
+    color: colors.textPrimary,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  previewMessage: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  historyPanel: {
+    minHeight: 240,
+  },
+  broadcastList: {
+    gap: 10,
+  },
+  broadcastRow: {
+    minHeight: 64,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceElevated,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+  },
+  broadcastTitleCell: {
+    flex: 2,
+    minWidth: 180,
+  },
+  broadcastTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  broadcastMeta: {
+    marginTop: 3,
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  broadcastPriorityCell: {
+    width: 92,
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  broadcastCell: {
+    minWidth: 120,
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  statusBadge: {
+    borderRadius: 8,
+    backgroundColor: colors.surfaceHighlight,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  statusBadgeText: {
+    color: colors.success,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'capitalize',
   },
   settingRow: {
     paddingVertical: 12,

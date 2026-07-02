@@ -4,6 +4,9 @@ const DEFAULT_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
 const DEFAULT_EVENT_ID = 'ipm-2026';
 
 export type OrganizerRole = 'Owner' | 'Communications' | 'Schedule';
+export type BroadcastPriority = 'Normal' | 'Important' | 'Emergency';
+export type BroadcastStatus = 'sent';
+export type BroadcastAudience = 'Everyone';
 
 export type OrganizerUser = {
   id: string;
@@ -26,6 +29,25 @@ export type OrganizerUsersResponse = {
   total_count: number;
 };
 
+export type Broadcast = {
+  id: string;
+  event_id: string;
+  title: string;
+  message: string;
+  priority: BroadcastPriority;
+  sender_username: string;
+  sender_role: OrganizerRole;
+  created_at: string;
+  sent_at: string;
+  status: BroadcastStatus;
+  audience: BroadcastAudience;
+};
+
+export type BroadcastsResponse = {
+  broadcasts: Broadcast[];
+  total_count: number;
+};
+
 export type LoginPayload = {
   username: string;
   password: string;
@@ -38,6 +60,12 @@ export type BootstrapPayload = LoginPayload & {
 
 export type CreateOrganizerUserPayload = BootstrapPayload & {
   role: OrganizerRole;
+};
+
+export type CreateBroadcastPayload = {
+  title: string;
+  message: string;
+  priority: BroadcastPriority;
 };
 
 function getApiBaseUrl() {
@@ -117,6 +145,21 @@ export function createOrganizerUser(payload: CreateOrganizerUserPayload) {
       username: payload.username.trim(),
       display_name: payload.display_name?.trim(),
       event_id: payload.event_id ? getEventId(payload.event_id) : undefined,
+    }),
+  });
+}
+
+export function listBroadcasts() {
+  return adminRequest<BroadcastsResponse>('/api/admin/broadcasts');
+}
+
+export function createBroadcast(payload: CreateBroadcastPayload) {
+  return adminRequest<Broadcast>('/api/admin/broadcasts', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: payload.title.trim(),
+      message: payload.message.trim(),
+      priority: payload.priority,
     }),
   });
 }

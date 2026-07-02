@@ -122,6 +122,9 @@ class VendorsResponse(BaseModel):
     total_count: int
 
 OrganizerRole = Literal["Owner", "Communications", "Schedule"]
+BroadcastPriority = Literal["Normal", "Important", "Emergency"]
+BroadcastStatus = Literal["sent"]
+BroadcastAudience = Literal["Everyone"]
 
 class OrganizerUserPublic(BaseModel):
     id: str
@@ -157,6 +160,28 @@ class OrganizerAuthResponse(BaseModel):
 
 class OrganizerUsersResponse(BaseModel):
     users: List[OrganizerUserPublic]
+    total_count: int
+
+class BroadcastCreateRequest(BaseModel):
+    title: str
+    message: str
+    priority: BroadcastPriority = "Normal"
+
+class BroadcastResponse(BaseModel):
+    id: str
+    event_id: str
+    title: str
+    message: str
+    priority: BroadcastPriority
+    sender_username: str
+    sender_role: OrganizerRole
+    created_at: datetime
+    sent_at: datetime
+    status: BroadcastStatus
+    audience: BroadcastAudience
+
+class BroadcastsResponse(BaseModel):
+    broadcasts: List[BroadcastResponse]
     total_count: int
 
 SCHEDULE_REQUIRED_FIELDS = ("Name", "Start Date", "Event Start", "Event End")
@@ -251,6 +276,39 @@ def public_organizer_user(user: dict) -> OrganizerUserPublic:
         updated_at=user.get("updated_at", datetime.utcnow()),
         last_login_at=user.get("last_login_at"),
     )
+
+
+def public_broadcast(broadcast: dict) -> BroadcastResponse:
+    return BroadcastResponse(
+        id=broadcast["id"],
+        event_id=broadcast.get("event_id", DEFAULT_EVENT_ID),
+        title=broadcast["title"],
+        message=broadcast["message"],
+        priority=broadcast["priority"],
+        sender_username=broadcast["sender_username"],
+        sender_role=broadcast["sender_role"],
+        created_at=broadcast["created_at"],
+        sent_at=broadcast["sent_at"],
+        status=broadcast["status"],
+        audience=broadcast["audience"],
+    )
+
+
+async def queue_broadcast_push_delivery(broadcast: dict):
+    # TODO: Connect this service boundary to a push notification provider.
+    # This function intentionally avoids provider-specific behavior for now.
+    logger.info(
+        "Broadcast %s saved for future push delivery integration",
+        broadcast.get("id"),
+    )
+
+
+def require_broadcast_sender_role(user: dict):
+    if user.get("role") not in ("Owner", "Communications"):
+        raise HTTPException(
+            status_code=403,
+            detail="Your organizer role can view broadcasts but cannot send them",
+        )
 
 
 def set_admin_session_cookie(response: Response, token: str, expires_at: datetime):
@@ -596,6 +654,53 @@ async def create_organizer_user(
     }
     await database.organizer_users.insert_one(user)
     return public_organizer_user(user)
+
+
+@api_router.post("/admin/broadcasts", response_model=BroadcastResponse)
+async def create_broadcast(
+    data: BroadcastCreateRequest,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_broadcast_sender_role(current_user)
+    database = require_mongodb()
+
+    title = data.title.strip()
+    message = data.message.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Title is required")
+    if not message:
+        raise HTTPException(status_code=400, detail="Message is required")
+
+    now = datetime.utcnow()
+    broadcast = {
+        "id": str(uuid.uuid4()),
+        "event_id": current_user.get("event_id", DEFAULT_EVENT_ID),
+        "title": title,
+        "message": message,
+        "priority": data.priority,
+        "sender_username": current_user["username"],
+        "sender_role": current_user["role"],
+        "created_at": now,
+        "sent_at": now,
+        "status": "sent",
+        "audience": "Everyone",
+    }
+    await database.broadcasts.insert_one(broadcast)
+    await queue_broadcast_push_delivery(broadcast)
+    return public_broadcast(broadcast)
+
+
+@api_router.get("/admin/broadcasts", response_model=BroadcastsResponse)
+async def list_broadcasts(current_user: dict = Depends(get_current_organizer_user)):
+    database = require_mongodb()
+    broadcasts = await database.broadcasts.find({
+        "event_id": current_user.get("event_id", DEFAULT_EVENT_ID)
+    }).sort("sent_at", -1).to_list(200)
+    public_broadcasts = [public_broadcast(broadcast) for broadcast in broadcasts]
+    return BroadcastsResponse(
+        broadcasts=public_broadcasts,
+        total_count=len(public_broadcasts),
+    )
 
 @api_router.get("/schedule", response_model=ScheduleResponse)
 async def get_schedule():
@@ -1333,6 +1438,10 @@ async def startup_event():
         "token_hash",
         unique=True,
         name="organizer_session_token_unique",
+    )
+    await db.broadcasts.create_index(
+        [("event_id", 1), ("sent_at", -1)],
+        name="broadcast_event_sent_at",
     )
     logger.info("Starting cron scheduler for event change detection...")
     asyncio.create_task(cron_scheduler())
