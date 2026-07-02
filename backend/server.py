@@ -9,7 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Literal
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import httpx
 import csv
 from io import StringIO
@@ -312,13 +312,17 @@ def require_broadcast_sender_role(user: dict):
 
 
 def set_admin_session_cookie(response: Response, token: str, expires_at: datetime):
+    cookie_expires_at = expires_at
+    if cookie_expires_at.tzinfo is None:
+        cookie_expires_at = cookie_expires_at.replace(tzinfo=timezone.utc)
+
     response.set_cookie(
         key=ADMIN_SESSION_COOKIE_NAME,
         value=token,
         httponly=True,
         secure=ADMIN_COOKIE_SECURE,
         samesite="none" if ADMIN_COOKIE_SECURE else "lax",
-        expires=expires_at,
+        expires=cookie_expires_at,
         max_age=ADMIN_SESSION_DAYS * 24 * 60 * 60,
         path="/",
     )
