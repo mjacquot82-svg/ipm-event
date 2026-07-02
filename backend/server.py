@@ -98,6 +98,36 @@ class VendorsResponse(BaseModel):
     last_updated: datetime
     total_count: int
 
+SCHEDULE_REQUIRED_FIELDS = ("Name", "Start Date", "Event Start", "Event End")
+SCHEDULE_CONTENT_FIELDS = (
+    "Name",
+    "Start Date",
+    "Event Start",
+    "Event End",
+    "Category",
+    "Days_Active",
+    "Description",
+    "Location",
+    "Lat",
+    "Long",
+)
+
+
+def get_schedule_cell(row: Dict[str, str], field: str, default: str = "") -> str:
+    value = row.get(field, default)
+    return value.strip() if value else default
+
+
+def has_schedule_content(row: Dict[str, str]) -> bool:
+    return any(get_schedule_cell(row, field) for field in SCHEDULE_CONTENT_FIELDS)
+
+
+def is_valid_schedule_row(row: Dict[str, str]) -> bool:
+    if not has_schedule_content(row):
+        return False
+    return all(get_schedule_cell(row, field) for field in SCHEDULE_REQUIRED_FIELDS)
+
+
 class PushTokenRegister(BaseModel):
     push_token: str
     device_id: str
@@ -264,7 +294,7 @@ async def get_status_checks():
 
 @api_router.get("/schedule", response_model=ScheduleResponse)
 async def get_schedule():
-    """Fetch schedule events from Google Sheets (only Event type, not Locations)"""
+    """Fetch schedule events from Google Sheets."""
     try:
         async with httpx.AsyncClient(follow_redirects=True) as http_client:
             response = await http_client.get(EVENTS_SHEET_CSV_URL, timeout=30.0)
@@ -276,33 +306,33 @@ async def get_schedule():
         
         events = []
         for idx, row in enumerate(reader):
-            # Only include Event types, not Locations
-            entry_type = row.get('Entry_Type', '').strip()
-            if entry_type.lower() != 'event':
+            if not is_valid_schedule_row(row):
+                if has_schedule_content(row):
+                    logger.warning(f"Skipping invalid schedule row {idx + 2}: missing required fields")
                 continue
             
             # Parse coordinates
             try:
-                lat = float(row.get('Lat', 0)) if row.get('Lat') else None
-                lng = float(row.get('Long', 0)) if row.get('Long') else None
+                lat = float(get_schedule_cell(row, 'Lat')) if get_schedule_cell(row, 'Lat') else None
+                lng = float(get_schedule_cell(row, 'Long')) if get_schedule_cell(row, 'Long') else None
             except ValueError:
                 lat, lng = None, None
             
             # Create unique ID based on row data
-            event_id = f"gs_{idx}_{row.get('Name', '').replace(' ', '_').lower()}"
+            event_id = f"gs_{idx}_{get_schedule_cell(row, 'Name').replace(' ', '_').lower()}"
             
             event = ScheduleEvent(
                 id=event_id,
-                title=row.get('Name', 'Untitled Event').strip(),
-                description=row.get('Description', '').strip(),
-                start_date=row.get('Start Date', '').strip(),
-                start_time=row.get('Event Start', '').strip(),
-                end_time=row.get('Event End', '').strip(),
-                category=row.get('Category', 'Event').strip(),
+                title=get_schedule_cell(row, 'Name', 'Untitled Event'),
+                description=get_schedule_cell(row, 'Description'),
+                start_date=get_schedule_cell(row, 'Start Date'),
+                start_time=get_schedule_cell(row, 'Event Start'),
+                end_time=get_schedule_cell(row, 'Event End'),
+                category=get_schedule_cell(row, 'Category', 'Event'),
                 latitude=lat,
                 longitude=lng,
-                days_active=row.get('Days_Active', '').strip(),
-                location_name=row.get('Location', '').strip()
+                days_active=get_schedule_cell(row, 'Days_Active'),
+                location_name=get_schedule_cell(row, 'Location')
             )
             events.append(event)
         
@@ -834,20 +864,21 @@ async def fetch_events_data() -> tuple[List[dict], str]:
         
         events = []
         for idx, row in enumerate(reader):
-            entry_type = row.get('Entry_Type', '').strip()
-            if entry_type.lower() != 'event':
+            if not is_valid_schedule_row(row):
+                if has_schedule_content(row):
+                    logger.warning(f"Skipping invalid schedule row {idx + 2}: missing required fields")
                 continue
             
-            event_id = f"gs_{idx}_{row.get('Name', '').replace(' ', '_').lower()}"
+            event_id = f"gs_{idx}_{get_schedule_cell(row, 'Name').replace(' ', '_').lower()}"
             events.append({
                 'id': event_id,
-                'title': row.get('Name', '').strip(),
-                'description': row.get('Description', '').strip(),
-                'start_date': row.get('Start Date', '').strip(),
-                'start_time': row.get('Event Start', '').strip(),
-                'end_time': row.get('Event End', '').strip(),
-                'category': row.get('Category', '').strip(),
-                'days_active': row.get('Days_Active', '').strip(),
+                'title': get_schedule_cell(row, 'Name'),
+                'description': get_schedule_cell(row, 'Description'),
+                'start_date': get_schedule_cell(row, 'Start Date'),
+                'start_time': get_schedule_cell(row, 'Event Start'),
+                'end_time': get_schedule_cell(row, 'Event End'),
+                'category': get_schedule_cell(row, 'Category'),
+                'days_active': get_schedule_cell(row, 'Days_Active'),
             })
         
         # Create hash of the data to detect changes
