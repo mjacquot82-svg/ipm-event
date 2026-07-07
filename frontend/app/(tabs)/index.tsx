@@ -13,6 +13,8 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+const desktopBanner = require('../../assets/images/ipm-banner-desktop.png');
+
 type GridItemProps = {
   label: string;
   icon: keyof typeof Feather.glyphMap;
@@ -63,7 +65,7 @@ export default function HomeScreen() {
       {/* FULL WIDTH BANNER */}
       <View style={styles.bannerContainer}>
         <Image
-          source={require('../../assets/images/ipm-hero-banner.png')}
+          source={desktopBanner}
           style={styles.bannerImage}
           resizeMode="cover"
         />
