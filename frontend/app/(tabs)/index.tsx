@@ -63,7 +63,7 @@ export default function HomeScreen() {
       {/* FULL WIDTH BANNER */}
       <View style={styles.bannerContainer}>
         <Image
-          source={require('../../assets/images/ipm-2026-banner.png')}
+          source={require('../../assets/images/ipm-hero-banner.png')}
           style={styles.bannerImage}
           resizeMode="cover"
         />
