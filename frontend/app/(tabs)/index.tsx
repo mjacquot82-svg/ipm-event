@@ -1,162 +1,778 @@
 // © 2026 1001538341 ONTARIO INC.
-import React, { useRef } from 'react';
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  TouchableOpacity,
+  RefreshControl,
   Linking,
-  Image,
-  Pressable,
-  Animated,
+  ActivityIndicator,
+  Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import CachedDataBanner from '../../src/components/CachedDataBanner';
+import ResponsiveBanner from '../../src/components/ResponsiveBanner';
+import colors from '../../src/theme/colors';
+import { getFavorites } from '../../src/utils/favoritesStorage';
+import {
+  CachedApiSource,
+  ScheduleEvent,
+  getScheduleData,
+} from '../../src/services/spreadsheetDataService';
 
-const desktopBanner = require('../../assets/images/ipm-banner-desktop.png');
+const EVENT_START_DATE = '2026-09-22T09:00:00';
 
-type GridItemProps = {
-  label: string;
-  icon: keyof typeof Feather.glyphMap;
-  color: string;
-  onPress: () => void;
-};
+const CATEGORY_COLORS = [
+  colors.primary,
+  colors.accent,
+  colors.vendor,
+  colors.field,
+  colors.utility,
+  colors.info,
+];
 
-function GridItem({ label, icon, color, onPress }: GridItemProps) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+function CountdownTimer({ targetDate }: { targetDate: string }) {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.94,
-      useNativeDriver: true,
-    }).start();
-  };
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const difference = new Date(targetDate).getTime() - Date.now();
 
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
-  };
+      if (difference <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+
+      setTimeLeft({
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / (1000 * 60)) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+      });
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
 
   return (
-    <Animated.View style={[styles.gridItem, { transform: [{ scale: scaleAnim }] }]}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={styles.gridPressable}
-      >
-        <View style={[styles.iconWrap, { backgroundColor: color }]}>
-          <Feather name={icon} size={22} color="#fff" />
-        </View>
-        <Text style={styles.gridLabel}>{label}</Text>
-      </Pressable>
-    </Animated.View>
+    <View style={countdownStyles.container}>
+      <View style={countdownStyles.unit}>
+        <Text style={countdownStyles.number}>{timeLeft.days}</Text>
+        <Text style={countdownStyles.label}>Days</Text>
+      </View>
+      <View style={countdownStyles.separator} />
+      <View style={countdownStyles.unit}>
+        <Text style={countdownStyles.number}>{String(timeLeft.hours).padStart(2, '0')}</Text>
+        <Text style={countdownStyles.label}>Hours</Text>
+      </View>
+      <View style={countdownStyles.separator} />
+      <View style={countdownStyles.unit}>
+        <Text style={countdownStyles.number}>{String(timeLeft.minutes).padStart(2, '0')}</Text>
+        <Text style={countdownStyles.label}>Minutes</Text>
+      </View>
+      <View style={countdownStyles.separator} />
+      <View style={countdownStyles.unit}>
+        <Text style={countdownStyles.number}>{String(timeLeft.seconds).padStart(2, '0')}</Text>
+        <Text style={countdownStyles.label}>Seconds</Text>
+      </View>
+    </View>
   );
+}
+
+const countdownStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  unit: {
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+  },
+  number: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: colors.primary,
+    lineHeight: 34,
+  },
+  label: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    marginTop: 4,
+    fontWeight: '700',
+  },
+  separator: {
+    width: 1,
+    height: 34,
+    backgroundColor: colors.border,
+    marginHorizontal: 6,
+  },
+});
+
+function parseEventDateTime(event: ScheduleEvent) {
+  const dateText = event.start_date || event.days_active || '';
+  const timeText = event.start_time || '12:00 AM';
+  const parsed = new Date(`${dateText} ${timeText}`);
+
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  const dateOnly = new Date(dateText);
+  return Number.isNaN(dateOnly.getTime()) ? null : dateOnly;
+}
+
+function parseTimeToMinutes(timeText: string) {
+  if (!timeText) return 0;
+  const match = timeText.trim().match(/(\d{1,2}):?(\d{0,2})\s*(AM|PM)?/i);
+  if (!match) return 0;
+
+  let hours = Number.parseInt(match[1], 10);
+  const minutes = match[2] ? Number.parseInt(match[2], 10) : 0;
+  const period = match[3]?.toUpperCase();
+
+  if (period === 'PM' && hours !== 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+
+  return hours * 60 + minutes;
+}
+
+function formatDisplayTime(timeText: string) {
+  return timeText || 'Time TBD';
+}
+
+function formatDisplayDate(dateText: string) {
+  if (!dateText) return 'Date TBD';
+  const parsed = new Date(dateText);
+  if (Number.isNaN(parsed.getTime())) return dateText;
+
+  return parsed.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function getCategoryColor(category: string | undefined, index = 0) {
+  if (!category) return CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+
+  const lowerCategory = category.toLowerCase();
+  if (lowerCategory.includes('food') || lowerCategory.includes('vendor')) return colors.vendor;
+  if (lowerCategory.includes('plow') || lowerCategory.includes('field')) return colors.field;
+  if (lowerCategory.includes('music') || lowerCategory.includes('stage')) return colors.stage;
+  if (lowerCategory.includes('demo') || lowerCategory.includes('workshop')) return colors.utility;
+  if (lowerCategory.includes('special') || lowerCategory.includes('ceremony')) return colors.accent;
+
+  return CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+}
+
+function getTimeUntil(eventDate: Date | null) {
+  if (!eventDate) return '';
+
+  const diffMs = eventDate.getTime() - Date.now();
+  if (diffMs <= 0) return 'Now';
+
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  if (diffMinutes < 60) return `in ${diffMinutes}m`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `in ${diffHours}h`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `in ${diffDays}d`;
 }
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
+  const isDesktop = screenWidth >= 768;
+  const sectionWidth = isDesktop ? screenWidth * 0.92 : undefined;
+
+  const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<CachedApiSource>('network');
+  const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
+
+  const fetchSchedule = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
+      const result = await getScheduleData();
+      setEvents(result.data.events || []);
+      setDataSource(result.source);
+      setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
+    } catch (err) {
+      console.error('Error loading home schedule data:', err);
+      setError('Unable to load schedule updates.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  const loadFavorites = useCallback(async () => {
+    const storedFavorites = await getFavorites();
+    setFavorites(storedFavorites);
+  }, []);
+
+  useEffect(() => {
+    fetchSchedule();
+    loadFavorites();
+  }, [fetchSchedule, loadFavorites]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadFavorites();
+    }, [loadFavorites])
+  );
+
+  const sortedEvents = useMemo(() => {
+    return [...events].sort((a, b) => {
+      const aDate = parseEventDateTime(a);
+      const bDate = parseEventDateTime(b);
+      return (aDate?.getTime() || 0) - (bDate?.getTime() || 0);
+    });
+  }, [events]);
+
+  const upcomingEvents = useMemo(() => {
+    const now = Date.now();
+    const futureEvents = sortedEvents.filter((event) => {
+      const eventDate = parseEventDateTime(event);
+      return eventDate ? eventDate.getTime() >= now : true;
+    });
+
+    return (futureEvents.length > 0 ? futureEvents : sortedEvents).slice(0, 4);
+  }, [sortedEvents]);
+
+  const happeningNow = useMemo(() => {
+    const now = new Date();
+    const todayKey = now.toISOString().slice(0, 10);
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    return sortedEvents.filter((event) => {
+      const eventDate = parseEventDateTime(event);
+      if (!eventDate || eventDate.toISOString().slice(0, 10) !== todayKey) return false;
+
+      const startMinutes = parseTimeToMinutes(event.start_time);
+      const endMinutes = parseTimeToMinutes(event.end_time) || startMinutes + 60;
+      return nowMinutes >= startMinutes && nowMinutes <= endMinutes;
+    }).slice(0, 3);
+  }, [sortedEvents]);
+
+  const nextStarredEvent = useMemo(() => {
+    return sortedEvents.find((event) => favorites.includes(event.id)) || null;
+  }, [favorites, sortedEvents]);
+
+  const onRefresh = useCallback(async () => {
+    await Promise.all([fetchSchedule(true), loadFavorites()]);
+  }, [fetchSchedule, loadFavorites]);
+
+  const openLink = (url: string) => {
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Unable to open link', 'Please try again later.');
+    });
+  };
+
+  const showUnavailableNotice = (title: string) => {
+    Alert.alert(title, 'This feature is not available from the Home screen yet.');
+  };
+
+  const renderEventCard = (event: ScheduleEvent, index: number, showTimeUntil = false) => {
+    const eventDate = parseEventDateTime(event);
+    const typeColor = getCategoryColor(event.category, index);
+
+    return (
+      <TouchableOpacity
+        key={event.id}
+        style={styles.sessionCardFull}
+        onPress={() => router.push('/schedule')}
+        activeOpacity={0.8}
+      >
+        <View style={[styles.sessionIconContainer, { backgroundColor: typeColor }]}>
+          <Feather name="calendar" size={20} color="#FFFFFF" />
+        </View>
+        <View style={styles.sessionCardContent}>
+          <Text style={styles.sessionCardTitle} numberOfLines={1}>
+            {event.title || 'Untitled Event'}
+          </Text>
+          <Text style={styles.sessionCardLocation} numberOfLines={1}>
+            {event.location_name || event.category || formatDisplayDate(event.start_date)}
+          </Text>
+          <View style={styles.sessionCardTimeRow}>
+            <Feather name="clock" size={12} color={colors.textMuted} />
+            <Text style={styles.sessionCardTime}>
+              {formatDisplayTime(event.start_time)}
+              {event.end_time ? ` - ${event.end_time}` : ''}
+            </Text>
+            {showTimeUntil && <Text style={styles.timeUntil}>{getTimeUntil(eventDate)}</Text>}
+          </View>
+        </View>
+        <Feather name="chevron-right" size={20} color={colors.textMuted} />
+      </TouchableOpacity>
+    );
+  };
+
+  const sectionStyle = [
+    styles.section,
+    isDesktop && { width: sectionWidth, alignSelf: 'center' as const, paddingHorizontal: 0 },
+  ];
 
   return (
-    <ScrollView style={styles.container}>
-      
-      {/* FULL WIDTH BANNER */}
-      <View style={styles.bannerContainer}>
-        <Image
-          source={desktopBanner}
-          style={styles.bannerImage}
-          resizeMode="cover"
-        />
-        <View style={styles.bannerOverlay} />
-      </View>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+          />
+        }
+      >
+        <ResponsiveBanner />
 
-      {/* GRID WRAPPER (controls width) */}
-      <View style={styles.gridWrapper}>
-        <View style={styles.grid}>
-          <GridItem label="Map" icon="map" color="#2E7D32" onPress={() => router.push('/map')} />
-          <GridItem label="Schedule" icon="calendar" color="#1976D2" onPress={() => router.push('/schedule')} />
-          <GridItem label="Vendors" icon="shopping-bag" color="#EF6C00" onPress={() => router.push('/vendors')} />
+        {dataSource === 'cache' && (
+          <View style={sectionStyle}>
+            <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
+          </View>
+        )}
 
-          <GridItem label="Tickets" icon="tag" color="#C62828" onPress={() => Linking.openURL('https://www.plowingmatch.org/')} />
-          <GridItem label="Camping" icon="compass" color="#556B2F" onPress={() => Linking.openURL('https://letscamp.ca/')} />
-          <GridItem label="News" icon="rss" color="#6A1B9A" onPress={() => router.push('/news')} />
-
-          <GridItem label="Itinerary" icon="clipboard" color="#FBC02D" onPress={() => router.push('/itinerary')} />
-          <GridItem label="Photos" icon="camera" color="#00838F" onPress={() => router.push('/photos')} />
-          <GridItem label="SOS" icon="alert-circle" color="#D32F2F" onPress={() => router.push('/sos')} />
+        <View style={sectionStyle}>
+          <View style={styles.countdownCard}>
+            <View style={styles.countdownIcon}>
+              <Feather name="clock" size={22} color={colors.primary} />
+            </View>
+            <View style={styles.countdownContent}>
+              <Text style={styles.countdownLabel}>IPM 2026 Starts In</Text>
+              <CountdownTimer targetDate={EVENT_START_DATE} />
+            </View>
+          </View>
         </View>
-      </View>
-    </ScrollView>
+
+        {nextStarredEvent && (
+          <View style={sectionStyle}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.starredHeader}>
+                <Feather name="star" size={18} color={colors.accent} />
+                <Text style={styles.sectionTitleStarred}>My Next Session</Text>
+              </View>
+            </View>
+            {renderEventCard(nextStarredEvent, 0, true)}
+          </View>
+        )}
+
+        <View style={sectionStyle}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/map')} activeOpacity={0.8}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
+                <Feather name="map" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Map</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/schedule')} activeOpacity={0.8}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.accent }]}>
+                <Feather name="calendar" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Schedule</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/vendors')} activeOpacity={0.8}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.vendor }]}>
+                <Feather name="shopping-bag" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Vendors</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => openLink('https://www.tix123.com/tickets/?code=IPMRE26')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.stage }]}>
+                <Feather name="tag" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Tickets</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => openLink('https://letscamp.ca/camps/ipm-2026')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
+                <Feather name="sun" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Camping</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#9C27B0' }]}>
+                <Feather name="gift" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Souvenirs</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/itinerary')} activeOpacity={0.8}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.utility }]}>
+                <Feather name="clipboard" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Personal Itinerary</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.sosCard]}
+              onPress={() => showUnavailableNotice('SOS')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#D32F2F' }]}>
+                <Feather name="alert-triangle" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={[styles.actionTitle, { color: '#D32F2F' }]}>SOS</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.alertCard]}
+              onPress={() => showUnavailableNotice('Alerts')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#9E9E9E' }]}>
+                <Feather name="bell" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={[styles.actionTitle, { color: '#9E9E9E' }]}>Alerts</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {happeningNow.length > 0 && (
+          <View style={sectionStyle}>
+            <View style={styles.sectionHeaderLive}>
+              <View style={styles.liveIndicator}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+              <Text style={styles.sectionTitleLive}>Happening Now</Text>
+            </View>
+            {happeningNow.map((event, index) => {
+              const typeColor = getCategoryColor(event.category, index);
+              return (
+                <TouchableOpacity
+                  key={event.id}
+                  style={[styles.liveSessionCard, { borderColor: typeColor }]}
+                  onPress={() => router.push('/schedule')}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.liveSessionContent}>
+                    <Text style={styles.liveSessionTitle} numberOfLines={2}>{event.title}</Text>
+                    <View style={styles.liveLocationRow}>
+                      <Feather name="map-pin" size={14} color={typeColor} />
+                      <Text style={[styles.liveLocationText, { color: typeColor }]} numberOfLines={1}>
+                        {event.location_name || event.category || 'Event location'}
+                      </Text>
+                    </View>
+                    <Text style={styles.liveTimeText}>Until {formatDisplayTime(event.end_time)}</Text>
+                  </View>
+                  <View style={styles.goButton}>
+                    <Feather name="navigation" size={18} color={colors.accent} />
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        <View style={sectionStyle}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Coming Up</Text>
+            <TouchableOpacity onPress={() => router.push('/schedule')}>
+              <Text style={styles.seeAll}>See All</Text>
+            </TouchableOpacity>
+          </View>
+
+          {loading ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.emptyText}>Loading schedule...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.emptyState}>
+              <Feather name="alert-circle" size={40} color={colors.error} />
+              <Text style={styles.emptyText}>{error}</Text>
+            </View>
+          ) : upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event, index) => renderEventCard(event, index, true))
+          ) : (
+            <View style={styles.emptyState}>
+              <Feather name="calendar" size={40} color={colors.textMuted} />
+              <Text style={styles.emptyText}>No upcoming events</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-  flex: 1,
-  backgroundColor: '#ECE8E1', // slightly warmer than current
-},
-
-  // 🔥 Banner (edge to edge)
-  bannerContainer: {
-  marginHorizontal: 16,   // 👈 matches grid + ads
-  marginTop: 10,
-  marginBottom: 16,
-  borderRadius: 16,
-  overflow: 'hidden',
-  height: 180,
-},
-bannerImage: {
-  width: '100%',
-  height: '100%',
-},
-bannerOverlay: {
-  ...StyleSheet.absoluteFillObject,
-  backgroundColor: 'rgba(0,0,0,0.15)',
-},
-
-  // 🔹 Grid wrapper controls alignment
-  gridWrapper: {
-  paddingHorizontal: 16,
-},
-
-  grid: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingTop: 4,
+    paddingBottom: 180,
+  },
+  section: {
+    paddingHorizontal: 20,
+    marginTop: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionHeaderLive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 10,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(107, 142, 35, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.success,
+  },
+  liveText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.success,
+  },
+  sectionTitleLive: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  starredHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionTitleStarred: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 16,
+  },
+  seeAll: {
+    fontSize: 14,
+    color: colors.accent,
+    fontWeight: '500',
+  },
+  quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 8,
   },
-
-  gridItem: {
+  actionCard: {
     width: '31%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-
-  gridPressable: {
+    backgroundColor: colors.surface,
+    padding: 12,
+    borderRadius: 16,
     alignItems: 'center',
-    paddingVertical: 18,
-    borderRadius: 18,
+    marginBottom: 4,
   },
-
-  iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
+  sosCard: {
+    borderWidth: 1,
+    borderColor: '#D32F2F',
+  },
+  alertCard: {
+    borderWidth: 1,
+    borderColor: '#FF5722',
+  },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 8,
   },
-
-  gridLabel: {
+  actionTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  countdownCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  countdownIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(45, 80, 22, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  countdownContent: {
+    flex: 1,
+    paddingTop: 2,
+  },
+  countdownLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.primary,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  sessionCardFull: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: 14,
+    borderRadius: 50,
+    marginBottom: 12,
+  },
+  sessionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sessionCardContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  sessionCardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  sessionCardLocation: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#1F2937',
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  sessionCardTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  sessionCardTime: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  timeUntil: {
+    fontSize: 12,
+    color: colors.accent,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  liveSessionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 2,
+    marginBottom: 12,
+  },
+  liveSessionContent: {
+    flex: 1,
+  },
+  liveSessionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 6,
+  },
+  liveLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  liveLocationText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  liveTimeText: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  goButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surfaceElevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
 });
