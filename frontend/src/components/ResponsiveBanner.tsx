@@ -5,10 +5,13 @@ import React from 'react';
 import { View, Image, StyleSheet, useWindowDimensions } from 'react-native';
 
 const BREAKPOINT = 768;
-const BANNER_ASPECT_RATIO = 1080 / 620;
+const BANNER_ASPECT_RATIO = 1536 / 1024;
 
-const desktopBanner = require('../../assets/images/ipm-banner-desktop.png');
-const mobileBanner = require('../../assets/images/ipm-banner-mobile.png');
+const heroImage = require('../../assets/images/ipm-hero.png');
+const centeredObjectFit = {
+  objectFit: 'cover',
+  objectPosition: 'center center',
+};
 
 interface ResponsiveBannerProps {
   style?: any;
@@ -23,12 +26,10 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
   return (
     <View style={[styles.container, { marginTop: topMargin }, style]}>
       <Image
-        source={isDesktop ? desktopBanner : mobileBanner}
-        style={{
+        source={heroImage}
+        style={[styles.image, centeredObjectFit as any, {
           width: imageWidth,
-          aspectRatio: BANNER_ASPECT_RATIO,
-          borderRadius: 12,
-        }}
+        }]}
         resizeMode="cover"
       />
     </View>
@@ -39,6 +40,10 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     alignItems: 'center',
+  },
+  image: {
+    aspectRatio: BANNER_ASPECT_RATIO,
+    borderRadius: 12,
   },
 });
 
