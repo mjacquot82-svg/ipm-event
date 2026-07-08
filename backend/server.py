@@ -24,6 +24,22 @@ import time
 from urllib.parse import quote
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
+try:
+    from platform_services import (
+        EventService,
+        ScheduleService,
+        SupabaseScheduleService,
+        SupabaseVendorService,
+        VendorService,
+    )
+except ImportError:
+    from backend.platform_services import (
+        EventService,
+        ScheduleService,
+        SupabaseScheduleService,
+        SupabaseVendorService,
+        VendorService,
+    )
 
 
 ROOT_DIR = Path(__file__).parent
@@ -60,6 +76,9 @@ cached_events_hash: str = ""
 
 # Organizer portal authentication settings
 DEFAULT_EVENT_ID = os.environ.get("DEFAULT_EVENT_ID", "ipm-2026")
+CONTENT_SOURCE = os.environ.get("CONTENT_SOURCE", "google_sheets").strip().lower()
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
 ADMIN_SESSION_DAYS = int(os.environ.get("ADMIN_SESSION_DAYS", "7"))
 ADMIN_COOKIE_SECURE = os.environ.get("ADMIN_COOKIE_SECURE", "true").lower() == "true"
@@ -77,6 +96,8 @@ CORS_ORIGINS = [
     if origin.strip()
 ]
 CORS_ORIGIN_REGEX = os.environ.get("CORS_ORIGIN_REGEX", r"https://.*\.netlify\.app")
+if CONTENT_SOURCE not in {"google_sheets", "supabase"}:
+    raise RuntimeError("CONTENT_SOURCE must be either 'google_sheets' or 'supabase'")
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -93,6 +114,17 @@ class StatusCheck(BaseModel):
 
 class StatusCheckCreate(BaseModel):
     client_name: str
+
+class Event(BaseModel):
+    id: str
+    name: str
+    slug: str
+    timezone: str = "America/Toronto"
+    status: str = "draft"
+    starts_at: Optional[datetime] = None
+    ends_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class ScheduleEvent(BaseModel):
     id: str
@@ -171,6 +203,14 @@ class VendorsResponse(BaseModel):
     vendors: List[Vendor]
     last_updated: datetime
     total_count: int
+
+class VendorPayload(BaseModel):
+    name: str
+    type: str = ""
+    location: str = ""
+    hours_of_operation: str = ""
+    days_of_operation: str = ""
+    priority: int = 99
 
 OrganizerRole = Literal["Owner", "Communications", "Schedule"]
 BroadcastPriority = Literal["Normal", "Important", "Emergency"]
@@ -490,12 +530,146 @@ async def clear_schedule_event_row(event_id: str) -> AdminScheduleResponse:
     return await get_admin_schedule_events()
 
 
+async def get_public_schedule_events_from_google() -> ScheduleResponse:
+    async with httpx.AsyncClient(follow_redirects=True) as http_client:
+        response = await http_client.get(EVENTS_SHEET_CSV_URL, timeout=30.0)
+        response.raise_for_status()
+
+    reader = csv.DictReader(StringIO(response.text))
+
+    events = []
+    for idx, row in enumerate(reader):
+        if not is_valid_schedule_row(row):
+            if has_schedule_content(row):
+                logger.warning(f"Skipping invalid schedule row {idx + 2}: missing required fields")
+            continue
+
+        try:
+            lat = float(get_schedule_cell(row, 'Lat')) if get_schedule_cell(row, 'Lat') else None
+            lng = float(get_schedule_cell(row, 'Long')) if get_schedule_cell(row, 'Long') else None
+        except ValueError:
+            lat, lng = None, None
+
+        event_id = f"gs_{idx}_{get_schedule_cell(row, 'Name').replace(' ', '_').lower()}"
+
+        event = ScheduleEvent(
+            id=event_id,
+            title=get_schedule_cell(row, 'Name', 'Untitled Event'),
+            description=get_schedule_cell(row, 'Description'),
+            start_date=get_schedule_cell(row, 'Start Date'),
+            start_time=get_schedule_cell(row, 'Event Start'),
+            end_time=get_schedule_cell(row, 'Event End'),
+            category=get_schedule_cell(row, 'Category', 'Event'),
+            latitude=lat,
+            longitude=lng,
+            days_active=get_schedule_cell(row, 'Days_Active'),
+            location_name=get_schedule_cell(row, 'Location')
+        )
+        events.append(event)
+
+    return ScheduleResponse(
+        events=events,
+        last_updated=datetime.utcnow(),
+        total_count=len(events)
+    )
+
+
+async def get_public_vendors_from_google() -> VendorsResponse:
+    async with httpx.AsyncClient(follow_redirects=True) as http_client:
+        response = await http_client.get(VENDORS_SHEET_CSV_URL, timeout=30.0)
+        response.raise_for_status()
+
+    reader = csv.DictReader(StringIO(response.text))
+
+    vendors = []
+    for idx, row in enumerate(reader):
+        name = row.get('Name', '').strip()
+        if not name:
+            continue
+
+        vendor_id = f"vendor_{idx}_{name.replace(' ', '_').lower()}"
+
+        priority_str = row.get('priority', '').strip()
+        try:
+            priority = int(priority_str) if priority_str else 99
+        except ValueError:
+            priority = 99
+
+        vendor = Vendor(
+            id=vendor_id,
+            name=name,
+            type=row.get('Type', '').strip(),
+            location=row.get('Location', '').strip(),
+            hours_of_operation=row.get('Hours of Operation', '').strip(),
+            days_of_operation=row.get('Days of Operation', '').strip(),
+            priority=priority,
+        )
+        vendors.append(vendor)
+
+    vendors.sort(key=lambda v: v.priority)
+
+    return VendorsResponse(
+        vendors=vendors,
+        last_updated=datetime.utcnow(),
+        total_count=len(vendors)
+    )
+
+
+event_service = EventService(DEFAULT_EVENT_ID)
+if CONTENT_SOURCE == "supabase":
+    if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
+        raise RuntimeError(
+            "CONTENT_SOURCE=supabase requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
+        )
+    schedule_service = SupabaseScheduleService(
+        supabase_url=SUPABASE_URL,
+        service_role_key=SUPABASE_SERVICE_ROLE_KEY,
+        event_slug=event_service.get_public_event_id(),
+        schedule_response_model=ScheduleResponse,
+        schedule_event_model=ScheduleEvent,
+        admin_schedule_response_model=AdminScheduleResponse,
+        admin_schedule_event_model=AdminScheduleEvent,
+    )
+else:
+    schedule_service = ScheduleService(
+        list_public_schedule=get_public_schedule_events_from_google,
+        list_admin_schedule=get_admin_schedule_events,
+        replace_schedule=replace_schedule_sheet,
+        append_schedule_event=append_schedule_event,
+        update_schedule_event=update_schedule_event_row,
+        clear_schedule_event=clear_schedule_event_row,
+    )
+if CONTENT_SOURCE == "supabase":
+    vendor_service = SupabaseVendorService(
+        supabase_url=SUPABASE_URL,
+        service_role_key=SUPABASE_SERVICE_ROLE_KEY,
+        event_slug=event_service.get_public_event_id(),
+        vendors_response_model=VendorsResponse,
+        vendor_model=Vendor,
+    )
+else:
+    vendor_service = VendorService(
+        list_public_vendors=get_public_vendors_from_google,
+    )
+
+
 def normalize_username(username: str) -> str:
     return username.strip().lower()
 
 
 def get_event_id(event_id: Optional[str] = None) -> str:
-    return (event_id or DEFAULT_EVENT_ID).strip()
+    return event_service.get_event_id(event_id)
+
+
+def get_public_event_id(request: Optional[Request] = None) -> str:
+    return event_service.get_request_event_id(request)
+
+
+def get_admin_event_id(
+    user: Optional[dict] = None,
+    event_id: Optional[str] = None,
+) -> str:
+    return event_service.get_admin_event_id(user=user, event_id=event_id)
 
 
 def hash_password(password: str) -> str:
@@ -546,7 +720,7 @@ def public_organizer_user(user: dict) -> OrganizerUserPublic:
         username=user["username"],
         display_name=user.get("display_name") or user["username"],
         role=user["role"],
-        event_id=user.get("event_id", DEFAULT_EVENT_ID),
+        event_id=get_admin_event_id(user),
         is_active=user.get("is_active", True),
         created_at=user.get("created_at", datetime.utcnow()),
         updated_at=user.get("updated_at", datetime.utcnow()),
@@ -557,7 +731,7 @@ def public_organizer_user(user: dict) -> OrganizerUserPublic:
 def public_broadcast(broadcast: dict) -> BroadcastResponse:
     return BroadcastResponse(
         id=broadcast["id"],
-        event_id=broadcast.get("event_id", DEFAULT_EVENT_ID),
+        event_id=get_event_id(broadcast.get("event_id")),
         title=broadcast["title"],
         message=broadcast["message"],
         priority=broadcast["priority"],
@@ -592,6 +766,14 @@ def require_schedule_manager_role(user: dict):
         raise HTTPException(
             status_code=403,
             detail="Your organizer role cannot manage schedule events",
+        )
+
+
+def require_vendor_manager_role(user: dict):
+    if user.get("role") != "Owner":
+        raise HTTPException(
+            status_code=403,
+            detail="Your organizer role cannot manage vendors",
         )
 
 
@@ -755,7 +937,7 @@ async def create_organizer_session(database, user: dict, response: Response) -> 
     session = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
-        "event_id": user.get("event_id", DEFAULT_EVENT_ID),
+        "event_id": get_admin_event_id(user),
         "token_hash": hash_session_token(session_token),
         "created_at": datetime.utcnow(),
         "expires_at": expires_at,
@@ -901,7 +1083,7 @@ async def get_organizer_me(current_user: dict = Depends(get_current_organizer_us
 async def list_organizer_users(current_user: dict = Depends(get_current_organizer_user)):
     database = require_mongodb()
     users = await database.organizer_users.find({
-        "event_id": current_user.get("event_id", DEFAULT_EVENT_ID)
+        "event_id": get_admin_event_id(current_user)
     }).sort("created_at", 1).to_list(1000)
     public_users = [public_organizer_user(user) for user in users]
     return OrganizerUsersResponse(users=public_users, total_count=len(public_users))
@@ -913,7 +1095,7 @@ async def create_organizer_user(
     current_user: dict = Depends(get_current_organizer_user),
 ):
     database = require_mongodb()
-    event_id = get_event_id(data.event_id) if data.event_id else current_user.get("event_id", DEFAULT_EVENT_ID)
+    event_id = get_admin_event_id(current_user, data.event_id)
     username = normalize_username(data.username)
     if not username:
         raise HTTPException(status_code=400, detail="Username is required")
@@ -962,7 +1144,7 @@ async def create_broadcast(
     now = datetime.utcnow()
     broadcast = {
         "id": str(uuid.uuid4()),
-        "event_id": current_user.get("event_id", DEFAULT_EVENT_ID),
+        "event_id": get_admin_event_id(current_user),
         "title": title,
         "message": message,
         "priority": data.priority,
@@ -982,7 +1164,7 @@ async def create_broadcast(
 async def list_broadcasts(current_user: dict = Depends(get_current_organizer_user)):
     database = require_mongodb()
     broadcasts = await database.broadcasts.find({
-        "event_id": current_user.get("event_id", DEFAULT_EVENT_ID)
+        "event_id": get_admin_event_id(current_user)
     }).sort("sent_at", -1).to_list(200)
     public_broadcasts = [public_broadcast(broadcast) for broadcast in broadcasts]
     return BroadcastsResponse(
@@ -994,8 +1176,9 @@ async def list_broadcasts(current_user: dict = Depends(get_current_organizer_use
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)
 async def list_admin_schedule(current_user: dict = Depends(get_current_organizer_user)):
     require_schedule_manager_role(current_user)
+    admin_event_id = get_admin_event_id(current_user)
     try:
-        return await get_admin_schedule_events()
+        return await schedule_service.list_admin_schedule(admin_event_id)
     except httpx.HTTPError as e:
         logger.error("Failed to fetch schedule sheet for admin: %s", e)
         raise HTTPException(status_code=502, detail="Failed to fetch schedule data")
@@ -1007,7 +1190,8 @@ async def import_admin_schedule(
     current_user: dict = Depends(get_current_organizer_user),
 ):
     require_schedule_manager_role(current_user)
-    schedule = await replace_schedule_sheet(data.rows)
+    admin_event_id = get_admin_event_id(current_user)
+    schedule = await schedule_service.replace_schedule(data.rows, admin_event_id)
     return ScheduleImportResponse(
         imported_count=len(data.rows),
         problem_count=len(data.problems),
@@ -1023,7 +1207,8 @@ async def create_admin_schedule_event(
     current_user: dict = Depends(get_current_organizer_user),
 ):
     require_schedule_manager_role(current_user)
-    return await append_schedule_event(data)
+    admin_event_id = get_admin_event_id(current_user)
+    return await schedule_service.append_event(data, admin_event_id)
 
 
 @api_router.put("/admin/schedule/events/{event_id}", response_model=AdminScheduleResponse)
@@ -1033,7 +1218,8 @@ async def update_admin_schedule_event(
     current_user: dict = Depends(get_current_organizer_user),
 ):
     require_schedule_manager_role(current_user)
-    return await update_schedule_event_row(event_id, data)
+    admin_event_id = get_admin_event_id(current_user)
+    return await schedule_service.update_event(event_id, data, admin_event_id)
 
 
 @api_router.delete("/admin/schedule/events/{event_id}", response_model=AdminScheduleResponse)
@@ -1042,13 +1228,15 @@ async def delete_admin_schedule_event(
     current_user: dict = Depends(get_current_organizer_user),
 ):
     require_schedule_manager_role(current_user)
-    return await clear_schedule_event_row(event_id)
+    admin_event_id = get_admin_event_id(current_user)
+    return await schedule_service.clear_event(event_id, admin_event_id)
 
 
 @api_router.post("/admin/schedule/refresh", response_model=ScheduleRefreshResponse)
 async def refresh_admin_schedule(current_user: dict = Depends(get_current_organizer_user)):
     require_schedule_manager_role(current_user)
-    schedule = await get_admin_schedule_events()
+    admin_event_id = get_admin_event_id(current_user)
+    schedule = await schedule_service.list_admin_schedule(admin_event_id)
     return ScheduleRefreshResponse(
         status="success",
         events=schedule.events,
@@ -1057,56 +1245,75 @@ async def refresh_admin_schedule(current_user: dict = Depends(get_current_organi
     )
 
 
+@api_router.get("/admin/vendors", response_model=VendorsResponse)
+async def list_admin_vendors(current_user: dict = Depends(get_current_organizer_user)):
+    require_vendor_manager_role(current_user)
+    admin_event_id = get_admin_event_id(current_user)
+    try:
+        return await vendor_service.list_public_vendors(admin_event_id)
+    except httpx.HTTPError as e:
+        logger.error("Failed to fetch vendors for admin: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch vendors data")
+
+
+@api_router.post("/admin/vendors", response_model=VendorsResponse)
+async def create_admin_vendor(
+    data: VendorPayload,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_vendor_manager_role(current_user)
+    if not data.name.strip():
+        raise HTTPException(status_code=400, detail="Vendor name is required")
+    admin_event_id = get_admin_event_id(current_user)
+    try:
+        return await vendor_service.create_vendor(data, admin_event_id)
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
+    except httpx.HTTPError as e:
+        logger.error("Failed to create vendor: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to save vendor data")
+
+
+@api_router.put("/admin/vendors/{vendor_id}", response_model=VendorsResponse)
+async def update_admin_vendor(
+    vendor_id: str,
+    data: VendorPayload,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_vendor_manager_role(current_user)
+    if not data.name.strip():
+        raise HTTPException(status_code=400, detail="Vendor name is required")
+    admin_event_id = get_admin_event_id(current_user)
+    try:
+        return await vendor_service.update_vendor(vendor_id, data, admin_event_id)
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
+    except httpx.HTTPError as e:
+        logger.error("Failed to update vendor %s: %s", vendor_id, e)
+        raise HTTPException(status_code=502, detail="Failed to save vendor data")
+
+
+@api_router.delete("/admin/vendors/{vendor_id}", response_model=VendorsResponse)
+async def delete_admin_vendor(
+    vendor_id: str,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_vendor_manager_role(current_user)
+    admin_event_id = get_admin_event_id(current_user)
+    try:
+        return await vendor_service.delete_vendor(vendor_id, admin_event_id)
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
+    except httpx.HTTPError as e:
+        logger.error("Failed to delete vendor %s: %s", vendor_id, e)
+        raise HTTPException(status_code=502, detail="Failed to delete vendor data")
+
+
 @api_router.get("/schedule", response_model=ScheduleResponse)
 async def get_schedule():
     """Fetch schedule events from Google Sheets."""
     try:
-        async with httpx.AsyncClient(follow_redirects=True) as http_client:
-            response = await http_client.get(EVENTS_SHEET_CSV_URL, timeout=30.0)
-            response.raise_for_status()
-            
-        # Parse CSV
-        csv_content = response.text
-        reader = csv.DictReader(StringIO(csv_content))
-        
-        events = []
-        for idx, row in enumerate(reader):
-            if not is_valid_schedule_row(row):
-                if has_schedule_content(row):
-                    logger.warning(f"Skipping invalid schedule row {idx + 2}: missing required fields")
-                continue
-            
-            # Parse coordinates
-            try:
-                lat = float(get_schedule_cell(row, 'Lat')) if get_schedule_cell(row, 'Lat') else None
-                lng = float(get_schedule_cell(row, 'Long')) if get_schedule_cell(row, 'Long') else None
-            except ValueError:
-                lat, lng = None, None
-            
-            # Create unique ID based on row data
-            event_id = f"gs_{idx}_{get_schedule_cell(row, 'Name').replace(' ', '_').lower()}"
-            
-            event = ScheduleEvent(
-                id=event_id,
-                title=get_schedule_cell(row, 'Name', 'Untitled Event'),
-                description=get_schedule_cell(row, 'Description'),
-                start_date=get_schedule_cell(row, 'Start Date'),
-                start_time=get_schedule_cell(row, 'Event Start'),
-                end_time=get_schedule_cell(row, 'Event End'),
-                category=get_schedule_cell(row, 'Category', 'Event'),
-                latitude=lat,
-                longitude=lng,
-                days_active=get_schedule_cell(row, 'Days_Active'),
-                location_name=get_schedule_cell(row, 'Location')
-            )
-            events.append(event)
-        
-        return ScheduleResponse(
-            events=events,
-            last_updated=datetime.utcnow(),
-            total_count=len(events)
-        )
-        
+        return await schedule_service.list_public_schedule()
     except httpx.HTTPError as e:
         logger.error(f"Failed to fetch Google Sheet: {e}")
         raise HTTPException(status_code=502, detail="Failed to fetch schedule data")
@@ -1118,50 +1325,7 @@ async def get_schedule():
 async def get_vendors():
     """Fetch vendors from Google Sheets"""
     try:
-        async with httpx.AsyncClient(follow_redirects=True) as http_client:
-            response = await http_client.get(VENDORS_SHEET_CSV_URL, timeout=30.0)
-            response.raise_for_status()
-            
-        # Parse CSV
-        csv_content = response.text
-        reader = csv.DictReader(StringIO(csv_content))
-        
-        vendors = []
-        for idx, row in enumerate(reader):
-            # Skip empty rows
-            name = row.get('Name', '').strip()
-            if not name:
-                continue
-            
-            vendor_id = f"vendor_{idx}_{name.replace(' ', '_').lower()}"
-            
-            # Parse priority - default to 99 if not present or invalid
-            priority_str = row.get('priority', '').strip()
-            try:
-                priority = int(priority_str) if priority_str else 99
-            except ValueError:
-                priority = 99
-            
-            vendor = Vendor(
-                id=vendor_id,
-                name=name,
-                type=row.get('Type', '').strip(),
-                location=row.get('Location', '').strip(),
-                hours_of_operation=row.get('Hours of Operation', '').strip(),
-                days_of_operation=row.get('Days of Operation', '').strip(),
-                priority=priority,
-            )
-            vendors.append(vendor)
-        
-        # Sort vendors by priority (1 at top, 99 at bottom)
-        vendors.sort(key=lambda v: v.priority)
-        
-        return VendorsResponse(
-            vendors=vendors,
-            last_updated=datetime.utcnow(),
-            total_count=len(vendors)
-        )
-        
+        return await vendor_service.list_public_vendors()
     except httpx.HTTPError as e:
         logger.error(f"Failed to fetch Vendors Sheet: {e}")
         raise HTTPException(status_code=502, detail="Failed to fetch vendors data")
@@ -1619,33 +1783,22 @@ app.add_middleware(
 # ============== CRON JOB FOR EVENT CHANGE DETECTION ==============
 
 async def fetch_events_data() -> tuple[List[dict], str]:
-    """Fetch events from Google Sheet and return data with hash"""
+    """Fetch events from the active schedule service and return data with hash."""
     try:
-        async with httpx.AsyncClient(follow_redirects=True) as http_client:
-            response = await http_client.get(EVENTS_SHEET_CSV_URL, timeout=30.0)
-            response.raise_for_status()
-        
-        csv_content = response.text
-        reader = csv.DictReader(StringIO(csv_content))
-        
-        events = []
-        for idx, row in enumerate(reader):
-            if not is_valid_schedule_row(row):
-                if has_schedule_content(row):
-                    logger.warning(f"Skipping invalid schedule row {idx + 2}: missing required fields")
-                continue
-            
-            event_id = f"gs_{idx}_{get_schedule_cell(row, 'Name').replace(' ', '_').lower()}"
-            events.append({
-                'id': event_id,
-                'title': get_schedule_cell(row, 'Name'),
-                'description': get_schedule_cell(row, 'Description'),
-                'start_date': get_schedule_cell(row, 'Start Date'),
-                'start_time': get_schedule_cell(row, 'Event Start'),
-                'end_time': get_schedule_cell(row, 'Event End'),
-                'category': get_schedule_cell(row, 'Category'),
-                'days_active': get_schedule_cell(row, 'Days_Active'),
-            })
+        schedule = await schedule_service.list_public_schedule()
+        events = [
+            {
+                'id': event.id,
+                'title': event.title,
+                'description': event.description,
+                'start_date': event.start_date,
+                'start_time': event.start_time,
+                'end_time': event.end_time,
+                'category': event.category,
+                'days_active': event.days_active,
+            }
+            for event in schedule.events
+        ]
         
         # Create hash of the data to detect changes
         data_str = json.dumps(events, sort_keys=True)

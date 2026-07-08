@@ -1,6 +1,6 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
@@ -9,37 +9,56 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../../src/theme/colors';
+import { AdminShell, AdminNavItem } from '../../src/components/admin/AdminShell';
+import {
+  ContentPage,
+  ContentToolbar,
+  EmptyState,
+  ErrorState,
+  FieldLabel,
+  LoadingState,
+} from '../../src/components/admin/ContentScaffold';
 import {
   AdminScheduleEvent,
-  Broadcast,
-  BroadcastPriority,
-  createBroadcast,
-  createOrganizerUser,
-  createScheduleEvent,
-  deleteScheduleEvent,
-  getCurrentOrganizer,
-  importSchedule,
-  listScheduleEvents,
-  listBroadcasts,
-  listOrganizerUsers,
-  logoutOrganizer,
-  OrganizerRole,
-  OrganizerUser,
+  AdminVendor,
   ScheduleEventPayload,
   ScheduleImportProblem,
   ScheduleImportRow,
+  VendorPayload,
+  createAdminVendor,
+  createScheduleEvent,
+  deleteAdminVendor,
+  deleteScheduleEvent,
+  getCurrentOrganizer,
+  importSchedule,
+  listAdminVendors,
+  listScheduleEvents,
+  logoutOrganizer,
+  OrganizerUser,
+  updateAdminVendor,
   updateScheduleEvent,
 } from '../../src/services/adminAuthService';
 
-const NAV_ITEMS = ['Dashboard', 'Communications', 'Schedule', 'Users', 'Settings'] as const;
-const ROLES: OrganizerRole[] = ['Owner', 'Communications', 'Schedule'];
-const BROADCAST_PRIORITIES: BroadcastPriority[] = ['Normal', 'Important', 'Emergency'];
+type AdminSection = 'dashboard' | 'vendors' | 'schedule' | 'communications' | 'team' | 'settings';
+type VendorEditorMode = 'closed' | 'create' | 'edit';
+type ScheduleEditorMode = 'closed' | 'view' | 'add' | 'edit';
+type PlatformFieldKey = (typeof PLATFORM_FIELDS)[number]['key'];
+type ImportMapping = Partial<Record<PlatformFieldKey, string>>;
+
+const NAV_ITEMS: AdminNavItem[] = [
+  { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
+  { key: 'vendors', label: 'Vendors', icon: 'shopping-bag' },
+  { key: 'schedule', label: 'Schedule', icon: 'calendar' },
+  { key: 'communications', label: 'Communications', icon: 'message-square', disabled: true },
+  { key: 'team', label: 'Team', icon: 'users', disabled: true },
+  { key: 'settings', label: 'Settings', icon: 'settings', disabled: true },
+];
+
 const SCHEDULE_MAPPING_STORAGE_KEY = 'organizer_schedule_import_mapping_v1';
 const PLATFORM_FIELDS = [
   { key: 'title', label: 'Event Title', required: true },
@@ -52,40 +71,37 @@ const PLATFORM_FIELDS = [
   { key: 'description', label: 'Description', required: false },
 ] as const;
 
-type AdminSection = (typeof NAV_ITEMS)[number];
-type PlatformFieldKey = (typeof PLATFORM_FIELDS)[number]['key'];
-type ImportMapping = Partial<Record<PlatformFieldKey, string>>;
+const EMPTY_VENDOR_FORM: VendorPayload = {
+  name: '',
+  type: '',
+  location: '',
+  hours_of_operation: '',
+  days_of_operation: '',
+  priority: 99,
+};
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isCompact = width < 820;
   const [loadingSession, setLoadingSession] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<OrganizerUser | null>(null);
-  const [activeSection, setActiveSection] = useState<AdminSection>('Dashboard');
-  const [users, setUsers] = useState<OrganizerUser[]>([]);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [usersError, setUsersError] = useState<string | null>(null);
-  const [newUsername, setNewUsername] = useState('');
-  const [newDisplayName, setNewDisplayName] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newRole, setNewRole] = useState<OrganizerRole>('Schedule');
-  const [createUserBusy, setCreateUserBusy] = useState(false);
-  const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
-  const [broadcastsLoading, setBroadcastsLoading] = useState(false);
-  const [broadcastsError, setBroadcastsError] = useState<string | null>(null);
-  const [broadcastTitle, setBroadcastTitle] = useState('');
-  const [broadcastMessage, setBroadcastMessage] = useState('');
-  const [broadcastPriority, setBroadcastPriority] = useState<BroadcastPriority>('Normal');
-  const [sendBroadcastBusy, setSendBroadcastBusy] = useState(false);
+  const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
+  const [vendors, setVendors] = useState<AdminVendor[]>([]);
+  const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [vendorsError, setVendorsError] = useState<string | null>(null);
+  const [vendorSearch, setVendorSearch] = useState('');
+  const [editorMode, setEditorMode] = useState<VendorEditorMode>('closed');
+  const [editingVendor, setEditingVendor] = useState<AdminVendor | null>(null);
+  const [vendorForm, setVendorForm] = useState<VendorPayload>(EMPTY_VENDOR_FORM);
+  const [vendorFormError, setVendorFormError] = useState<string | null>(null);
+  const [vendorSaving, setVendorSaving] = useState(false);
   const [scheduleEvents, setScheduleEvents] = useState<AdminScheduleEvent[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [scheduleSearch, setScheduleSearch] = useState('');
   const [scheduleDayFilter, setScheduleDayFilter] = useState('All');
   const [scheduleFormEvent, setScheduleFormEvent] = useState<AdminScheduleEvent | null>(null);
-  const [scheduleFormMode, setScheduleFormMode] = useState<'closed' | 'view' | 'add' | 'edit'>('closed');
+  const [scheduleFormMode, setScheduleFormMode] = useState<ScheduleEditorMode>('closed');
   const [scheduleForm, setScheduleForm] = useState<ScheduleEventPayload>(createEmptySchedulePayload());
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -98,29 +114,16 @@ export default function AdminDashboardScreen() {
   const [importBusy, setImportBusy] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
 
-  const loadUsers = useCallback(async () => {
-    setUsersLoading(true);
-    setUsersError(null);
+  const loadVendors = useCallback(async () => {
+    setVendorsLoading(true);
+    setVendorsError(null);
     try {
-      const result = await listOrganizerUsers();
-      setUsers(result.users);
+      const result = await listAdminVendors();
+      setVendors(result.vendors);
     } catch (err) {
-      setUsersError(err instanceof Error ? err.message : 'Unable to load organizer users');
+      setVendorsError(err instanceof Error ? err.message : 'Unable to load vendors');
     } finally {
-      setUsersLoading(false);
-    }
-  }, []);
-
-  const loadBroadcasts = useCallback(async () => {
-    setBroadcastsLoading(true);
-    setBroadcastsError(null);
-    try {
-      const result = await listBroadcasts();
-      setBroadcasts(result.broadcasts);
-    } catch (err) {
-      setBroadcastsError(err instanceof Error ? err.message : 'Unable to load broadcast history');
-    } finally {
-      setBroadcastsLoading(false);
+      setVendorsLoading(false);
     }
   }, []);
 
@@ -163,16 +166,13 @@ export default function AdminDashboardScreen() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && activeSection === 'Users') {
-      loadUsers();
+    if (isAuthenticated && activeSection === 'vendors') {
+      loadVendors();
     }
-    if (isAuthenticated && activeSection === 'Communications') {
-      loadBroadcasts();
-    }
-    if (isAuthenticated && activeSection === 'Schedule') {
+    if (isAuthenticated && activeSection === 'schedule') {
       loadSchedule();
     }
-  }, [activeSection, isAuthenticated, loadBroadcasts, loadSchedule, loadUsers]);
+  }, [activeSection, isAuthenticated, loadSchedule, loadVendors]);
 
   useEffect(() => {
     AsyncStorage.getItem(SCHEDULE_MAPPING_STORAGE_KEY)
@@ -184,6 +184,25 @@ export default function AdminDashboardScreen() {
       .catch(() => undefined);
   }, []);
 
+  const visibleVendors = useMemo(() => {
+    const query = vendorSearch.trim().toLowerCase();
+    if (!query) {
+      return vendors;
+    }
+    return vendors.filter((vendor) =>
+      [
+        vendor.name,
+        vendor.type,
+        vendor.location,
+        vendor.hours_of_operation,
+        vendor.days_of_operation,
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [vendorSearch, vendors]);
+
   const handleLogout = async () => {
     try {
       await logoutOrganizer();
@@ -192,67 +211,90 @@ export default function AdminDashboardScreen() {
     }
   };
 
-  const handleCreateUser = async () => {
-    if (createUserBusy) {
+  const openCreateVendor = () => {
+    setEditorMode('create');
+    setEditingVendor(null);
+    setVendorForm(EMPTY_VENDOR_FORM);
+    setVendorFormError(null);
+  };
+
+  const openEditVendor = (vendor: AdminVendor) => {
+    setEditorMode('edit');
+    setEditingVendor(vendor);
+    setVendorForm({
+      name: vendor.name,
+      type: vendor.type,
+      location: vendor.location,
+      hours_of_operation: vendor.hours_of_operation,
+      days_of_operation: vendor.days_of_operation,
+      priority: vendor.priority,
+    });
+    setVendorFormError(null);
+  };
+
+  const closeVendorEditor = () => {
+    setEditorMode('closed');
+    setEditingVendor(null);
+    setVendorForm(EMPTY_VENDOR_FORM);
+    setVendorFormError(null);
+  };
+
+  const saveVendor = async () => {
+    if (vendorSaving) {
+      return;
+    }
+    if (!vendorForm.name?.trim()) {
+      setVendorFormError('Vendor name is required');
       return;
     }
 
-    setCreateUserBusy(true);
-    setUsersError(null);
+    setVendorSaving(true);
+    setVendorFormError(null);
     try {
-      const user = await createOrganizerUser({
-        username: newUsername,
-        password: newPassword,
-        display_name: newDisplayName,
-        role: newRole,
-      });
-      setUsers((current) => [...current, user]);
-      setNewUsername('');
-      setNewDisplayName('');
-      setNewPassword('');
-      setNewRole('Schedule');
+      const result =
+        editorMode === 'edit' && editingVendor
+          ? await updateAdminVendor(editingVendor.id, vendorForm)
+          : await createAdminVendor(vendorForm);
+      setVendors(result.vendors);
+      closeVendorEditor();
     } catch (err) {
-      setUsersError(err instanceof Error ? err.message : 'Unable to create organizer user');
+      setVendorFormError(err instanceof Error ? err.message : 'Unable to save vendor');
     } finally {
-      setCreateUserBusy(false);
+      setVendorSaving(false);
     }
   };
 
-  const handleSendBroadcast = async () => {
-    if (sendBroadcastBusy) {
+  const removeVendor = async (vendor: AdminVendor) => {
+    if (typeof window !== 'undefined' && !window.confirm(`Delete "${vendor.name}"?`)) {
       return;
     }
-
-    setSendBroadcastBusy(true);
-    setBroadcastsError(null);
+    setVendorsError(null);
     try {
-      const broadcast = await createBroadcast({
-        title: broadcastTitle,
-        message: broadcastMessage,
-        priority: broadcastPriority,
-      });
-      setBroadcasts((current) => [broadcast, ...current]);
-      setBroadcastTitle('');
-      setBroadcastMessage('');
-      setBroadcastPriority('Normal');
+      const result = await deleteAdminVendor(vendor.id);
+      setVendors(result.vendors);
     } catch (err) {
-      setBroadcastsError(err instanceof Error ? err.message : 'Unable to send broadcast');
-    } finally {
-      setSendBroadcastBusy(false);
+      setVendorsError(err instanceof Error ? err.message : 'Unable to delete vendor');
     }
   };
 
-  const openScheduleForm = (mode: 'view' | 'add' | 'edit', event?: AdminScheduleEvent) => {
+  const openScheduleForm = (mode: ScheduleEditorMode, event?: AdminScheduleEvent) => {
     setScheduleFormMode(mode);
     setScheduleFormEvent(event || null);
     setScheduleForm(event ? scheduleEventToPayload(event) : createEmptySchedulePayload());
     setScheduleError(null);
   };
 
-  const handleSaveScheduleEvent = async () => {
+  const closeScheduleForm = () => {
+    setScheduleFormMode('closed');
+    setScheduleFormEvent(null);
+    setScheduleForm(createEmptySchedulePayload());
+  };
+
+  const saveScheduleEvent = async () => {
     if (scheduleSaving || scheduleFormMode === 'view') {
       return;
     }
+
     setScheduleSaving(true);
     setScheduleError(null);
     try {
@@ -261,8 +303,7 @@ export default function AdminDashboardScreen() {
           ? await updateScheduleEvent(scheduleFormEvent.id, scheduleForm)
           : await createScheduleEvent(scheduleForm);
       setScheduleEvents(result.events);
-      setScheduleFormMode('closed');
-      setScheduleFormEvent(null);
+      closeScheduleForm();
     } catch (err) {
       setScheduleError(err instanceof Error ? err.message : 'Unable to save schedule event');
     } finally {
@@ -270,7 +311,7 @@ export default function AdminDashboardScreen() {
     }
   };
 
-  const handleDeleteScheduleEvent = async (event: AdminScheduleEvent) => {
+  const removeScheduleEvent = async (event: AdminScheduleEvent) => {
     if (typeof window !== 'undefined' && !window.confirm(`Delete "${event.title}"?`)) {
       return;
     }
@@ -283,7 +324,7 @@ export default function AdminDashboardScreen() {
     }
   };
 
-  const handlePrepareImport = async () => {
+  const prepareImport = async () => {
     const parsed = parseScheduleImportText(importText);
     const mapping = normalizeImportMapping(importMapping, parsed.headers);
     const prepared = prepareScheduleImport(parsed.rows, mapping);
@@ -296,7 +337,7 @@ export default function AdminDashboardScreen() {
     await AsyncStorage.setItem(SCHEDULE_MAPPING_STORAGE_KEY, JSON.stringify(mapping));
   };
 
-  const handleRunImport = async () => {
+  const runImport = async () => {
     if (importBusy) {
       return;
     }
@@ -315,7 +356,7 @@ export default function AdminDashboardScreen() {
       setScheduleEvents(result.events);
       setImportProblems(result.problems);
       setImportPreparedRows(prepared.rows);
-      setImportResult(`✓ ${result.imported_count} events imported`);
+      setImportResult(`${result.imported_count} events imported`);
     } catch (err) {
       setScheduleError(err instanceof Error ? err.message : 'Unable to import schedule');
     } finally {
@@ -336,193 +377,112 @@ export default function AdminDashboardScreen() {
   }
 
   return (
-    <View style={[styles.root, isCompact && styles.rootCompact]}>
-      <View style={[styles.sidebar, isCompact && styles.sidebarCompact]}>
-        <View style={styles.sidebarHeader}>
-          <View style={styles.brandMark}>
-            <Feather name="shield" size={20} color="#FFFFFF" />
-          </View>
-          <View style={styles.sidebarTitleBlock}>
-            <Text style={styles.sidebarTitle}>Organizer</Text>
-            <Text style={styles.sidebarSubtitle}>{currentUser?.event_id}</Text>
-          </View>
-        </View>
+    <AdminShell
+      activeKey={activeSection}
+      navItems={NAV_ITEMS}
+      currentUser={currentUser}
+      onNavigate={(key) => setActiveSection(key as AdminSection)}
+      onLogout={handleLogout}
+    >
+      {activeSection === 'dashboard' && (
+        <DashboardPage
+          currentUser={currentUser}
+          vendorsCount={vendors.length}
+          scheduleCount={scheduleEvents.length}
+          onOpenSchedule={() => setActiveSection('schedule')}
+        />
+      )}
 
-        <View style={[styles.navList, isCompact && styles.navListCompact]}>
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeSection === item;
-            return (
-              <Pressable
-                key={item}
-                style={[styles.navButton, isActive && styles.navButtonActive]}
-                onPress={() => setActiveSection(item)}
-              >
-                <Feather
-                  name={getSectionIcon(item)}
-                  size={18}
-                  color={isActive ? '#FFFFFF' : colors.textSecondary}
-                />
-                <Text style={[styles.navButtonText, isActive && styles.navButtonTextActive]}>
-                  {item}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+      {activeSection === 'vendors' && (
+        <VendorsPage
+          vendors={visibleVendors}
+          totalCount={vendors.length}
+          loading={vendorsLoading}
+          error={vendorsError}
+          search={vendorSearch}
+          editorMode={editorMode}
+          form={vendorForm}
+          formError={vendorFormError}
+          saving={vendorSaving}
+          editingVendor={editingVendor}
+          onSearchChange={setVendorSearch}
+          onRefresh={loadVendors}
+          onCreate={openCreateVendor}
+          onEdit={openEditVendor}
+          onDelete={removeVendor}
+          onFormChange={setVendorForm}
+          onCloseEditor={closeVendorEditor}
+          onSave={saveVendor}
+        />
+      )}
 
-        <Pressable style={[styles.logoutButton, isCompact && styles.logoutButtonCompact]} onPress={handleLogout}>
-          <Feather name="log-out" size={18} color={colors.error} />
-          <Text style={styles.logoutText}>Logout</Text>
-        </Pressable>
-      </View>
-
-      <ScrollView style={styles.main} contentContainerStyle={styles.mainContent}>
-        <View style={styles.topBar}>
-          <View>
-            <Text style={styles.pageTitle}>{activeSection}</Text>
-            <Text style={styles.pageSubtitle}>
-              Signed in as {currentUser?.display_name} ({currentUser?.role})
-            </Text>
-          </View>
-        </View>
-
-        {activeSection === 'Dashboard' && <DashboardOverview currentUser={currentUser} />}
-        {activeSection === 'Communications' && (
-          <CommunicationsPanel
-            broadcasts={broadcasts}
-            loading={broadcastsLoading}
-            error={broadcastsError}
-            title={broadcastTitle}
-            message={broadcastMessage}
-            priority={broadcastPriority}
-            canSend={currentUser?.role === 'Owner' || currentUser?.role === 'Communications'}
-            sendBusy={sendBroadcastBusy}
-            onRefresh={loadBroadcasts}
-            onTitleChange={setBroadcastTitle}
-            onMessageChange={setBroadcastMessage}
-            onPriorityChange={setBroadcastPriority}
-            onSend={handleSendBroadcast}
-          />
-        )}
-        {activeSection === 'Schedule' && (
-          <ScheduleManagementPanel
-            events={scheduleEvents}
-            loading={scheduleLoading}
-            error={scheduleError}
-            search={scheduleSearch}
-            dayFilter={scheduleDayFilter}
-            formMode={scheduleFormMode}
-            formEvent={scheduleFormEvent}
-            form={scheduleForm}
-            saving={scheduleSaving}
-            importOpen={importOpen}
-            importText={importText}
-            importHeaders={importHeaders}
-            importMapping={importMapping}
-            importProblems={importProblems}
-            importPreparedRows={importPreparedRows}
-            importBusy={importBusy}
-            importResult={importResult}
-            onRefresh={loadSchedule}
-            onSearchChange={setScheduleSearch}
-            onDayFilterChange={setScheduleDayFilter}
-            onOpenForm={openScheduleForm}
-            onCloseForm={() => setScheduleFormMode('closed')}
-            onFormChange={setScheduleForm}
-            onSave={handleSaveScheduleEvent}
-            onDelete={handleDeleteScheduleEvent}
-            onImportOpenChange={setImportOpen}
-            onImportTextChange={setImportText}
-            onImportMappingChange={(mapping) => {
-              setImportMapping(mapping);
-              const prepared = prepareScheduleImport(importRows, mapping);
-              setImportPreparedRows(prepared.rows);
-              setImportProblems(prepared.problems);
-            }}
-            onPrepareImport={handlePrepareImport}
-            onRunImport={handleRunImport}
-          />
-        )}
-        {activeSection === 'Settings' && <SettingsPanel currentUser={currentUser} />}
-        {activeSection === 'Users' && (
-          <UsersPanel
-            users={users}
-            loading={usersLoading}
-            error={usersError}
-            newUsername={newUsername}
-            newDisplayName={newDisplayName}
-            newPassword={newPassword}
-            newRole={newRole}
-            createUserBusy={createUserBusy}
-            onRefresh={loadUsers}
-            onUsernameChange={setNewUsername}
-            onDisplayNameChange={setNewDisplayName}
-            onPasswordChange={setNewPassword}
-            onRoleChange={setNewRole}
-            onCreateUser={handleCreateUser}
-          />
-        )}
-      </ScrollView>
-    </View>
+      {activeSection === 'schedule' && (
+        <SchedulePage
+          events={scheduleEvents}
+          loading={scheduleLoading}
+          error={scheduleError}
+          search={scheduleSearch}
+          dayFilter={scheduleDayFilter}
+          formMode={scheduleFormMode}
+          formEvent={scheduleFormEvent}
+          form={scheduleForm}
+          saving={scheduleSaving}
+          importOpen={importOpen}
+          importText={importText}
+          importHeaders={importHeaders}
+          importMapping={importMapping}
+          importProblems={importProblems}
+          importPreparedRows={importPreparedRows}
+          importBusy={importBusy}
+          importResult={importResult}
+          onRefresh={loadSchedule}
+          onSearchChange={setScheduleSearch}
+          onDayFilterChange={setScheduleDayFilter}
+          onOpenForm={openScheduleForm}
+          onCloseForm={closeScheduleForm}
+          onFormChange={setScheduleForm}
+          onSave={saveScheduleEvent}
+          onDelete={removeScheduleEvent}
+          onImportOpenChange={setImportOpen}
+          onImportTextChange={setImportText}
+          onImportMappingChange={(mapping) => {
+            setImportMapping(mapping);
+            const prepared = prepareScheduleImport(importRows, mapping);
+            setImportPreparedRows(prepared.rows);
+            setImportProblems(prepared.problems);
+          }}
+          onPrepareImport={prepareImport}
+          onRunImport={runImport}
+        />
+      )}
+    </AdminShell>
   );
 }
 
-function getSectionIcon(section: AdminSection): keyof typeof Feather.glyphMap {
-  switch (section) {
-    case 'Dashboard':
-      return 'grid';
-    case 'Communications':
-      return 'message-square';
-    case 'Schedule':
-      return 'calendar';
-    case 'Users':
-      return 'users';
-    case 'Settings':
-      return 'settings';
-  }
-}
-
-function formatAdminDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function DashboardOverview({ currentUser }: { currentUser: OrganizerUser | null }) {
-  return (
-    <View style={styles.sectionGrid}>
-      <InfoPanel label="Event" value={currentUser?.event_id || 'ipm-2026'} icon="map-pin" />
-      <InfoPanel label="Role" value={currentUser?.role || 'Organizer'} icon="shield" />
-      <InfoPanel label="Session" value="Authenticated" icon="check-circle" />
-    </View>
-  );
-}
-
-function InfoPanel({
-  label,
-  value,
-  icon,
+function DashboardPage({
+  currentUser,
+  vendorsCount,
+  scheduleCount,
+  onOpenSchedule,
 }: {
-  label: string;
-  value: string;
-  icon: keyof typeof Feather.glyphMap;
+  currentUser: OrganizerUser | null;
+  vendorsCount: number;
+  scheduleCount: number;
+  onOpenSchedule: () => void;
 }) {
   return (
-    <View style={styles.infoPanel}>
-      <View style={styles.infoIcon}>
-        <Feather name={icon} size={20} color={colors.primary} />
+    <ContentPage
+      title="Dashboard"
+      subtitle="Event operations overview"
+      primaryAction={{ label: 'Manage schedule', icon: 'calendar', onPress: onOpenSchedule }}
+    >
+      <View style={styles.metricGrid}>
+        <MetricCard label="Event" value={currentUser?.event_id || 'Current event'} icon="map-pin" />
+        <MetricCard label="Role" value={currentUser?.role || 'Organizer'} icon="shield" />
+        <MetricCard label="Vendors" value={String(vendorsCount)} icon="shopping-bag" />
+        <MetricCard label="Schedule" value={String(scheduleCount)} icon="calendar" />
       </View>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
+    </ContentPage>
   );
 }
 
@@ -681,7 +641,7 @@ function prepareScheduleImport(rows: Record<string, string>[], mapping: ImportMa
   return { rows: preparedRows, problems };
 }
 
-function ScheduleManagementPanel({
+function SchedulePage({
   events,
   loading,
   error,
@@ -718,7 +678,7 @@ function ScheduleManagementPanel({
   error: string | null;
   search: string;
   dayFilter: string;
-  formMode: 'closed' | 'view' | 'add' | 'edit';
+  formMode: ScheduleEditorMode;
   formEvent: AdminScheduleEvent | null;
   form: ScheduleEventPayload;
   saving: boolean;
@@ -733,7 +693,7 @@ function ScheduleManagementPanel({
   onRefresh: () => void;
   onSearchChange: (value: string) => void;
   onDayFilterChange: (value: string) => void;
-  onOpenForm: (mode: 'view' | 'add' | 'edit', event?: AdminScheduleEvent) => void;
+  onOpenForm: (mode: ScheduleEditorMode, event?: AdminScheduleEvent) => void;
   onCloseForm: () => void;
   onFormChange: (value: ScheduleEventPayload) => void;
   onSave: () => void;
@@ -756,736 +716,809 @@ function ScheduleManagementPanel({
     const matchesDay = dayFilter === 'All' || getScheduleDay(event) === dayFilter;
     return matchesSearch && matchesDay;
   });
-  const isReadOnly = formMode === 'view';
 
   return (
-    <View style={styles.scheduleLayout}>
-      <View style={styles.scheduleToolbar}>
-        <TextInput
-          value={search}
-          onChangeText={onSearchChange}
-          placeholder="Search"
-          placeholderTextColor={colors.textMuted}
-          style={[styles.input, styles.scheduleSearchInput]}
-        />
+    <ContentPage
+      title="Schedule"
+      subtitle={`${events.length} schedule item${events.length === 1 ? '' : 's'} in this event`}
+      primaryAction={{ label: 'Add event', icon: 'plus', onPress: () => onOpenForm('add') }}
+    >
+      <ContentToolbar
+        searchValue={search}
+        searchPlaceholder="Search schedule by title, location, category, or date"
+        onSearchChange={onSearchChange}
+        secondaryAction={{ label: 'Refresh', icon: 'refresh-cw', onPress: onRefresh, disabled: loading }}
+      />
+
+      <View style={styles.scheduleToolbarExtras}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayFilterList}>
           {days.map((day) => (
             <Pressable
               key={day}
-              style={[styles.dayFilterButton, dayFilter === day && styles.dayFilterButtonActive]}
+              style={[styles.filterPill, dayFilter === day && styles.filterPillActive]}
               onPress={() => onDayFilterChange(day)}
             >
-              <Text style={[styles.dayFilterText, dayFilter === day && styles.dayFilterTextActive]}>{day}</Text>
+              <Text style={[styles.filterPillText, dayFilter === day && styles.filterPillTextActive]}>
+                {day}
+              </Text>
             </Pressable>
           ))}
         </ScrollView>
-        <Pressable style={styles.secondaryButton} onPress={() => onOpenForm('add')}>
-          <Feather name="plus" size={17} color={colors.primary} />
-          <Text style={styles.secondaryButtonText}>Add Event</Text>
-        </Pressable>
-        <Pressable style={styles.primaryButtonSmall} onPress={() => onImportOpenChange(!importOpen)}>
-          <Feather name="upload" size={17} color="#FFFFFF" />
-          <Text style={styles.primaryButtonText}>Import Schedule</Text>
+        <Pressable style={styles.importButton} onPress={() => onImportOpenChange(!importOpen)}>
+          <Feather name="upload" size={17} color={colors.textSecondary} />
+          <Text style={styles.importButtonText}>{importOpen ? 'Close import' : 'Import schedule'}</Text>
         </Pressable>
       </View>
 
-      {error && (
-        <View style={styles.errorBox}>
-          <Feather name="alert-circle" size={16} color={colors.error} />
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
+      {error && <ErrorState message={error} onRetry={onRefresh} />}
 
       {importOpen && (
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Import Schedule</Text>
-          <TextInput
-            value={importText}
-            onChangeText={onImportTextChange}
-            placeholder="Paste rows from Excel, Google Sheets, or CSV"
-            placeholderTextColor={colors.textMuted}
-            style={[styles.input, styles.importTextArea]}
-            multiline
-            textAlignVertical="top"
-          />
-          <View style={styles.actionRow}>
-            <Pressable style={styles.secondaryButton} onPress={onPrepareImport}>
-              <Feather name="columns" size={17} color={colors.primary} />
-              <Text style={styles.secondaryButtonText}>Map Columns</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.primaryButtonSmall, importBusy && styles.primaryButtonDisabled]}
-              onPress={onRunImport}
-              disabled={importBusy || importPreparedRows.length === 0}
-            >
-              {importBusy ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <>
-                  <Feather name="check" size={17} color="#FFFFFF" />
-                  <Text style={styles.primaryButtonText}>Import</Text>
-                </>
-              )}
-            </Pressable>
-          </View>
-
-          {importHeaders.length > 0 && (
-            <View style={styles.mappingGrid}>
-              {PLATFORM_FIELDS.map((field) => (
-                <View key={field.key} style={styles.mappingRow}>
-                  <Text style={styles.mappingLabel}>
-                    {field.label}{field.required ? ' *' : ''}
-                  </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mappingOptions}>
-                    <Pressable
-                      style={[styles.mappingOption, !importMapping[field.key] && styles.mappingOptionActive]}
-                      onPress={() => onImportMappingChange({ ...importMapping, [field.key]: undefined })}
-                    >
-                      <Text style={[styles.mappingOptionText, !importMapping[field.key] && styles.mappingOptionTextActive]}>
-                        None
-                      </Text>
-                    </Pressable>
-                    {importHeaders.map((header) => (
-                      <Pressable
-                        key={header}
-                        style={[styles.mappingOption, importMapping[field.key] === header && styles.mappingOptionActive]}
-                        onPress={() => onImportMappingChange({ ...importMapping, [field.key]: header })}
-                      >
-                        <Text style={[styles.mappingOptionText, importMapping[field.key] === header && styles.mappingOptionTextActive]}>
-                          {header}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {(importResult || importPreparedRows.length > 0 || importProblems.length > 0) && (
-            <View style={styles.importSummary}>
-              {importResult && <Text style={styles.importSuccess}>{importResult}</Text>}
-              {importPreparedRows.length > 0 && !importResult && (
-                <Text style={styles.importSuccess}>✓ {importPreparedRows.length} events ready</Text>
-              )}
-              {importProblems.length > 0 && (
-                <Text style={styles.importWarning}>⚠ {importProblems.length} rows require attention</Text>
-              )}
-              {importProblems.slice(0, 5).map((problem) => (
-                <Text key={problem.row_number} style={styles.problemText}>
-                  Row {problem.row_number}: {problem.errors.join(', ')}
-                </Text>
-              ))}
-            </View>
-          )}
-        </View>
+        <ScheduleImportPanel
+          importText={importText}
+          importHeaders={importHeaders}
+          importMapping={importMapping}
+          importProblems={importProblems}
+          importPreparedRows={importPreparedRows}
+          importBusy={importBusy}
+          importResult={importResult}
+          onImportTextChange={onImportTextChange}
+          onImportMappingChange={onImportMappingChange}
+          onPrepareImport={onPrepareImport}
+          onRunImport={onRunImport}
+        />
       )}
 
       {formMode !== 'closed' && (
-        <View style={styles.panel}>
-          <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>
-              {formMode === 'add' ? 'Add Event' : formMode === 'edit' ? 'Edit Event' : 'Event Details'}
-            </Text>
-            <Pressable style={styles.iconButton} onPress={onCloseForm}>
-              <Feather name="x" size={18} color={colors.primary} />
-            </Pressable>
-          </View>
-          <View style={styles.formGrid}>
-            <TextInput value={form.title} onChangeText={(title) => onFormChange({ ...form, title })} placeholder="Event title" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
-            <TextInput value={form.start_date} onChangeText={(start_date) => onFormChange({ ...form, start_date })} placeholder="Date" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
-            <TextInput value={form.start_time} onChangeText={(start_time) => onFormChange({ ...form, start_time })} placeholder="Start time" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
-            <TextInput value={form.end_time} onChangeText={(end_time) => onFormChange({ ...form, end_time })} placeholder="End time" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
-            <TextInput value={form.location_name || ''} onChangeText={(location_name) => onFormChange({ ...form, location_name })} placeholder="Location" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
-            <TextInput value={form.category || ''} onChangeText={(category) => onFormChange({ ...form, category })} placeholder="Category" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
-            <TextInput value={form.days_active || ''} onChangeText={(days_active) => onFormChange({ ...form, days_active })} placeholder="Day" placeholderTextColor={colors.textMuted} style={styles.input} editable={!isReadOnly} />
-            <TextInput value={form.description || ''} onChangeText={(description) => onFormChange({ ...form, description })} placeholder="Description" placeholderTextColor={colors.textMuted} style={[styles.input, styles.messageInput]} multiline editable={!isReadOnly} />
-          </View>
-          {formEvent && <Text style={styles.panelText}>Row {formEvent.row_number}</Text>}
-          {formMode !== 'view' && (
-            <Pressable style={[styles.primaryButton, saving && styles.primaryButtonDisabled]} onPress={onSave} disabled={saving}>
-              {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>Save Event</Text>}
-            </Pressable>
-          )}
+        <ScheduleEditor
+          mode={formMode}
+          event={formEvent}
+          form={form}
+          saving={saving}
+          onChange={onFormChange}
+          onClose={onCloseForm}
+          onSave={onSave}
+        />
+      )}
+
+      {loading ? (
+        <LoadingState label="Loading schedule..." />
+      ) : visibleEvents.length === 0 ? (
+        <EmptyState
+          icon="calendar"
+          title={search || dayFilter !== 'All' ? 'No schedule items match your filters' : 'No schedule items yet'}
+          message={
+            search || dayFilter !== 'All'
+              ? 'Clear the search or day filter to see more items.'
+              : 'Create or import the first schedule item for this event.'
+          }
+          action={search || dayFilter !== 'All' ? undefined : { label: 'Add event', icon: 'plus', onPress: () => onOpenForm('add') }}
+        />
+      ) : (
+        <ScheduleList events={visibleEvents} onOpenForm={onOpenForm} onDelete={onDelete} />
+      )}
+    </ContentPage>
+  );
+}
+
+function ScheduleImportPanel({
+  importText,
+  importHeaders,
+  importMapping,
+  importProblems,
+  importPreparedRows,
+  importBusy,
+  importResult,
+  onImportTextChange,
+  onImportMappingChange,
+  onPrepareImport,
+  onRunImport,
+}: {
+  importText: string;
+  importHeaders: string[];
+  importMapping: ImportMapping;
+  importProblems: ScheduleImportProblem[];
+  importPreparedRows: ScheduleImportRow[];
+  importBusy: boolean;
+  importResult: string | null;
+  onImportTextChange: (value: string) => void;
+  onImportMappingChange: (value: ImportMapping) => void;
+  onPrepareImport: () => void;
+  onRunImport: () => void;
+}) {
+  return (
+    <View style={styles.editorPanel}>
+      <View style={styles.editorHeader}>
+        <View>
+          <Text style={styles.editorTitle}>Import schedule</Text>
+          <Text style={styles.editorSubtitle}>Paste rows from Excel, Google Sheets, or CSV</Text>
+        </View>
+      </View>
+      <TextInput
+        value={importText}
+        onChangeText={onImportTextChange}
+        placeholder="Paste schedule rows here"
+        placeholderTextColor={colors.textMuted}
+        style={[styles.input, styles.textArea]}
+        multiline
+        textAlignVertical="top"
+      />
+      <View style={styles.editorActions}>
+        <Pressable style={styles.cancelButton} onPress={onPrepareImport}>
+          <Feather name="columns" size={17} color={colors.textSecondary} />
+          <Text style={styles.cancelButtonText}>Map columns</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.saveButton, (importBusy || importPreparedRows.length === 0) && styles.buttonDisabled]}
+          onPress={onRunImport}
+          disabled={importBusy || importPreparedRows.length === 0}
+        >
+          {importBusy ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="check" size={17} color="#FFFFFF" />}
+          <Text style={styles.saveButtonText}>{importBusy ? 'Importing...' : 'Import'}</Text>
+        </Pressable>
+      </View>
+
+      {importHeaders.length > 0 && (
+        <View style={styles.mappingGrid}>
+          {PLATFORM_FIELDS.map((field) => (
+            <View key={field.key} style={styles.mappingRow}>
+              <FieldLabel label={field.label} required={field.required} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mappingOptions}>
+                <Pressable
+                  style={[styles.filterPill, !importMapping[field.key] && styles.filterPillActive]}
+                  onPress={() => onImportMappingChange({ ...importMapping, [field.key]: undefined })}
+                >
+                  <Text style={[styles.filterPillText, !importMapping[field.key] && styles.filterPillTextActive]}>
+                    None
+                  </Text>
+                </Pressable>
+                {importHeaders.map((header) => (
+                  <Pressable
+                    key={header}
+                    style={[styles.filterPill, importMapping[field.key] === header && styles.filterPillActive]}
+                    onPress={() => onImportMappingChange({ ...importMapping, [field.key]: header })}
+                  >
+                    <Text style={[styles.filterPillText, importMapping[field.key] === header && styles.filterPillTextActive]}>
+                      {header}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ))}
         </View>
       )}
 
-      <View style={styles.panel}>
-        <View style={styles.panelHeader}>
-          <Text style={styles.panelTitle}>Event List</Text>
-          <Pressable style={styles.iconButton} onPress={onRefresh}>
-            <Feather name="refresh-cw" size={18} color={colors.primary} />
-          </Pressable>
+      {(importResult || importPreparedRows.length > 0 || importProblems.length > 0) && (
+        <View style={styles.importSummary}>
+          {importResult && <Text style={styles.importSuccess}>{importResult}</Text>}
+          {importPreparedRows.length > 0 && !importResult && (
+            <Text style={styles.importSuccess}>{importPreparedRows.length} events ready</Text>
+          )}
+          {importProblems.length > 0 && (
+            <Text style={styles.importWarning}>{importProblems.length} rows require attention</Text>
+          )}
+          {importProblems.slice(0, 5).map((problem) => (
+            <Text key={problem.row_number} style={styles.problemText}>
+              Row {problem.row_number}: {problem.errors.join(', ')}
+            </Text>
+          ))}
         </View>
-        {loading ? (
-          <ActivityIndicator color={colors.primary} />
-        ) : (
-          <View style={styles.scheduleList}>
-            {visibleEvents.map((event) => (
-              <View key={event.id} style={styles.scheduleRow}>
-                <View style={styles.scheduleTitleCell}>
-                  <Text style={styles.scheduleEventTitle}>{event.title}</Text>
-                  <Text style={styles.scheduleMeta}>{event.start_date}</Text>
-                </View>
-                <Text style={styles.scheduleCell}>{event.start_time}</Text>
-                <Text style={styles.scheduleCell}>{event.location_name || 'No location'}</Text>
-                <View style={styles.scheduleActions}>
-                  <Pressable style={styles.textAction} onPress={() => onOpenForm('view', event)}>
-                    <Text style={styles.textActionLabel}>View</Text>
-                  </Pressable>
-                  <Pressable style={styles.textAction} onPress={() => onOpenForm('edit', event)}>
-                    <Text style={styles.textActionLabel}>Edit</Text>
-                  </Pressable>
-                  <Pressable style={styles.textAction} onPress={() => onDelete(event)}>
-                    <Text style={[styles.textActionLabel, styles.deleteActionLabel]}>Delete</Text>
-                  </Pressable>
-                </View>
-              </View>
-            ))}
-            {visibleEvents.length === 0 && <Text style={styles.panelText}>No events found.</Text>}
-          </View>
-        )}
-      </View>
+      )}
     </View>
   );
 }
 
-function CommunicationsPanel({
-  broadcasts,
-  loading,
-  error,
-  title,
-  message,
-  priority,
-  canSend,
-  sendBusy,
-  onRefresh,
-  onTitleChange,
-  onMessageChange,
-  onPriorityChange,
-  onSend,
+function ScheduleEditor({
+  mode,
+  event,
+  form,
+  saving,
+  onChange,
+  onClose,
+  onSave,
 }: {
-  broadcasts: Broadcast[];
-  loading: boolean;
-  error: string | null;
-  title: string;
-  message: string;
-  priority: BroadcastPriority;
-  canSend: boolean;
-  sendBusy: boolean;
-  onRefresh: () => void;
-  onTitleChange: (value: string) => void;
-  onMessageChange: (value: string) => void;
-  onPriorityChange: (value: BroadcastPriority) => void;
-  onSend: () => void;
+  mode: Exclude<ScheduleEditorMode, 'closed'>;
+  event: AdminScheduleEvent | null;
+  form: ScheduleEventPayload;
+  saving: boolean;
+  onChange: (value: ScheduleEventPayload) => void;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const isReadOnly = mode === 'view';
+  const updateField = (key: keyof ScheduleEventPayload, value: string) => {
+    onChange({ ...form, [key]: value });
+  };
+
+  return (
+    <View style={styles.editorPanel}>
+      <View style={styles.editorHeader}>
+        <View>
+          <Text style={styles.editorTitle}>
+            {mode === 'add' ? 'Add event' : mode === 'edit' ? 'Edit event' : 'Event details'}
+          </Text>
+          <Text style={styles.editorSubtitle}>
+            {event ? `Row ${event.row_number}` : 'Schedule item for the current event'}
+          </Text>
+        </View>
+        <Pressable style={styles.iconButton} onPress={onClose}>
+          <Feather name="x" size={18} color={colors.textSecondary} />
+        </Pressable>
+      </View>
+
+      <View style={styles.formGrid}>
+        <FormTextField label="Event title" value={form.title} required placeholder="Event title" editable={!isReadOnly} onChangeText={(value) => updateField('title', value)} />
+        <FormTextField label="Date" value={form.start_date} required placeholder="Date" editable={!isReadOnly} onChangeText={(value) => updateField('start_date', value)} />
+        <FormTextField label="Start time" value={form.start_time} required placeholder="Start time" editable={!isReadOnly} onChangeText={(value) => updateField('start_time', value)} />
+        <FormTextField label="End time" value={form.end_time} required placeholder="End time" editable={!isReadOnly} onChangeText={(value) => updateField('end_time', value)} />
+        <FormTextField label="Location" value={form.location_name || ''} placeholder="Location" editable={!isReadOnly} onChangeText={(value) => updateField('location_name', value)} />
+        <FormTextField label="Category" value={form.category || ''} placeholder="Category" editable={!isReadOnly} onChangeText={(value) => updateField('category', value)} />
+        <FormTextField label="Day" value={form.days_active || ''} placeholder="Day" editable={!isReadOnly} onChangeText={(value) => updateField('days_active', value)} />
+        <FormTextField label="Description" value={form.description || ''} placeholder="Description" editable={!isReadOnly} multiline onChangeText={(value) => updateField('description', value)} />
+      </View>
+
+      {mode !== 'view' && (
+        <View style={styles.editorActions}>
+          <Pressable style={styles.cancelButton} onPress={onClose} disabled={saving}>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </Pressable>
+          <Pressable style={[styles.saveButton, saving && styles.buttonDisabled]} onPress={onSave} disabled={saving}>
+            {saving ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="save" size={17} color="#FFFFFF" />}
+            <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save event'}</Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function ScheduleList({
+  events,
+  onOpenForm,
+  onDelete,
+}: {
+  events: AdminScheduleEvent[];
+  onOpenForm: (mode: ScheduleEditorMode, event?: AdminScheduleEvent) => void;
+  onDelete: (event: AdminScheduleEvent) => void;
 }) {
   return (
-    <View style={styles.communicationsLayout}>
-      <View style={styles.panel}>
-        <Text style={styles.panelTitle}>New Broadcast</Text>
-        <Text style={styles.panelText}>Audience: Everyone</Text>
-
-        {!canSend && (
-          <View style={styles.readOnlyNotice}>
-            <Feather name="lock" size={16} color={colors.warning} />
-            <Text style={styles.readOnlyNoticeText}>
-              Schedule role has read-only access to Communications.
+    <View style={styles.table}>
+      <View style={[styles.tableRow, styles.tableHeader]}>
+        <Text style={[styles.tableHeaderText, styles.scheduleNameColumn]}>Event</Text>
+        <Text style={[styles.tableHeaderText, styles.scheduleTimeColumn]}>Time</Text>
+        <Text style={[styles.tableHeaderText, styles.scheduleLocationColumn]}>Location</Text>
+        <Text style={[styles.tableHeaderText, styles.scheduleActionsColumn]}>Actions</Text>
+      </View>
+      {events.map((event) => (
+        <View key={event.id} style={styles.tableRow}>
+          <View style={styles.scheduleNameColumn}>
+            <Text style={styles.vendorName}>{event.title}</Text>
+            <Text style={styles.vendorMeta} numberOfLines={1}>
+              {[event.start_date, event.category].filter(Boolean).join(' · ')}
             </Text>
           </View>
-        )}
-
-        <View style={styles.form}>
-          <TextInput
-            value={title}
-            onChangeText={onTitleChange}
-            placeholder="Title"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            editable={canSend}
-          />
-          <TextInput
-            value={message}
-            onChangeText={onMessageChange}
-            placeholder="Message"
-            placeholderTextColor={colors.textMuted}
-            style={[styles.input, styles.messageInput]}
-            editable={canSend}
-            multiline
-            textAlignVertical="top"
-          />
-
-          <View style={styles.prioritySelector}>
-            {BROADCAST_PRIORITIES.map((option) => {
-              const isSelected = option === priority;
-              return (
-                <Pressable
-                  key={option}
-                  style={[
-                    styles.priorityOption,
-                    isSelected && styles.priorityOptionSelected,
-                    !canSend && styles.optionDisabled,
-                  ]}
-                  onPress={() => onPriorityChange(option)}
-                  disabled={!canSend}
-                >
-                  <Text
-                    style={[
-                      styles.priorityOptionText,
-                      isSelected && styles.priorityOptionTextSelected,
-                    ]}
-                  >
-                    {option}
-                  </Text>
-                </Pressable>
-              );
-            })}
+          <Text style={[styles.tableText, styles.scheduleTimeColumn]}>
+            {[event.start_time, event.end_time].filter(Boolean).join(' - ') || 'No time'}
+          </Text>
+          <Text style={[styles.tableText, styles.scheduleLocationColumn]}>{event.location_name || 'No location'}</Text>
+          <View style={styles.scheduleActionsColumn}>
+            <Pressable style={styles.iconButton} onPress={() => onOpenForm('view', event)}>
+              <Feather name="eye" size={16} color={colors.textSecondary} />
+            </Pressable>
+            <Pressable style={styles.iconButton} onPress={() => onOpenForm('edit', event)}>
+              <Feather name="edit-2" size={16} color={colors.textSecondary} />
+            </Pressable>
+            <Pressable style={styles.iconButton} onPress={() => onDelete(event)}>
+              <Feather name="trash-2" size={16} color={colors.error} />
+            </Pressable>
           </View>
-
-          <View style={styles.previewBox}>
-            <Text style={styles.previewLabel}>Preview</Text>
-            <View style={styles.previewHeader}>
-              <Text style={styles.previewPriority}>{priority}</Text>
-              <Text style={styles.previewAudience}>Everyone</Text>
-            </View>
-            <Text style={styles.previewTitle}>{title || 'Broadcast title'}</Text>
-            <Text style={styles.previewMessage}>{message || 'Broadcast message will appear here.'}</Text>
-          </View>
-
-          {error && (
-            <View style={styles.errorBox}>
-              <Feather name="alert-circle" size={16} color={colors.error} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          <Pressable
-            style={[
-              styles.primaryButton,
-              (!canSend || sendBusy) && styles.primaryButtonDisabled,
-            ]}
-            onPress={onSend}
-            disabled={!canSend || sendBusy}
-          >
-            {sendBusy ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Feather name="send" size={18} color="#FFFFFF" />
-                <Text style={styles.primaryButtonText}>Send</Text>
-              </>
-            )}
-          </Pressable>
         </View>
-      </View>
-
-      <View style={[styles.panel, styles.historyPanel]}>
-        <View style={styles.panelHeader}>
-          <Text style={styles.panelTitle}>Broadcast History</Text>
-          <Pressable style={styles.iconButton} onPress={onRefresh}>
-            <Feather name="refresh-cw" size={18} color={colors.primary} />
-          </Pressable>
-        </View>
-
-        {loading ? (
-          <ActivityIndicator color={colors.primary} />
-        ) : (
-          <View style={styles.broadcastList}>
-            {broadcasts.map((broadcast) => (
-              <View key={broadcast.id} style={styles.broadcastRow}>
-                <View style={styles.broadcastTitleCell}>
-                  <Text style={styles.broadcastTitle}>{broadcast.title}</Text>
-                  <Text style={styles.broadcastMeta}>{formatAdminDateTime(broadcast.sent_at)}</Text>
-                </View>
-                <Text style={styles.broadcastPriorityCell}>{broadcast.priority}</Text>
-                <Text style={styles.broadcastCell}>{broadcast.audience}</Text>
-                <Text style={styles.broadcastCell}>
-                  {broadcast.sender_username} ({broadcast.sender_role})
-                </Text>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusBadgeText}>{broadcast.status}</Text>
-                </View>
-              </View>
-            ))}
-            {broadcasts.length === 0 && <Text style={styles.panelText}>No broadcasts have been sent yet.</Text>}
-          </View>
-        )}
-      </View>
+      ))}
     </View>
   );
 }
 
-function SettingsPanel({ currentUser }: { currentUser: OrganizerUser | null }) {
-  return (
-    <View style={styles.panel}>
-      <Text style={styles.panelTitle}>Portal Settings</Text>
-      <View style={styles.settingRow}>
-        <Text style={styles.settingLabel}>Event ID</Text>
-        <Text style={styles.settingValue}>{currentUser?.event_id}</Text>
-      </View>
-      <View style={styles.settingRow}>
-        <Text style={styles.settingLabel}>Account</Text>
-        <Text style={styles.settingValue}>{currentUser?.username}</Text>
-      </View>
-    </View>
-  );
-}
-
-function UsersPanel({
-  users,
-  loading,
-  error,
-  newUsername,
-  newDisplayName,
-  newPassword,
-  newRole,
-  createUserBusy,
-  onRefresh,
-  onUsernameChange,
-  onDisplayNameChange,
-  onPasswordChange,
-  onRoleChange,
-  onCreateUser,
+function MetricCard({
+  label,
+  value,
+  icon,
 }: {
-  users: OrganizerUser[];
-  loading: boolean;
-  error: string | null;
-  newUsername: string;
-  newDisplayName: string;
-  newPassword: string;
-  newRole: OrganizerRole;
-  createUserBusy: boolean;
-  onRefresh: () => void;
-  onUsernameChange: (value: string) => void;
-  onDisplayNameChange: (value: string) => void;
-  onPasswordChange: (value: string) => void;
-  onRoleChange: (value: OrganizerRole) => void;
-  onCreateUser: () => void;
+  label: string;
+  value: string;
+  icon: keyof typeof Feather.glyphMap;
 }) {
   return (
-    <View style={styles.usersLayout}>
-      <View style={styles.panel}>
-        <View style={styles.panelHeader}>
-          <Text style={styles.panelTitle}>Organizer Users</Text>
-          <Pressable style={styles.iconButton} onPress={onRefresh}>
-            <Feather name="refresh-cw" size={18} color={colors.primary} />
-          </Pressable>
-        </View>
+    <View style={styles.metricCard}>
+      <View style={styles.metricIcon}>
+        <Feather name={icon} size={20} color={colors.primary} />
+      </View>
+      <Text style={styles.metricLabel}>{label}</Text>
+      <Text style={styles.metricValue}>{value}</Text>
+    </View>
+  );
+}
 
-        {loading ? (
-          <ActivityIndicator color={colors.primary} />
-        ) : (
-          <View style={styles.userList}>
-            {users.map((user) => (
-              <View key={user.id} style={styles.userRow}>
-                <View>
-                  <Text style={styles.userName}>{user.display_name}</Text>
-                  <Text style={styles.userMeta}>{user.username}</Text>
-                </View>
-                <View style={styles.roleBadge}>
-                  <Text style={styles.roleBadgeText}>{user.role}</Text>
-                </View>
-              </View>
-            ))}
-            {users.length === 0 && <Text style={styles.panelText}>No organizer users found.</Text>}
-          </View>
-        )}
+function VendorsPage({
+  vendors,
+  totalCount,
+  loading,
+  error,
+  search,
+  editorMode,
+  form,
+  formError,
+  saving,
+  editingVendor,
+  onSearchChange,
+  onRefresh,
+  onCreate,
+  onEdit,
+  onDelete,
+  onFormChange,
+  onCloseEditor,
+  onSave,
+}: {
+  vendors: AdminVendor[];
+  totalCount: number;
+  loading: boolean;
+  error: string | null;
+  search: string;
+  editorMode: VendorEditorMode;
+  form: VendorPayload;
+  formError: string | null;
+  saving: boolean;
+  editingVendor: AdminVendor | null;
+  onSearchChange: (value: string) => void;
+  onRefresh: () => void;
+  onCreate: () => void;
+  onEdit: (vendor: AdminVendor) => void;
+  onDelete: (vendor: AdminVendor) => void;
+  onFormChange: (value: VendorPayload) => void;
+  onCloseEditor: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <ContentPage
+      title="Vendors"
+      subtitle={`${totalCount} vendor${totalCount === 1 ? '' : 's'} in this event`}
+      primaryAction={{ label: 'Add vendor', icon: 'plus', onPress: onCreate }}
+    >
+      <ContentToolbar
+        searchValue={search}
+        searchPlaceholder="Search vendors by name, type, location, or hours"
+        onSearchChange={onSearchChange}
+        secondaryAction={{ label: 'Refresh', icon: 'refresh-cw', onPress: onRefresh, disabled: loading }}
+      />
+
+      {error ? (
+        <ErrorState message={error} onRetry={onRefresh} />
+      ) : loading ? (
+        <LoadingState label="Loading vendors..." />
+      ) : vendors.length === 0 ? (
+        <EmptyState
+          icon="shopping-bag"
+          title={search ? 'No vendors match your search' : 'No vendors yet'}
+          message={search ? 'Clear the search or try different terms.' : 'Create the first vendor for this event.'}
+          action={search ? undefined : { label: 'Add vendor', icon: 'plus', onPress: onCreate }}
+        />
+      ) : (
+        <VendorList vendors={vendors} onEdit={onEdit} onDelete={onDelete} />
+      )}
+
+      {editorMode !== 'closed' && (
+        <VendorEditor
+          mode={editorMode}
+          form={form}
+          error={formError}
+          saving={saving}
+          editingVendor={editingVendor}
+          onChange={onFormChange}
+          onClose={onCloseEditor}
+          onSave={onSave}
+        />
+      )}
+    </ContentPage>
+  );
+}
+
+function VendorList({
+  vendors,
+  onEdit,
+  onDelete,
+}: {
+  vendors: AdminVendor[];
+  onEdit: (vendor: AdminVendor) => void;
+  onDelete: (vendor: AdminVendor) => void;
+}) {
+  return (
+    <View style={styles.table}>
+      <View style={[styles.tableRow, styles.tableHeader]}>
+        <Text style={[styles.tableHeaderText, styles.nameColumn]}>Name</Text>
+        <Text style={[styles.tableHeaderText, styles.typeColumn]}>Type</Text>
+        <Text style={[styles.tableHeaderText, styles.locationColumn]}>Location</Text>
+        <Text style={[styles.tableHeaderText, styles.priorityColumn]}>Priority</Text>
+        <Text style={[styles.tableHeaderText, styles.actionsColumn]}>Actions</Text>
       </View>
 
-      <View style={styles.panel}>
-        <Text style={styles.panelTitle}>Add User</Text>
-        <View style={styles.form}>
-          <TextInput
-            value={newDisplayName}
-            onChangeText={onDisplayNameChange}
-            placeholder="Display name"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-          />
-          <TextInput
-            value={newUsername}
-            onChangeText={onUsernameChange}
-            placeholder="Username"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <TextInput
-            value={newPassword}
-            onChangeText={onPasswordChange}
-            placeholder="Temporary password"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            secureTextEntry
-          />
-          <View style={styles.roleSelector}>
-            {ROLES.map((role) => {
-              const isSelected = role === newRole;
-              return (
-                <Pressable
-                  key={role}
-                  style={[styles.roleOption, isSelected && styles.roleOptionSelected]}
-                  onPress={() => onRoleChange(role)}
-                >
-                  <Text style={[styles.roleOptionText, isSelected && styles.roleOptionTextSelected]}>
-                    {role}
-                  </Text>
-                </Pressable>
-              );
-            })}
+      {vendors.map((vendor) => (
+        <View key={vendor.id} style={styles.tableRow}>
+          <View style={styles.nameColumn}>
+            <Text style={styles.vendorName}>{vendor.name}</Text>
+            <Text style={styles.vendorMeta} numberOfLines={1}>
+              {[vendor.days_of_operation, vendor.hours_of_operation].filter(Boolean).join(' · ') || 'No hours set'}
+            </Text>
           </View>
-
-          {error && (
-            <View style={styles.errorBox}>
-              <Feather name="alert-circle" size={16} color={colors.error} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          <Pressable
-            style={[styles.primaryButton, createUserBusy && styles.primaryButtonDisabled]}
-            onPress={onCreateUser}
-            disabled={createUserBusy}
-          >
-            {createUserBusy ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Feather name="user-plus" size={18} color="#FFFFFF" />
-                <Text style={styles.primaryButtonText}>Create User</Text>
-              </>
-            )}
-          </Pressable>
+          <Text style={[styles.tableText, styles.typeColumn]}>{vendor.type || 'Uncategorized'}</Text>
+          <Text style={[styles.tableText, styles.locationColumn]}>{vendor.location || 'No location'}</Text>
+          <Text style={[styles.tableText, styles.priorityColumn]}>{vendor.priority}</Text>
+          <View style={styles.actionsColumn}>
+            <Pressable style={styles.iconButton} onPress={() => onEdit(vendor)}>
+              <Feather name="edit-2" size={16} color={colors.textSecondary} />
+            </Pressable>
+            <Pressable style={styles.iconButton} onPress={() => onDelete(vendor)}>
+              <Feather name="trash-2" size={16} color={colors.error} />
+            </Pressable>
+          </View>
         </View>
+      ))}
+    </View>
+  );
+}
+
+function VendorEditor({
+  mode,
+  form,
+  error,
+  saving,
+  editingVendor,
+  onChange,
+  onClose,
+  onSave,
+}: {
+  mode: Exclude<VendorEditorMode, 'closed'>;
+  form: VendorPayload;
+  error: string | null;
+  saving: boolean;
+  editingVendor: AdminVendor | null;
+  onChange: (value: VendorPayload) => void;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const updateField = (key: keyof VendorPayload, value: string) => {
+    onChange({
+      ...form,
+      [key]: key === 'priority' ? Number(value) || 0 : value,
+    });
+  };
+
+  return (
+    <View style={styles.editorPanel}>
+      <View style={styles.editorHeader}>
+        <View>
+          <Text style={styles.editorTitle}>{mode === 'edit' ? 'Edit vendor' : 'Add vendor'}</Text>
+          <Text style={styles.editorSubtitle}>
+            {editingVendor?.name || 'Vendor details for the current event'}
+          </Text>
+        </View>
+        <Pressable style={styles.iconButton} onPress={onClose}>
+          <Feather name="x" size={18} color={colors.textSecondary} />
+        </Pressable>
       </View>
+
+      <View style={styles.formGrid}>
+        <FormTextField
+          label="Name"
+          value={form.name}
+          required
+          placeholder="Vendor name"
+          onChangeText={(value) => updateField('name', value)}
+        />
+        <FormTextField
+          label="Type"
+          value={form.type || ''}
+          placeholder="Food, exhibitor, service"
+          onChangeText={(value) => updateField('type', value)}
+        />
+        <FormTextField
+          label="Location"
+          value={form.location || ''}
+          placeholder="Booth, row, building, or zone"
+          onChangeText={(value) => updateField('location', value)}
+        />
+        <FormTextField
+          label="Priority"
+          value={String(form.priority ?? 99)}
+          placeholder="99"
+          keyboardType="numeric"
+          onChangeText={(value) => updateField('priority', value)}
+        />
+        <FormTextField
+          label="Hours of operation"
+          value={form.hours_of_operation || ''}
+          placeholder="9 AM - 5 PM"
+          onChangeText={(value) => updateField('hours_of_operation', value)}
+        />
+        <FormTextField
+          label="Days of operation"
+          value={form.days_of_operation || ''}
+          placeholder="Tuesday - Saturday"
+          onChangeText={(value) => updateField('days_of_operation', value)}
+        />
+      </View>
+
+      {error && (
+        <View style={styles.formError}>
+          <Feather name="alert-circle" size={16} color={colors.error} />
+          <Text style={styles.formErrorText}>{error}</Text>
+        </View>
+      )}
+
+      <View style={styles.editorActions}>
+        <Pressable style={styles.cancelButton} onPress={onClose} disabled={saving}>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </Pressable>
+        <Pressable style={[styles.saveButton, saving && styles.buttonDisabled]} onPress={onSave} disabled={saving}>
+          {saving ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="save" size={17} color="#FFFFFF" />}
+          <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save vendor'}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function FormTextField({
+  label,
+  value,
+  placeholder,
+  required,
+  keyboardType,
+  editable = true,
+  multiline,
+  onChangeText,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  required?: boolean;
+  keyboardType?: 'default' | 'numeric';
+  editable?: boolean;
+  multiline?: boolean;
+  onChangeText: (value: string) => void;
+}) {
+  return (
+    <View style={styles.formField}>
+      <FieldLabel label={label} required={required} />
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textMuted}
+        keyboardType={keyboardType}
+        editable={editable}
+        multiline={multiline}
+        textAlignVertical={multiline ? 'top' : 'auto'}
+        style={[styles.input, multiline && styles.textArea, !editable && styles.inputReadOnly]}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: colors.background,
-  },
-  rootCompact: {
-    flexDirection: 'column',
-  },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
   },
-  sidebar: {
-    width: 280,
-    backgroundColor: colors.surface,
-    borderRightWidth: 1,
-    borderRightColor: colors.border,
-    padding: 18,
-  },
-  sidebarCompact: {
-    width: '100%',
-    borderRightWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    padding: 12,
-  },
-  sidebarHeader: {
+  metricGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 24,
   },
-  brandMark: {
-    width: 42,
-    height: 42,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sidebarTitleBlock: {
+  metricCard: {
     flex: 1,
-  },
-  sidebarTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  sidebarSubtitle: {
-    marginTop: 2,
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  navList: {
-    gap: 8,
-    flex: 1,
-  },
-  navListCompact: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  navButton: {
-    minHeight: 44,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  navButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  navButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  navButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  logoutButton: {
-    minHeight: 44,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.surfaceHighlight,
-  },
-  logoutButtonCompact: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
-  },
-  logoutText: {
-    color: colors.error,
-    fontWeight: '800',
-  },
-  main: {
-    flex: 1,
-  },
-  mainContent: {
-    padding: 24,
-    gap: 18,
-  },
-  topBar: {
-    minHeight: 58,
-    justifyContent: 'center',
-  },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.textPrimary,
-  },
-  pageSubtitle: {
-    marginTop: 4,
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  sectionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-  },
-  infoPanel: {
-    width: 220,
-    minHeight: 132,
+    minWidth: 210,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     padding: 16,
   },
-  infoIcon: {
+  metricIcon: {
     width: 38,
     height: 38,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceHighlight,
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  infoLabel: {
-    color: colors.textMuted,
+  metricLabel: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '700',
+  },
+  metricValue: {
+    marginTop: 5,
+    fontSize: 22,
+    color: colors.textPrimary,
+    fontWeight: '700',
+  },
+  table: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+  },
+  tableRow: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  tableHeader: {
+    minHeight: 44,
+    backgroundColor: colors.surfaceElevated,
+  },
+  tableHeaderText: {
     fontSize: 12,
     fontWeight: '700',
+    color: colors.textSecondary,
     textTransform: 'uppercase',
   },
-  infoValue: {
-    marginTop: 6,
-    color: colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '800',
+  tableText: {
+    fontSize: 14,
+    color: colors.textSecondary,
   },
-  panel: {
+  nameColumn: {
+    flex: 2,
+    minWidth: 160,
+  },
+  typeColumn: {
+    flex: 1,
+    minWidth: 110,
+  },
+  locationColumn: {
+    flex: 1.2,
+    minWidth: 130,
+  },
+  priorityColumn: {
+    width: 76,
+  },
+  actionsColumn: {
+    width: 92,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  scheduleNameColumn: {
+    flex: 2,
+    minWidth: 190,
+  },
+  scheduleTimeColumn: {
+    flex: 1,
+    minWidth: 130,
+  },
+  scheduleLocationColumn: {
+    flex: 1.2,
+    minWidth: 150,
+  },
+  scheduleActionsColumn: {
+    width: 140,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  vendorName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  vendorMeta: {
+    marginTop: 3,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  editorPanel: {
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     padding: 18,
+    gap: 16,
   },
-  panelHeader: {
+  editorHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    gap: 16,
+    alignItems: 'flex-start',
   },
-  panelTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+  editorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
     color: colors.textPrimary,
   },
-  panelText: {
-    marginTop: 8,
+  editorSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
     color: colors.textSecondary,
+  },
+  formGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+  },
+  formField: {
+    flex: 1,
+    minWidth: 230,
+  },
+  input: {
+    minHeight: 42,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    backgroundColor: colors.surfaceElevated,
+    color: colors.textPrimary,
     fontSize: 14,
-    lineHeight: 20,
+    outlineStyle: 'none' as never,
   },
-  communicationsLayout: {
-    gap: 16,
+  inputReadOnly: {
+    opacity: 0.7,
   },
-  scheduleLayout: {
-    gap: 16,
+  textArea: {
+    minHeight: 126,
+    paddingTop: 12,
   },
-  scheduleToolbar: {
+  scheduleToolbarExtras: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     flexWrap: 'wrap',
-    gap: 10,
-  },
-  scheduleSearchInput: {
-    minWidth: 220,
-    flex: 1,
   },
   dayFilterList: {
     gap: 8,
     alignItems: 'center',
   },
-  dayFilterButton: {
+  filterPill: {
     minHeight: 38,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
+    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
     backgroundColor: colors.surface,
   },
-  dayFilterButtonActive: {
-    backgroundColor: colors.primary,
+  filterPillActive: {
     borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
-  dayFilterText: {
+  filterPillText: {
     color: colors.textSecondary,
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
   },
-  dayFilterTextActive: {
+  filterPillTextActive: {
     color: '#FFFFFF',
   },
-  secondaryButton: {
-    minHeight: 42,
+  importButton: {
+    minHeight: 40,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1496,71 +1529,21 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: colors.surface,
   },
-  secondaryButtonText: {
-    color: colors.primary,
+  importButtonText: {
+    color: colors.textSecondary,
     fontSize: 14,
-    fontWeight: '800',
-  },
-  primaryButtonSmall: {
-    minHeight: 42,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 12,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 12,
-  },
-  importTextArea: {
-    minHeight: 150,
-    marginTop: 14,
-    paddingTop: 12,
+    fontWeight: '700',
   },
   mappingGrid: {
-    marginTop: 14,
-    gap: 10,
+    gap: 12,
   },
   mappingRow: {
-    gap: 6,
-  },
-  mappingLabel: {
-    color: colors.textPrimary,
-    fontSize: 13,
-    fontWeight: '800',
+    gap: 8,
   },
   mappingOptions: {
     gap: 8,
   },
-  mappingOption: {
-    minHeight: 34,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceElevated,
-  },
-  mappingOptionActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary,
-  },
-  mappingOptionText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  mappingOptionTextActive: {
-    color: '#FFFFFF',
-  },
   importSummary: {
-    marginTop: 14,
     borderRadius: 8,
     backgroundColor: colors.surfaceHighlight,
     padding: 12,
@@ -1569,360 +1552,67 @@ const styles = StyleSheet.create({
   importSuccess: {
     color: colors.success,
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   importWarning: {
     color: colors.warning,
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   problemText: {
     color: colors.textSecondary,
     fontSize: 13,
   },
-  formGrid: {
-    gap: 10,
-    marginBottom: 12,
-  },
-  scheduleList: {
-    gap: 10,
-  },
-  scheduleRow: {
-    minHeight: 66,
+  formError: {
     borderRadius: 8,
-    backgroundColor: colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: colors.error,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  scheduleTitleCell: {
-    flex: 2,
-    minWidth: 220,
-  },
-  scheduleEventTitle: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  scheduleMeta: {
-    marginTop: 3,
-    color: colors.textMuted,
-    fontSize: 12,
-  },
-  scheduleCell: {
-    minWidth: 110,
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  scheduleActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
+    backgroundColor: '#FFF8F8',
   },
-  textAction: {
-    minHeight: 34,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceHighlight,
-  },
-  textActionLabel: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  deleteActionLabel: {
+  formErrorText: {
     color: colors.error,
-  },
-  readOnlyNotice: {
-    marginTop: 14,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceHighlight,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  readOnlyNoticeText: {
+    fontSize: 13,
     flex: 1,
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '700',
   },
-  messageInput: {
-    minHeight: 118,
-    paddingTop: 12,
-  },
-  prioritySelector: {
+  editorActions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  priorityOption: {
-    minHeight: 38,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  priorityOptionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  optionDisabled: {
-    opacity: 0.65,
-  },
-  priorityOptionText: {
-    color: colors.textSecondary,
-    fontWeight: '700',
-  },
-  priorityOptionTextSelected: {
-    color: '#FFFFFF',
-  },
-  previewBox: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceElevated,
-    padding: 14,
-    gap: 8,
-  },
-  previewLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  previewHeader: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  previewPriority: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceHighlight,
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '800',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  previewAudience: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: colors.surfaceHighlight,
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '800',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  previewTitle: {
-    color: colors.textPrimary,
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  previewMessage: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  historyPanel: {
-    minHeight: 240,
-  },
-  broadcastList: {
+    justifyContent: 'flex-end',
     gap: 10,
-  },
-  broadcastRow: {
-    minHeight: 64,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceElevated,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     flexWrap: 'wrap',
   },
-  broadcastTitleCell: {
-    flex: 2,
-    minWidth: 180,
-  },
-  broadcastTitle: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  broadcastMeta: {
-    marginTop: 3,
-    color: colors.textMuted,
-    fontSize: 12,
-  },
-  broadcastPriorityCell: {
-    width: 92,
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  broadcastCell: {
-    minWidth: 120,
-    flex: 1,
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  statusBadge: {
+  cancelButton: {
+    minHeight: 42,
     borderRadius: 8,
-    backgroundColor: colors.surfaceHighlight,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  statusBadgeText: {
-    color: colors.success,
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'capitalize',
-  },
-  settingRow: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-  },
-  settingLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  settingValue: {
-    marginTop: 4,
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  usersLayout: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  userList: {
-    minWidth: 340,
-    gap: 10,
-    marginTop: 4,
-  },
-  userRow: {
-    minHeight: 58,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceElevated,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  userName: {
-    color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  userMeta: {
-    marginTop: 2,
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  roleBadge: {
-    borderRadius: 8,
-    backgroundColor: colors.surfaceHighlight,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  roleBadgeText: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceHighlight,
-  },
-  form: {
-    minWidth: 320,
-    gap: 12,
-    marginTop: 14,
-  },
-  input: {
-    minHeight: 46,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 12,
-    color: colors.textPrimary,
-    backgroundColor: colors.surfaceElevated,
-    fontSize: 15,
-  },
-  roleSelector: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  roleOption: {
-    minHeight: 38,
-    borderRadius: 8,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    backgroundColor: colors.surface,
   },
-  roleOptionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  roleOptionText: {
+  cancelButtonText: {
     color: colors.textSecondary,
     fontWeight: '700',
   },
-  roleOptionTextSelected: {
-    color: '#FFFFFF',
-  },
-  errorBox: {
+  saveButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    paddingHorizontal: 14,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceHighlight,
-  },
-  errorText: {
-    flex: 1,
-    color: colors.error,
-    fontSize: 14,
-  },
-  primaryButton: {
-    minHeight: 46,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
     gap: 8,
+    backgroundColor: colors.primary,
   },
-  primaryButtonDisabled: {
-    opacity: 0.7,
-  },
-  primaryButtonText: {
+  saveButtonText: {
     color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 15,
+    fontWeight: '700',
+  },
+  buttonDisabled: {
+    opacity: 0.55,
   },
 });

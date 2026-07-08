@@ -1,0 +1,556 @@
+"""Platform service abstractions.
+
+These services define backend-owned content boundaries for the reusable event
+platform. Phase 1 keeps the existing data providers in place and routes calls
+through these services so future Supabase-backed implementations can replace
+the providers without changing frontend API contracts.
+"""
+
+from collections.abc import Awaitable, Callable
+from datetime import datetime
+from typing import Any, Optional
+from zoneinfo import ZoneInfo
+
+import httpx
+
+
+class EventService:
+    """Resolve platform event context for backend content services."""
+
+    def __init__(self, default_event_id: str):
+        self.default_event_id = default_event_id.strip()
+
+    def get_event_id(self, event_id: Optional[str] = None) -> str:
+        return (event_id or self.default_event_id).strip()
+
+    def get_public_event_id(self) -> str:
+        return self.get_event_id()
+
+    def get_request_event_id(self, request: Any = None) -> str:
+        return self.get_public_event_id()
+
+    def get_admin_event_id(
+        self,
+        user: Optional[dict[str, Any]] = None,
+        event_id: Optional[str] = None,
+    ) -> str:
+        if event_id:
+            return self.get_event_id(event_id)
+        if user:
+            return self.get_event_id(user.get("event_id"))
+        return self.get_event_id()
+
+
+class ScheduleService:
+    """Schedule content boundary.
+
+    The current implementation delegates to the existing Google Sheets-backed
+    functions. Supabase can replace these providers later without changing the
+    public schedule API shape.
+    """
+
+    def __init__(
+        self,
+        list_public_schedule: Callable[[], Awaitable[Any]],
+        list_admin_schedule: Callable[[], Awaitable[Any]],
+        replace_schedule: Callable[[Any], Awaitable[Any]],
+        append_schedule_event: Callable[[Any], Awaitable[Any]],
+        update_schedule_event: Callable[[str, Any], Awaitable[Any]],
+        clear_schedule_event: Callable[[str], Awaitable[Any]],
+    ):
+        self._list_public_schedule = list_public_schedule
+        self._list_admin_schedule = list_admin_schedule
+        self._replace_schedule = replace_schedule
+        self._append_schedule_event = append_schedule_event
+        self._update_schedule_event = update_schedule_event
+        self._clear_schedule_event = clear_schedule_event
+
+    async def list_public_schedule(self, event_id: Optional[str] = None) -> Any:
+        return await self._list_public_schedule()
+
+    async def list_admin_schedule(self, event_id: Optional[str] = None) -> Any:
+        return await self._list_admin_schedule()
+
+    async def replace_schedule(self, rows: Any, event_id: Optional[str] = None) -> Any:
+        return await self._replace_schedule(rows)
+
+    async def append_event(self, payload: Any, event_id: Optional[str] = None) -> Any:
+        return await self._append_schedule_event(payload)
+
+    async def update_event(
+        self,
+        schedule_event_id: str,
+        payload: Any,
+        event_id: Optional[str] = None,
+    ) -> Any:
+        return await self._update_schedule_event(schedule_event_id, payload)
+
+    async def clear_event(
+        self,
+        schedule_event_id: str,
+        event_id: Optional[str] = None,
+    ) -> Any:
+        return await self._clear_schedule_event(schedule_event_id)
+
+
+class SupabaseContentClient:
+    """Shared Supabase REST client for backend-owned content services."""
+
+    def __init__(self, *, supabase_url: str, service_role_key: str):
+        self.supabase_url = supabase_url.rstrip("/")
+        self.service_role_key = service_role_key
+
+    @property
+    def rest_url(self) -> str:
+        return f"{self.supabase_url}/rest/v1"
+
+    @property
+    def headers(self) -> dict[str, str]:
+        return {
+            "apikey": self.service_role_key,
+            "Authorization": f"Bearer {self.service_role_key}",
+            "Content-Type": "application/json",
+        }
+
+    async def request(self, method: str, path: str, **kwargs: Any) -> Any:
+        async with httpx.AsyncClient() as client:
+            response = await client.request(
+                method,
+                f"{self.rest_url}{path}",
+                headers={**self.headers, **kwargs.pop("headers", {})},
+                timeout=30.0,
+                **kwargs,
+            )
+        if response.status_code >= 400:
+            raise httpx.HTTPStatusError(
+                f"Supabase request failed with status {response.status_code}: {response.text}",
+                request=response.request,
+                response=response,
+            )
+        return response.json() if response.content else None
+
+    async def get_event_id(self, event_slug: str) -> str:
+        events = await self.request(
+            "GET",
+            "/events",
+            params={
+                "select": "id",
+                "slug": f"eq.{event_slug}",
+                "limit": "1",
+            },
+        )
+        if events:
+            return events[0]["id"]
+
+        events = await self.request(
+            "GET",
+            "/events",
+            params={
+                "select": "id",
+                "id": f"eq.{event_slug}",
+                "limit": "1",
+            },
+        )
+        if events:
+            return events[0]["id"]
+
+        raise ValueError(f"Supabase event not found: {event_slug}")
+
+
+class SupabaseScheduleService:
+    """Supabase-backed schedule content boundary."""
+
+    def __init__(
+        self,
+        *,
+        supabase_url: str,
+        service_role_key: str,
+        event_slug: str,
+        schedule_response_model: type[Any],
+        schedule_event_model: type[Any],
+        admin_schedule_response_model: type[Any],
+        admin_schedule_event_model: type[Any],
+        timezone_name: str = "America/Toronto",
+    ):
+        self.client = SupabaseContentClient(
+            supabase_url=supabase_url,
+            service_role_key=service_role_key,
+        )
+        self.event_slug = event_slug
+        self.schedule_response_model = schedule_response_model
+        self.schedule_event_model = schedule_event_model
+        self.admin_schedule_response_model = admin_schedule_response_model
+        self.admin_schedule_event_model = admin_schedule_event_model
+        self.timezone = ZoneInfo(timezone_name)
+
+    async def _get_event_id(self, event_id: Optional[str] = None) -> str:
+        return await self.client.get_event_id(event_id or self.event_slug)
+
+    def _parse_datetime(self, value: Optional[str]) -> Optional[datetime]:
+        if not value:
+            return None
+        normalized = value.replace("Z", "+00:00")
+        try:
+            parsed = datetime.fromisoformat(normalized)
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=self.timezone)
+        return parsed.astimezone(self.timezone)
+
+    def _format_date(self, value: Optional[str]) -> str:
+        parsed = self._parse_datetime(value)
+        return parsed.date().isoformat() if parsed else ""
+
+    def _format_time(self, value: Optional[str]) -> str:
+        parsed = self._parse_datetime(value)
+        if not parsed:
+            return ""
+        hour = parsed.strftime("%I").lstrip("0") or "0"
+        return f"{hour}:{parsed.strftime('%M %p')}"
+
+    def _combine_datetime(self, date_value: str, time_value: str) -> Optional[str]:
+        if not date_value or not time_value:
+            return None
+
+        raw_value = f"{date_value.strip()} {time_value.strip()}"
+        formats = (
+            "%Y-%m-%d %I:%M %p",
+            "%Y-%m-%d %I %p",
+            "%Y-%m-%d %H:%M",
+            "%m/%d/%Y %I:%M %p",
+            "%m/%d/%Y %H:%M",
+            "%B %d, %Y %I:%M %p",
+        )
+        for format_string in formats:
+            try:
+                parsed = datetime.strptime(raw_value, format_string)
+                return parsed.replace(tzinfo=self.timezone).isoformat()
+            except ValueError:
+                continue
+        return None
+
+    def _row_to_schedule_event(self, row: dict[str, Any], *, admin: bool = False, index: int = 0) -> Any:
+        model = self.admin_schedule_event_model if admin else self.schedule_event_model
+        data = {
+            "id": row["id"],
+            "title": row.get("title") or "Untitled Event",
+            "description": row.get("description") or "",
+            "start_date": self._format_date(row.get("starts_at")),
+            "start_time": self._format_time(row.get("starts_at")),
+            "end_time": self._format_time(row.get("ends_at")),
+            "category": row.get("category") or "Event",
+            "latitude": row.get("latitude"),
+            "longitude": row.get("longitude"),
+            "days_active": row.get("days_active") or "",
+            "location_name": row.get("location_name"),
+        }
+        if admin:
+            data["row_number"] = index + 2
+        return model(**data)
+
+    def _payload_to_row(self, payload: Any, event_id: str) -> dict[str, Any]:
+        return {
+            "event_id": event_id,
+            "title": payload.title.strip(),
+            "description": (payload.description or "").strip(),
+            "starts_at": self._combine_datetime(payload.start_date, payload.start_time),
+            "ends_at": self._combine_datetime(payload.start_date, payload.end_time),
+            "category": (payload.category or "Event").strip(),
+            "latitude": payload.latitude,
+            "longitude": payload.longitude,
+            "days_active": (payload.days_active or "").strip(),
+            "location_name": (payload.location_name or "").strip() or None,
+            "source": "admin",
+            "status": "published",
+        }
+
+    async def _list_rows(self, event_id: Optional[str] = None) -> list[dict[str, Any]]:
+        event_id = await self._get_event_id(event_id)
+        return await self.client.request(
+            "GET",
+            "/schedule_items",
+            params={
+                "select": "*",
+                "event_id": f"eq.{event_id}",
+                "status": "neq.archived",
+                "order": "starts_at.asc.nullslast,sort_order.asc",
+            },
+        )
+
+    async def list_public_schedule(self, event_id: Optional[str] = None) -> Any:
+        rows = await self._list_rows(event_id)
+        events = [self._row_to_schedule_event(row) for row in rows]
+        return self.schedule_response_model(
+            events=events,
+            last_updated=datetime.utcnow(),
+            total_count=len(events),
+        )
+
+    async def list_admin_schedule(self, event_id: Optional[str] = None) -> Any:
+        rows = await self._list_rows(event_id)
+        events = [
+            self._row_to_schedule_event(row, admin=True, index=index)
+            for index, row in enumerate(rows)
+        ]
+        return self.admin_schedule_response_model(
+            events=events,
+            last_updated=datetime.utcnow(),
+            total_count=len(events),
+        )
+
+    async def get_event(self, event_id: str) -> Any:
+        rows = await self.client.request(
+            "GET",
+            "/schedule_items",
+            params={
+                "select": "*",
+                "id": f"eq.{event_id}",
+                "limit": "1",
+            },
+        )
+        if not rows:
+            return None
+        return self._row_to_schedule_event(rows[0])
+
+    async def replace_schedule(self, rows: Any, event_id: Optional[str] = None) -> Any:
+        event_id = await self._get_event_id(event_id)
+        await self.client.request(
+            "DELETE",
+            "/schedule_items",
+            params={"event_id": f"eq.{event_id}"},
+        )
+
+        payload = [self._payload_to_row(row.data, event_id) for row in rows]
+        if payload:
+            await self.client.request(
+                "POST",
+                "/schedule_items",
+                json=payload,
+                headers={"Prefer": "return=minimal"},
+            )
+        return await self.list_admin_schedule(event_id)
+
+    async def append_event(self, payload: Any, event_id: Optional[str] = None) -> Any:
+        event_id = await self._get_event_id(event_id)
+        await self.client.request(
+            "POST",
+            "/schedule_items",
+            json=self._payload_to_row(payload, event_id),
+            headers={"Prefer": "return=minimal"},
+        )
+        return await self.list_admin_schedule(event_id)
+
+    async def update_event(
+        self,
+        schedule_event_id: str,
+        payload: Any,
+        event_id: Optional[str] = None,
+    ) -> Any:
+        platform_event_id = await self._get_event_id(event_id)
+        await self.client.request(
+            "PATCH",
+            "/schedule_items",
+            params={
+                "id": f"eq.{schedule_event_id}",
+                "event_id": f"eq.{platform_event_id}",
+            },
+            json=self._payload_to_row(payload, platform_event_id),
+            headers={"Prefer": "return=minimal"},
+        )
+        return await self.list_admin_schedule(event_id)
+
+    async def clear_event(
+        self,
+        schedule_event_id: str,
+        event_id: Optional[str] = None,
+    ) -> Any:
+        platform_event_id = await self._get_event_id(event_id)
+        await self.client.request(
+            "DELETE",
+            "/schedule_items",
+            params={
+                "id": f"eq.{schedule_event_id}",
+                "event_id": f"eq.{platform_event_id}",
+            },
+        )
+        return await self.list_admin_schedule(event_id)
+
+
+class VendorService:
+    """Vendor content boundary."""
+
+    def __init__(
+        self,
+        list_public_vendors: Callable[[], Awaitable[Any]],
+        get_vendor: Optional[Callable[[str, Optional[str]], Awaitable[Any]]] = None,
+        create_vendor: Optional[Callable[[Any, Optional[str]], Awaitable[Any]]] = None,
+        update_vendor: Optional[Callable[[str, Any, Optional[str]], Awaitable[Any]]] = None,
+        delete_vendor: Optional[Callable[[str, Optional[str]], Awaitable[Any]]] = None,
+    ):
+        self._list_public_vendors = list_public_vendors
+        self._get_vendor = get_vendor
+        self._create_vendor = create_vendor
+        self._update_vendor = update_vendor
+        self._delete_vendor = delete_vendor
+
+    async def list_public_vendors(self, event_id: Optional[str] = None) -> Any:
+        return await self._list_public_vendors()
+
+    async def get_vendor(self, vendor_id: str, event_id: Optional[str] = None) -> Any:
+        if not self._get_vendor:
+            raise NotImplementedError("Vendor lookup is not available for the active content source")
+        return await self._get_vendor(vendor_id, event_id)
+
+    async def create_vendor(self, payload: Any, event_id: Optional[str] = None) -> Any:
+        if not self._create_vendor:
+            raise NotImplementedError("Vendor creation is not available for the active content source")
+        return await self._create_vendor(payload, event_id)
+
+    async def update_vendor(
+        self,
+        vendor_id: str,
+        payload: Any,
+        event_id: Optional[str] = None,
+    ) -> Any:
+        if not self._update_vendor:
+            raise NotImplementedError("Vendor updates are not available for the active content source")
+        return await self._update_vendor(vendor_id, payload, event_id)
+
+    async def delete_vendor(self, vendor_id: str, event_id: Optional[str] = None) -> Any:
+        if not self._delete_vendor:
+            raise NotImplementedError("Vendor deletion is not available for the active content source")
+        return await self._delete_vendor(vendor_id, event_id)
+
+
+class SupabaseVendorService:
+    """Supabase-backed vendor content boundary."""
+
+    def __init__(
+        self,
+        *,
+        supabase_url: str,
+        service_role_key: str,
+        event_slug: str,
+        vendors_response_model: type[Any],
+        vendor_model: type[Any],
+    ):
+        self.client = SupabaseContentClient(
+            supabase_url=supabase_url,
+            service_role_key=service_role_key,
+        )
+        self.event_slug = event_slug
+        self.vendors_response_model = vendors_response_model
+        self.vendor_model = vendor_model
+
+    async def _get_event_id(self, event_id: Optional[str] = None) -> str:
+        return await self.client.get_event_id(event_id or self.event_slug)
+
+    def _row_to_vendor(self, row: dict[str, Any]) -> Any:
+        return self.vendor_model(
+            id=row["id"],
+            name=row.get("name") or "",
+            type=row.get("type") or "",
+            location=row.get("location") or "",
+            hours_of_operation=row.get("hours_of_operation") or "",
+            days_of_operation=row.get("days_of_operation") or "",
+            priority=row.get("priority") if row.get("priority") is not None else 99,
+        )
+
+    def _payload_to_row(self, payload: Any, event_id: str) -> dict[str, Any]:
+        if isinstance(payload, dict):
+            get_value = payload.get
+        else:
+            get_value = lambda key, default=None: getattr(payload, key, default)
+
+        return {
+            "event_id": event_id,
+            "name": (get_value("name", "") or "").strip(),
+            "type": (get_value("type", "") or "").strip(),
+            "location": (get_value("location", "") or "").strip(),
+            "hours_of_operation": (get_value("hours_of_operation", "") or "").strip(),
+            "days_of_operation": (get_value("days_of_operation", "") or "").strip(),
+            "priority": get_value("priority", 99) or 99,
+            "source": "admin",
+            "status": get_value("status", "published") or "published",
+        }
+
+    async def _list_rows(self, event_id: Optional[str] = None) -> list[dict[str, Any]]:
+        event_id = await self._get_event_id(event_id)
+        return await self.client.request(
+            "GET",
+            "/vendors",
+            params={
+                "select": "*",
+                "event_id": f"eq.{event_id}",
+                "status": "neq.archived",
+                "order": "priority.asc,name.asc",
+            },
+        )
+
+    async def list_public_vendors(self, event_id: Optional[str] = None) -> Any:
+        rows = await self._list_rows(event_id)
+        vendors = [self._row_to_vendor(row) for row in rows]
+        return self.vendors_response_model(
+            vendors=vendors,
+            last_updated=datetime.utcnow(),
+            total_count=len(vendors),
+        )
+
+    async def get_vendor(self, vendor_id: str, event_id: Optional[str] = None) -> Any:
+        event_id = await self._get_event_id(event_id)
+        params = {
+            "select": "*",
+            "id": f"eq.{vendor_id}",
+            "event_id": f"eq.{event_id}",
+            "limit": "1",
+        }
+        rows = await self.client.request(
+            "GET",
+            "/vendors",
+            params=params,
+        )
+        if not rows:
+            return None
+        return self._row_to_vendor(rows[0])
+
+    async def create_vendor(self, payload: Any, event_id: Optional[str] = None) -> Any:
+        event_id = await self._get_event_id(event_id)
+        await self.client.request(
+            "POST",
+            "/vendors",
+            json=self._payload_to_row(payload, event_id),
+            headers={"Prefer": "return=minimal"},
+        )
+        return await self.list_public_vendors(event_id)
+
+    async def update_vendor(
+        self,
+        vendor_id: str,
+        payload: Any,
+        event_id: Optional[str] = None,
+    ) -> Any:
+        event_id = await self._get_event_id(event_id)
+        await self.client.request(
+            "PATCH",
+            "/vendors",
+            params={
+                "id": f"eq.{vendor_id}",
+                "event_id": f"eq.{event_id}",
+            },
+            json=self._payload_to_row(payload, event_id),
+            headers={"Prefer": "return=minimal"},
+        )
+        return await self.list_public_vendors(event_id)
+
+    async def delete_vendor(self, vendor_id: str, event_id: Optional[str] = None) -> Any:
+        event_id = await self._get_event_id(event_id)
+        await self.client.request(
+            "DELETE",
+            "/vendors",
+            params={
+                "id": f"eq.{vendor_id}",
+                "event_id": f"eq.{event_id}",
+            },
+        )
+        return await self.list_public_vendors(event_id)

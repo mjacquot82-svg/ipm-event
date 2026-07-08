@@ -69,6 +69,31 @@ export type AdminScheduleResponse = {
   total_count: number;
 };
 
+export type AdminVendor = {
+  id: string;
+  name: string;
+  type: string;
+  location: string;
+  hours_of_operation: string;
+  days_of_operation: string;
+  priority: number;
+};
+
+export type AdminVendorsResponse = {
+  vendors: AdminVendor[];
+  last_updated: string;
+  total_count: number;
+};
+
+export type VendorPayload = {
+  name: string;
+  type?: string;
+  location?: string;
+  hours_of_operation?: string;
+  days_of_operation?: string;
+  priority?: number;
+};
+
 export type ScheduleEventPayload = {
   title: string;
   description?: string;
@@ -256,5 +281,43 @@ export function deleteScheduleEvent(eventId: string) {
 export function refreshScheduleEvents() {
   return adminRequest<AdminScheduleResponse>('/api/admin/schedule/refresh', {
     method: 'POST',
+  });
+}
+
+export function listAdminVendors() {
+  return adminRequest<AdminVendorsResponse>('/api/admin/vendors');
+}
+
+export function createAdminVendor(payload: VendorPayload) {
+  return adminRequest<AdminVendorsResponse>('/api/admin/vendors', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: payload.name.trim(),
+      type: payload.type?.trim() || '',
+      location: payload.location?.trim() || '',
+      hours_of_operation: payload.hours_of_operation?.trim() || '',
+      days_of_operation: payload.days_of_operation?.trim() || '',
+      priority: payload.priority ?? 99,
+    }),
+  });
+}
+
+export function updateAdminVendor(vendorId: string, payload: VendorPayload) {
+  return adminRequest<AdminVendorsResponse>(`/api/admin/vendors/${encodeURIComponent(vendorId)}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      name: payload.name.trim(),
+      type: payload.type?.trim() || '',
+      location: payload.location?.trim() || '',
+      hours_of_operation: payload.hours_of_operation?.trim() || '',
+      days_of_operation: payload.days_of_operation?.trim() || '',
+      priority: payload.priority ?? 99,
+    }),
+  });
+}
+
+export function deleteAdminVendor(vendorId: string) {
+  return adminRequest<AdminVendorsResponse>(`/api/admin/vendors/${encodeURIComponent(vendorId)}`, {
+    method: 'DELETE',
   });
 }
