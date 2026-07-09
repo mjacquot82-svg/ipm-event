@@ -5,10 +5,14 @@ import React from 'react';
 import { View, Image, StyleSheet, useWindowDimensions } from 'react-native';
 
 const BREAKPOINT = 768;
-const BANNER_ASPECT_RATIO = 1536 / 1024;
+const DESKTOP_BANNER_ASPECT_RATIO = 2.05;
+const TABLET_BANNER_ASPECT_RATIO = 1.72;
 const MOBILE_PORTRAIT_ASPECT_RATIO = 1;
+const MOBILE_LANDSCAPE_ASPECT_RATIO = 1.5;
+const LOGO_ASPECT_RATIO = 447 / 559;
 
-const heroImage = require('../../assets/images/ipm-hero.png');
+const fieldImage = require('../../assets/images/field.png');
+const logoImage = require('../../assets/images/gemini4.png');
 
 interface ResponsiveBannerProps {
   style?: any;
@@ -17,13 +21,21 @@ interface ResponsiveBannerProps {
 const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const isDesktop = screenWidth >= BREAKPOINT;
-  const isPortraitMobile = !isDesktop && screenHeight > screenWidth;
+  const isTablet = screenWidth >= BREAKPOINT && screenWidth < 1024;
+  const isMobile = screenWidth < BREAKPOINT;
+  const isPortrait = screenHeight > screenWidth;
   const imageWidth = screenWidth * 0.92;
   const topMargin = isDesktop ? 0 : 4;
-  const aspectRatio = isPortraitMobile ? MOBILE_PORTRAIT_ASPECT_RATIO : BANNER_ASPECT_RATIO;
-  const resizeMode = isPortraitMobile ? 'contain' : 'cover';
-  const centeredObjectFit = {
-    objectFit: resizeMode,
+  const aspectRatio = isMobile
+    ? isPortrait
+      ? MOBILE_PORTRAIT_ASPECT_RATIO
+      : MOBILE_LANDSCAPE_ASPECT_RATIO
+    : isTablet
+      ? TABLET_BANNER_ASPECT_RATIO
+      : DESKTOP_BANNER_ASPECT_RATIO;
+  const logoWidth = isMobile ? '62%' : isTablet ? '44%' : '38%';
+  const centeredCover = {
+    objectFit: 'cover',
     objectPosition: 'center center',
   };
 
@@ -34,10 +46,19 @@ const ResponsiveBanner: React.FC<ResponsiveBannerProps> = ({ style }) => {
         aspectRatio,
       }]}>
         <Image
-          source={heroImage}
-          style={[styles.image, centeredObjectFit as any]}
-          resizeMode={resizeMode}
+          source={fieldImage}
+          style={[styles.backgroundImage, centeredCover as any]}
+          resizeMode="cover"
         />
+        <View style={styles.logoLayer} pointerEvents="none">
+          <Image
+            source={logoImage}
+            style={[styles.logo, {
+              width: logoWidth,
+            }]}
+            resizeMode="contain"
+          />
+        </View>
       </View>
     </View>
   );
@@ -49,13 +70,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageFrame: {
-    backgroundColor: '#F4C86A',
     borderRadius: 12,
     overflow: 'hidden',
   },
-  image: {
+  backgroundImage: {
     width: '100%',
     height: '100%',
+  },
+  logoLayer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    aspectRatio: LOGO_ASPECT_RATIO,
   },
 });
 
