@@ -403,13 +403,13 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* My Next Session (Starred) */}
+        {/* My Next Event (Starred) */}
         {nextStarredSession && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.starredHeader}>
                 <Feather name="star" size={18} color={colors.accent} />
-                <Text style={styles.sectionTitleStarred}>My Next Session</Text>
+                <Text style={styles.sectionTitleStarred}>My Next Event</Text>
               </View>
             </View>
             {renderSessionCard(nextStarredSession, true)}

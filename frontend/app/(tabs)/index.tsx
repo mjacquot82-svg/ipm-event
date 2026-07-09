@@ -375,7 +375,7 @@ export default function HomeScreen() {
             <View style={styles.sectionHeader}>
               <View style={styles.starredHeader}>
                 <Feather name="star" size={18} color={colors.accent} />
-                <Text style={styles.sectionTitleStarred}>My Next Session</Text>
+                <Text style={styles.sectionTitleStarred}>My Next Event</Text>
               </View>
             </View>
             {renderEventCard(nextStarredEvent, 0, true)}

@@ -1,4 +1,4 @@
-// © 2026 1001538341 ONTARIO INC. All Rights Reserved.
+// © 2026 Jacquot Digital Solutions. All Rights Reserved.
 
 import React from 'react';
 import {
@@ -17,6 +17,10 @@ import colors from '../../../src/theme/colors';
 import { eventInfo, locations, sessions } from '../../../src/data/mockData';
 
 export default function AboutScreen() {
+  const openJdsWebsite = () => {
+    Linking.openURL('https://jdsstudio.ca');
+  };
+
   const openMaps = () => {
     const { lat, lng } = eventInfo.coordinates;
     const url = Platform.select({
@@ -125,8 +129,10 @@ export default function AboutScreen() {
 
         {/* Copyright Footer */}
         <View style={styles.copyrightSection}>
-          <Text style={styles.copyrightText}>© 2026 1001538341 ONTARIO INC.</Text>
-          <Text style={styles.copyrightText}>All Rights Reserved.</Text>
+          <TouchableOpacity onPress={openJdsWebsite} activeOpacity={0.75}>
+            <Text style={styles.copyrightText}>© 2026 Jacquot Digital Solutions</Text>
+            <Text style={styles.copyrightLink}>jdsstudio.ca</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.bottomPadding} />
@@ -337,6 +343,13 @@ const styles = StyleSheet.create({
   copyrightText: {
     fontSize: 11,
     color: colors.textMuted,
+    textAlign: 'center',
+  },
+  copyrightLink: {
+    fontSize: 12,
+    color: colors.accent,
+    fontWeight: '600',
+    marginTop: 4,
     textAlign: 'center',
   },
   bottomPadding: {
