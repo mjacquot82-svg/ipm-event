@@ -10,13 +10,13 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { getFavorites, toggleFavorite } from '../src/utils/favoritesStorage';
-import CachedDataBanner from '../src/components/CachedDataBanner';
+import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
+import CachedDataBanner from '../../src/components/CachedDataBanner';
 import {
   CachedApiSource,
   ScheduleEvent,
   getScheduleData,
-} from '../src/services/spreadsheetDataService';
+} from '../../src/services/spreadsheetDataService';
 
 export default function ItineraryScreen() {
   const router = useRouter();
@@ -41,7 +41,7 @@ export default function ItineraryScreen() {
       setEvents(result.data.events || []);
       setDataSource(result.source);
       setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
-    } catch (err) {
+    } catch {
       setError('Unable to load itinerary.');
     } finally {
       setLoading(false);
@@ -81,6 +81,7 @@ export default function ItineraryScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <PageHeader title="My Itinerary" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#8B1538" />
           <Text style={styles.helperText}>Loading itinerary...</Text>
@@ -92,6 +93,7 @@ export default function ItineraryScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.container}>
+        <PageHeader title="My Itinerary" />
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
           <Text style={styles.helperText}>Please try again later.</Text>
@@ -102,6 +104,7 @@ export default function ItineraryScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <PageHeader title="My Itinerary" />
       <View style={styles.header}>
         <Text style={styles.title}>My Itinerary</Text>
         <Text style={styles.subtitle}>
@@ -124,10 +127,10 @@ export default function ItineraryScreen() {
             onPress={() => router.push('/schedule')}
           >
             <View style={styles.cardTop}>
-              <View>
+              <View style={styles.cardText}>
                 <Text style={styles.eventTitle}>{item.title}</Text>
                 <Text style={styles.eventTime}>
-                  {formatDate(item.start_date)} • {item.start_time} - {item.end_time}
+                  {formatDate(item.start_date)} | {item.start_time} - {item.end_time}
                 </Text>
               </View>
 
@@ -153,12 +156,16 @@ export default function ItineraryScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.center}>
-            <Feather name="clipboard" size={42} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>No events in your itinerary yet</Text>
+            <Feather name="star" size={42} color="#FBC02D" />
+            <Text style={styles.emptyTitle}>Build Your Personal Schedule</Text>
             <Text style={styles.helperText}>
-              Star events from the Schedule and they’ll appear here.
+              Save the events you don't want to miss.
+            </Text>
+            <Text style={styles.helperText}>
+              Browse the Schedule and tap the star on any event to add it to your personal itinerary.
             </Text>
             <TouchableOpacity style={styles.browseButton} onPress={() => router.push('/schedule')}>
+              <Feather name="calendar" size={17} color="#FFFFFF" />
               <Text style={styles.browseButtonText}>Browse Schedule</Text>
             </TouchableOpacity>
           </View>
@@ -168,10 +175,32 @@ export default function ItineraryScreen() {
   );
 }
 
+function PageHeader({ title }: { title: string }) {
+  return (
+    <View style={styles.pageHeader}>
+      <Text style={styles.pageHeaderTitle}>{title}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F4ED',
+  },
+  pageHeader: {
+    minHeight: 52,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: '#F7F4ED',
+  },
+  pageHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    textAlign: 'center',
   },
   header: {
     paddingHorizontal: 20,
@@ -190,7 +219,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 16,
-    paddingBottom: 30,
+    paddingBottom: 120,
     flexGrow: 1,
   },
   card: {
@@ -205,12 +234,14 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 8,
   },
+  cardText: {
+    flex: 1,
+  },
   eventTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#111827',
     marginBottom: 4,
-    flexShrink: 1,
   },
   eventTime: {
     fontSize: 13,
@@ -237,6 +268,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#6B7280',
     textAlign: 'center',
+    lineHeight: 20,
   },
   emptyTitle: {
     marginTop: 12,
@@ -256,6 +288,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   browseButtonText: {
     color: '#FFFFFF',

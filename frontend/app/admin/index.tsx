@@ -70,6 +70,8 @@ const PLATFORM_FIELDS = [
   { key: 'days_active', label: 'Days Active', required: false },
   { key: 'description', label: 'Description', required: false },
 ] as const;
+const SCHEDULE_TITLE_ALIASES = ['Name', 'Title', 'Event Title', 'Event Name', 'Activity', 'Program'];
+const NORMALIZED_SCHEDULE_TITLE_ALIASES = SCHEDULE_TITLE_ALIASES.map(normalizeHeader);
 
 const EMPTY_VENDOR_FORM: VendorPayload = {
   name: '',
@@ -579,7 +581,7 @@ function normalizeImportMapping(mapping: ImportMapping, headers: string[]): Impo
       return;
     }
     const match = normalizedHeaders.find(({ value }) => {
-      if (field.key === 'title') return ['name', 'eventname', 'eventtitle', 'title'].includes(value);
+      if (field.key === 'title') return NORMALIZED_SCHEDULE_TITLE_ALIASES.includes(value);
       if (field.key === 'start_date') return ['date', 'startdate', 'eventdate'].includes(value);
       if (field.key === 'start_time') return ['start', 'starttime', 'eventstart'].includes(value);
       if (field.key === 'end_time') return ['end', 'endtime', 'eventend'].includes(value);
@@ -604,6 +606,20 @@ function normalizeHeader(value: string) {
 function prepareScheduleImport(rows: Record<string, string>[], mapping: ImportMapping) {
   const preparedRows: ScheduleImportRow[] = [];
   const problems: ScheduleImportProblem[] = [];
+  const hasRowsWithContent = rows.some((row) => Object.values(row).some((value) => value.trim()));
+
+  if (hasRowsWithContent && !mapping.title) {
+    return {
+      rows: preparedRows,
+      problems: [
+        {
+          row_number: 1,
+          errors: [`Title column is required. Accepted columns: ${SCHEDULE_TITLE_ALIASES.join(', ')}`],
+          values: {},
+        },
+      ],
+    };
+  }
 
   rows.forEach((row, index) => {
     if (Object.values(row).every((value) => !value.trim())) {

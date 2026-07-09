@@ -280,6 +280,10 @@ class BroadcastsResponse(BaseModel):
     broadcasts: List[BroadcastResponse]
     total_count: int
 
+SCHEDULE_TITLE_FIELDS = ("Name", "Title", "Event Title", "Event Name", "Activity", "Program")
+SCHEDULE_FIELD_ALIASES = {
+    "Name": SCHEDULE_TITLE_FIELDS,
+}
 SCHEDULE_REQUIRED_FIELDS = ("Name", "Start Date", "Event Start", "Event End")
 SCHEDULE_SHEET_HEADERS = (
     "Name",
@@ -308,8 +312,11 @@ SCHEDULE_CONTENT_FIELDS = (
 
 
 def get_schedule_cell(row: Dict[str, str], field: str, default: str = "") -> str:
-    value = row.get(field, default)
-    return value.strip() if value else default
+    for candidate in SCHEDULE_FIELD_ALIASES.get(field, (field,)):
+        value = row.get(candidate)
+        if value and value.strip():
+            return value.strip()
+    return default
 
 
 def has_schedule_content(row: Dict[str, str]) -> bool:

@@ -1,6 +1,6 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -32,7 +33,9 @@ export default function ScheduleScreen() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
@@ -57,6 +60,9 @@ export default function ScheduleScreen() {
       setError(null);
 
       const result = await getScheduleData();
+      if (!Array.isArray(result.data.events)) {
+        throw new Error('Invalid schedule response');
+      }
       console.log('[ScheduleScreen] schedule result:', {
         source: result.source,
         eventsReturned: result.data.events?.length,
@@ -67,7 +73,7 @@ export default function ScheduleScreen() {
       setDataSource(result.source);
     } catch (err) {
       console.error('Error fetching schedule:', err);
-      setError('Unable to load schedule. Pull down to retry.');
+      setError("We couldn't load the schedule. Please check your connection and try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -110,23 +116,6 @@ export default function ScheduleScreen() {
     fetchSchedule(true);
   }, [fetchSchedule]);
 
-  // Group events by date
-  const groupedEvents = events.reduce((acc, event) => {
-    const date = formatDisplayDate(event.start_date);
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(event);
-    return acc;
-  }, {} as Record<string, ScheduleEvent[]>);
-
-  // Sort events within each date by start time
-  Object.keys(groupedEvents).forEach((date) => {
-    groupedEvents[date].sort((a, b) => {
-      return parseTime(a.start_time) - parseTime(b.start_time);
-    });
-  });
-
   // Parse time string to minutes for sorting
   function parseTime(timeStr: string): number {
     if (!timeStr) return 0;
@@ -155,35 +144,151 @@ export default function ScheduleScreen() {
     });
   }
 
+  const getDateDayName = useCallback((dateStr: string): string => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleDateString('en-US', { weekday: 'long' });
+  }, []);
+
+  const normalizeDayName = useCallback((day: string): string => {
+    const normalized = day.trim().toLowerCase().replace(/\.$/, '');
+    const dayMap: Record<string, string> = {
+      mon: 'Monday',
+      monday: 'Monday',
+      tue: 'Tuesday',
+      tues: 'Tuesday',
+      tuesday: 'Tuesday',
+      wed: 'Wednesday',
+      weds: 'Wednesday',
+      wednesday: 'Wednesday',
+      thu: 'Thursday',
+      thur: 'Thursday',
+      thurs: 'Thursday',
+      thursday: 'Thursday',
+      fri: 'Friday',
+      friday: 'Friday',
+      sat: 'Saturday',
+      saturday: 'Saturday',
+      sun: 'Sunday',
+      sunday: 'Sunday',
+    };
+    return dayMap[normalized] || day.trim();
+  }, []);
+
+  const getEventDayLabels = useCallback((event: ScheduleEvent): string[] => {
+    const labels = new Set<string>();
+    const dateDay = getDateDayName(event.start_date);
+    if (dateDay) {
+      labels.add(dateDay);
+    }
+
+    (event.days_active || '')
+      .split(/[,/&]+/)
+      .map((day) => normalizeDayName(day))
+      .filter(Boolean)
+      .forEach((day) => labels.add(day));
+
+    return Array.from(labels);
+  }, [getDateDayName, normalizeDayName]);
+
+  const categoryOptions = useMemo(() => {
+    return Array.from(
+      new Set(events.map((event) => event.category).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+  }, [events]);
+
+  const dayOptions = useMemo(() => {
+    const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const days = new Set<string>();
+    events.forEach((event) => {
+      getEventDayLabels(event).forEach((day) => days.add(day));
+    });
+    return Array.from(days).sort((a, b) => {
+      const aIndex = dayOrder.indexOf(a);
+      const bIndex = dayOrder.indexOf(b);
+      if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
+    });
+  }, [events, getEventDayLabels]);
+
   const filterOptions = [
     { label: 'All', value: null, icon: 'list' },
     { label: 'Starred', value: 'starred', icon: 'star' },
   ];
 
-  const filteredGroupedEvents = Object.keys(groupedEvents).reduce(
-    (acc, date) => {
-      const filtered = groupedEvents[date].filter((event) => {
-        if (showFavoritesOnly && !favorites.includes(event.id)) {
+  const hasActiveFilters = Boolean(
+    showFavoritesOnly || selectedCategory || selectedDay || searchQuery.trim()
+  );
+
+  const filteredEvents = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    return events.filter((event) => {
+      if (showFavoritesOnly && !favorites.includes(event.id)) {
+        return false;
+      }
+
+      if (selectedCategory && event.category !== selectedCategory) {
+        return false;
+      }
+
+      if (selectedDay && !getEventDayLabels(event).includes(selectedDay)) {
+        return false;
+      }
+
+      if (normalizedSearch) {
+        const searchableText = [
+          event.title,
+          event.description,
+          event.category,
+          event.location_name || '',
+        ]
+          .join(' ')
+          .toLowerCase();
+        if (!searchableText.includes(normalizedSearch)) {
           return false;
         }
-        return true;
-      });
-      if (filtered.length > 0) {
-        acc[date] = filtered;
       }
+
+      return true;
+    });
+  }, [events, favorites, getEventDayLabels, searchQuery, selectedCategory, selectedDay, showFavoritesOnly]);
+
+  const filteredGroupedEvents = useMemo(() => {
+    const grouped = filteredEvents.reduce((acc, event) => {
+      const date = formatDisplayDate(event.start_date);
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(event);
       return acc;
-    },
-    {} as Record<string, ScheduleEvent[]>
-  );
+    }, {} as Record<string, ScheduleEvent[]>);
+
+    Object.keys(grouped).forEach((date) => {
+      grouped[date].sort((a, b) => parseTime(a.start_time) - parseTime(b.start_time));
+    });
+
+    return grouped;
+  }, [filteredEvents]);
 
   const handleFilterPress = (value: string | null) => {
     if (value === 'starred') {
-      setShowFavoritesOnly(true);
-      setSelectedType(null);
+      setShowFavoritesOnly((current) => !current);
     } else {
       setShowFavoritesOnly(false);
-      setSelectedType(value);
+      setSelectedCategory(null);
+      setSelectedDay(null);
+      setSearchQuery('');
     }
+  };
+
+  const clearFilters = () => {
+    setShowFavoritesOnly(false);
+    setSelectedCategory(null);
+    setSelectedDay(null);
+    setSearchQuery('');
   };
 
   // Loading state
@@ -196,6 +301,25 @@ export default function ScheduleScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading schedule...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && events.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Schedule</Text>
+        </View>
+        <View style={styles.stateContainer}>
+          <Feather name="wifi-off" size={44} color={colors.error} />
+          <Text style={styles.emptyTitle}>{"We couldn't load the schedule."}</Text>
+          <Text style={styles.emptyText}>Please check your connection and try again.</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => fetchSchedule()} activeOpacity={0.8}>
+            <Feather name="refresh-cw" size={17} color="#FFFFFF" />
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -221,6 +345,26 @@ export default function ScheduleScreen() {
         <CachedDataBanner lastSuccessfulUpdate={lastUpdated} />
       )}
 
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBox}>
+          <Feather name="search" size={18} color={colors.textMuted} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search schedule"
+            placeholderTextColor={colors.textMuted}
+            style={styles.searchInput}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchButton}>
+              <Feather name="x" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+
       {/* Filter Pills */}
       <View style={styles.filterContainer}>
         <ScrollView
@@ -230,9 +374,8 @@ export default function ScheduleScreen() {
         >
           {filterOptions.map((option) => {
             const isActive =
-              (option.value === null && !showFavoritesOnly) ||
-              (option.value === 'starred' && showFavoritesOnly) ||
-              selectedType === option.value;
+              (option.value === null && !hasActiveFilters) ||
+              (option.value === 'starred' && showFavoritesOnly);
 
             return (
               <TouchableOpacity
@@ -257,10 +400,70 @@ export default function ScheduleScreen() {
             );
           })}
         </ScrollView>
+        {categoryOptions.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterScroll}
+          >
+            {categoryOptions.map((category) => {
+              const isActive = selectedCategory === category;
+              return (
+                <TouchableOpacity
+                  key={category}
+                  style={[styles.filterPill, isActive && styles.filterPillActive]}
+                  onPress={() => setSelectedCategory(isActive ? null : category)}
+                >
+                  <Feather
+                    name="tag"
+                    size={14}
+                    color={isActive ? '#FFFFFF' : colors.textSecondary}
+                  />
+                  <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
+                    {category}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+        {dayOptions.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterScroll}
+          >
+            {dayOptions.map((day) => {
+              const isActive = selectedDay === day;
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[styles.filterPill, isActive && styles.filterPillActive]}
+                  onPress={() => setSelectedDay(isActive ? null : day)}
+                >
+                  <Feather
+                    name="calendar"
+                    size={14}
+                    color={isActive ? '#FFFFFF' : colors.textSecondary}
+                  />
+                  <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
+                    {day}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+        {hasActiveFilters && (
+          <TouchableOpacity style={styles.clearFiltersButton} onPress={clearFilters}>
+            <Feather name="x-circle" size={16} color={colors.primary} />
+            <Text style={styles.clearFiltersText}>Clear filters</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Error State */}
-      {error && (
+      {error && events.length > 0 && (
         <View style={styles.errorContainer}>
           <Feather name="alert-circle" size={24} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
@@ -298,13 +501,20 @@ export default function ScheduleScreen() {
               color={colors.textMuted}
             />
             <Text style={styles.emptyTitle}>
-              {showFavoritesOnly ? 'No Starred Events' : 'No Events'}
+              {showFavoritesOnly ? 'No Starred Events Yet' : hasActiveFilters ? 'No Matching Events' : 'Schedule'}
             </Text>
             <Text style={styles.emptyText}>
               {showFavoritesOnly
-                ? 'Tap the star icon on events to add them here'
-                : 'Events will appear here when scheduled'}
+                ? 'Tap the star on any event to add it to your personal itinerary.'
+                : hasActiveFilters
+                  ? 'Clear filters or try a different search.'
+                  : 'No schedule information is available yet.'}
             </Text>
+            {!showFavoritesOnly && !hasActiveFilters && (
+              <Text style={styles.emptyText}>
+                Event information will appear here once the schedule has been published.
+              </Text>
+            )}
           </View>
         ) : (
           Object.entries(filteredGroupedEvents).map(([date, dateEvents]) => (
@@ -605,11 +815,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.accent,
   },
+  searchContainer: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  searchBox: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.surfaceHighlight,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 15,
+    color: colors.textPrimary,
+    paddingVertical: 10,
+  },
+  clearSearchButton: {
+    padding: 4,
+  },
   filterContainer: {
     backgroundColor: colors.surface,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    gap: 8,
   },
   filterScroll: {
     paddingHorizontal: 16,
@@ -636,6 +872,19 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: '#FFFFFF',
   },
+  clearFiltersButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    paddingVertical: 4,
+  },
+  clearFiltersText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 16,
@@ -649,6 +898,13 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: colors.textSecondary,
+  },
+  stateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 80,
   },
   errorContainer: {
     flexDirection: 'row',
@@ -771,6 +1027,20 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: 40,
+  },
+  retryButton: {
+    marginTop: 18,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   bottomPadding: {
     height: 200, // THE SPACER - Critical for scrolling content above floating ad

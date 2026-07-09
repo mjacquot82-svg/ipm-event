@@ -1,0 +1,81 @@
+Name,Type,Location,Hours of Operation,Days of Operation,priority,Description
+Maple Ridge Mini Donuts,Food,Food Court F-01,9:00 AM - 9:00 PM,Thursday - Sunday,1,Fresh mini donuts tossed in cinnamon sugar and maple glaze
+Harvest Smokehouse BBQ,Food,Food Court F-02,11:00 AM - 9:00 PM,Thursday - Sunday,2,Slow smoked brisket pulled pork and fair style sides
+County Creamery Ice Cream,Food,Food Court F-03,10:00 AM - 9:00 PM,Thursday - Sunday,3,Small batch ice cream made with local dairy
+Golden Kernel Kettle Corn,Food,Food Court F-04,9:00 AM - 8:00 PM,Thursday - Sunday,4,Sweet and salty kettle corn popped on site
+Orchard Lane Cider,Food,Food Court F-05,10:00 AM - 8:00 PM,Thursday - Sunday,5,Cold apple cider sparkling cider and seasonal slush
+The Grilled Cheese Wagon,Food,Food Court F-06,11:00 AM - 8:00 PM,Thursday - Sunday,6,Melty grilled cheese sandwiches with local cheeses
+Sunrise Coffee Cart,Food,Food Court F-07,8:00 AM - 6:00 PM,Thursday - Sunday,7,Espresso drip coffee tea and breakfast pastries
+Blue Ribbon Lemonade,Food,Food Court F-08,9:00 AM - 9:00 PM,Thursday - Sunday,8,Hand shaken lemonade in classic and fruit flavours
+Prairie Pierogi House,Food,Food Court F-09,11:00 AM - 8:00 PM,Friday - Sunday,9,Potato cheese and seasonal pierogi plates
+Iron Skillet Poutine,Food,Food Court F-10,11:00 AM - 9:00 PM,Thursday - Sunday,10,Fresh cut fries cheese curds gravy and loaded toppings
+Heritage Bakery Co,Food,Market Lane M-01,9:00 AM - 6:00 PM,Thursday - Sunday,11,Breads pies butter tarts and seasonal baked goods
+Hilltop Honey Farm,Food,Market Lane M-02,9:00 AM - 6:00 PM,Thursday - Sunday,12,Raw honey beeswax candles and pollinator education
+Red Barn Preserves,Food,Market Lane M-03,9:00 AM - 6:00 PM,Thursday - Sunday,13,Jams pickles relishes and pantry preserves
+Silver Creek Cheese,Food,Market Lane M-04,10:00 AM - 6:00 PM,Thursday - Sunday,14,Artisan cheddar curds and specialty cheese boxes
+County Line Meats,Food,Market Lane M-05,10:00 AM - 6:00 PM,Thursday - Sunday,15,Frozen local meats sausages and family barbecue packs
+Willow Bend Produce,Food,Market Lane M-06,9:00 AM - 6:00 PM,Thursday - Sunday,16,Seasonal vegetables fruit baskets and recipe cards
+Cloverleaf Microgreens,Food,Market Lane M-07,9:00 AM - 5:00 PM,Friday - Sunday,17,Fresh microgreens salad mixes and growing kits
+Oak Barrel Syrups,Food,Market Lane M-08,9:00 AM - 6:00 PM,Thursday - Sunday,18,Maple syrup maple sugar and breakfast gift sets
+Meadowbrook Mushrooms,Food,Market Lane M-09,10:00 AM - 5:00 PM,Friday - Sunday,19,Cultivated mushrooms grow blocks and cooking guidance
+Stone Mill Flour,Food,Market Lane M-10,9:00 AM - 5:00 PM,Thursday - Saturday,20,Stone ground flours grains and baking mixes
+Fern Hollow Soapworks,Artisan,Artisan Barn A-01,9:00 AM - 7:00 PM,Thursday - Sunday,21,Handmade soaps balms and farm inspired bath products
+Thread and Thistle Textiles,Artisan,Artisan Barn A-02,9:00 AM - 7:00 PM,Thursday - Sunday,22,Quilts tea towels and embroidered home goods
+North Star Leathercraft,Artisan,Artisan Barn A-03,10:00 AM - 6:00 PM,Thursday - Sunday,23,Hand stitched belts wallets and leather accessories
+Elmwood Pottery Studio,Artisan,Artisan Barn A-04,9:00 AM - 6:00 PM,Thursday - Sunday,24,Functional pottery mugs bowls and serving pieces
+Rustic Rail Woodworks,Artisan,Artisan Barn A-05,9:00 AM - 6:00 PM,Thursday - Sunday,25,Charcuterie boards signs and hardwood decor
+Golden Hour Candles,Artisan,Artisan Barn A-06,10:00 AM - 7:00 PM,Thursday - Sunday,26,Soy candles wax melts and seasonal scents
+The Wool Shed,Artisan,Artisan Barn A-07,9:00 AM - 6:00 PM,Thursday - Sunday,27,Yarn felted goods and sheep wool demonstrations
+Riverbend Stained Glass,Artisan,Artisan Barn A-08,10:00 AM - 6:00 PM,Friday - Sunday,28,Stained glass ornaments panels and sun catchers
+Prairie Paper Co,Artisan,Artisan Barn A-09,9:00 AM - 5:00 PM,Thursday - Saturday,29,Cards prints notebooks and local illustration
+Forge and Field Metalworks,Artisan,Artisan Barn A-10,10:00 AM - 6:00 PM,Thursday - Sunday,30,Decorative metal hooks garden stakes and forged gifts
+Green Acres Equipment,Equipment,Outdoor Equipment O-01,8:30 AM - 6:00 PM,Thursday - Sunday,31,Compact tractors implements and financing information
+Harvest Tech Drones,Technology,Outdoor Equipment O-02,9:00 AM - 6:00 PM,Thursday - Sunday,32,Agricultural drones mapping tools and operator demos
+Miller Irrigation Supply,Equipment,Outdoor Equipment O-03,9:00 AM - 5:00 PM,Thursday - Saturday,33,Irrigation pumps fittings and field water planning
+Stonebridge Seed Co,Agriculture,Ag Expo Hall E-01,9:00 AM - 6:00 PM,Thursday - Sunday,34,Seed corn soybeans forage blends and agronomy advice
+Blue River Agronomy,Agriculture,Ag Expo Hall E-02,9:00 AM - 6:00 PM,Thursday - Sunday,35,Crop consulting soil sampling and field scouting services
+County Co-op Services,Agriculture,Ag Expo Hall E-03,9:00 AM - 6:00 PM,Thursday - Sunday,36,Farm supply membership fuel programs and seasonal inputs
+North Field Insurance,Services,Ag Expo Hall E-04,9:00 AM - 5:00 PM,Thursday - Sunday,37,Farm home vehicle and business insurance consultations
+Farmstead Financial,Services,Ag Expo Hall E-05,9:00 AM - 5:00 PM,Thursday - Saturday,38,Agricultural lending succession planning and account services
+Clearview Veterinary Clinic,Services,Ag Expo Hall E-06,9:00 AM - 5:00 PM,Thursday - Sunday,39,Large animal health resources and appointment information
+Rural Broadband Connect,Technology,Ag Expo Hall E-07,10:00 AM - 6:00 PM,Thursday - Sunday,40,Internet options for farms homes and rural businesses
+Solar Barn Energy,Services,Ag Expo Hall E-08,9:00 AM - 5:00 PM,Friday - Sunday,41,Solar installations battery backup and energy assessments
+WellSpring Water Testing,Services,Ag Expo Hall E-09,9:00 AM - 5:00 PM,Thursday - Sunday,42,Private well testing kits filtration and education
+Fieldstone Fencing,Equipment,Outdoor Equipment O-04,9:00 AM - 6:00 PM,Thursday - Sunday,43,Farm fencing gates posts and installation estimates
+Iron Gate Trailers,Equipment,Outdoor Equipment O-05,9:00 AM - 6:00 PM,Thursday - Sunday,44,Utility livestock and equipment trailers on display
+Oak Valley Sawmill,Equipment,Outdoor Equipment O-06,9:00 AM - 5:00 PM,Thursday - Saturday,45,Portable sawmill services lumber and live edge slabs
+Hearthside Outdoor Living,Home,Outdoor Equipment O-07,10:00 AM - 7:00 PM,Thursday - Sunday,46,Patio furniture fire tables and outdoor kitchen displays
+County 4-H Association,Community,Community Row C-01,9:00 AM - 6:00 PM,Thursday - Sunday,47,Youth club information projects and volunteer opportunities
+Farmers Helping Farmers,Community,Community Row C-02,9:00 AM - 5:00 PM,Thursday - Sunday,48,Charity programs supporting farm families in need
+Harvest County Library,Community,Community Row C-03,10:00 AM - 5:00 PM,Thursday - Sunday,49,Library cards reading programs and local history resources
+Rural Fire Prevention,Community,Community Row C-04,9:00 AM - 6:00 PM,Thursday - Sunday,50,Fire safety education smoke alarm guidance and displays
+County Tourism Booth,Community,Community Row C-05,9:00 AM - 6:00 PM,Thursday - Sunday,51,Regional maps weekend itineraries and visitor information
+Agricultural Museum Friends,Community,Community Row C-06,9:00 AM - 5:00 PM,Thursday - Sunday,52,Heritage displays memberships and restoration projects
+Junior Farmers Council,Community,Community Row C-07,10:00 AM - 6:00 PM,Friday - Sunday,53,Young adult agriculture programs events and networking
+Local Food Bank Drive,Community,Community Row C-08,9:00 AM - 6:00 PM,Thursday - Sunday,54,Donation drop off and information about food support programs
+County Conservation Authority,Community,Community Row C-09,9:00 AM - 5:00 PM,Thursday - Sunday,55,Watershed stewardship tree planting and conservation resources
+Rural Health Outreach,Community,Community Row C-10,10:00 AM - 5:00 PM,Thursday - Sunday,56,Health screening information and rural care navigation
+Little Sprouts Play Kits,Kids,Midway Kiosk K-01,10:00 AM - 8:00 PM,Thursday - Sunday,57,Farm themed toys puzzles and activity kits for children
+Face Paint Farmyard,Kids,Midway Kiosk K-02,10:00 AM - 7:00 PM,Friday - Sunday,58,Face painting glitter art and child friendly designs
+Balloon Barn Creations,Kids,Midway Kiosk K-03,11:00 AM - 7:00 PM,Saturday - Sunday,59,Balloon animals hats and fair themed creations
+Tiny Tractor Toys,Kids,Midway Kiosk K-04,10:00 AM - 8:00 PM,Thursday - Sunday,60,Toy tractors farm animals and collectible play sets
+Patchwork Petting Farm,Livestock,Livestock Lane L-01,9:00 AM - 6:00 PM,Thursday - Sunday,61,Supervised small animal visits and family photos
+Happy Hen Education,Livestock,Livestock Lane L-02,9:00 AM - 5:00 PM,Thursday - Sunday,62,Chicken care displays egg education and breed information
+Alpaca Acres,Livestock,Livestock Lane L-03,10:00 AM - 6:00 PM,Thursday - Sunday,63,Alpaca fibre products and animal meet and greet
+Goat Meadow Creamery,Livestock,Livestock Lane L-04,10:00 AM - 5:00 PM,Friday - Sunday,64,Goat milk soap cheese samples and farm tours
+Stable Lane Tack Shop,Equestrian,Livestock Lane L-05,9:00 AM - 6:00 PM,Thursday - Sunday,65,Halters brushes lead ropes and riding accessories
+Blue Ribbon Feed Supply,Livestock,Livestock Lane L-06,8:30 AM - 6:00 PM,Thursday - Sunday,66,Feed supplements bedding and animal care supplies
+Heritage Loom Guild,Heritage,Heritage Hall H-01,9:00 AM - 5:00 PM,Thursday - Sunday,67,Weaving demonstrations textiles and guild memberships
+Pioneer Tool Restorers,Heritage,Heritage Hall H-02,9:00 AM - 5:00 PM,Thursday - Sunday,68,Restored hand tools sharpening and preservation advice
+Old Mill Print Shop,Heritage,Heritage Hall H-03,10:00 AM - 5:00 PM,Friday - Sunday,69,Letterpress prints cards and historic printing demos
+County Genealogy Society,Heritage,Heritage Hall H-04,10:00 AM - 5:00 PM,Thursday - Sunday,70,Family history research help and archive resources
+The Seed Library,Heritage,Heritage Hall H-05,9:00 AM - 5:00 PM,Thursday - Sunday,71,Heirloom seeds seed saving and garden history resources
+Fairwear Outfitters,Retail,Market Lane M-11,9:00 AM - 8:00 PM,Thursday - Sunday,72,Event apparel hats rain ponchos and tote bags
+Country Stitch Boutique,Retail,Market Lane M-12,10:00 AM - 7:00 PM,Thursday - Sunday,73,Women's apparel scarves and handmade accessories
+Trailhead Boots,Retail,Market Lane M-13,9:00 AM - 7:00 PM,Thursday - Sunday,74,Work boots rubber boots socks and care products
+Barn Cat Books,Retail,Market Lane M-14,10:00 AM - 6:00 PM,Thursday - Sunday,75,Children's books rural history and local authors
+Northwind Garden Supply,Home,Market Lane M-15,9:00 AM - 6:00 PM,Thursday - Sunday,76,Garden tools seeds planters and soil amendments
+Porchlight Decor,Home,Market Lane M-16,10:00 AM - 7:00 PM,Friday - Sunday,77,Farmhouse decor wreaths signs and seasonal accents
+Meadow Lane Flowers,Home,Market Lane M-17,9:00 AM - 6:00 PM,Thursday - Sunday,78,Cut flowers bouquets dried arrangements and bulbs
+Harvest County Radio,Media,Community Row C-11,9:00 AM - 6:00 PM,Thursday - Sunday,79,Live fair coverage interviews contests and listener signup
+Fair First Aid Station,Services,South Gate Services S-01,8:00 AM - 9:00 PM,Thursday - Sunday,80,On site first aid support visitor assistance and lost child help
