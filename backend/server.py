@@ -95,7 +95,12 @@ CORS_ORIGINS = [
     for origin in os.environ.get("CORS_ORIGINS", ",".join(DEFAULT_CORS_ORIGINS)).split(",")
     if origin.strip()
 ]
-CORS_ORIGIN_REGEX = os.environ.get("CORS_ORIGIN_REGEX", r"https://.*\.netlify\.app")
+# Allow preview deploys and GitHub Codespaces forwarded ports during development.
+# Codespaces origins follow https://<codespace-name>-<port>.app.github.dev.
+CORS_ORIGIN_REGEX = os.environ.get(
+    "CORS_ORIGIN_REGEX",
+    r"^https://.*\.netlify\.app$|^https://[A-Za-z0-9-]+-\d+\.app\.github\.dev$",
+)
 if CONTENT_SOURCE not in {"google_sheets", "supabase"}:
     raise RuntimeError("CONTENT_SOURCE must be either 'google_sheets' or 'supabase'")
 
