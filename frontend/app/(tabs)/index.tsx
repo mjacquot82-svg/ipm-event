@@ -408,6 +408,39 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
+              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.info }]}>
+                <Feather name="briefcase" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Sponsors</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-a-volunteer/')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.success }]}>
+                <Feather name="users" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Volunteer</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-an-exhibitor/')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.vendor }]}>
+                <Feather name="briefcase" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Exhibitors</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
               onPress={() => openLink('https://www.tix123.com/tickets/?code=IPMRE26')}
               activeOpacity={0.8}
             >
