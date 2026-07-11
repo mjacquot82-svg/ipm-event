@@ -11,7 +11,8 @@ const PUSH_TOKEN_KEY = '@ipm_push_token';
 // Configure how notifications appear when app is in foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -151,8 +152,8 @@ export function addNotificationListeners(
   const responseSubscription = Notifications.addNotificationResponseReceivedListener(onResponse);
 
   return () => {
-    Notifications.removeNotificationSubscription(receivedSubscription);
-    Notifications.removeNotificationSubscription(responseSubscription);
+    receivedSubscription.remove();
+    responseSubscription.remove();
   };
 }
 

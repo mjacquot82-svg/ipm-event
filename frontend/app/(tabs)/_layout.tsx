@@ -18,8 +18,7 @@ function getIconName(routeName: string): keyof typeof Feather.glyphMap {
     case 'index': return 'home';
     case 'map': return 'map';
     case 'schedule': return 'calendar';
-    case 'leaderboard': return 'bar-chart-2';
-    case 'about': return 'award';
+    case 'about': return 'info';
     default: return 'circle';
   }
 }
@@ -29,7 +28,6 @@ function getLabel(routeName: string): string {
     case 'index': return 'Home';
     case 'map': return 'Map';
     case 'schedule': return 'Schedule';
-    case 'leaderboard': return 'Leaderboard';
     case 'about': return 'About';
     default: return routeName;
   }
@@ -51,10 +49,19 @@ function TabItem({ routeName }: { routeName: string }) {
                     pathname.startsWith(`/${routeName}/`);
 
   const onPress = () => {
-    if (routeName === 'index') {
-      router.push('/');
-    } else {
-      router.push(`/${routeName}`);
+    switch (routeName) {
+      case 'index':
+        router.push('/');
+        break;
+      case 'map':
+        router.push('/map');
+        break;
+      case 'schedule':
+        router.push('/schedule');
+        break;
+      case 'about':
+        router.push('/about');
+        break;
     }
   };
 
@@ -81,10 +88,9 @@ function TabItem({ routeName }: { routeName: string }) {
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const topInset = insets.top || 0;
+  const topInset = Platform.OS === 'web' ? 0 : (insets.top || 0);
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
   
-  const topAdHeight = adCampaignsConfig.topBanner.enabled ? 98 : 0;
   const bottomAdEnabled = adCampaignsConfig.bottomBanner.enabled;
   const totalBottomBarHeight = (bottomAdEnabled ? AD_SECTION_HEIGHT : 0) + NAV_ICONS_HEIGHT + bottomInset;
 
@@ -96,17 +102,17 @@ export default function TabLayout() {
         </View>
       )}
 
-      <View style={[styles.contentArea, { marginTop: topAdHeight + topInset }]}>
+      <View style={styles.contentArea}>
         <Tabs
           tabBar={() => <EmptyTabBar />}
-          screenOptions={{ headerShown: false }}
-          sceneContainerStyle={styles.scene}
+          screenOptions={{ headerShown: false, sceneStyle: styles.scene }}
         >
-          <Tabs.Screen name="index" options={{ title: 'Home' }} />
+          <Tabs.Screen name="index" options={{ title: 'Home', href: '/' }} />
           <Tabs.Screen name="map" options={{ title: 'Map' }} />
           <Tabs.Screen name="schedule" options={{ title: 'Schedule' }} />
-          <Tabs.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
           <Tabs.Screen name="about" options={{ title: 'About' }} />
+          <Tabs.Screen name="itinerary" options={{ title: 'Itinerary', href: null }} />
+          <Tabs.Screen name="vendors" options={{ title: 'Vendors', href: null }} />
         </Tabs>
       </View>
 
@@ -124,7 +130,6 @@ export default function TabLayout() {
           <TabItem routeName="index" />
           <TabItem routeName="map" />
           <TabItem routeName="schedule" />
-          <TabItem routeName="leaderboard" />
           <TabItem routeName="about" />
         </View>
       </View>
@@ -134,8 +139,8 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  topAdWrapper: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100, backgroundColor: colors.background },
-  contentArea: { flex: 1 },
+  topAdWrapper: { backgroundColor: colors.background, zIndex: 10 },
+  contentArea: { flex: 1, overflow: 'hidden' },
   scene: { flex: 1, backgroundColor: colors.background },
   combinedBottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, zIndex: 100 },
   adSection: { alignItems: 'center', paddingVertical: 4 },

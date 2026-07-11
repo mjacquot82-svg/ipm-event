@@ -19,6 +19,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
 import colors from '../../src/theme/colors';
+import { openExternalPage } from '../../src/utils/externalLinks';
 import { getFavorites } from '../../src/utils/favoritesStorage';
 import {
   CachedApiSource,
@@ -289,14 +290,20 @@ export default function HomeScreen() {
     await Promise.all([fetchSchedule(true), loadFavorites()]);
   }, [fetchSchedule, loadFavorites]);
 
-  const openLink = (url: string) => {
+  const openLink = (url: string, title: string) => openExternalPage(router, { url, title });
+
+  const openBrowserLink = (url: string) => {
     Linking.openURL(url).catch(() => {
       Alert.alert('Unable to open link', 'Please try again later.');
     });
   };
 
   const showUnavailableNotice = (title: string) => {
-    Alert.alert(title, 'This feature is not available from the Home screen yet.');
+    const message =
+      title === 'SOS'
+        ? 'Emergency support information will be available during the event.'
+        : 'Event alerts will appear here when they are available.';
+    Alert.alert(title, message);
   };
 
   const renderEventCard = (event: ScheduleEvent, index: number, showTimeUntil = false) => {
@@ -391,7 +398,7 @@ export default function HomeScreen() {
           <Text style={styles.opaEyebrow}>Proudly Hosted By</Text>
           <TouchableOpacity
             style={styles.opaLogoLink}
-            onPress={() => openLink('https://www.plowingmatch.org/')}
+            onPress={() => openLink('https://www.plowingmatch.org/', "Ontario Plowmen's Association")}
             activeOpacity={0.8}
           >
             <Image
@@ -430,7 +437,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/')}
+              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/', 'Sponsors')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.info }]}>
@@ -441,7 +448,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-a-volunteer/')}
+              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-a-volunteer/', 'Volunteer')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.success }]}>
@@ -452,7 +459,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-an-exhibitor/')}
+              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-an-exhibitor/', 'Exhibitors')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.vendor }]}>
@@ -463,7 +470,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.tix123.com/tickets/?code=IPMRE26')}
+              onPress={() => openBrowserLink('https://www.tix123.com/tickets/?code=IPMRE26')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.stage }]}>
@@ -474,7 +481,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://letscamp.ca/camps/ipm-2026')}
+              onPress={() => openBrowserLink('https://letscamp.ca/camps/ipm-2026')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
@@ -485,7 +492,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/')}
+              onPress={() => openBrowserLink('https://ipm26.itemorder.com/shop/home/')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: '#9C27B0' }]}>
@@ -564,7 +571,7 @@ export default function HomeScreen() {
 
         <View style={sectionStyle}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Coming Up</Text>
+            <Text style={styles.sectionTitle}>Coming Up Next</Text>
             <TouchableOpacity onPress={() => router.push('/schedule')}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
@@ -585,7 +592,11 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.emptyState}>
               <Feather name="calendar" size={40} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No upcoming events</Text>
+              <Text style={styles.emptyTitle}>Coming Up Next</Text>
+              <Text style={styles.emptyText}>No upcoming events are available yet.</Text>
+              <Text style={styles.emptyText}>
+                Event information will appear here once the schedule has been published.
+              </Text>
             </View>
           )}
         </View>
@@ -675,7 +686,7 @@ const styles = StyleSheet.create({
   },
   opaEyebrow: {
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     marginBottom: 8,
     textAlign: 'center',
@@ -686,14 +697,14 @@ const styles = StyleSheet.create({
   opaLogo: {},
   opaName: {
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     marginTop: 8,
     textAlign: 'center',
   },
   opaCaption: {
     color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     marginTop: 2,
     textAlign: 'center',
@@ -853,6 +864,13 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     paddingVertical: 32,
+  },
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
   },
   emptyText: {
     marginTop: 12,
