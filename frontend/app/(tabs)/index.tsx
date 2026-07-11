@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Image,
   RefreshControl,
   Linking,
   ActivityIndicator,
@@ -197,6 +198,9 @@ export default function HomeScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const isDesktop = screenWidth >= 768;
   const sectionWidth = isDesktop ? screenWidth * 0.92 : undefined;
+  const availableSectionWidth = isDesktop ? screenWidth * 0.92 : Math.max(screenWidth - 40, 0);
+  const opaLogoWidth = Math.min(availableSectionWidth * 0.52, 360);
+  const opaLogoHeight = opaLogoWidth * (435 / 800);
 
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -334,6 +338,7 @@ export default function HomeScreen() {
     styles.section,
     isDesktop && { width: sectionWidth, alignSelf: 'center' as const, paddingHorizontal: 0 },
   ];
+  const isShowingCachedData = dataSource === 'cache' && !loading && events.length > 0;
 
   return (
     <View style={styles.container}>
@@ -352,7 +357,7 @@ export default function HomeScreen() {
       >
         <ResponsiveBanner />
 
-        {dataSource === 'cache' && (
+        {isShowingCachedData && (
           <View style={sectionStyle}>
             <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
           </View>
@@ -381,6 +386,23 @@ export default function HomeScreen() {
             {renderEventCard(nextStarredEvent, 0, true)}
           </View>
         )}
+
+        <View style={[sectionStyle, styles.opaLogoSection]}>
+          <Text style={styles.opaEyebrow}>Proudly Hosted By</Text>
+          <TouchableOpacity
+            style={styles.opaLogoLink}
+            onPress={() => openLink('https://www.plowingmatch.org/')}
+            activeOpacity={0.8}
+          >
+            <Image
+              source={require('../../assets/images/opa.png')}
+              style={[styles.opaLogo, { width: opaLogoWidth, height: opaLogoHeight }]}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+          <Text style={styles.opaName}>Ontario Plowmen's Association</Text>
+          <Text style={styles.opaCaption}>Parent Host of the International Plowing Match</Text>
+        </View>
 
         <View style={sectionStyle}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -645,6 +667,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.accent,
     fontWeight: '500',
+  },
+  opaLogoSection: {
+    alignItems: 'center',
+    marginTop: 14,
+    marginBottom: -2,
+  },
+  opaEyebrow: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '500',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  opaLogoLink: {
+    alignItems: 'center',
+  },
+  opaLogo: {},
+  opaName: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  opaCaption: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 2,
+    textAlign: 'center',
   },
   quickActionsGrid: {
     flexDirection: 'row',
