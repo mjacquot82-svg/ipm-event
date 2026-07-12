@@ -202,7 +202,7 @@ export default function HomeScreen() {
   const isDesktop = screenWidth >= 768;
   const sectionWidth = isDesktop ? screenWidth * 0.92 : undefined;
   const availableSectionWidth = isDesktop ? screenWidth * 0.92 : Math.max(screenWidth - 40, 0);
-  const opaLogoWidth = Math.min(availableSectionWidth * 0.52, 360);
+  const opaLogoWidth = Math.min(availableSectionWidth * 0.65, 450);
   const opaLogoHeight = opaLogoWidth * (435 / 800);
 
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
@@ -415,7 +415,6 @@ export default function HomeScreen() {
             />
           </TouchableOpacity>
           <Text style={styles.opaName}>Ontario Plowmen's Association</Text>
-          <Text style={styles.opaCaption}>Parent Host of the International Plowing Match</Text>
         </View>
 
         <View style={sectionStyle}>
@@ -687,13 +686,13 @@ const styles = StyleSheet.create({
   opaLogoSection: {
     alignItems: 'center',
     marginTop: 14,
-    marginBottom: -2,
+    marginBottom: -8,
   },
   opaEyebrow: {
     color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
-    marginBottom: 8,
+    marginBottom: 2,
     textAlign: 'center',
   },
   opaLogoLink: {
@@ -702,14 +701,7 @@ const styles = StyleSheet.create({
   opaLogo: {},
   opaName: {
     color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '500',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  opaCaption: {
-    color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '500',
     marginTop: 2,
     textAlign: 'center',
