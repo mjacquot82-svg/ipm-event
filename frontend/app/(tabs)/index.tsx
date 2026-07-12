@@ -18,6 +18,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
 import colors from '../../src/theme/colors';
+import { attendeePageContent } from '../../src/theme/attendeePageLayout';
 import { openExternalLink } from '../../src/utils/externalLinks';
 import { getFavorites } from '../../src/utils/favoritesStorage';
 import {
@@ -358,7 +359,7 @@ export default function HomeScreen() {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={attendeePageContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -620,10 +621,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-  },
-  scrollContent: {
-    paddingTop: 4,
-    paddingBottom: 180,
   },
   section: {
     paddingHorizontal: 20,

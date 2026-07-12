@@ -5,13 +5,14 @@ import { View, StyleSheet, StatusBar } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import MapComponent from '../../src/components/MapComponent';
 import colors from '../../src/theme/colors';
+import { attendeePageContent } from '../../src/theme/attendeePageLayout';
 
 export default function MapScreen() {
   // Get location parameter from navigation
   const { location, showOnly } = useLocalSearchParams<{ location?: string; showOnly?: string }>();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, attendeePageContent]}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <MapComponent 
         highlightedLocation={location || null} 

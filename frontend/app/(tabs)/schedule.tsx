@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
+import { attendeePageContent } from '../../src/theme/attendeePageLayout';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
@@ -303,7 +304,7 @@ export default function ScheduleScreen() {
   // Loading state
   if (loading && events.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.title}>Schedule</Text>
         </View>
@@ -319,7 +320,7 @@ export default function ScheduleScreen() {
 
   if (error && events.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.title}>Schedule</Text>
         </View>
@@ -337,7 +338,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Schedule</Text>

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
+import { attendeePageContent } from '../../src/theme/attendeePageLayout';
 import {
   CachedApiSource,
   CachedApiResult,
@@ -98,7 +99,7 @@ export default function VendorsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, attendeePageContent]}>
         <PageHeader title="Vendors" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#8B1538" />
@@ -112,7 +113,7 @@ export default function VendorsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, attendeePageContent]}>
         <PageHeader title="Vendors" />
         <View style={styles.center}>
           <Feather name="wifi-off" size={42} color="#B91C1C" />
@@ -130,7 +131,7 @@ export default function VendorsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, attendeePageContent]}>
       <PageHeader title="Vendors" />
       <View style={styles.header}>
         <Text style={styles.title}>Vendors</Text>

@@ -2,6 +2,7 @@
 // AD BANNER COMPONENT - FINAL VERSION WITH REAL ASSETS
 
 import React from 'react';
+import { usePathname } from 'expo-router';
 import {
   View,
   Text,
@@ -11,7 +12,7 @@ import {
   Linking,
 } from 'react-native';
 import { AdUnit } from '../config/AdCampaignsConfig';
-import colors from '../theme/colors';
+import DevelopmentSponsorAd from './DevelopmentSponsorAd';
 
 interface AdBannerProps {
   adUnit: AdUnit;
@@ -20,6 +21,8 @@ interface AdBannerProps {
 }
 
 const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = 'auto' }) => {
+  const pathname = usePathname();
+
   if (!adUnit.enabled) return null;
 
   const handlePress = async () => {
@@ -52,7 +55,11 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
             />
           ) : (
             <View style={styles.topPlaceholder}>
-              <Text style={styles.placeholderText}>{adUnit.placeholderText}</Text>
+              {__DEV__ ? (
+                <DevelopmentSponsorAd position="top" pathname={pathname} />
+              ) : (
+                <Text style={styles.placeholderText}>{adUnit.placeholderText}</Text>
+              )}
             </View>
           )}
         </TouchableOpacity>
@@ -76,7 +83,11 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
           />
         ) : (
           <View style={styles.bottomPlaceholder}>
-            <Text style={styles.placeholderText}>{adUnit.placeholderText}</Text>
+            {__DEV__ ? (
+              <DevelopmentSponsorAd position="bottom" pathname={pathname} />
+            ) : (
+              <Text style={styles.placeholderText}>{adUnit.placeholderText}</Text>
+            )}
           </View>
         )}
       </TouchableOpacity>

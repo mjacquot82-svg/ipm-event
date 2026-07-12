@@ -12,6 +12,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
+import { attendeePageContent } from '../../src/theme/attendeePageLayout';
 import {
   CachedApiSource,
   CachedApiResult,
@@ -86,7 +87,7 @@ export default function ItineraryScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, attendeePageContent]}>
         <PageHeader title="My Itinerary" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#8B1538" />
@@ -100,7 +101,7 @@ export default function ItineraryScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, attendeePageContent]}>
         <PageHeader title="My Itinerary" />
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
@@ -111,7 +112,7 @@ export default function ItineraryScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, attendeePageContent]}>
       <PageHeader title="My Itinerary" />
       <View style={styles.header}>
         <Text style={styles.title}>My Itinerary</Text>
