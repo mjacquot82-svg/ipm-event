@@ -1,11 +1,10 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 // AD BANNER COMPONENT - FINAL VERSION WITH REAL ASSETS
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'expo-router';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   Image,
@@ -13,6 +12,8 @@ import {
 } from 'react-native';
 import { AdUnit } from '../config/AdCampaignsConfig';
 import DevelopmentSponsorAd from './DevelopmentSponsorAd';
+
+const ROTATION_INTERVAL_MS = 5000;
 
 interface AdBannerProps {
   adUnit: AdUnit;
@@ -22,6 +23,28 @@ interface AdBannerProps {
 
 const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = 'auto' }) => {
   const pathname = usePathname();
+  const [artworkIndex, setArtworkIndex] = useState(0);
+  const uploadedArtwork = useMemo(() => {
+    const images = [...(adUnit.imageUrls || [])];
+    if (adUnit.imageUrl && !images.includes(adUnit.imageUrl)) {
+      images.unshift(adUnit.imageUrl);
+    }
+    return images.filter(Boolean);
+  }, [adUnit.imageUrl, adUnit.imageUrls]);
+  const uploadedArtworkKey = uploadedArtwork.join('|');
+
+  useEffect(() => {
+    setArtworkIndex(0);
+    if (uploadedArtwork.length < 2) return;
+
+    const timer = setInterval(() => {
+      setArtworkIndex((current) => current + 1);
+    }, ROTATION_INTERVAL_MS);
+
+    return () => clearInterval(timer);
+  }, [uploadedArtwork.length, uploadedArtworkKey]);
+
+  const currentArtwork = uploadedArtwork[artworkIndex % uploadedArtwork.length];
 
   if (!adUnit.enabled) return null;
 
@@ -47,19 +70,15 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
           onPress={handlePress}
           activeOpacity={0.9}
         >
-          {adUnit.imageUrl ? (
+          {currentArtwork ? (
             <Image
-              source={{ uri: adUnit.imageUrl }}
+              source={{ uri: currentArtwork }}
               style={styles.topBannerImage}
               resizeMode="cover"
             />
           ) : (
             <View style={styles.topPlaceholder}>
-              {__DEV__ ? (
-                <DevelopmentSponsorAd position="top" pathname={pathname} />
-              ) : (
-                <Text style={styles.placeholderText}>{adUnit.placeholderText}</Text>
-              )}
+              <DevelopmentSponsorAd position="top" pathname={pathname} />
             </View>
           )}
         </TouchableOpacity>
@@ -75,19 +94,15 @@ const AdBanner: React.FC<AdBannerProps> = ({ adUnit, position, pointerEvents = '
         onPress={handlePress}
         activeOpacity={0.9}
       >
-        {adUnit.imageUrl ? (
+        {currentArtwork ? (
           <Image
-            source={{ uri: adUnit.imageUrl }}
+            source={{ uri: currentArtwork }}
             style={styles.bottomBannerImage}
             resizeMode="cover"
           />
         ) : (
           <View style={styles.bottomPlaceholder}>
-            {__DEV__ ? (
-              <DevelopmentSponsorAd position="bottom" pathname={pathname} />
-            ) : (
-              <Text style={styles.placeholderText}>{adUnit.placeholderText}</Text>
-            )}
+            <DevelopmentSponsorAd position="bottom" pathname={pathname} />
           </View>
         )}
       </TouchableOpacity>
@@ -169,12 +184,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   
-  placeholderText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
 });
 
 export default AdBanner;

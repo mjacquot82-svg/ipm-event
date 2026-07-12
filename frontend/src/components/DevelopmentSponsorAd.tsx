@@ -97,8 +97,6 @@ export default function DevelopmentSponsorAd({ position, pathname }: Development
   const assignedSponsor = SPONSOR_ASSIGNMENTS[page][position];
 
   useEffect(() => {
-    if (!__DEV__) return;
-
     let active = true;
     const applyVendors = (nextVendors: Vendor[]) => {
       if (active && nextVendors.length > 0) setVendors(nextVendors);
@@ -109,7 +107,7 @@ export default function DevelopmentSponsorAd({ position, pathname }: Development
       onBackgroundRefresh: (result) => applyVendors(result.data.vendors),
     })
       .then((result) => applyVendors(result.data.vendors))
-      .catch((error) => console.warn('Development sponsor preview unavailable:', error));
+      .catch((error) => console.warn('Generated sponsor creative unavailable:', error));
 
     return () => {
       active = false;
@@ -117,7 +115,7 @@ export default function DevelopmentSponsorAd({ position, pathname }: Development
   }, []);
 
   useEffect(() => {
-    if (!__DEV__ || vendors.length === 0) return;
+    if (vendors.length === 0) return;
 
     const timer = setInterval(() => {
       setRotationIndex((current) => current + 1);
@@ -138,7 +136,7 @@ export default function DevelopmentSponsorAd({ position, pathname }: Development
     [vendor?.type]
   );
 
-  if (!__DEV__ || !vendor) return null;
+  if (!vendor) return null;
 
   if (position === 'bottom') {
     if (layoutIndex === 1) {

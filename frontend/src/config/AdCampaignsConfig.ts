@@ -5,7 +5,8 @@
 export interface AdUnit {
   id: string;
   name: string;
-  imageUrl: string | null;  // null = use placeholder
+  imageUrl: string | null;
+  imageUrls?: string[];
   targetUrl: string;
   placeholderText: string;
   width: number;
