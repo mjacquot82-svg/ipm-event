@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,9 @@ import { Feather } from '@expo/vector-icons';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import {
   CachedApiSource,
+  CachedApiResult,
   Vendor,
+  VendorsResponse,
   getVendorsData,
 } from '../../src/services/spreadsheetDataService';
 
@@ -27,29 +29,35 @@ export default function VendorsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchVendors();
+  const applyVendorsResult = useCallback((result: CachedApiResult<VendorsResponse>) => {
+    if (!Array.isArray(result.data.vendors)) {
+      throw new Error('Invalid vendors response');
+    }
+    setVendors(result.data.vendors);
+    setDataSource(result.source);
+    setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
   }, []);
 
-  const fetchVendors = async () => {
+  const fetchVendors = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const result = await getVendorsData();
-      if (!Array.isArray(result.data.vendors)) {
-        throw new Error('Invalid vendors response');
-      }
-      setVendors(result.data.vendors);
-      setDataSource(result.source);
-      setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
+      const result = await getVendorsData({
+        onBackgroundRefresh: applyVendorsResult,
+      });
+      applyVendorsResult(result);
     } catch (err) {
       console.error('Error fetching vendors:', err);
       setError("We couldn't load vendor information. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [applyVendorsResult]);
+
+  useEffect(() => {
+    fetchVendors();
+  }, [fetchVendors]);
 
   const vendorTypes = useMemo(() => {
     return Array.from(
@@ -94,7 +102,9 @@ export default function VendorsScreen() {
         <PageHeader title="Vendors" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#8B1538" />
-          <Text style={styles.helperText}>Loading vendors...</Text>
+          <Text style={styles.helperText}>
+            {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
+          </Text>
         </View>
       </SafeAreaView>
     );

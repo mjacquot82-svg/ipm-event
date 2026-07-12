@@ -21,7 +21,9 @@ import { syncStarredEventsWithBackend } from '../../src/utils/notificationServic
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import {
   CachedApiSource,
+  CachedApiResult,
   ScheduleEvent,
+  ScheduleResponse,
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
 
@@ -43,6 +45,15 @@ export default function ScheduleScreen() {
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
 
+  const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
+    if (!Array.isArray(result.data.events)) {
+      throw new Error('Invalid schedule response');
+    }
+    setEvents(result.data.events);
+    setLastUpdated(result.lastSuccessfulUpdate);
+    setDataSource(result.source);
+  }, []);
+
   // Fetch schedule from API
   const fetchSchedule = useCallback(async (isRefresh = false) => {
     if (isFetchingScheduleRef.current) {
@@ -59,18 +70,16 @@ export default function ScheduleScreen() {
       }
       setError(null);
 
-      const result = await getScheduleData();
-      if (!Array.isArray(result.data.events)) {
-        throw new Error('Invalid schedule response');
-      }
+      const result = await getScheduleData({
+        preferCache: !isRefresh,
+        onBackgroundRefresh: applyScheduleResult,
+      });
       console.log('[ScheduleScreen] schedule result:', {
         source: result.source,
         eventsReturned: result.data.events?.length,
         eventsPassedToSetEvents: result.data.events?.length,
       });
-      setEvents(result.data.events);
-      setLastUpdated(result.lastSuccessfulUpdate);
-      setDataSource(result.source);
+      applyScheduleResult(result);
     } catch (err) {
       console.error('Error fetching schedule:', err);
       setError("We couldn't load the schedule. Please check your connection and try again.");
@@ -79,7 +88,7 @@ export default function ScheduleScreen() {
       setRefreshing(false);
       isFetchingScheduleRef.current = false;
     }
-  }, []);
+  }, [applyScheduleResult]);
 
   // Load on mount
   useEffect(() => {
@@ -300,7 +309,9 @@ export default function ScheduleScreen() {
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading schedule...</Text>
+          <Text style={styles.loadingText}>
+            {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
+          </Text>
         </View>
       </SafeAreaView>
     );

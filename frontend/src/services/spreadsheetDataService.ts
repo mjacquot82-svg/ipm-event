@@ -2,8 +2,11 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const DEFAULT_TIMEOUT_MS = 15000;
-const CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
+const DEFAULT_TIMEOUT_MS = 30000;
+const DEFAULT_MAX_ATTEMPTS = 3;
+const DEFAULT_RETRY_DELAY_MS = 1500;
+const CACHE_KEY_PREFIX = 'ipm_supabase_cache:v1';
+const LEGACY_CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
 const DEFAULT_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
 
 export type CachedApiSource = 'network' | 'cache';
@@ -21,10 +24,20 @@ type CacheEntry<T> = {
   cacheAge: number;
 };
 
-type FetchWithCacheOptions = {
+type FetchWithCacheOptions<T> = {
   cacheKey: string;
   url: string;
   timeoutMs?: number;
+  maxAttempts?: number;
+  retryDelayMs?: number;
+  preferCache?: boolean;
+  isCacheableResponse: (data: unknown) => data is T;
+  onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
+};
+
+export type SupabaseFetchOptions<T> = {
+  preferCache?: boolean;
+  onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
 };
 
 export type ScheduleEvent = {
@@ -111,6 +124,14 @@ async function readCache<T>(cacheKey: string): Promise<CachedApiResult<T> | null
   }
 }
 
+async function removeLegacyCache(cacheKey: string) {
+  try {
+    await AsyncStorage.removeItem(`${LEGACY_CACHE_KEY_PREFIX}:${cacheKey}`);
+  } catch (error) {
+    console.error('Failed to remove legacy API cache:', error);
+  }
+}
+
 async function writeCache<T>(cacheKey: string, data: T, timestamp: string) {
   const cacheEntry: CacheEntry<T> = {
     data,
@@ -132,51 +153,113 @@ async function fetchWithTimeout(url: string, timeoutMs: number) {
   }
 }
 
+function delay(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function fetchWithRetry<T>(
+  url: string,
+  timeoutMs: number,
+  maxAttempts: number,
+  retryDelayMs: number,
+  isCacheableResponse: (data: unknown) => data is T
+): Promise<CachedApiResult<T>> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(url, timeoutMs);
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data: unknown = await response.json();
+      if (!isCacheableResponse(data)) {
+        throw new Error('API response is not Supabase-backed data');
+      }
+
+      return {
+        data,
+        source: 'network',
+        lastSuccessfulUpdate: new Date().toISOString(),
+        cacheAge: 0,
+      };
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxAttempts) {
+        await delay(retryDelayMs);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 export async function fetchCachedApiData<T>({
   cacheKey,
   url,
   timeoutMs = DEFAULT_TIMEOUT_MS,
-}: FetchWithCacheOptions): Promise<CachedApiResult<T>> {
-  try {
-    const response = await fetchWithTimeout(url, timeoutMs);
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
+  maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+  preferCache = true,
+  isCacheableResponse,
+  onBackgroundRefresh,
+}: FetchWithCacheOptions<T>): Promise<CachedApiResult<T>> {
+  await removeLegacyCache(cacheKey);
+  const cachedData = preferCache ? await readCache<T>(cacheKey) : null;
 
-    const data = (await response.json()) as T;
-    const lastSuccessfulUpdate = new Date().toISOString();
+  const refresh = async () => {
+    const result = await fetchWithRetry<T>(
+      url,
+      timeoutMs,
+      maxAttempts,
+      retryDelayMs,
+      isCacheableResponse
+    );
     try {
-      await writeCache(cacheKey, data, lastSuccessfulUpdate);
+      await writeCache(cacheKey, result.data, result.lastSuccessfulUpdate);
     } catch (error) {
       console.error('Failed to write cached API data:', error);
     }
+    return result;
+  };
 
-    return {
-      data,
-      source: 'network',
-      lastSuccessfulUpdate,
-      cacheAge: 0,
-    };
-  } catch (error) {
-    const cachedData = await readCache<T>(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
-
-    throw error;
+  if (cachedData) {
+    void refresh()
+      .then((result) => onBackgroundRefresh?.(result))
+      .catch((error) => console.warn('Background API refresh failed:', error));
+    return cachedData;
   }
+
+  return refresh();
 }
 
-export function getScheduleData() {
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isSupabaseScheduleResponse(data: unknown): data is ScheduleResponse {
+  if (!data || typeof data !== 'object' || !Array.isArray((data as ScheduleResponse).events)) return false;
+  return (data as ScheduleResponse).events.every((event) => UUID_PATTERN.test(event.id));
+}
+
+function isSupabaseVendorsResponse(data: unknown): data is VendorsResponse {
+  if (!data || typeof data !== 'object' || !Array.isArray((data as VendorsResponse).vendors)) return false;
+  return (data as VendorsResponse).vendors.every((vendor) => UUID_PATTERN.test(vendor.id));
+}
+
+export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> = {}) {
   return fetchCachedApiData<ScheduleResponse>({
     cacheKey: 'schedule',
     url: `${getApiBaseUrl()}/api/schedule`,
+    isCacheableResponse: isSupabaseScheduleResponse,
+    ...options,
   });
 }
 
-export function getVendorsData() {
+export function getVendorsData(options: SupabaseFetchOptions<VendorsResponse> = {}) {
   return fetchCachedApiData<VendorsResponse>({
     cacheKey: 'vendors',
     url: `${getApiBaseUrl()}/api/vendors`,
+    isCacheableResponse: isSupabaseVendorsResponse,
+    ...options,
   });
 }

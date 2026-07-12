@@ -22,7 +22,9 @@ import { openExternalLink } from '../../src/utils/externalLinks';
 import { getFavorites } from '../../src/utils/favoritesStorage';
 import {
   CachedApiSource,
+  CachedApiResult,
   ScheduleEvent,
+  ScheduleResponse,
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
 
@@ -210,6 +212,12 @@ export default function HomeScreen() {
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
 
+  const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
+    setEvents(result.data.events || []);
+    setDataSource(result.source);
+    setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
+  }, []);
+
   const fetchSchedule = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -219,10 +227,11 @@ export default function HomeScreen() {
       }
       setError(null);
 
-      const result = await getScheduleData();
-      setEvents(result.data.events || []);
-      setDataSource(result.source);
-      setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
+      const result = await getScheduleData({
+        preferCache: !isRefresh,
+        onBackgroundRefresh: applyScheduleResult,
+      });
+      applyScheduleResult(result);
     } catch (err) {
       console.error('Error loading home schedule data:', err);
       setError('Unable to load schedule updates.');
@@ -230,7 +239,7 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [applyScheduleResult]);
 
   const loadFavorites = useCallback(async () => {
     const storedFavorites = await getFavorites();
@@ -577,7 +586,9 @@ export default function HomeScreen() {
           {loading ? (
             <View style={styles.emptyState}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.emptyText}>Loading schedule...</Text>
+              <Text style={styles.emptyText}>
+                {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
+              </Text>
             </View>
           ) : error ? (
             <View style={styles.emptyState}>

@@ -14,7 +14,9 @@ import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import {
   CachedApiSource,
+  CachedApiResult,
   ScheduleEvent,
+  ScheduleResponse,
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
 
@@ -27,36 +29,40 @@ export default function ItineraryScreen() {
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
 
-  const loadFavorites = async () => {
+  const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
+    setEvents(result.data.events || []);
+    setDataSource(result.source);
+    setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
+  }, []);
+
+  const loadFavorites = useCallback(async () => {
     const storedFavorites = await getFavorites();
     setFavorites(storedFavorites);
-  };
+  }, []);
 
-  const fetchSchedule = async () => {
+  const fetchSchedule = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const result = await getScheduleData();
-      setEvents(result.data.events || []);
-      setDataSource(result.source);
-      setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
+      const result = await getScheduleData({ onBackgroundRefresh: applyScheduleResult });
+      applyScheduleResult(result);
     } catch {
       setError('Unable to load itinerary.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [applyScheduleResult]);
 
   useEffect(() => {
     loadFavorites();
     fetchSchedule();
-  }, []);
+  }, [fetchSchedule, loadFavorites]);
 
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
-    }, [])
+    }, [loadFavorites])
   );
 
   const starredEvents = events.filter((event) => favorites.includes(event.id));
@@ -84,7 +90,9 @@ export default function ItineraryScreen() {
         <PageHeader title="My Itinerary" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#8B1538" />
-          <Text style={styles.helperText}>Loading itinerary...</Text>
+          <Text style={styles.helperText}>
+            {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
+          </Text>
         </View>
       </SafeAreaView>
     );

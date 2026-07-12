@@ -27,7 +27,7 @@ export default function CachedDataBanner({ lastSuccessfulUpdate }: CachedDataBan
     <View style={styles.container}>
       <Feather name="info" size={16} color={colors.info} />
       <View style={styles.textContainer}>
-        <Text style={styles.message}>Showing saved event information.</Text>
+        <Text style={styles.message}>Updating event information...</Text>
         <Text style={styles.timestamp}>{formatLastUpdate(lastSuccessfulUpdate)}</Text>
       </View>
     </View>
