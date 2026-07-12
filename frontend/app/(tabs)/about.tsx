@@ -13,10 +13,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
 import { eventInfo } from '../../src/data/mockData';
-import { openExternalPage } from '../../src/utils/externalLinks';
+import { openExternalLink } from '../../src/utils/externalLinks';
 
 const OFFICIAL_IPM_CONTENT = [
   "It is the largest event of its kind in North America.\nWith so much to see and do, plan to spend more than one day!\nHosting the IPM heading into its 107th year is a collaborative effort of the Ontario Plowmen's Association and a Local Committee. It's held in a different community each year, highlighting the many great things the area has to offer and attracting on average 70,000 people from across Ontario, throughout Canada, the United States and beyond.",
@@ -40,8 +39,6 @@ const OFFICIAL_OPA_CONTENT = {
 } as const;
 
 export default function AboutScreen() {
-  const router = useRouter();
-
   const openJdsWebsite = () => {
     Linking.openURL('https://jdsstudio.ca');
   };
@@ -57,31 +54,19 @@ export default function AboutScreen() {
   };
 
   const openPastIpmPhotos = () => {
-    openExternalPage(router, {
-      title: 'Photos of Past IPMs',
-      url: 'https://www.plowingmatch.org/ipm2026/visitor-info/photos-of-past-ipms/',
-    });
+    openExternalLink('https://www.plowingmatch.org/ipm2026/visitor-info/photos-of-past-ipms/');
   };
 
   const openFrequentlyAskedQuestions = () => {
-    openExternalPage(router, {
-      title: 'Frequently Asked Questions',
-      url: 'https://www.plowingmatch.org/ipm2026/visitor-info/faq/',
-    });
+    openExternalLink('https://www.plowingmatch.org/ipm2026/visitor-info/faq/');
   };
 
   const openAccessibilityInformation = () => {
-    openExternalPage(router, {
-      title: 'Accessibility Information',
-      url: 'https://www.plowingmatch.org/ipm2026/visitor-info/accessibility/',
-    });
+    openExternalLink('https://www.plowingmatch.org/ipm2026/visitor-info/accessibility/');
   };
 
   const openOpaContact = () => {
-    openExternalPage(router, {
-      title: 'Contact the Ontario Plowmen’s Association',
-      url: 'https://www.plowingmatch.org/contact/',
-    });
+    openExternalLink('https://www.plowingmatch.org/contact/');
   };
 
   return (

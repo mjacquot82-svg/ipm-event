@@ -1,13 +1,7 @@
-import { Router } from 'expo-router';
+import { Alert, Linking } from 'react-native';
 
-export type ExternalLink = {
-  url: string;
-  title: string;
-};
-
-export function openExternalPage(router: Router, link: ExternalLink) {
-  router.push({
-    pathname: '/external' as never,
-    params: link,
+export function openExternalLink(url: string) {
+  return Linking.openURL(url).catch(() => {
+    Alert.alert('Unable to open link', 'Please try again later.');
   });
 }

@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Image,
   RefreshControl,
-  Linking,
   ActivityIndicator,
   Alert,
   useWindowDimensions,
@@ -19,7 +18,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
 import colors from '../../src/theme/colors';
-import { openExternalPage } from '../../src/utils/externalLinks';
+import { openExternalLink } from '../../src/utils/externalLinks';
 import { getFavorites } from '../../src/utils/favoritesStorage';
 import {
   CachedApiSource,
@@ -290,12 +289,10 @@ export default function HomeScreen() {
     await Promise.all([fetchSchedule(true), loadFavorites()]);
   }, [fetchSchedule, loadFavorites]);
 
-  const openLink = (url: string, title: string) => openExternalPage(router, { url, title });
+  const openLink = (url: string) => openExternalLink(url);
 
   const openBrowserLink = (url: string) => {
-    Linking.openURL(url).catch(() => {
-      Alert.alert('Unable to open link', 'Please try again later.');
-    });
+    openExternalLink(url);
   };
 
   const showUnavailableNotice = (title: string) => {
@@ -398,7 +395,7 @@ export default function HomeScreen() {
           <Text style={styles.opaEyebrow}>Proudly Hosted By</Text>
           <TouchableOpacity
             style={styles.opaLogoLink}
-            onPress={() => openLink('https://www.plowingmatch.org/', "Ontario Plowmen's Association")}
+            onPress={() => openLink('https://www.plowingmatch.org/')}
             activeOpacity={0.8}
           >
             <Image
@@ -437,7 +434,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/', 'Sponsors')}
+              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.info }]}>
@@ -448,7 +445,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-a-volunteer/', 'Volunteer')}
+              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-a-volunteer/')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.success }]}>
@@ -459,7 +456,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-an-exhibitor/', 'Exhibitors')}
+              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-an-exhibitor/')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.vendor }]}>
