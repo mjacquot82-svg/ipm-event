@@ -215,7 +215,9 @@ export default function HomeScreen() {
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
-    setDataSource(result.source);
+    if (result.source === 'network') {
+      setDataSource('network');
+    }
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
   }, []);
 
@@ -231,6 +233,7 @@ export default function HomeScreen() {
       const result = await getScheduleData({
         preferCache: !isRefresh,
         onBackgroundRefresh: applyScheduleResult,
+        onBackgroundRefreshError: () => setDataSource('cache'),
       });
       applyScheduleResult(result);
     } catch (err) {

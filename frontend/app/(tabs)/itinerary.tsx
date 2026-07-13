@@ -32,7 +32,9 @@ export default function ItineraryScreen() {
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
-    setDataSource(result.source);
+    if (result.source === 'network') {
+      setDataSource('network');
+    }
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
   }, []);
 
@@ -46,7 +48,10 @@ export default function ItineraryScreen() {
       setLoading(true);
       setError(null);
 
-      const result = await getScheduleData({ onBackgroundRefresh: applyScheduleResult });
+      const result = await getScheduleData({
+        onBackgroundRefresh: applyScheduleResult,
+        onBackgroundRefreshError: () => setDataSource('cache'),
+      });
       applyScheduleResult(result);
     } catch {
       setError('Unable to load itinerary.');

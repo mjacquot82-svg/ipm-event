@@ -35,7 +35,9 @@ export default function VendorsScreen() {
       throw new Error('Invalid vendors response');
     }
     setVendors(result.data.vendors);
-    setDataSource(result.source);
+    if (result.source === 'network') {
+      setDataSource('network');
+    }
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
   }, []);
 
@@ -46,6 +48,7 @@ export default function VendorsScreen() {
 
       const result = await getVendorsData({
         onBackgroundRefresh: applyVendorsResult,
+        onBackgroundRefreshError: () => setDataSource('cache'),
       });
       applyVendorsResult(result);
     } catch (err) {

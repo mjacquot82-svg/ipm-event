@@ -33,11 +33,13 @@ type FetchWithCacheOptions<T> = {
   preferCache?: boolean;
   isCacheableResponse: (data: unknown) => data is T;
   onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
+  onBackgroundRefreshError?: (error: unknown) => void;
 };
 
 export type SupabaseFetchOptions<T> = {
   preferCache?: boolean;
   onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
+  onBackgroundRefreshError?: (error: unknown) => void;
 };
 
 export type ScheduleEvent = {
@@ -204,6 +206,7 @@ export async function fetchCachedApiData<T>({
   preferCache = true,
   isCacheableResponse,
   onBackgroundRefresh,
+  onBackgroundRefreshError,
 }: FetchWithCacheOptions<T>): Promise<CachedApiResult<T>> {
   await removeLegacyCache(cacheKey);
   const cachedData = preferCache ? await readCache<T>(cacheKey) : null;
@@ -227,7 +230,10 @@ export async function fetchCachedApiData<T>({
   if (cachedData) {
     void refresh()
       .then((result) => onBackgroundRefresh?.(result))
-      .catch((error) => console.warn('Background API refresh failed:', error));
+      .catch((error) => {
+        console.warn('Background API refresh failed:', error);
+        onBackgroundRefreshError?.(error);
+      });
     return cachedData;
   }
 

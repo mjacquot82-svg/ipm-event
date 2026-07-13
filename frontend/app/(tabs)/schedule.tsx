@@ -52,7 +52,9 @@ export default function ScheduleScreen() {
     }
     setEvents(result.data.events);
     setLastUpdated(result.lastSuccessfulUpdate);
-    setDataSource(result.source);
+    if (result.source === 'network') {
+      setDataSource('network');
+    }
   }, []);
 
   // Fetch schedule from API
@@ -74,6 +76,7 @@ export default function ScheduleScreen() {
       const result = await getScheduleData({
         preferCache: !isRefresh,
         onBackgroundRefresh: applyScheduleResult,
+        onBackgroundRefreshError: () => setDataSource('cache'),
       });
       console.log('[ScheduleScreen] schedule result:', {
         source: result.source,
