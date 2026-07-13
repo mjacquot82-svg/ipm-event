@@ -4,6 +4,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import colors from '../theme/colors';
+import { ATTENDEE_CARD_RADIUS, useAttendeeLayout } from '../theme/attendeePageLayout';
 
 type CachedDataBannerProps = {
   lastSuccessfulUpdate: string | null;
@@ -23,8 +24,10 @@ function formatLastUpdate(timestamp: string | null) {
 }
 
 export default function CachedDataBanner({ lastSuccessfulUpdate }: CachedDataBannerProps) {
+  const { sectionStyle } = useAttendeeLayout();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, sectionStyle]}>
       <Feather name="info" size={16} color={colors.info} />
       <View style={styles.textContainer}>
         <Text style={styles.message}>Showing saved event information</Text>
@@ -39,11 +42,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surfaceHighlight,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: ATTENDEE_CARD_RADIUS,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 10,
-    marginHorizontal: 16,
+    marginBottom: 12,
     marginTop: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,

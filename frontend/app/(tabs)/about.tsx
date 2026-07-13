@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import colors from '../../src/theme/colors';
-import { attendeePageContent } from '../../src/theme/attendeePageLayout';
+import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { eventInfo } from '../../src/data/mockData';
 import { openExternalLink } from '../../src/utils/externalLinks';
 
@@ -40,6 +40,7 @@ const OFFICIAL_OPA_CONTENT = {
 } as const;
 
 export default function AboutScreen() {
+  const { frameStyle } = useAttendeeLayout();
   const openJdsWebsite = () => {
     Linking.openURL('https://jdsstudio.ca');
   };
@@ -71,7 +72,7 @@ export default function AboutScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
+    <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]} edges={['top']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Event Hero */}
         <View style={styles.heroLogoCard}>

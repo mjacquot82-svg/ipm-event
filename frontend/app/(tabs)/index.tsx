@@ -11,14 +11,13 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
-  useWindowDimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
 import colors from '../../src/theme/colors';
-import { attendeePageContent } from '../../src/theme/attendeePageLayout';
+import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { openExternalLink } from '../../src/utils/externalLinks';
 import { getFavorites } from '../../src/utils/favoritesStorage';
 import {
@@ -198,10 +197,8 @@ function getTimeUntil(eventDate: Date | null) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { width: screenWidth } = useWindowDimensions();
-  const isDesktop = screenWidth >= 768;
-  const sectionWidth = isDesktop ? screenWidth * 0.92 : undefined;
-  const availableSectionWidth = isDesktop ? screenWidth * 0.92 : Math.max(screenWidth - 40, 0);
+  const { contentWidth, sectionStyle: attendeeSectionStyle } = useAttendeeLayout();
+  const availableSectionWidth = contentWidth;
   const opaLogoWidth = Math.min(availableSectionWidth * 0.65, 450);
   const opaLogoHeight = opaLogoWidth * (435 / 800);
 
@@ -351,10 +348,7 @@ export default function HomeScreen() {
     );
   };
 
-  const sectionStyle = [
-    styles.section,
-    isDesktop && { width: sectionWidth, alignSelf: 'center' as const, paddingHorizontal: 0 },
-  ];
+  const sectionStyle = [styles.section, attendeeSectionStyle];
   const isShowingCachedData = dataSource === 'cache' && !loading && events.length > 0;
 
   return (

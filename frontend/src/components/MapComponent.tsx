@@ -26,12 +26,14 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAP_HEIGHT = SCREEN_HEIGHT - 180;
 
 interface MapComponentProps {
+  mapWidth?: number;
   highlightedLocation?: string | null;
   showOnlyHighlighted?: boolean;
   onLocationSelect?: (location: MapLocation) => void;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ 
+  mapWidth = SCREEN_WIDTH,
   highlightedLocation,
   showOnlyHighlighted = false,
   onLocationSelect 
@@ -90,10 +92,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const isHighlighted = highlightedLocation && 
       findLocationByName(highlightedLocation)?.id === location.id;
     const pinColor = categoryColors[location.category];
-    const iconName = categoryIcons[location.category] as any;
 
     // Calculate absolute positions based on percentage
-    const pinLeft = (location.x / 100) * SCREEN_WIDTH;
+    const pinLeft = (location.x / 100) * mapWidth;
     const pinTop = (location.y / 100) * MAP_HEIGHT;
 
     return (
@@ -126,9 +127,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             { backgroundColor: pinColor },
             (isSelected || isHighlighted) && styles.pinSelected,
           ]}
-        >
-          <Feather name={iconName} size={14} color="#FFFFFF" />
-        </View>
+        />
         {(isSelected || isHighlighted) && (
           <View style={styles.pinLabelContainer}>
             <Text style={styles.pinLabel}>{location.name}</Text>
@@ -271,7 +270,7 @@ const styles = StyleSheet.create({
   },
   mapWrapper: {
     position: 'relative',
-    width: SCREEN_WIDTH,
+    width: '100%',
     height: MAP_HEIGHT,
   },
   mapImage: {

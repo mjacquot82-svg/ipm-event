@@ -12,7 +12,12 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
-import { attendeePageContent } from '../../src/theme/attendeePageLayout';
+import {
+  ATTENDEE_HORIZONTAL_MARGIN,
+  ATTENDEE_CARD_RADIUS,
+  attendeePageContent,
+  useAttendeeLayout,
+} from '../../src/theme/attendeePageLayout';
 import {
   CachedApiSource,
   CachedApiResult,
@@ -22,6 +27,7 @@ import {
 } from '../../src/services/spreadsheetDataService';
 
 export default function VendorsScreen() {
+  const { frameStyle } = useAttendeeLayout();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +108,7 @@ export default function VendorsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent]}>
+      <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]}>
         <PageHeader title="Vendors" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#8B1538" />
@@ -116,7 +122,7 @@ export default function VendorsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent]}>
+      <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]}>
         <PageHeader title="Vendors" />
         <View style={styles.center}>
           <Feather name="wifi-off" size={42} color="#B91C1C" />
@@ -134,7 +140,7 @@ export default function VendorsScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, attendeePageContent]}>
+    <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]}>
       <PageHeader title="Vendors" />
       <View style={styles.header}>
         <Text style={styles.title}>Vendors</Text>
@@ -263,7 +269,7 @@ const styles = StyleSheet.create({
   },
   pageHeader: {
     minHeight: 52,
-    paddingHorizontal: 20,
+    paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
     justifyContent: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
@@ -276,7 +282,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
     paddingTop: 20,
     paddingBottom: 12,
   },
@@ -291,7 +297,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   filterPanel: {
-    paddingHorizontal: 16,
+    paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
     paddingBottom: 12,
     gap: 10,
   },
@@ -356,12 +362,12 @@ const styles = StyleSheet.create({
     color: '#8B1538',
   },
   list: {
-    paddingHorizontal: 16,
+    paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
     paddingBottom: 120,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: ATTENDEE_CARD_RADIUS,
     padding: 16,
     marginBottom: 12,
   },

@@ -1,4 +1,9 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, useWindowDimensions } from 'react-native';
+
+export const ATTENDEE_HORIZONTAL_MARGIN = 20;
+export const ATTENDEE_DESKTOP_BREAKPOINT = 768;
+export const ATTENDEE_DESKTOP_WIDTH_RATIO = 0.92;
+export const ATTENDEE_CARD_RADIUS = 16;
 
 // Home is the attendee layout reference. Every attendee page uses this same
 // content boundary between the shared top and bottom advertisement slots.
@@ -8,3 +13,27 @@ export const attendeePageContent = StyleSheet.create({
     paddingBottom: 180,
   },
 }).container;
+
+export function useAttendeeLayout() {
+  const { width: viewportWidth } = useWindowDimensions();
+  const isDesktop = viewportWidth >= ATTENDEE_DESKTOP_BREAKPOINT;
+  const contentWidth = isDesktop
+    ? viewportWidth * ATTENDEE_DESKTOP_WIDTH_RATIO
+    : Math.max(viewportWidth - ATTENDEE_HORIZONTAL_MARGIN * 2, 0);
+  const gutteredFrameWidth = Math.min(
+    contentWidth + ATTENDEE_HORIZONTAL_MARGIN * 2,
+    viewportWidth,
+  );
+
+  return {
+    contentWidth,
+    frameStyle: isDesktop
+      ? ({ width: gutteredFrameWidth, alignSelf: 'center' } as const)
+      : undefined,
+    sectionStyle: {
+      width: contentWidth,
+      alignSelf: 'center' as const,
+      paddingHorizontal: 0,
+    },
+  };
+}

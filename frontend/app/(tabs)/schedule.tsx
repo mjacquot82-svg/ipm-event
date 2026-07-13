@@ -16,7 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
-import { attendeePageContent } from '../../src/theme/attendeePageLayout';
+import {
+  ATTENDEE_HORIZONTAL_MARGIN,
+  attendeePageContent,
+  useAttendeeLayout,
+} from '../../src/theme/attendeePageLayout';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
@@ -29,6 +33,7 @@ import {
 } from '../../src/services/spreadsheetDataService';
 
 export default function ScheduleScreen() {
+  const { frameStyle } = useAttendeeLayout();
   const router = useRouter();
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -307,7 +312,7 @@ export default function ScheduleScreen() {
   // Loading state
   if (loading && events.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
+      <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.title}>Schedule</Text>
         </View>
@@ -323,7 +328,7 @@ export default function ScheduleScreen() {
 
   if (error && events.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
+      <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.title}>Schedule</Text>
         </View>
@@ -341,7 +346,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
+    <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Schedule</Text>
@@ -360,7 +365,7 @@ export default function ScheduleScreen() {
         <CachedDataBanner lastSuccessfulUpdate={lastUpdated} />
       )}
 
-      <View style={styles.searchContainer}>
+      <View style={styles.filterPanel}>
         <View style={styles.searchBox}>
           <Feather name="search" size={18} color={colors.textMuted} />
           <TextInput
@@ -378,10 +383,8 @@ export default function ScheduleScreen() {
             </TouchableOpacity>
           ) : null}
         </View>
-      </View>
-
-      {/* Filter Pills */}
-      <View style={styles.filterContainer}>
+        {/* Filter Pills */}
+        <View style={styles.filterRows}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -475,6 +478,7 @@ export default function ScheduleScreen() {
             <Text style={styles.clearFiltersText}>Clear filters</Text>
           </TouchableOpacity>
         )}
+        </View>
       </View>
 
       {/* Error State */}
@@ -794,12 +798,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
+    paddingTop: 20,
     paddingBottom: 12,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   title: {
     fontSize: 28,
@@ -830,20 +831,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.accent,
   },
-  searchContainer: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+  filterPanel: {
+    paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
+    paddingBottom: 12,
+    gap: 10,
   },
   searchBox: {
     minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.surfaceHighlight,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   searchInput: {
     flex: 1,
@@ -855,33 +857,31 @@ const styles = StyleSheet.create({
   clearSearchButton: {
     padding: 4,
   },
-  filterContainer: {
-    backgroundColor: colors.surface,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 8,
+  filterRows: {
+    gap: 10,
   },
   filterScroll: {
-    paddingHorizontal: 16,
     gap: 8,
+    paddingRight: 16,
   },
   filterPill: {
+    minHeight: 36,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceHighlight,
     gap: 6,
-    marginRight: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    paddingHorizontal: 12,
   },
   filterPillActive: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   filterText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.textSecondary,
   },
   filterTextActive: {
@@ -892,17 +892,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginHorizontal: 16,
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   clearFiltersText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.primary,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
   },
   loadingContainer: {
     flex: 1,
@@ -928,7 +927,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 8,
     backgroundColor: colors.surfaceHighlight,
-    marginHorizontal: 16,
+    marginHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
     marginTop: 16,
     borderRadius: 12,
   },
