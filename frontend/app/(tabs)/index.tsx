@@ -443,7 +443,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/')}
+              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/partners-and-sponsors/')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.info }]}>
