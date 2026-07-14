@@ -33,7 +33,7 @@ import {
 } from '../../src/services/spreadsheetDataService';
 
 export default function ScheduleScreen() {
-  const { frameStyle } = useAttendeeLayout();
+  const { frameStyle, sectionStyle } = useAttendeeLayout();
   const router = useRouter();
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -312,15 +312,17 @@ export default function ScheduleScreen() {
   // Loading state
   if (loading && events.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]} edges={['top']}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Schedule</Text>
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>
-            {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
-          </Text>
+      <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
+        <View style={[styles.stateContent, frameStyle]}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Schedule</Text>
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>
+              {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
+            </Text>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -328,27 +330,30 @@ export default function ScheduleScreen() {
 
   if (error && events.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]} edges={['top']}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Schedule</Text>
-        </View>
-        <View style={styles.stateContainer}>
-          <Feather name="wifi-off" size={44} color={colors.error} />
-          <Text style={styles.emptyTitle}>{"We couldn't load the schedule."}</Text>
-          <Text style={styles.emptyText}>Please check your connection and try again.</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => fetchSchedule()} activeOpacity={0.8}>
-            <Feather name="refresh-cw" size={17} color="#FFFFFF" />
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
+      <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
+        <View style={[styles.stateContent, frameStyle]}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Schedule</Text>
+          </View>
+          <View style={styles.stateContainer}>
+            <Feather name="wifi-off" size={44} color={colors.error} />
+            <Text style={styles.emptyTitle}>{"We couldn't load the schedule."}</Text>
+            <Text style={styles.emptyText}>Please check your connection and try again.</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={() => fetchSchedule()} activeOpacity={0.8}>
+              <Feather name="refresh-cw" size={17} color="#FFFFFF" />
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
+      <View style={frameStyle}>
+        {/* Header */}
+        <View style={styles.header}>
         <Text style={styles.title}>Schedule</Text>
         <View style={styles.headerSubtitle}>
           <Text style={styles.subtitle}>{events.length} events</Text>
@@ -359,13 +364,13 @@ export default function ScheduleScreen() {
             </View>
           )}
         </View>
-      </View>
+        </View>
 
-      {dataSource === 'cache' && (
-        <CachedDataBanner lastSuccessfulUpdate={lastUpdated} />
-      )}
+        {dataSource === 'cache' && (
+          <CachedDataBanner lastSuccessfulUpdate={lastUpdated} />
+        )}
 
-      <View style={styles.filterPanel}>
+        <View style={styles.filterPanel}>
         <View style={styles.searchBox}>
           <Feather name="search" size={18} color={colors.textMuted} />
           <TextInput
@@ -479,19 +484,21 @@ export default function ScheduleScreen() {
           </TouchableOpacity>
         )}
         </View>
-      </View>
-
-      {/* Error State */}
-      {error && events.length > 0 && (
-        <View style={styles.errorContainer}>
-          <Feather name="alert-circle" size={24} color={colors.error} />
-          <Text style={styles.errorText}>{error}</Text>
         </View>
-      )}
+
+        {/* Error State */}
+        {error && events.length > 0 && (
+          <View style={styles.errorContainer}>
+            <Feather name="alert-circle" size={24} color={colors.error} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+      </View>
 
       {/* Schedule List */}
       <ScrollView
         style={styles.content}
+        contentContainerStyle={sectionStyle}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -901,7 +908,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
+    alignSelf: 'stretch',
+  },
+  stateContent: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
