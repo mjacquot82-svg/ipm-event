@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
@@ -27,9 +28,10 @@ import {
 } from '../../src/services/spreadsheetDataService';
 
 export default function VendorsScreen() {
-  const { frameStyle } = useAttendeeLayout();
+  const { frameStyle, sectionStyle } = useAttendeeLayout();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
@@ -47,9 +49,13 @@ export default function VendorsScreen() {
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
   }, []);
 
-  const fetchVendors = useCallback(async () => {
+  const fetchVendors = useCallback(async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
 
       const result = await getVendorsData({
@@ -62,6 +68,7 @@ export default function VendorsScreen() {
       setError("We couldn't load vendor information. Please check your connection and try again.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [applyVendorsResult]);
 
@@ -130,7 +137,7 @@ export default function VendorsScreen() {
           <Text style={styles.helperText}>
             Check your connection and try again. If the problem continues, vendor listings may be temporarily unavailable.
           </Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={fetchVendors} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => fetchVendors()} activeOpacity={0.8}>
             <Feather name="refresh-cw" size={17} color="#FFFFFF" />
             <Text style={styles.primaryButtonText}>Try Again</Text>
           </TouchableOpacity>
@@ -139,8 +146,8 @@ export default function VendorsScreen() {
     );
   }
 
-  return (
-    <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]}>
+  const listHeader = (
+    <View style={frameStyle}>
       <PageHeader title="Vendors" />
       <View style={styles.header}>
         <Text style={styles.title}>Vendors</Text>
@@ -212,41 +219,54 @@ export default function VendorsScreen() {
           </TouchableOpacity>
         )}
       </View>
+    </View>
+  );
 
+  return (
+    <SafeAreaView style={styles.container}>
       <FlatList
+        style={styles.content}
         data={filteredVendors}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={listHeader}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => fetchVendors(true)} />
+        }
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.name}>{item.name}</Text>
+          <View style={sectionStyle}>
+            <View style={styles.card}>
+              <Text style={styles.name}>{item.name}</Text>
 
-            {item.type ? <Text style={styles.meta}>Type: {item.type}</Text> : null}
-            {item.location ? <Text style={styles.meta}>Location: {item.location}</Text> : null}
-            {item.hours_of_operation ? (
-              <Text style={styles.meta}>Hours: {item.hours_of_operation}</Text>
-            ) : null}
-            {item.days_of_operation ? (
-              <Text style={styles.meta}>Days: {item.days_of_operation}</Text>
-            ) : null}
+              {item.type ? <Text style={styles.meta}>Type: {item.type}</Text> : null}
+              {item.location ? <Text style={styles.meta}>Location: {item.location}</Text> : null}
+              {item.hours_of_operation ? (
+                <Text style={styles.meta}>Hours: {item.hours_of_operation}</Text>
+              ) : null}
+              {item.days_of_operation ? (
+                <Text style={styles.meta}>Days: {item.days_of_operation}</Text>
+              ) : null}
+            </View>
           </View>
         )}
         ListEmptyComponent={
-          <View style={styles.center}>
-            <Feather name="shopping-bag" size={42} color="#9CA3AF" />
-            <Text style={styles.emptyTitle}>
-              {hasActiveFilters ? 'No Matching Vendors' : 'Vendors'}
-            </Text>
-            <Text style={styles.helperText}>
-              {hasActiveFilters
-                ? 'Clear filters or try a different search.'
-                : "Vendor information hasn't been published yet."}
-            </Text>
-            {!hasActiveFilters && (
-              <Text style={styles.helperText}>
-                Please check back closer to the event.
+          <View style={sectionStyle}>
+            <View style={styles.center}>
+              <Feather name="shopping-bag" size={42} color="#9CA3AF" />
+              <Text style={styles.emptyTitle}>
+                {hasActiveFilters ? 'No Matching Vendors' : 'Vendors'}
               </Text>
-            )}
+              <Text style={styles.helperText}>
+                {hasActiveFilters
+                  ? 'Clear filters or try a different search.'
+                  : "Vendor information hasn't been published yet."}
+              </Text>
+              {!hasActiveFilters && (
+                <Text style={styles.helperText}>
+                  Please check back closer to the event.
+                </Text>
+              )}
+            </View>
           </View>
         }
       />
@@ -362,8 +382,12 @@ const styles = StyleSheet.create({
     color: '#8B1538',
   },
   list: {
-    paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
-    paddingBottom: 120,
+    paddingTop: 4,
+    paddingBottom: 180,
+  },
+  content: {
+    flex: 1,
+    alignSelf: 'stretch',
   },
   card: {
     backgroundColor: '#FFFFFF',
