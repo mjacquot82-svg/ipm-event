@@ -98,6 +98,7 @@ create table if not exists public.alerts (
   status text not null default 'draft',
   published_at timestamp with time zone,
   expires_at timestamp with time zone,
+  created_by text not null default 'Unknown organizer',
   created_at timestamp with time zone not null default now(),
   updated_at timestamp with time zone not null default now()
 );
@@ -165,6 +166,9 @@ create index if not exists vendors_location_id_idx
 
 create index if not exists alerts_event_status_published_idx
   on public.alerts (event_id, status, published_at);
+
+create index if not exists alerts_event_status_priority_created_idx
+  on public.alerts (event_id, status, severity, created_at desc);
 
 create index if not exists itinerary_items_event_status_sort_idx
   on public.itinerary_items (event_id, status, sort_order);

@@ -48,6 +48,35 @@ export type BroadcastsResponse = {
   total_count: number;
 };
 
+export type AnnouncementPriority = 'Information' | 'Important' | 'Emergency';
+export type AnnouncementStatus = 'active' | 'inactive' | 'archived';
+
+export type Announcement = {
+  id: string;
+  event_id: string;
+  title: string;
+  message: string;
+  priority: AnnouncementPriority;
+  expires_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  status: AnnouncementStatus;
+};
+
+export type AnnouncementsResponse = {
+  announcements: Announcement[];
+  total_count: number;
+};
+
+export type AnnouncementPayload = {
+  title: string;
+  message: string;
+  priority: AnnouncementPriority;
+  expires_at?: string | null;
+  status: AnnouncementStatus;
+};
+
 export type AdminScheduleEvent = {
   id: string;
   row_number: number;
@@ -180,6 +209,8 @@ async function adminRequest<T>(path: string, options: RequestInit = {}): Promise
     throw new Error(message);
   }
 
+  if (response.status === 204) return undefined as T;
+
   return response.json() as Promise<T>;
 }
 
@@ -244,6 +275,37 @@ export function createBroadcast(payload: CreateBroadcastPayload) {
       message: payload.message.trim(),
       priority: payload.priority,
     }),
+  });
+}
+
+export function listAnnouncements() {
+  return adminRequest<AnnouncementsResponse>('/api/admin/announcements');
+}
+
+export function createAnnouncement(payload: AnnouncementPayload) {
+  return adminRequest<Announcement>('/api/admin/announcements', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAnnouncement(id: string, payload: AnnouncementPayload) {
+  return adminRequest<Announcement>(`/api/admin/announcements/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function setAnnouncementStatus(id: string, status: AnnouncementStatus) {
+  return adminRequest<Announcement>(`/api/admin/announcements/${encodeURIComponent(id)}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function deleteAnnouncement(id: string) {
+  return adminRequest<void>(`/api/admin/announcements/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
   });
 }
 

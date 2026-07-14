@@ -7,7 +7,7 @@ the providers without changing frontend API contracts.
 """
 
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
@@ -554,3 +554,124 @@ class SupabaseVendorService:
             },
         )
         return await self.list_public_vendors(event_id)
+
+
+class SupabaseAnnouncementService:
+    """Event-scoped announcement persistence using the platform alerts table."""
+
+    PRIORITY_ORDER = {"Emergency": 0, "Important": 1, "Information": 2}
+    PRIORITY_TO_SEVERITY = {
+        "Information": "info",
+        "Important": "important",
+        "Emergency": "emergency",
+    }
+    SEVERITY_TO_PRIORITY = {value: key for key, value in PRIORITY_TO_SEVERITY.items()}
+
+    def __init__(self, *, supabase_url: str, service_role_key: str, event_slug: str):
+        self.client = SupabaseContentClient(
+            supabase_url=supabase_url,
+            service_role_key=service_role_key,
+        )
+        self.event_slug = event_slug
+
+    async def _get_event_id(self, event_id: Optional[str] = None) -> str:
+        return await self.client.get_event_id(event_id or self.event_slug)
+
+    def row_to_announcement(self, row: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "id": row["id"],
+            "event_id": row["event_id"],
+            "title": row.get("title") or "",
+            "message": row.get("message") or "",
+            "priority": self.SEVERITY_TO_PRIORITY.get(row.get("severity"), "Information"),
+            "expires_at": row.get("expires_at"),
+            "created_by": row.get("created_by") or "Unknown organizer",
+            "created_at": row.get("created_at"),
+            "updated_at": row.get("updated_at"),
+            "status": row.get("status") or "inactive",
+        }
+
+    def _sort(self, announcements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return sorted(
+            announcements,
+            key=lambda item: (
+                self.PRIORITY_ORDER.get(item["priority"], 3),
+                -(datetime.fromisoformat(str(item["created_at"]).replace("Z", "+00:00")).timestamp()),
+            ),
+        )
+
+    async def list(self, event_id: Optional[str] = None, *, public: bool = False) -> list[dict[str, Any]]:
+        resolved_event_id = await self._get_event_id(event_id)
+        params = {"select": "*", "event_id": f"eq.{resolved_event_id}"}
+        if public:
+            params["status"] = "eq.active"
+        rows = await self.client.request("GET", "/alerts", params=params)
+        announcements = [self.row_to_announcement(row) for row in rows]
+        if public:
+            now = datetime.now().astimezone()
+            announcements = [
+                item for item in announcements
+                if not item["expires_at"]
+                or datetime.fromisoformat(str(item["expires_at"]).replace("Z", "+00:00")) > now
+            ]
+        return self._sort(announcements)
+
+    async def create(self, payload: Any, created_by: str, event_id: Optional[str] = None) -> dict[str, Any]:
+        resolved_event_id = await self._get_event_id(event_id)
+        rows = await self.client.request(
+            "POST", "/alerts",
+            json={
+                "event_id": resolved_event_id,
+                "title": payload.title.strip(),
+                "message": payload.message.strip(),
+                "severity": self.PRIORITY_TO_SEVERITY[payload.priority],
+                "audience": "all",
+                "status": payload.status,
+                "published_at": datetime.now(timezone.utc).isoformat() if payload.status == "active" else None,
+                "expires_at": payload.expires_at.isoformat() if payload.expires_at else None,
+                "created_by": created_by,
+            },
+            headers={"Prefer": "return=representation"},
+        )
+        return self.row_to_announcement(rows[0])
+
+    async def update(self, announcement_id: str, payload: Any, event_id: Optional[str] = None) -> Optional[dict[str, Any]]:
+        resolved_event_id = await self._get_event_id(event_id)
+        body = {
+            "title": payload.title.strip(),
+            "message": payload.message.strip(),
+            "severity": self.PRIORITY_TO_SEVERITY[payload.priority],
+            "status": payload.status,
+            "expires_at": payload.expires_at.isoformat() if payload.expires_at else None,
+        }
+        if payload.status == "active":
+            body["published_at"] = datetime.now(timezone.utc).isoformat()
+        rows = await self.client.request(
+            "PATCH", "/alerts",
+            params={"id": f"eq.{announcement_id}", "event_id": f"eq.{resolved_event_id}"},
+            json=body,
+            headers={"Prefer": "return=representation"},
+        )
+        return self.row_to_announcement(rows[0]) if rows else None
+
+    async def set_status(self, announcement_id: str, status: str, event_id: Optional[str] = None) -> Optional[dict[str, Any]]:
+        resolved_event_id = await self._get_event_id(event_id)
+        body: dict[str, Any] = {"status": status}
+        if status == "active":
+            body["published_at"] = datetime.now(timezone.utc).isoformat()
+        rows = await self.client.request(
+            "PATCH", "/alerts",
+            params={"id": f"eq.{announcement_id}", "event_id": f"eq.{resolved_event_id}"},
+            json=body,
+            headers={"Prefer": "return=representation"},
+        )
+        return self.row_to_announcement(rows[0]) if rows else None
+
+    async def delete(self, announcement_id: str, event_id: Optional[str] = None) -> bool:
+        resolved_event_id = await self._get_event_id(event_id)
+        rows = await self.client.request(
+            "DELETE", "/alerts",
+            params={"id": f"eq.{announcement_id}", "event_id": f"eq.{resolved_event_id}"},
+            headers={"Prefer": "return=representation"},
+        )
+        return bool(rows)

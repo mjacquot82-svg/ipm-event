@@ -29,6 +29,7 @@ try:
         EventService,
         ScheduleService,
         SupabaseScheduleService,
+        SupabaseAnnouncementService,
         SupabaseVendorService,
         VendorService,
     )
@@ -37,6 +38,7 @@ except ImportError:
         EventService,
         ScheduleService,
         SupabaseScheduleService,
+        SupabaseAnnouncementService,
         SupabaseVendorService,
         VendorService,
     )
@@ -278,6 +280,35 @@ class BroadcastResponse(BaseModel):
 
 class BroadcastsResponse(BaseModel):
     broadcasts: List[BroadcastResponse]
+    total_count: int
+
+AnnouncementPriority = Literal["Information", "Important", "Emergency"]
+AnnouncementStatus = Literal["active", "inactive", "archived"]
+
+class AnnouncementPayload(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    message: str = Field(min_length=1, max_length=5000)
+    priority: AnnouncementPriority = "Information"
+    expires_at: Optional[datetime] = None
+    status: AnnouncementStatus = "active"
+
+class AnnouncementStatusPayload(BaseModel):
+    status: AnnouncementStatus
+
+class AnnouncementResponse(BaseModel):
+    id: str
+    event_id: str
+    title: str
+    message: str
+    priority: AnnouncementPriority
+    expires_at: Optional[datetime] = None
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+    status: AnnouncementStatus
+
+class AnnouncementsResponse(BaseModel):
+    announcements: List[AnnouncementResponse]
     total_count: int
 
 SCHEDULE_TITLE_FIELDS = ("Name", "Title", "Event Title", "Event Name", "Activity", "Program")
@@ -664,6 +695,14 @@ else:
         list_public_vendors=get_public_vendors_from_google,
     )
 
+announcement_service = None
+if CONTENT_SOURCE == "supabase":
+    announcement_service = SupabaseAnnouncementService(
+        supabase_url=SUPABASE_URL,
+        service_role_key=SUPABASE_SERVICE_ROLE_KEY,
+        event_slug=event_service.get_public_event_id(),
+    )
+
 
 def normalize_username(username: str) -> str:
     return username.strip().lower()
@@ -771,6 +810,36 @@ def require_broadcast_sender_role(user: dict):
             status_code=403,
             detail="Your organizer role can view broadcasts but cannot send them",
         )
+
+
+def require_announcement_manager_role(user: dict):
+    if user.get("role") not in ("Owner", "Communications"):
+        raise HTTPException(
+            status_code=403,
+            detail="Your organizer role cannot manage announcements",
+        )
+
+
+def validate_announcement_payload(data: AnnouncementPayload):
+    if not data.title.strip():
+        raise HTTPException(status_code=400, detail="Title is required")
+    if not data.message.strip():
+        raise HTTPException(status_code=400, detail="Message is required")
+    if data.expires_at:
+        expires_at = data.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at <= datetime.now(timezone.utc):
+            raise HTTPException(status_code=400, detail="Expiry date/time must be in the future")
+
+
+def require_announcement_service():
+    if announcement_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Announcements require the Supabase content source",
+        )
+    return announcement_service
 
 
 def require_schedule_manager_role(user: dict):
@@ -1183,6 +1252,78 @@ async def list_broadcasts(current_user: dict = Depends(get_current_organizer_use
         broadcasts=public_broadcasts,
         total_count=len(public_broadcasts),
     )
+
+
+@api_router.get("/admin/announcements", response_model=AnnouncementsResponse)
+async def list_admin_announcements(current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    service = require_announcement_service()
+    announcements = await service.list(get_admin_event_id(current_user))
+    return AnnouncementsResponse(announcements=announcements, total_count=len(announcements))
+
+
+@api_router.post("/admin/announcements", response_model=AnnouncementResponse, status_code=201)
+async def create_admin_announcement(
+    data: AnnouncementPayload,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_announcement_manager_role(current_user)
+    validate_announcement_payload(data)
+    service = require_announcement_service()
+    return await service.create(
+        data,
+        current_user.get("display_name") or current_user["username"],
+        get_admin_event_id(current_user),
+    )
+
+
+@api_router.put("/admin/announcements/{announcement_id}", response_model=AnnouncementResponse)
+async def update_admin_announcement(
+    announcement_id: str,
+    data: AnnouncementPayload,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_announcement_manager_role(current_user)
+    validate_announcement_payload(data)
+    service = require_announcement_service()
+    announcement = await service.update(announcement_id, data, get_admin_event_id(current_user))
+    if not announcement:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return announcement
+
+
+@api_router.patch("/admin/announcements/{announcement_id}/status", response_model=AnnouncementResponse)
+async def set_admin_announcement_status(
+    announcement_id: str,
+    data: AnnouncementStatusPayload,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_announcement_manager_role(current_user)
+    service = require_announcement_service()
+    announcement = await service.set_status(announcement_id, data.status, get_admin_event_id(current_user))
+    if not announcement:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return announcement
+
+
+@api_router.delete("/admin/announcements/{announcement_id}", status_code=204)
+async def delete_admin_announcement(
+    announcement_id: str,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_announcement_manager_role(current_user)
+    service = require_announcement_service()
+    if not await service.delete(announcement_id, get_admin_event_id(current_user)):
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return Response(status_code=204)
+
+
+@api_router.get("/announcements", response_model=AnnouncementsResponse)
+async def list_public_announcements(event_id: Optional[str] = None):
+    """Return active, unexpired announcements for one event."""
+    service = require_announcement_service()
+    announcements = await service.list(get_event_id(event_id), public=True)
+    return AnnouncementsResponse(announcements=announcements, total_count=len(announcements))
 
 
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)

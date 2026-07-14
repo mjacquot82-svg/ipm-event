@@ -15,6 +15,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
+import AnnouncementCard, { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
@@ -23,9 +24,12 @@ import { getFavorites } from '../../src/utils/favoritesStorage';
 import {
   CachedApiSource,
   CachedApiResult,
+  Announcement,
+  AnnouncementsResponse,
   ScheduleEvent,
   ScheduleResponse,
   getScheduleData,
+  getAnnouncementsData,
 } from '../../src/services/spreadsheetDataService';
 
 const EVENT_START_DATE = '2026-09-22T09:00:00';
@@ -209,6 +213,9 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcementDataSource, setAnnouncementDataSource] = useState<CachedApiSource>('network');
+  const [announcementLastUpdate, setAnnouncementLastUpdate] = useState<string | null>(null);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
@@ -242,6 +249,26 @@ export default function HomeScreen() {
     }
   }, [applyScheduleResult]);
 
+  const applyAnnouncementsResult = useCallback((result: CachedApiResult<AnnouncementsResponse>) => {
+    setAnnouncements(getVisibleAnnouncements(result.data.announcements || []));
+    if (result.source === 'network') setAnnouncementDataSource('network');
+    else setAnnouncementDataSource('cache');
+    setAnnouncementLastUpdate(result.lastSuccessfulUpdate);
+  }, []);
+
+  const fetchAnnouncements = useCallback(async (isRefresh = false) => {
+    try {
+      const result = await getAnnouncementsData({
+        preferCache: !isRefresh,
+        onBackgroundRefresh: applyAnnouncementsResult,
+        onBackgroundRefreshError: () => setAnnouncementDataSource('cache'),
+      });
+      applyAnnouncementsResult(result);
+    } catch (err) {
+      console.warn('Unable to load announcements:', err);
+    }
+  }, [applyAnnouncementsResult]);
+
   const loadFavorites = useCallback(async () => {
     const storedFavorites = await getFavorites();
     setFavorites(storedFavorites);
@@ -249,8 +276,9 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetchSchedule();
+    fetchAnnouncements();
     loadFavorites();
-  }, [fetchSchedule, loadFavorites]);
+  }, [fetchAnnouncements, fetchSchedule, loadFavorites]);
 
   useFocusEffect(
     useCallback(() => {
@@ -296,8 +324,8 @@ export default function HomeScreen() {
   }, [favorites, sortedEvents]);
 
   const onRefresh = useCallback(async () => {
-    await Promise.all([fetchSchedule(true), loadFavorites()]);
-  }, [fetchSchedule, loadFavorites]);
+    await Promise.all([fetchSchedule(true), fetchAnnouncements(true), loadFavorites()]);
+  }, [fetchAnnouncements, fetchSchedule, loadFavorites]);
 
   const openLink = (url: string) => openExternalLink(url);
 
@@ -413,6 +441,27 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <Text style={styles.opaName}>Ontario Plowmen's Association</Text>
         </View>
+
+        {announcements.length > 0 && (
+          <View style={sectionStyle}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Announcements</Text>
+              {announcements.length > 1 && (
+                <TouchableOpacity onPress={() => router.push('/announcements' as never)}>
+                  <Text style={styles.seeAll}>View all announcements</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {announcementDataSource === 'cache' && (
+              <CachedDataBanner lastSuccessfulUpdate={announcementLastUpdate} />
+            )}
+            <AnnouncementCard
+              announcement={announcements[0]}
+              preview
+              onPress={() => router.push('/announcements' as never)}
+            />
+          </View>
+        )}
 
         <View style={sectionStyle}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>

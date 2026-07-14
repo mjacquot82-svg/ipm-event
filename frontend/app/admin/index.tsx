@@ -24,6 +24,9 @@ import {
   LoadingState,
 } from '../../src/components/admin/ContentScaffold';
 import {
+  Announcement,
+  AnnouncementPayload,
+  AnnouncementStatus,
   AdminScheduleEvent,
   AdminVendor,
   ScheduleEventPayload,
@@ -31,22 +34,28 @@ import {
   ScheduleImportRow,
   VendorPayload,
   createAdminVendor,
+  createAnnouncement,
   createScheduleEvent,
   deleteAdminVendor,
+  deleteAnnouncement,
   deleteScheduleEvent,
   getCurrentOrganizer,
   importSchedule,
   listAdminVendors,
+  listAnnouncements,
   listScheduleEvents,
   logoutOrganizer,
   OrganizerUser,
   updateAdminVendor,
+  updateAnnouncement,
+  setAnnouncementStatus,
   updateScheduleEvent,
 } from '../../src/services/adminAuthService';
 
 type AdminSection = 'dashboard' | 'vendors' | 'schedule' | 'communications' | 'team' | 'settings';
 type VendorEditorMode = 'closed' | 'create' | 'edit';
 type ScheduleEditorMode = 'closed' | 'view' | 'add' | 'edit';
+type AnnouncementEditorMode = 'closed' | 'create' | 'edit';
 type PlatformFieldKey = (typeof PLATFORM_FIELDS)[number]['key'];
 type ImportMapping = Partial<Record<PlatformFieldKey, string>>;
 
@@ -54,7 +63,7 @@ const NAV_ITEMS: AdminNavItem[] = [
   { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
   { key: 'vendors', label: 'Vendors', icon: 'shopping-bag' },
   { key: 'schedule', label: 'Schedule', icon: 'calendar' },
-  { key: 'communications', label: 'Communications', icon: 'message-square', disabled: true },
+  { key: 'communications', label: 'Announcements', icon: 'message-square' },
   { key: 'team', label: 'Team', icon: 'users', disabled: true },
   { key: 'settings', label: 'Settings', icon: 'settings', disabled: true },
 ];
@@ -80,6 +89,14 @@ const EMPTY_VENDOR_FORM: VendorPayload = {
   hours_of_operation: '',
   days_of_operation: '',
   priority: 99,
+};
+
+const EMPTY_ANNOUNCEMENT_FORM: AnnouncementPayload = {
+  title: '',
+  message: '',
+  priority: 'Information',
+  expires_at: null,
+  status: 'active',
 };
 
 export default function AdminDashboardScreen() {
@@ -115,6 +132,14 @@ export default function AdminDashboardScreen() {
   const [importPreparedRows, setImportPreparedRows] = useState<ScheduleImportRow[]>([]);
   const [importBusy, setImportBusy] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+  const [announcementsError, setAnnouncementsError] = useState<string | null>(null);
+  const [announcementSearch, setAnnouncementSearch] = useState('');
+  const [announcementEditorMode, setAnnouncementEditorMode] = useState<AnnouncementEditorMode>('closed');
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [announcementForm, setAnnouncementForm] = useState<AnnouncementPayload>(EMPTY_ANNOUNCEMENT_FORM);
+  const [announcementSaving, setAnnouncementSaving] = useState(false);
 
   const loadVendors = useCallback(async () => {
     setVendorsLoading(true);
@@ -139,6 +164,19 @@ export default function AdminDashboardScreen() {
       setScheduleError(err instanceof Error ? err.message : 'Unable to load schedule');
     } finally {
       setScheduleLoading(false);
+    }
+  }, []);
+
+  const loadAnnouncements = useCallback(async () => {
+    setAnnouncementsLoading(true);
+    setAnnouncementsError(null);
+    try {
+      const result = await listAnnouncements();
+      setAnnouncements(result.announcements);
+    } catch (err) {
+      setAnnouncementsError(err instanceof Error ? err.message : 'Unable to load announcements');
+    } finally {
+      setAnnouncementsLoading(false);
     }
   }, []);
 
@@ -174,7 +212,10 @@ export default function AdminDashboardScreen() {
     if (isAuthenticated && activeSection === 'schedule') {
       loadSchedule();
     }
-  }, [activeSection, isAuthenticated, loadSchedule, loadVendors]);
+    if (isAuthenticated && activeSection === 'communications') {
+      loadAnnouncements();
+    }
+  }, [activeSection, isAuthenticated, loadAnnouncements, loadSchedule, loadVendors]);
 
   useEffect(() => {
     AsyncStorage.getItem(SCHEDULE_MAPPING_STORAGE_KEY)
@@ -204,6 +245,68 @@ export default function AdminDashboardScreen() {
         .includes(query)
     );
   }, [vendorSearch, vendors]);
+
+  const visibleAnnouncements = useMemo(() => {
+    const query = announcementSearch.trim().toLowerCase();
+    if (!query) return announcements;
+    return announcements.filter((item) =>
+      [item.title, item.message, item.priority, item.status, item.created_by]
+        .join(' ').toLowerCase().includes(query)
+    );
+  }, [announcementSearch, announcements]);
+
+  const openAnnouncementEditor = (announcement?: Announcement) => {
+    setEditingAnnouncement(announcement || null);
+    setAnnouncementEditorMode(announcement ? 'edit' : 'create');
+    setAnnouncementForm(announcement ? {
+      title: announcement.title,
+      message: announcement.message,
+      priority: announcement.priority,
+      expires_at: announcement.expires_at,
+      status: announcement.status,
+    } : EMPTY_ANNOUNCEMENT_FORM);
+    setAnnouncementsError(null);
+  };
+
+  const saveAnnouncement = async () => {
+    setAnnouncementSaving(true);
+    setAnnouncementsError(null);
+    try {
+      const saved = editingAnnouncement
+        ? await updateAnnouncement(editingAnnouncement.id, announcementForm)
+        : await createAnnouncement(announcementForm);
+      setAnnouncements((current) => {
+        const withoutSaved = current.filter((item) => item.id !== saved.id);
+        return [saved, ...withoutSaved];
+      });
+      setAnnouncementEditorMode('closed');
+      setEditingAnnouncement(null);
+    } catch (err) {
+      setAnnouncementsError(err instanceof Error ? err.message : 'Unable to save announcement');
+    } finally {
+      setAnnouncementSaving(false);
+    }
+  };
+
+  const changeAnnouncementStatus = async (announcement: Announcement, status: AnnouncementStatus) => {
+    setAnnouncementsError(null);
+    try {
+      const updated = await setAnnouncementStatus(announcement.id, status);
+      setAnnouncements((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (err) {
+      setAnnouncementsError(err instanceof Error ? err.message : 'Unable to update announcement status');
+    }
+  };
+
+  const removeAnnouncement = async (announcement: Announcement) => {
+    setAnnouncementsError(null);
+    try {
+      await deleteAnnouncement(announcement.id);
+      setAnnouncements((current) => current.filter((item) => item.id !== announcement.id));
+    } catch (err) {
+      setAnnouncementsError(err instanceof Error ? err.message : 'Unable to delete announcement');
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -455,6 +558,29 @@ export default function AdminDashboardScreen() {
           }}
           onPrepareImport={prepareImport}
           onRunImport={runImport}
+        />
+      )}
+
+      {activeSection === 'communications' && (
+        <AnnouncementsPage
+          announcements={visibleAnnouncements}
+          totalCount={announcements.length}
+          loading={announcementsLoading}
+          error={announcementsError}
+          search={announcementSearch}
+          editorMode={announcementEditorMode}
+          form={announcementForm}
+          saving={announcementSaving}
+          editingAnnouncement={editingAnnouncement}
+          onSearchChange={setAnnouncementSearch}
+          onRefresh={loadAnnouncements}
+          onCreate={() => openAnnouncementEditor()}
+          onEdit={openAnnouncementEditor}
+          onStatusChange={changeAnnouncementStatus}
+          onDelete={removeAnnouncement}
+          onFormChange={setAnnouncementForm}
+          onCloseEditor={() => setAnnouncementEditorMode('closed')}
+          onSave={saveAnnouncement}
         />
       )}
     </AdminShell>
@@ -1282,6 +1408,108 @@ function VendorEditor({
   );
 }
 
+function AnnouncementsPage({
+  announcements, totalCount, loading, error, search, editorMode, form, saving,
+  editingAnnouncement, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
+  onDelete, onFormChange, onCloseEditor, onSave,
+}: {
+  announcements: Announcement[]; totalCount: number; loading: boolean; error: string | null;
+  search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
+  editingAnnouncement: Announcement | null; onSearchChange: (value: string) => void;
+  onRefresh: () => void; onCreate: () => void; onEdit: (item: Announcement) => void;
+  onStatusChange: (item: Announcement, status: AnnouncementStatus) => void;
+  onDelete: (item: Announcement) => void; onFormChange: (value: AnnouncementPayload) => void;
+  onCloseEditor: () => void; onSave: () => void;
+}) {
+  return (
+    <ContentPage
+      title="Announcements"
+      subtitle={`${totalCount} announcement${totalCount === 1 ? '' : 's'} in this event`}
+      primaryAction={{ label: 'Create announcement', icon: 'plus', onPress: onCreate }}
+    >
+      <ContentToolbar
+        searchValue={search}
+        searchPlaceholder="Search announcements by title, message, priority, or status"
+        onSearchChange={onSearchChange}
+        secondaryAction={{ label: 'Refresh', icon: 'refresh-cw', onPress: onRefresh, disabled: loading }}
+      />
+      {error && <ErrorState message={error} onRetry={onRefresh} />}
+      {editorMode !== 'closed' && (
+        <AnnouncementEditor
+          mode={editorMode} form={form} saving={saving} editingAnnouncement={editingAnnouncement}
+          onChange={onFormChange} onClose={onCloseEditor} onSave={onSave}
+        />
+      )}
+      {loading ? <LoadingState label="Loading announcements..." /> : announcements.length === 0 ? (
+        <EmptyState
+          icon="message-square"
+          title={search ? 'No announcements match your search' : 'No announcements yet'}
+          message={search ? 'Clear the search or try different terms.' : 'Create the first announcement for this event.'}
+          action={search ? undefined : { label: 'Create announcement', icon: 'plus', onPress: onCreate }}
+        />
+      ) : (
+        <View style={styles.table}>
+          {announcements.map((item) => (
+            <View key={item.id} style={styles.announcementRow}>
+              <View style={styles.announcementBody}>
+                <View style={styles.announcementHeading}>
+                  <Text style={styles.vendorName}>{item.title}</Text>
+                  <Text style={[styles.statusBadge, item.priority === 'Emergency' && styles.emergencyBadge]}>{item.priority}</Text>
+                  <Text style={styles.statusBadge}>{item.status}</Text>
+                </View>
+                <Text style={styles.tableText} numberOfLines={2}>{item.message}</Text>
+                <Text style={styles.vendorMeta}>
+                  {`Created by ${item.created_by} · ${new Date(item.created_at).toLocaleString()}`}
+                  {item.expires_at ? ` · Expires ${new Date(item.expires_at).toLocaleString()}` : ''}
+                </Text>
+              </View>
+              <View style={styles.announcementActions}>
+                <Pressable style={styles.iconButton} onPress={() => onEdit(item)}><Feather name="edit-2" size={16} color={colors.textSecondary} /></Pressable>
+                <Pressable style={styles.iconButton} onPress={() => onStatusChange(item, item.status === 'active' ? 'inactive' : 'active')}>
+                  <Feather name={item.status === 'active' ? 'pause' : 'play'} size={16} color={colors.textSecondary} />
+                </Pressable>
+                <Pressable style={styles.iconButton} onPress={() => onStatusChange(item, 'archived')}><Feather name="archive" size={16} color={colors.textSecondary} /></Pressable>
+                <Pressable style={styles.iconButton} onPress={() => onDelete(item)}><Feather name="trash-2" size={16} color={colors.error} /></Pressable>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+    </ContentPage>
+  );
+}
+
+function AnnouncementEditor({ mode, form, saving, editingAnnouncement, onChange, onClose, onSave }: {
+  mode: Exclude<AnnouncementEditorMode, 'closed'>; form: AnnouncementPayload; saving: boolean;
+  editingAnnouncement: Announcement | null; onChange: (value: AnnouncementPayload) => void;
+  onClose: () => void; onSave: () => void;
+}) {
+  return (
+    <View style={styles.editorPanel}>
+      <View style={styles.editorHeader}>
+        <View><Text style={styles.editorTitle}>{mode === 'edit' ? 'Edit announcement' : 'Create announcement'}</Text>
+          <Text style={styles.editorSubtitle}>{editingAnnouncement ? 'Changes appear in the attendee API immediately when active.' : 'Active announcements appear in the attendee API immediately.'}</Text></View>
+        <Pressable style={styles.iconButton} onPress={onClose}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable>
+      </View>
+      <View style={styles.formGrid}>
+        <FormTextField label="Title" value={form.title} required placeholder="Announcement title" onChangeText={(title) => onChange({ ...form, title })} />
+        <FormTextField label="Expiry date/time (optional)" value={form.expires_at || ''} placeholder="2026-07-20T17:00:00Z" onChangeText={(expires_at) => onChange({ ...form, expires_at: expires_at || null })} />
+        <View style={styles.formField}><FieldLabel label="Priority" required /><View style={styles.choiceRow}>
+          {(['Information', 'Important', 'Emergency'] as const).map((priority) => <Pressable key={priority} style={[styles.filterPill, form.priority === priority && styles.filterPillActive]} onPress={() => onChange({ ...form, priority })}><Text style={[styles.filterPillText, form.priority === priority && styles.filterPillTextActive]}>{priority}</Text></Pressable>)}
+        </View></View>
+        <View style={styles.formField}><FieldLabel label="Status" required /><View style={styles.choiceRow}>
+          {(['active', 'inactive'] as const).map((status) => <Pressable key={status} style={[styles.filterPill, form.status === status && styles.filterPillActive]} onPress={() => onChange({ ...form, status })}><Text style={[styles.filterPillText, form.status === status && styles.filterPillTextActive]}>{status === 'active' ? 'Active' : 'Inactive'}</Text></Pressable>)}
+        </View></View>
+        <FormTextField label="Message" value={form.message} required multiline placeholder="Message shown to attendees" onChangeText={(message) => onChange({ ...form, message })} />
+      </View>
+      <View style={styles.editorActions}>
+        <Pressable style={styles.cancelButton} onPress={onClose} disabled={saving}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
+        <Pressable style={[styles.saveButton, saving && styles.buttonDisabled]} onPress={onSave} disabled={saving}>{saving ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="save" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save announcement'}</Text></Pressable>
+      </View>
+    </View>
+  );
+}
+
 function FormTextField({
   label,
   value,
@@ -1430,6 +1658,16 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
   },
+  announcementRow: {
+    minHeight: 92, flexDirection: 'row', alignItems: 'center', gap: 16,
+    paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.divider,
+  },
+  announcementBody: { flex: 1, gap: 5 },
+  announcementHeading: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  announcementActions: { flexDirection: 'row', gap: 8 },
+  statusBadge: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, backgroundColor: colors.surfaceHighlight, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, textTransform: 'capitalize' },
+  emergencyBadge: { color: colors.error },
+  choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   vendorName: {
     fontSize: 15,
     fontWeight: '700',

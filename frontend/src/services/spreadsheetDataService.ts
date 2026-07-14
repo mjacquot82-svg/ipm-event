@@ -78,6 +78,24 @@ export type VendorsResponse = {
   total_count: number;
 };
 
+export type Announcement = {
+  id: string;
+  event_id: string;
+  title: string;
+  message: string;
+  priority: 'Information' | 'Important' | 'Emergency';
+  expires_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  status: 'active';
+};
+
+export type AnnouncementsResponse = {
+  announcements: Announcement[];
+  total_count: number;
+};
+
 function getApiBaseUrl() {
   return process.env.EXPO_PUBLIC_BACKEND_URL || DEFAULT_API_BASE_URL;
 }
@@ -252,6 +270,10 @@ function isSupabaseVendorsResponse(data: unknown): data is VendorsResponse {
   return (data as VendorsResponse).vendors.every((vendor) => UUID_PATTERN.test(vendor.id));
 }
 
+function isAnnouncementsResponse(data: unknown): data is AnnouncementsResponse {
+  return !!data && typeof data === 'object' && Array.isArray((data as AnnouncementsResponse).announcements);
+}
+
 export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> = {}) {
   return fetchCachedApiData<ScheduleResponse>({
     cacheKey: 'schedule',
@@ -266,6 +288,15 @@ export function getVendorsData(options: SupabaseFetchOptions<VendorsResponse> = 
     cacheKey: 'vendors',
     url: `${getApiBaseUrl()}/api/vendors`,
     isCacheableResponse: isSupabaseVendorsResponse,
+    ...options,
+  });
+}
+
+export function getAnnouncementsData(options: SupabaseFetchOptions<AnnouncementsResponse> = {}) {
+  return fetchCachedApiData<AnnouncementsResponse>({
+    cacheKey: 'announcements',
+    url: `${getApiBaseUrl()}/api/announcements`,
+    isCacheableResponse: isAnnouncementsResponse,
     ...options,
   });
 }
