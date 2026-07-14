@@ -6,6 +6,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  SectionList,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -291,6 +292,11 @@ export default function ScheduleScreen() {
     return grouped;
   }, [filteredEvents]);
 
+  const scheduleSections = useMemo(
+    () => Object.entries(filteredGroupedEvents).map(([title, data]) => ({ title, data })),
+    [filteredGroupedEvents],
+  );
+
   const handleFilterPress = (value: string | null) => {
     if (value === 'starred') {
       setShowFavoritesOnly((current) => !current);
@@ -350,10 +356,27 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
-      <View style={frameStyle}>
-        {/* Header */}
-        <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <SectionList
+        style={styles.content}
+        contentContainerStyle={styles.listContent}
+        sections={scheduleSections}
+        keyExtractor={(event) => event.id}
+        stickySectionHeadersEnabled={false}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+        ListHeaderComponent={(
+          <>
+            <View style={frameStyle}>
+              {/* Header */}
+              <View style={styles.header}>
         <Text style={styles.title}>Schedule</Text>
         <View style={styles.headerSubtitle}>
           <Text style={styles.subtitle}>{events.length} events</Text>
@@ -363,14 +386,14 @@ export default function ScheduleScreen() {
               <Text style={styles.starCount}>{favorites.length}</Text>
             </View>
           )}
-        </View>
+              </View>
         </View>
 
-        {dataSource === 'cache' && (
-          <CachedDataBanner lastSuccessfulUpdate={lastUpdated} />
-        )}
+              {dataSource === 'cache' && (
+                <CachedDataBanner lastSuccessfulUpdate={lastUpdated} />
+              )}
 
-        <View style={styles.filterPanel}>
+              <View style={styles.filterPanel}>
         <View style={styles.searchBox}>
           <Feather name="search" size={18} color={colors.textMuted} />
           <TextInput
@@ -484,42 +507,28 @@ export default function ScheduleScreen() {
           </TouchableOpacity>
         )}
         </View>
-        </View>
+              </View>
 
-        {/* Error State */}
-        {error && events.length > 0 && (
-          <View style={styles.errorContainer}>
-            <Feather name="alert-circle" size={24} color={colors.error} />
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
+              {/* Error State */}
+              {error && events.length > 0 && (
+                <View style={styles.errorContainer}>
+                  <Feather name="alert-circle" size={24} color={colors.error} />
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Last Updated Indicator */}
+            {lastUpdated && (
+              <View style={[styles.lastUpdatedContainer, sectionStyle]}>
+                <Feather name="refresh-cw" size={12} color={colors.textMuted} />
+                <Text style={styles.lastUpdatedText}>Pull down to refresh</Text>
+              </View>
+            )}
+          </>
         )}
-      </View>
-
-      {/* Schedule List */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={sectionStyle}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-      >
-        {/* Last Updated Indicator */}
-        {lastUpdated && (
-          <View style={styles.lastUpdatedContainer}>
-            <Feather name="refresh-cw" size={12} color={colors.textMuted} />
-            <Text style={styles.lastUpdatedText}>
-              Pull down to refresh
-            </Text>
-          </View>
-        )}
-
-        {Object.keys(filteredGroupedEvents).length === 0 ? (
+        ListEmptyComponent={(
+          <View style={sectionStyle}>
           <View style={styles.emptyState}>
             <Feather
               name={showFavoritesOnly ? 'star' : 'calendar'}
@@ -542,22 +551,27 @@ export default function ScheduleScreen() {
               </Text>
             )}
           </View>
-        ) : (
-          Object.entries(filteredGroupedEvents).map(([date, dateEvents]) => (
-            <View key={date} style={styles.dateSection}>
+          </View>
+        )}
+        renderSectionHeader={({ section }) => (
+          <View style={sectionStyle}>
+            <View style={styles.dateSection}>
               <View style={styles.dateHeader}>
-                <Text style={styles.dateText}>{date}</Text>
+                <Text style={styles.dateText}>{section.title}</Text>
                 <Text style={styles.eventCount}>
-                  {dateEvents.length} event{dateEvents.length > 1 ? 's' : ''}
+                  {section.data.length} event{section.data.length > 1 ? 's' : ''}
                 </Text>
               </View>
+            </View>
+          </View>
+        )}
+        renderSectionFooter={() => <View style={styles.sectionFooter} />}
+        renderItem={({ item: event }) => {
+          const isFavorite = favorites.includes(event.id);
 
-              {dateEvents.map((event) => {
-                const isFavorite = favorites.includes(event.id);
-
-                return (
+          return (
+            <View style={sectionStyle}>
                   <TouchableOpacity 
-                    key={event.id} 
                     style={styles.eventCard}
                     onPress={() => {
                       setSelectedEvent(event);
@@ -630,14 +644,10 @@ export default function ScheduleScreen() {
                       </View>
                     </View>
                   </TouchableOpacity>
-                );
-              })}
             </View>
-          ))
-        )}
-
-        <View style={styles.bottomPadding} />
-      </ScrollView>
+          );
+        }}
+      />
 
       {/* Event Details Modal */}
       <Modal
@@ -910,6 +920,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignSelf: 'stretch',
   },
+  listContent: {
+    paddingTop: 4,
+    paddingBottom: 180,
+  },
   stateContent: {
     flex: 1,
   },
@@ -957,7 +971,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   dateSection: {
-    marginBottom: 20,
+    marginBottom: 0,
+  },
+  sectionFooter: {
+    height: 20,
   },
   dateHeader: {
     flexDirection: 'row',
@@ -1065,9 +1082,6 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: '#FFFFFF',
     fontWeight: '700',
-  },
-  bottomPadding: {
-    height: 200, // THE SPACER - Critical for scrolling content above floating ad
   },
   locationBadge: {
     flexDirection: 'row',
