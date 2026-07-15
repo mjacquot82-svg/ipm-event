@@ -283,14 +283,14 @@ class BroadcastsResponse(BaseModel):
     total_count: int
 
 AnnouncementPriority = Literal["Information", "Important", "Emergency"]
-AnnouncementStatus = Literal["active", "inactive", "archived"]
+AnnouncementStatus = Literal["draft", "published", "archived"]
 
 class AnnouncementPayload(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     message: str = Field(min_length=1, max_length=5000)
     priority: AnnouncementPriority = "Information"
     expires_at: Optional[datetime] = None
-    status: AnnouncementStatus = "active"
+    status: AnnouncementStatus = "published"
 
 class AnnouncementStatusPayload(BaseModel):
     status: AnnouncementStatus
@@ -1320,7 +1320,7 @@ async def delete_admin_announcement(
 
 @api_router.get("/announcements", response_model=AnnouncementsResponse)
 async def list_public_announcements(event_id: Optional[str] = None):
-    """Return active, unexpired announcements for one event."""
+    """Return published, unexpired announcements for one event."""
     service = require_announcement_service()
     announcements = await service.list(get_event_id(event_id), public=True)
     return AnnouncementsResponse(announcements=announcements, total_count=len(announcements))

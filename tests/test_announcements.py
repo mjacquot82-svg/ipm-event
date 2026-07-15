@@ -8,21 +8,23 @@ from backend.platform_services import SupabaseAnnouncementService
 class FakeClient:
     def __init__(self, rows_by_event):
         self.rows_by_event = rows_by_event
+        self.calls = []
 
     async def get_event_id(self, event_slug):
         return event_slug
 
     async def request(self, method, path, params=None, **kwargs):
+        self.calls.append((method, path, params))
         assert method == "GET"
         assert path == "/alerts"
         event_id = params["event_id"].removeprefix("eq.")
         rows = list(self.rows_by_event.get(event_id, []))
-        if params.get("status") == "eq.active":
-            rows = [row for row in rows if row["status"] == "active"]
+        if params.get("status") == "eq.published":
+            rows = [row for row in rows if row["status"] == "published"]
         return rows
 
 
-def make_row(event_id, title, severity, status="active", created_offset=0, expires_offset=None):
+def make_row(event_id, title, severity, status="published", created_offset=0, expires_offset=None):
     now = datetime.now(timezone.utc)
     return {
         "id": f"{event_id}-{title}",
@@ -50,7 +52,7 @@ def test_public_announcements_are_event_isolated_filtered_and_ordered():
             make_row("event-a", "New information", "info", created_offset=-1),
             make_row("event-a", "Important", "important"),
             make_row("event-a", "Emergency", "emergency"),
-            make_row("event-a", "Inactive", "emergency", status="inactive"),
+            make_row("event-a", "Draft", "emergency", status="draft"),
             make_row("event-a", "Expired", "emergency", expires_offset=-1),
         ],
         "event-b": [make_row("event-b", "Other event", "emergency")],
@@ -58,6 +60,9 @@ def test_public_announcements_are_event_isolated_filtered_and_ordered():
 
     result = asyncio.run(service.list("event-a", public=True))
 
+    assert service.client.calls == [("GET", "/alerts", {
+        "select": "*", "event_id": "eq.event-a", "status": "eq.published"
+    })]
     assert [item["title"] for item in result] == [
         "Emergency", "Important", "New information", "Old information"
     ]
@@ -113,16 +118,22 @@ def test_crud_writes_are_scoped_to_the_event():
     client = CrudClient()
     service.client = client
     payload = SimpleNamespace(
-        title=" Title ", message=" Message ", priority="Important", expires_at=None, status="active"
+        title=" Title ", message=" Message ", priority="Important", expires_at=None, status="draft"
     )
 
     created = asyncio.run(service.create(payload, "Organizer", "event-a"))
     updated = asyncio.run(service.update("announcement-1", payload, "event-a"))
+    published = asyncio.run(service.set_status("announcement-1", "published", "event-a"))
     archived = asyncio.run(service.set_status("announcement-1", "archived", "event-a"))
     deleted = asyncio.run(service.delete("announcement-1", "event-a"))
 
     assert created["priority"] == "Important"
-    assert updated["id"] == archived["id"] == "announcement-1"
+    assert created["status"] == updated["status"] == "draft"
+    assert published["status"] == "published"
+    assert archived["status"] == "archived"
+    assert updated["id"] == published["id"] == archived["id"] == "announcement-1"
     assert deleted is True
+    assert client.calls[0][2]["json"]["published_at"] is None
+    assert client.calls[2][2]["json"]["published_at"] is not None
     for method, _, kwargs in client.calls[1:]:
         assert kwargs["params"]["event_id"] == "eq.event-a"

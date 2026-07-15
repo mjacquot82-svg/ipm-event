@@ -588,7 +588,7 @@ class SupabaseAnnouncementService:
             "created_by": row.get("created_by") or "Unknown organizer",
             "created_at": row.get("created_at"),
             "updated_at": row.get("updated_at"),
-            "status": row.get("status") or "inactive",
+            "status": row.get("status") or "draft",
         }
 
     def _sort(self, announcements: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -604,7 +604,7 @@ class SupabaseAnnouncementService:
         resolved_event_id = await self._get_event_id(event_id)
         params = {"select": "*", "event_id": f"eq.{resolved_event_id}"}
         if public:
-            params["status"] = "eq.active"
+            params["status"] = "eq.published"
         rows = await self.client.request("GET", "/alerts", params=params)
         announcements = [self.row_to_announcement(row) for row in rows]
         if public:
@@ -627,7 +627,7 @@ class SupabaseAnnouncementService:
                 "severity": self.PRIORITY_TO_SEVERITY[payload.priority],
                 "audience": "all",
                 "status": payload.status,
-                "published_at": datetime.now(timezone.utc).isoformat() if payload.status == "active" else None,
+                "published_at": datetime.now(timezone.utc).isoformat() if payload.status == "published" else None,
                 "expires_at": payload.expires_at.isoformat() if payload.expires_at else None,
                 "created_by": created_by,
             },
@@ -644,7 +644,7 @@ class SupabaseAnnouncementService:
             "status": payload.status,
             "expires_at": payload.expires_at.isoformat() if payload.expires_at else None,
         }
-        if payload.status == "active":
+        if payload.status == "published":
             body["published_at"] = datetime.now(timezone.utc).isoformat()
         rows = await self.client.request(
             "PATCH", "/alerts",
@@ -657,7 +657,7 @@ class SupabaseAnnouncementService:
     async def set_status(self, announcement_id: str, status: str, event_id: Optional[str] = None) -> Optional[dict[str, Any]]:
         resolved_event_id = await self._get_event_id(event_id)
         body: dict[str, Any] = {"status": status}
-        if status == "active":
+        if status == "published":
             body["published_at"] = datetime.now(timezone.utc).isoformat()
         rows = await self.client.request(
             "PATCH", "/alerts",

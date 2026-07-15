@@ -88,7 +88,7 @@ export type Announcement = {
   created_by: string;
   created_at: string;
   updated_at: string;
-  status: 'active';
+  status: 'published';
 };
 
 export type AnnouncementsResponse = {

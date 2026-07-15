@@ -96,7 +96,7 @@ const EMPTY_ANNOUNCEMENT_FORM: AnnouncementPayload = {
   message: '',
   priority: 'Information',
   expires_at: null,
-  status: 'active',
+  status: 'published',
 };
 
 export default function AdminDashboardScreen() {
@@ -1421,6 +1421,8 @@ function AnnouncementsPage({
   onDelete: (item: Announcement) => void; onFormChange: (value: AnnouncementPayload) => void;
   onCloseEditor: () => void; onSave: () => void;
 }) {
+  const statusLabel = (status: AnnouncementStatus) => status.charAt(0).toUpperCase() + status.slice(1);
+
   return (
     <ContentPage
       title="Announcements"
@@ -1455,7 +1457,7 @@ function AnnouncementsPage({
                 <View style={styles.announcementHeading}>
                   <Text style={styles.vendorName}>{item.title}</Text>
                   <Text style={[styles.statusBadge, item.priority === 'Emergency' && styles.emergencyBadge]}>{item.priority}</Text>
-                  <Text style={styles.statusBadge}>{item.status}</Text>
+                  <Text style={styles.statusBadge}>{statusLabel(item.status)}</Text>
                 </View>
                 <Text style={styles.tableText} numberOfLines={2}>{item.message}</Text>
                 <Text style={styles.vendorMeta}>
@@ -1465,8 +1467,8 @@ function AnnouncementsPage({
               </View>
               <View style={styles.announcementActions}>
                 <Pressable style={styles.iconButton} onPress={() => onEdit(item)}><Feather name="edit-2" size={16} color={colors.textSecondary} /></Pressable>
-                <Pressable style={styles.iconButton} onPress={() => onStatusChange(item, item.status === 'active' ? 'inactive' : 'active')}>
-                  <Feather name={item.status === 'active' ? 'pause' : 'play'} size={16} color={colors.textSecondary} />
+                <Pressable style={styles.iconButton} onPress={() => onStatusChange(item, item.status === 'published' ? 'draft' : 'published')}>
+                  <Feather name={item.status === 'published' ? 'pause' : 'play'} size={16} color={colors.textSecondary} />
                 </Pressable>
                 <Pressable style={styles.iconButton} onPress={() => onStatusChange(item, 'archived')}><Feather name="archive" size={16} color={colors.textSecondary} /></Pressable>
                 <Pressable style={styles.iconButton} onPress={() => onDelete(item)}><Feather name="trash-2" size={16} color={colors.error} /></Pressable>
@@ -1488,7 +1490,7 @@ function AnnouncementEditor({ mode, form, saving, editingAnnouncement, onChange,
     <View style={styles.editorPanel}>
       <View style={styles.editorHeader}>
         <View><Text style={styles.editorTitle}>{mode === 'edit' ? 'Edit announcement' : 'Create announcement'}</Text>
-          <Text style={styles.editorSubtitle}>{editingAnnouncement ? 'Changes appear in the attendee API immediately when active.' : 'Active announcements appear in the attendee API immediately.'}</Text></View>
+          <Text style={styles.editorSubtitle}>{editingAnnouncement ? 'Changes appear in the attendee app immediately when published.' : 'Published announcements appear in the attendee app immediately.'}</Text></View>
         <Pressable style={styles.iconButton} onPress={onClose}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable>
       </View>
       <View style={styles.formGrid}>
@@ -1498,7 +1500,7 @@ function AnnouncementEditor({ mode, form, saving, editingAnnouncement, onChange,
           {(['Information', 'Important', 'Emergency'] as const).map((priority) => <Pressable key={priority} style={[styles.filterPill, form.priority === priority && styles.filterPillActive]} onPress={() => onChange({ ...form, priority })}><Text style={[styles.filterPillText, form.priority === priority && styles.filterPillTextActive]}>{priority}</Text></Pressable>)}
         </View></View>
         <View style={styles.formField}><FieldLabel label="Status" required /><View style={styles.choiceRow}>
-          {(['active', 'inactive'] as const).map((status) => <Pressable key={status} style={[styles.filterPill, form.status === status && styles.filterPillActive]} onPress={() => onChange({ ...form, status })}><Text style={[styles.filterPillText, form.status === status && styles.filterPillTextActive]}>{status === 'active' ? 'Active' : 'Inactive'}</Text></Pressable>)}
+          {(['published', 'draft'] as const).map((status) => <Pressable key={status} style={[styles.filterPill, form.status === status && styles.filterPillActive]} onPress={() => onChange({ ...form, status })}><Text style={[styles.filterPillText, form.status === status && styles.filterPillTextActive]}>{status === 'published' ? 'Published' : 'Draft'}</Text></Pressable>)}
         </View></View>
         <FormTextField label="Message" value={form.message} required multiline placeholder="Message shown to attendees" onChangeText={(message) => onChange({ ...form, message })} />
       </View>

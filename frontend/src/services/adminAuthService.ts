@@ -49,7 +49,7 @@ export type BroadcastsResponse = {
 };
 
 export type AnnouncementPriority = 'Information' | 'Important' | 'Emergency';
-export type AnnouncementStatus = 'active' | 'inactive' | 'archived';
+export type AnnouncementStatus = 'draft' | 'published' | 'archived';
 
 export type Announcement = {
   id: string;
