@@ -14,7 +14,7 @@ const PRIORITY_ORDER: Record<Announcement['priority'], number> = {
 export function getVisibleAnnouncements(announcements: Announcement[], now = Date.now()) {
   return announcements
     .filter((announcement) => {
-      if (announcement.status !== 'active') return false;
+      if (announcement.status !== 'published') return false;
       if (!announcement.expires_at) return true;
       const expiry = new Date(announcement.expires_at).getTime();
       return !Number.isNaN(expiry) && expiry > now;

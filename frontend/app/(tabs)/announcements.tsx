@@ -73,7 +73,7 @@ export default function AnnouncementsScreen() {
               <TouchableOpacity style={styles.retryButton} onPress={() => loadAnnouncements()}><Feather name="refresh-cw" size={16} color="#FFFFFF" /><Text style={styles.retryText}>Try Again</Text></TouchableOpacity>
             </View>
           ) : announcements.length === 0 ? (
-            <View style={styles.state}><Feather name="message-square" size={42} color={colors.textMuted} /><Text style={styles.stateTitle}>No active announcements</Text><Text style={styles.stateText}>Event updates will appear here when available.</Text></View>
+            <View style={styles.state}><Feather name="message-square" size={42} color={colors.textMuted} /><Text style={styles.stateTitle}>No published announcements</Text><Text style={styles.stateText}>Event updates will appear here when available.</Text></View>
           ) : (
             <View style={[styles.list, sectionStyle]}>
               {announcements.map((announcement) => <AnnouncementCard key={announcement.id} announcement={announcement} />)}
