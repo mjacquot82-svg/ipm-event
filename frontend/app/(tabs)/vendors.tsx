@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   ScrollView,
@@ -115,7 +114,7 @@ export default function VendorsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]}>
+      <View style={[styles.container, attendeePageContent, frameStyle]}>
         <PageHeader title="Vendors" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#8B1538" />
@@ -123,13 +122,13 @@ export default function VendorsScreen() {
             {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]}>
+      <View style={[styles.container, attendeePageContent, frameStyle]}>
         <PageHeader title="Vendors" />
         <View style={styles.center}>
           <Feather name="wifi-off" size={42} color="#B91C1C" />
@@ -142,7 +141,7 @@ export default function VendorsScreen() {
             <Text style={styles.primaryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -223,7 +222,7 @@ export default function VendorsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <FlatList
         style={styles.content}
         data={filteredVendors}
@@ -270,7 +269,7 @@ export default function VendorsScreen() {
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -383,7 +382,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingTop: 4,
-    paddingBottom: 180,
+    paddingBottom: 88,
   },
   content: {
     flex: 1,

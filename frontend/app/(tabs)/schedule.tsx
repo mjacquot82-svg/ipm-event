@@ -13,7 +13,6 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
@@ -318,7 +317,7 @@ export default function ScheduleScreen() {
   // Loading state
   if (loading && events.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
+      <View style={[styles.container, attendeePageContent]}>
         <View style={[styles.stateContent, frameStyle]}>
           <View style={styles.header}>
             <Text style={styles.title}>Schedule</Text>
@@ -330,13 +329,13 @@ export default function ScheduleScreen() {
             </Text>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (error && events.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent]} edges={['top']}>
+      <View style={[styles.container, attendeePageContent]}>
         <View style={[styles.stateContent, frameStyle]}>
           <View style={styles.header}>
             <Text style={styles.title}>Schedule</Text>
@@ -351,12 +350,12 @@ export default function ScheduleScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <SectionList
         style={styles.content}
         contentContainerStyle={styles.listContent}
@@ -805,7 +804,7 @@ export default function ScheduleScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -922,7 +921,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: 4,
-    paddingBottom: 180,
+    paddingBottom: 88,
   },
   stateContent: {
     flex: 1,

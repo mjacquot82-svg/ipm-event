@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import colors from '../../../src/theme/colors';
 import { eventInfo, locations, sessions } from '../../../src/data/mockData';
@@ -32,7 +31,7 @@ export default function AboutScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Logo Header */}
         <View style={styles.logoSection}>
@@ -120,7 +119,7 @@ export default function AboutScreen() {
             <Text style={styles.heritageTitle}>A Proud Tradition</Text>
             <Text style={styles.heritageText}>
               For 50 years, the International Plowing Match has brought together farmers, 
-              families, and communities to celebrate Ontario's rich agricultural heritage. 
+              families, and communities to celebrate Ontario&apos;s rich agricultural heritage.
               From horse-drawn plows to modern machinery, we honor the past while 
               embracing the future of farming.
             </Text>
@@ -137,7 +136,7 @@ export default function AboutScreen() {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -353,6 +352,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   bottomPadding: {
-    height: 200, // THE SPACER - Critical for scrolling content above floating ad
+    height: 88,
   },
 });

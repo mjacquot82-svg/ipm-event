@@ -439,7 +439,7 @@ export default function HomeScreen() {
               resizeMode="contain"
             />
           </TouchableOpacity>
-          <Text style={styles.opaName}>Ontario Plowmen's Association</Text>
+          <Text style={styles.opaName}>Ontario Plowmen&apos;s Association</Text>
         </View>
 
         {announcements.length > 0 && (

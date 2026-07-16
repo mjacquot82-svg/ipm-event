@@ -17,7 +17,6 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import colors from '../../../src/theme/colors';
@@ -1260,7 +1259,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 0,
-    paddingBottom: 180, // Critical: allows SOS/Alerts buttons to scroll clear of floating ad
+    paddingBottom: 88,
   },
   headerBanner: {
     width: '100%',
@@ -1269,7 +1268,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 180,
     resizeMode: 'contain',
-    marginTop: 15, // Space between top ad and IPM branding
+    marginTop: 0,
   },
   section: {
     paddingHorizontal: 20,
@@ -1535,9 +1534,6 @@ const styles = StyleSheet.create({
   starredBannerSubtitle: {
     fontSize: 13,
     color: colors.textMuted,
-  },
-  bottomPadding: {
-    height: 150, // Spacer to scroll content above floating ad
   },
   // Modal styles
   modalOverlay: {

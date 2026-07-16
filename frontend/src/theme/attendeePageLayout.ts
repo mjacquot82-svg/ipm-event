@@ -5,12 +5,12 @@ export const ATTENDEE_DESKTOP_BREAKPOINT = 768;
 export const ATTENDEE_DESKTOP_WIDTH_RATIO = 0.92;
 export const ATTENDEE_CARD_RADIUS = 16;
 
-// Home is the attendee layout reference. Every attendee page uses this same
-// content boundary between the shared top and bottom advertisement slots.
+// Home is the attendee layout reference. Keep enough trailing space for content
+// to scroll above the shared bottom navigation.
 export const attendeePageContent = StyleSheet.create({
   container: {
     paddingTop: 4,
-    paddingBottom: 180,
+    paddingBottom: 88,
   },
 }).container;
 

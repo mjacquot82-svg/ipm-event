@@ -6,12 +6,9 @@ import { Feather } from '@expo/vector-icons';
 import { StyleSheet, View, Platform, TouchableOpacity, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../src/theme/colors';
-import AdBanner from '../../src/components/AdBanner';
-import adCampaignsConfig from '../../src/config/AdCampaignsConfig';
 
 const ICON_SIZE = 24;
 const NAV_ICONS_HEIGHT = 60;
-const AD_SECTION_HEIGHT = 58;
 
 function getIconName(routeName: string): keyof typeof Feather.glyphMap {
   switch (routeName) {
@@ -88,21 +85,13 @@ function TabItem({ routeName }: { routeName: string }) {
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const topInset = Platform.OS === 'web' ? 0 : (insets.top || 0);
+  const topInset = Platform.OS === 'web' ? 0 : insets.top || 0;
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
-  
-  const bottomAdEnabled = adCampaignsConfig.bottomBanner.enabled;
-  const totalBottomBarHeight = (bottomAdEnabled ? AD_SECTION_HEIGHT : 0) + NAV_ICONS_HEIGHT + bottomInset;
+  const totalBottomBarHeight = NAV_ICONS_HEIGHT + bottomInset;
 
   return (
     <View style={styles.root}>
-      {adCampaignsConfig.topBanner.enabled && (
-        <View style={[styles.topAdWrapper, { paddingTop: topInset }]}>
-          <AdBanner adUnit={adCampaignsConfig.topBanner} position="top" />
-        </View>
-      )}
-
-      <View style={styles.contentArea}>
+      <View style={[styles.contentArea, { paddingTop: topInset }]}>
         <Tabs
           tabBar={() => <EmptyTabBar />}
           screenOptions={{ headerShown: false, sceneStyle: styles.scene }}
@@ -121,12 +110,6 @@ export default function TabLayout() {
         styles.combinedBottomBar,
         { height: totalBottomBarHeight, paddingBottom: bottomInset }
       ]}>
-        {bottomAdEnabled && (
-          <View style={styles.adSection}>
-            <AdBanner adUnit={adCampaignsConfig.bottomBanner} position="bottom" />
-          </View>
-        )}
-        
         <View style={styles.iconsSection}>
           <TabItem routeName="index" />
           <TabItem routeName="map" />
@@ -140,11 +123,9 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  topAdWrapper: { backgroundColor: colors.background, zIndex: 10 },
   contentArea: { flex: 1, overflow: 'hidden' },
   scene: { flex: 1, backgroundColor: colors.background },
   combinedBottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, zIndex: 100 },
-  adSection: { alignItems: 'center', paddingVertical: 4 },
   iconsSection: { flexDirection: 'row', height: 60, paddingTop: 8 },
   tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   tabLabel: { fontSize: 10, fontWeight: '600', marginTop: 4 },

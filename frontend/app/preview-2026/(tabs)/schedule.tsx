@@ -11,7 +11,6 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import colors from '../../../src/theme/colors';
@@ -189,7 +188,7 @@ export default function ScheduleScreen() {
   // Loading state
   if (loading && events.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Schedule</Text>
         </View>
@@ -197,12 +196,12 @@ export default function ScheduleScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading schedule...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Schedule</Text>
@@ -559,7 +558,7 @@ export default function ScheduleScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -773,7 +772,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   bottomPadding: {
-    height: 200, // THE SPACER - Critical for scrolling content above floating ad
+    height: 88,
   },
   locationBadge: {
     flexDirection: 'row',

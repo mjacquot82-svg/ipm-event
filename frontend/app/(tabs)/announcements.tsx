@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AnnouncementCard, { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
@@ -48,7 +48,7 @@ export default function AnnouncementsScreen() {
   useEffect(() => { void loadAnnouncements(); }, [loadAnnouncements]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         contentContainerStyle={attendeePageContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadAnnouncements(true)} tintColor={colors.accent} colors={[colors.accent]} />}
@@ -81,7 +81,7 @@ export default function AnnouncementsScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

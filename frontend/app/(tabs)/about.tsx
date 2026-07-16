@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
@@ -72,7 +71,7 @@ export default function AboutScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]} edges={['top']}>
+    <View style={[styles.container, attendeePageContent, frameStyle]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Event Hero */}
         <View style={styles.heroLogoCard}>
@@ -215,9 +214,8 @@ export default function AboutScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.bottomPadding} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -481,8 +479,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
     textAlign: 'center',
-  },
-  bottomPadding: {
-    height: 200, // THE SPACER - Critical for scrolling content above floating ad
   },
 });

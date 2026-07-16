@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -98,7 +97,7 @@ export default function ItineraryScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]}>
+      <View style={[styles.container, attendeePageContent, frameStyle]}>
         <PageHeader title="My Itinerary" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#8B1538" />
@@ -106,24 +105,24 @@ export default function ItineraryScreen() {
             {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]}>
+      <View style={[styles.container, attendeePageContent, frameStyle]}>
         <PageHeader title="My Itinerary" />
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
           <Text style={styles.helperText}>Please try again later.</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, attendeePageContent, frameStyle]}>
+    <View style={[styles.container, frameStyle]}>
       <PageHeader title="My Itinerary" />
       <View style={styles.header}>
         <Text style={styles.title}>My Itinerary</Text>
@@ -139,7 +138,7 @@ export default function ItineraryScreen() {
       <FlatList
         data={starredEvents}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, attendeePageContent]}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
@@ -179,7 +178,7 @@ export default function ItineraryScreen() {
             <Feather name="star" size={42} color="#FBC02D" />
             <Text style={styles.emptyTitle}>Build Your Personal Schedule</Text>
             <Text style={styles.helperText}>
-              Save the events you don't want to miss.
+              Save the events you don&apos;t want to miss.
             </Text>
             <Text style={styles.helperText}>
               Browse the Schedule and tap the star on any event to add it to your personal itinerary.
@@ -191,7 +190,7 @@ export default function ItineraryScreen() {
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -239,7 +238,6 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
-    paddingBottom: 120,
     flexGrow: 1,
   },
   card: {
