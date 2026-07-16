@@ -5,7 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 1500;
-const CACHE_KEY_PREFIX = 'ipm_supabase_cache:v1';
+const CACHE_KEY_PREFIX = 'ipm_supabase_cache:ipm-2026-production';
+const EXISTING_SHARED_CACHE_KEY_PREFIX = 'ipm_supabase_cache:v1';
 const LEGACY_CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
 const DEFAULT_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
 
@@ -101,7 +102,11 @@ function getApiBaseUrl() {
 }
 
 function getCacheKey(cacheKey: string) {
-  return `${CACHE_KEY_PREFIX}:${cacheKey}`;
+  const prefix = cacheKey === 'schedule' || cacheKey === 'vendors'
+    ? CACHE_KEY_PREFIX
+    : EXISTING_SHARED_CACHE_KEY_PREFIX;
+
+  return `${prefix}:${cacheKey}`;
 }
 
 function getCacheAge(lastSuccessfulUpdate: string) {
