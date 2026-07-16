@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   RefreshControl,
   ActivityIndicator,
   Alert,
@@ -201,10 +200,7 @@ function getTimeUntil(eventDate: Date | null) {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { contentWidth, sectionStyle: attendeeSectionStyle } = useAttendeeLayout();
-  const availableSectionWidth = contentWidth;
-  const opaLogoWidth = Math.min(availableSectionWidth * 0.65, 450);
-  const opaLogoHeight = opaLogoWidth * (435 / 800);
+  const { sectionStyle: attendeeSectionStyle } = useAttendeeLayout();
 
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -425,22 +421,6 @@ export default function HomeScreen() {
             {renderEventCard(nextStarredEvent, 0, true)}
           </View>
         )}
-
-        <View style={[sectionStyle, styles.opaLogoSection]}>
-          <Text style={styles.opaEyebrow}>Proudly Hosted By</Text>
-          <TouchableOpacity
-            style={styles.opaLogoLink}
-            onPress={() => openLink('https://www.plowingmatch.org/')}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={require('../../assets/images/opa.png')}
-              style={[styles.opaLogo, { width: opaLogoWidth, height: opaLogoHeight }]}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-          <Text style={styles.opaName}>Ontario Plowmen&apos;s Association</Text>
-        </View>
 
         {announcements.length > 0 && (
           <View style={sectionStyle}>
@@ -728,29 +708,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.accent,
     fontWeight: '500',
-  },
-  opaLogoSection: {
-    alignItems: 'center',
-    marginTop: 14,
-    marginBottom: -8,
-  },
-  opaEyebrow: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  opaLogoLink: {
-    alignItems: 'center',
-  },
-  opaLogo: {},
-  opaName: {
-    color: colors.textSecondary,
-    fontSize: 16,
-    fontWeight: '500',
-    marginTop: 2,
-    textAlign: 'center',
   },
   quickActionsGrid: {
     flexDirection: 'row',
