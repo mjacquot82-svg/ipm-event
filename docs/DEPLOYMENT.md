@@ -49,6 +49,7 @@ Important backend environment variables:
 ```sh
 MONGODB_URL=<mongodb connection string>
 DB_NAME=ipm2026
+ENVIRONMENT=production
 DEFAULT_EVENT_ID=ipm-2026
 ADMIN_SESSION_COOKIE_NAME=ipm_admin_session
 ADMIN_SESSION_DAYS=7
@@ -59,6 +60,10 @@ ADMIN_PIN=2026
 ```
 
 `MONGO_URL` is also supported as an alternative to `MONGODB_URL`.
+
+`ENVIRONMENT` defaults to `development`, which keeps `/docs`, `/redoc`, and
+`/openapi.json` available locally. Set it to `production` on Render to disable
+all three documentation endpoints.
 
 ## Deployment Flow
 

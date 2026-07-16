@@ -78,6 +78,7 @@ cached_events_hash: str = ""
 
 # Organizer portal authentication settings
 DEFAULT_EVENT_ID = os.environ.get("DEFAULT_EVENT_ID", "ipm-2026")
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "development").strip().lower()
 CONTENT_SOURCE = os.environ.get("CONTENT_SOURCE", "google_sheets").strip().lower()
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
@@ -106,8 +107,13 @@ CORS_ORIGIN_REGEX = os.environ.get(
 if CONTENT_SOURCE not in {"google_sheets", "supabase"}:
     raise RuntimeError("CONTENT_SOURCE must be either 'google_sheets' or 'supabase'")
 
-# Create the main app without a prefix
-app = FastAPI()
+# Create the main app without a prefix. API documentation is development-only.
+api_docs_enabled = ENVIRONMENT != "production"
+app = FastAPI(
+    docs_url="/docs" if api_docs_enabled else None,
+    redoc_url="/redoc" if api_docs_enabled else None,
+    openapi_url="/openapi.json" if api_docs_enabled else None,
+)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
