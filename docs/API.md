@@ -237,6 +237,26 @@ Response:
 }
 ```
 
+## Announcements and Webpushr
+
+### GET `/api/announcements/{announcement_id}`
+
+Returns one published, unexpired announcement for the requested event. Draft,
+archived, expired, deleted, missing, and wrong-event IDs return `404`.
+
+### POST `/api/admin/announcements/{announcement_id}/notify/test`
+
+Sends a published, unexpired announcement only to the subscriber IDs configured
+in `WEBPUSHR_TEST_SUBSCRIBER_IDS`. Requires an Owner or Communications session.
+
+### POST `/api/admin/announcements/{announcement_id}/notify/everyone`
+
+Sends a published, unexpired announcement to all Webpushr subscribers. Requires
+an Owner or Communications session. An active or successful everyone delivery
+for the same event and announcement returns `409`.
+
+Both notification endpoints persist the provider result in Supabase.
+
 ## Google Sheets and Data Utilities
 
 ### GET `/api/`

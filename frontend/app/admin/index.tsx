@@ -1,9 +1,10 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -45,7 +46,9 @@ import {
   listAnnouncements,
   listScheduleEvents,
   logoutOrganizer,
+  notifyEveryoneForAnnouncement,
   OrganizerUser,
+  sendAnnouncementTestNotification,
   updateAdminVendor,
   updateAnnouncement,
   setAnnouncementStatus,
@@ -56,6 +59,11 @@ type AdminSection = 'dashboard' | 'vendors' | 'schedule' | 'communications' | 't
 type VendorEditorMode = 'closed' | 'create' | 'edit';
 type ScheduleEditorMode = 'closed' | 'view' | 'add' | 'edit';
 type AnnouncementEditorMode = 'closed' | 'create' | 'edit';
+type NotificationActionState = {
+  audience: 'test' | 'everyone' | null;
+  status: 'idle' | 'sending' | 'sent' | 'failed';
+  message: string | null;
+};
 type PlatformFieldKey = (typeof PLATFORM_FIELDS)[number]['key'];
 type ImportMapping = Partial<Record<PlatformFieldKey, string>>;
 
@@ -99,6 +107,19 @@ const EMPTY_ANNOUNCEMENT_FORM: AnnouncementPayload = {
   status: 'published',
 };
 
+const IDLE_NOTIFICATION_STATE: NotificationActionState = {
+  audience: null,
+  status: 'idle',
+  message: null,
+};
+
+export function shortenWebpushrText(value: string, limit: number) {
+  const normalized = value.trim().split(/\s+/u).join(' ');
+  const characters = Array.from(normalized);
+  if (characters.length <= limit) return normalized;
+  return `${characters.slice(0, limit - 1).join('').trimEnd()}…`;
+}
+
 export default function AdminDashboardScreen() {
   const router = useRouter();
   const [loadingSession, setLoadingSession] = useState(true);
@@ -140,6 +161,9 @@ export default function AdminDashboardScreen() {
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [announcementForm, setAnnouncementForm] = useState<AnnouncementPayload>(EMPTY_ANNOUNCEMENT_FORM);
   const [announcementSaving, setAnnouncementSaving] = useState(false);
+  const [announcementSaveMessage, setAnnouncementSaveMessage] = useState<string | null>(null);
+  const [notificationAction, setNotificationAction] = useState<NotificationActionState>(IDLE_NOTIFICATION_STATE);
+  const notificationRequestInFlight = useRef(false);
 
   const loadVendors = useCallback(async () => {
     setVendorsLoading(true);
@@ -266,25 +290,66 @@ export default function AdminDashboardScreen() {
       status: announcement.status,
     } : EMPTY_ANNOUNCEMENT_FORM);
     setAnnouncementsError(null);
+    setAnnouncementSaveMessage(null);
+    setNotificationAction(IDLE_NOTIFICATION_STATE);
   };
 
-  const saveAnnouncement = async () => {
+  const saveAnnouncement = async (status: AnnouncementStatus) => {
+    if (announcementSaving || notificationAction.status === 'sending') return;
     setAnnouncementSaving(true);
     setAnnouncementsError(null);
+    setAnnouncementSaveMessage(null);
     try {
+      const payload = { ...announcementForm, status };
       const saved = editingAnnouncement
-        ? await updateAnnouncement(editingAnnouncement.id, announcementForm)
-        : await createAnnouncement(announcementForm);
+        ? await updateAnnouncement(editingAnnouncement.id, payload)
+        : await createAnnouncement(payload);
       setAnnouncements((current) => {
         const withoutSaved = current.filter((item) => item.id !== saved.id);
         return [saved, ...withoutSaved];
       });
-      setAnnouncementEditorMode('closed');
-      setEditingAnnouncement(null);
+      setAnnouncementForm({
+        title: saved.title,
+        message: saved.message,
+        priority: saved.priority,
+        expires_at: saved.expires_at,
+        status: saved.status,
+      });
+      setEditingAnnouncement(saved);
+      setAnnouncementEditorMode('edit');
+      setNotificationAction(IDLE_NOTIFICATION_STATE);
+      setAnnouncementSaveMessage(status === 'published' ? 'Published. No notification was sent.' : status === 'draft' ? 'Draft saved.' : 'Changes saved.');
     } catch (err) {
       setAnnouncementsError(err instanceof Error ? err.message : 'Unable to save announcement');
     } finally {
       setAnnouncementSaving(false);
+    }
+  };
+
+  const sendAnnouncementNotification = async (audience: 'test' | 'everyone') => {
+    if (!editingAnnouncement || notificationRequestInFlight.current || announcementSaving) return;
+    notificationRequestInFlight.current = true;
+    setNotificationAction({ audience, status: 'sending', message: null });
+    setAnnouncementsError(null);
+    try {
+      const result = audience === 'test'
+        ? await sendAnnouncementTestNotification(editingAnnouncement.id)
+        : await notifyEveryoneForAnnouncement(editingAnnouncement.id);
+      setNotificationAction({
+        audience,
+        status: 'sent',
+        message: audience === 'test'
+          ? 'Test notification sent to configured test subscribers.'
+          : `Notification sent to everyone.${result.provider_campaign_id ? ` Campaign ${result.provider_campaign_id}.` : ''}`,
+      });
+    } catch (err) {
+      setNotificationAction({
+        audience,
+        status: 'failed',
+        message: err instanceof Error ? err.message : 'Notification could not be sent.',
+      });
+    } finally {
+      notificationRequestInFlight.current = false;
     }
   };
 
@@ -571,6 +636,8 @@ export default function AdminDashboardScreen() {
           editorMode={announcementEditorMode}
           form={announcementForm}
           saving={announcementSaving}
+          saveMessage={announcementSaveMessage}
+          notificationAction={notificationAction}
           editingAnnouncement={editingAnnouncement}
           onSearchChange={setAnnouncementSearch}
           onRefresh={loadAnnouncements}
@@ -579,8 +646,12 @@ export default function AdminDashboardScreen() {
           onStatusChange={changeAnnouncementStatus}
           onDelete={removeAnnouncement}
           onFormChange={setAnnouncementForm}
-          onCloseEditor={() => setAnnouncementEditorMode('closed')}
+          onCloseEditor={() => {
+            if (notificationAction.status !== 'sending' && !announcementSaving) setAnnouncementEditorMode('closed');
+          }}
           onSave={saveAnnouncement}
+          onSendTest={() => sendAnnouncementNotification('test')}
+          onNotifyEveryone={() => sendAnnouncementNotification('everyone')}
         />
       )}
     </AdminShell>
@@ -1410,16 +1481,19 @@ function VendorEditor({
 
 function AnnouncementsPage({
   announcements, totalCount, loading, error, search, editorMode, form, saving,
+  saveMessage, notificationAction,
   editingAnnouncement, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
-  onDelete, onFormChange, onCloseEditor, onSave,
+  onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone,
 }: {
   announcements: Announcement[]; totalCount: number; loading: boolean; error: string | null;
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
+  saveMessage: string | null; notificationAction: NotificationActionState;
   editingAnnouncement: Announcement | null; onSearchChange: (value: string) => void;
   onRefresh: () => void; onCreate: () => void; onEdit: (item: Announcement) => void;
   onStatusChange: (item: Announcement, status: AnnouncementStatus) => void;
   onDelete: (item: Announcement) => void; onFormChange: (value: AnnouncementPayload) => void;
-  onCloseEditor: () => void; onSave: () => void;
+  onCloseEditor: () => void; onSave: (status: AnnouncementStatus) => void;
+  onSendTest: () => void; onNotifyEveryone: () => void;
 }) {
   const statusLabel = (status: AnnouncementStatus) => status.charAt(0).toUpperCase() + status.slice(1);
 
@@ -1439,7 +1513,9 @@ function AnnouncementsPage({
       {editorMode !== 'closed' && (
         <AnnouncementEditor
           mode={editorMode} form={form} saving={saving} editingAnnouncement={editingAnnouncement}
+          saveMessage={saveMessage} notificationAction={notificationAction}
           onChange={onFormChange} onClose={onCloseEditor} onSave={onSave}
+          onSendTest={onSendTest} onNotifyEveryone={onNotifyEveryone}
         />
       )}
       {loading ? <LoadingState label="Loading announcements..." /> : announcements.length === 0 ? (
@@ -1481,17 +1557,58 @@ function AnnouncementsPage({
   );
 }
 
-function AnnouncementEditor({ mode, form, saving, editingAnnouncement, onChange, onClose, onSave }: {
+function AnnouncementEditor({
+  mode, form, saving, saveMessage, notificationAction, editingAnnouncement,
+  onChange, onClose, onSave, onSendTest, onNotifyEveryone,
+}: {
   mode: Exclude<AnnouncementEditorMode, 'closed'>; form: AnnouncementPayload; saving: boolean;
+  saveMessage: string | null; notificationAction: NotificationActionState;
   editingAnnouncement: Announcement | null; onChange: (value: AnnouncementPayload) => void;
-  onClose: () => void; onSave: () => void;
+  onClose: () => void; onSave: (status: AnnouncementStatus) => void;
+  onSendTest: () => void; onNotifyEveryone: () => void;
 }) {
+  const [confirmEveryone, setConfirmEveryone] = useState(false);
+  const isSending = notificationAction.status === 'sending';
+  const isPublished = editingAnnouncement?.status === 'published';
+  const isArchived = editingAnnouncement?.status === 'archived';
+  const isDraft = editingAnnouncement?.status === 'draft';
+  const isExpired = Boolean(
+    editingAnnouncement?.expires_at
+    && new Date(editingAnnouncement.expires_at).getTime() <= Date.now()
+  );
+  const hasUnsavedChanges = Boolean(editingAnnouncement && (
+    form.title !== editingAnnouncement.title
+    || form.message !== editingAnnouncement.message
+    || form.priority !== editingAnnouncement.priority
+    || (form.expires_at || null) !== (editingAnnouncement.expires_at || null)
+  ));
+  const notificationDisabled = saving || isSending || isExpired || hasUnsavedChanges;
+  const everyoneSentThisSession = notificationAction.audience === 'everyone' && notificationAction.status === 'sent';
+  const notificationTitle = shortenWebpushrText(form.title, 100);
+  const notificationMessage = shortenWebpushrText(form.message, 255);
+
+  useEffect(() => {
+    if (
+      confirmEveryone
+      && notificationAction.audience === 'everyone'
+      && (notificationAction.status === 'sent' || notificationAction.status === 'failed')
+    ) {
+      setConfirmEveryone(false);
+    }
+  }, [confirmEveryone, notificationAction.audience, notificationAction.status]);
+
+  let safetyMessage: string | null = null;
+  if (isArchived) safetyMessage = 'Archived announcements cannot be notified. Publish the announcement again before sending a notification.';
+  else if (isDraft) safetyMessage = 'Draft announcements cannot be notified. Publish this announcement first.';
+  else if (isExpired) safetyMessage = 'Expired announcements cannot be notified. Set a future expiry and save the announcement first.';
+  else if (isPublished && hasUnsavedChanges) safetyMessage = 'Save your changes before sending a notification so the notification matches the published announcement.';
+
   return (
     <View style={styles.editorPanel}>
       <View style={styles.editorHeader}>
         <View><Text style={styles.editorTitle}>{mode === 'edit' ? 'Edit announcement' : 'Create announcement'}</Text>
           <Text style={styles.editorSubtitle}>{editingAnnouncement ? 'Changes appear in the attendee app immediately when published.' : 'Published announcements appear in the attendee app immediately.'}</Text></View>
-        <Pressable style={styles.iconButton} onPress={onClose}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable>
+        <Pressable style={[styles.iconButton, (saving || isSending) && styles.buttonDisabled]} onPress={onClose} disabled={saving || isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable>
       </View>
       <View style={styles.formGrid}>
         <FormTextField label="Title" value={form.title} required placeholder="Announcement title" onChangeText={(title) => onChange({ ...form, title })} />
@@ -1499,17 +1616,74 @@ function AnnouncementEditor({ mode, form, saving, editingAnnouncement, onChange,
         <View style={styles.formField}><FieldLabel label="Priority" required /><View style={styles.choiceRow}>
           {(['Information', 'Important', 'Emergency'] as const).map((priority) => <Pressable key={priority} style={[styles.filterPill, form.priority === priority && styles.filterPillActive]} onPress={() => onChange({ ...form, priority })}><Text style={[styles.filterPillText, form.priority === priority && styles.filterPillTextActive]}>{priority}</Text></Pressable>)}
         </View></View>
-        <View style={styles.formField}><FieldLabel label="Status" required /><View style={styles.choiceRow}>
-          {(['published', 'draft'] as const).map((status) => <Pressable key={status} style={[styles.filterPill, form.status === status && styles.filterPillActive]} onPress={() => onChange({ ...form, status })}><Text style={[styles.filterPillText, form.status === status && styles.filterPillTextActive]}>{status === 'published' ? 'Published' : 'Draft'}</Text></Pressable>)}
-        </View></View>
         <FormTextField label="Message" value={form.message} required multiline placeholder="Message shown to attendees" onChangeText={(message) => onChange({ ...form, message })} />
       </View>
+
+      {saveMessage && <View style={styles.successNotice}><Feather name="check-circle" size={16} color={colors.success} /><Text style={styles.successNoticeText}>{saveMessage}</Text></View>}
+      {safetyMessage && <View style={styles.safetyNotice}><Feather name="info" size={16} color={colors.textSecondary} /><Text style={styles.safetyNoticeText}>{safetyMessage}</Text></View>}
+      {notificationAction.message && (
+        <View style={notificationAction.status === 'failed' ? styles.failureNotice : styles.successNotice}>
+          <Feather name={notificationAction.status === 'failed' ? 'alert-circle' : 'check-circle'} size={16} color={notificationAction.status === 'failed' ? colors.error : colors.success} />
+          <Text style={notificationAction.status === 'failed' ? styles.failureNoticeText : styles.successNoticeText}>
+            {notificationAction.status === 'failed' ? 'Failed: ' : 'Sent: '}{notificationAction.message}
+          </Text>
+        </View>
+      )}
+
       <View style={styles.editorActions}>
-        <Pressable style={styles.cancelButton} onPress={onClose} disabled={saving}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
-        <Pressable style={[styles.saveButton, saving && styles.buttonDisabled]} onPress={onSave} disabled={saving}>{saving ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="save" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save announcement'}</Text></Pressable>
+        <Pressable style={[styles.cancelButton, (saving || isSending) && styles.buttonDisabled]} onPress={onClose} disabled={saving || isSending}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
+
+        {(!editingAnnouncement || isDraft) && <>
+          <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave('draft')} disabled={saving || isSending}>
+            <Feather name="save" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>{saving ? 'Saving...' : 'Save Draft'}</Text>
+          </Pressable>
+          <Pressable style={[styles.saveButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave('published')} disabled={saving || isSending}>
+            {saving ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="upload" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{saving ? 'Publishing...' : 'Publish'}</Text>
+          </Pressable>
+        </>}
+
+        {editingAnnouncement && !isDraft && <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave(editingAnnouncement.status)} disabled={saving || isSending}>
+          <Feather name="save" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>{saving ? 'Saving...' : 'Save Changes'}</Text>
+        </Pressable>}
+
+        {isPublished && <>
+          <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
+            {isSending && notificationAction.audience === 'test' ? <ActivityIndicator color={colors.textPrimary} /> : <Feather name="send" size={17} color={colors.textPrimary} />}
+            <Text style={styles.secondaryButtonText}>{isSending && notificationAction.audience === 'test' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'test' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'test' ? 'Failed — Try Again' : 'Send Test Notification'}</Text>
+          </Pressable>
+          <Pressable style={[styles.dangerButton, (notificationDisabled || everyoneSentThisSession) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={notificationDisabled || everyoneSentThisSession}>
+            {isSending && notificationAction.audience === 'everyone' ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
+            <Text style={styles.saveButtonText}>{isSending && notificationAction.audience === 'everyone' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'everyone' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'everyone' ? 'Failed — Try Again' : 'Notify Everyone'}</Text>
+          </Pressable>
+        </>}
       </View>
+
+      <Modal visible={confirmEveryone} transparent animationType="fade" onRequestClose={() => { if (!isSending) setConfirmEveryone(false); }}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.confirmDialog} accessibilityRole="alert">
+            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Notify everyone?</Text><Text style={styles.confirmSubtitle}>This action sends a Webpushr notification immediately.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+            <View style={styles.confirmDetails}>
+              <ConfirmationRow label="Announcement title" value={form.title} />
+              <ConfirmationRow label="Notification title" value={notificationTitle} />
+              <ConfirmationRow label="Notification preview" value={notificationMessage} />
+              <ConfirmationRow label="Audience" value="Everyone subscribed to this event" />
+              <ConfirmationRow label="Target" value="Opens this announcement when tapped" />
+            </View>
+            <View style={styles.editorActions}>
+              <Pressable style={[styles.cancelButton, isSending && styles.buttonDisabled]} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
+              <Pressable style={[styles.dangerButton, isSending && styles.buttonDisabled]} disabled={isSending} onPress={() => { onNotifyEveryone(); }}>
+                {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Confirm & Notify Everyone'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
+}
+
+function ConfirmationRow({ label, value }: { label: string; value: string }) {
+  return <View style={styles.confirmRow}><Text style={styles.confirmLabel}>{label}</Text><Text style={styles.confirmValue}>{value}</Text></View>;
 }
 
 function FormTextField({
@@ -1864,6 +2038,44 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: colors.primary,
   },
+  secondaryButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated,
+  },
+  secondaryButtonText: { color: colors.textPrimary, fontWeight: '700' },
+  dangerButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.error,
+  },
+  successNotice: { borderRadius: 8, borderWidth: 1, borderColor: colors.success, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F2FBF5' },
+  successNoticeText: { color: colors.success, fontSize: 13, flex: 1 },
+  failureNotice: { borderRadius: 8, borderWidth: 1, borderColor: colors.error, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF8F8' },
+  failureNoticeText: { color: colors.error, fontSize: 13, flex: 1 },
+  safetyNotice: { borderRadius: 8, borderWidth: 1, borderColor: colors.border, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surfaceHighlight },
+  safetyNoticeText: { color: colors.textSecondary, fontSize: 13, flex: 1 },
+  modalBackdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.55)', padding: 20 },
+  confirmDialog: { width: '100%', maxWidth: 620, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 20, gap: 18 },
+  confirmHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 },
+  confirmTitle: { color: colors.textPrimary, fontSize: 22, fontWeight: '800' },
+  confirmSubtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 4 },
+  confirmDetails: { borderRadius: 8, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+  confirmRow: { padding: 12, gap: 4, borderBottomWidth: 1, borderBottomColor: colors.divider },
+  confirmLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  confirmValue: { color: colors.textPrimary, fontSize: 14, lineHeight: 20 },
   saveButtonText: {
     color: '#FFFFFF',
     fontWeight: '700',

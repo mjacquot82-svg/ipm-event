@@ -77,6 +77,23 @@ export type AnnouncementPayload = {
   status: AnnouncementStatus;
 };
 
+export type NotificationDelivery = {
+  id: string;
+  event_id: string;
+  announcement_id: string;
+  audience: 'test' | 'everyone';
+  provider: 'webpushr';
+  provider_campaign_id: string | null;
+  status: 'requested' | 'sent' | 'failed';
+  requested_by: string;
+  requested_at: string;
+  sent_at: string | null;
+  error_message: string | null;
+  target_url: string;
+  notification_title: string;
+  notification_message: string;
+};
+
 export type AdminScheduleEvent = {
   id: string;
   row_number: number;
@@ -202,7 +219,19 @@ async function adminRequest<T>(path: string, options: RequestInit = {}): Promise
     let message = 'Request failed';
     try {
       const body = await response.json();
-      message = body.detail || message;
+      if (typeof body?.detail === 'string') {
+        message = body.detail;
+      } else if (Array.isArray(body?.detail)) {
+        const validationMessages = body.detail
+          .map((item: unknown) => {
+            if (item && typeof item === 'object' && 'msg' in item && typeof item.msg === 'string') {
+              return item.msg;
+            }
+            return null;
+          })
+          .filter((item: string | null): item is string => Boolean(item));
+        if (validationMessages.length) message = validationMessages.join('. ');
+      }
     } catch {
       message = response.statusText || message;
     }
@@ -307,6 +336,20 @@ export function deleteAnnouncement(id: string) {
   return adminRequest<void>(`/api/admin/announcements/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
+}
+
+export function sendAnnouncementTestNotification(id: string) {
+  return adminRequest<NotificationDelivery>(
+    `/api/admin/announcements/${encodeURIComponent(id)}/notify/test`,
+    { method: 'POST' }
+  );
+}
+
+export function notifyEveryoneForAnnouncement(id: string) {
+  return adminRequest<NotificationDelivery>(
+    `/api/admin/announcements/${encodeURIComponent(id)}/notify/everyone`,
+    { method: 'POST' }
+  );
 }
 
 export function listScheduleEvents() {

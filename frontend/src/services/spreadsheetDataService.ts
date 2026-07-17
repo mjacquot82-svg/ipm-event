@@ -305,3 +305,14 @@ export function getAnnouncementsData(options: SupabaseFetchOptions<Announcements
     ...options,
   });
 }
+
+export async function getAnnouncementById(id: string): Promise<Announcement | null> {
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/announcements/${encodeURIComponent(id)}`
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`Announcement request failed with status ${response.status}`);
+  }
+  return response.json() as Promise<Announcement>;
+}

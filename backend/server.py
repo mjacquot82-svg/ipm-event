@@ -30,8 +30,11 @@ try:
         ScheduleService,
         SupabaseScheduleService,
         SupabaseAnnouncementService,
+        SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
+        WebpushrClient,
+        WebpushrError,
     )
 except ImportError:
     from backend.platform_services import (
@@ -39,8 +42,11 @@ except ImportError:
         ScheduleService,
         SupabaseScheduleService,
         SupabaseAnnouncementService,
+        SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
+        WebpushrClient,
+        WebpushrError,
     )
 
 
@@ -82,6 +88,14 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "development").strip().lower()
 CONTENT_SOURCE = os.environ.get("CONTENT_SOURCE", "google_sheets").strip().lower()
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+WEBPUSHR_API_KEY = os.environ.get("WEBPUSHR_API_KEY", "")
+WEBPUSHR_AUTH_TOKEN = os.environ.get("WEBPUSHR_AUTH_TOKEN", "")
+WEBPUSHR_TEST_SUBSCRIBER_IDS = [
+    subscriber_id.strip()
+    for subscriber_id in os.environ.get("WEBPUSHR_TEST_SUBSCRIBER_IDS", "").split(",")
+    if subscriber_id.strip()
+]
+PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
 ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
 ADMIN_SESSION_DAYS = int(os.environ.get("ADMIN_SESSION_DAYS", "7"))
 ADMIN_COOKIE_SECURE = os.environ.get("ADMIN_COOKIE_SECURE", "true").lower() == "true"
@@ -316,6 +330,22 @@ class AnnouncementResponse(BaseModel):
 class AnnouncementsResponse(BaseModel):
     announcements: List[AnnouncementResponse]
     total_count: int
+
+class NotificationDeliveryResponse(BaseModel):
+    id: str
+    event_id: str
+    announcement_id: str
+    audience: Literal["test", "everyone"]
+    provider: Literal["webpushr"]
+    provider_campaign_id: Optional[str] = None
+    status: Literal["requested", "sent", "failed"]
+    requested_by: str
+    requested_at: datetime
+    sent_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+    target_url: str
+    notification_title: str
+    notification_message: str
 
 SCHEDULE_TITLE_FIELDS = ("Name", "Title", "Event Title", "Event Name", "Activity", "Program")
 SCHEDULE_FIELD_ALIASES = {
@@ -702,11 +732,24 @@ else:
     )
 
 announcement_service = None
+notification_delivery_service = None
 if CONTENT_SOURCE == "supabase":
     announcement_service = SupabaseAnnouncementService(
         supabase_url=SUPABASE_URL,
         service_role_key=SUPABASE_SERVICE_ROLE_KEY,
         event_slug=event_service.get_public_event_id(),
+    )
+    notification_delivery_service = SupabaseNotificationDeliveryService(
+        supabase_url=SUPABASE_URL,
+        service_role_key=SUPABASE_SERVICE_ROLE_KEY,
+        event_slug=event_service.get_public_event_id(),
+    )
+
+webpushr_client = None
+if WEBPUSHR_API_KEY and WEBPUSHR_AUTH_TOKEN:
+    webpushr_client = WebpushrClient(
+        api_key=WEBPUSHR_API_KEY,
+        auth_token=WEBPUSHR_AUTH_TOKEN,
     )
 
 
@@ -846,6 +889,21 @@ def require_announcement_service():
             detail="Announcements require the Supabase content source",
         )
     return announcement_service
+
+
+def require_notification_delivery_service():
+    if notification_delivery_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Notification delivery requires the Supabase content source",
+        )
+    return notification_delivery_service
+
+
+def require_webpushr_client():
+    if webpushr_client is None:
+        raise HTTPException(status_code=503, detail="Webpushr is not configured")
+    return webpushr_client
 
 
 def require_schedule_manager_role(user: dict):
@@ -1330,6 +1388,95 @@ async def list_public_announcements(event_id: Optional[str] = None):
     service = require_announcement_service()
     announcements = await service.list(get_event_id(event_id), public=True)
     return AnnouncementsResponse(announcements=announcements, total_count=len(announcements))
+
+
+@api_router.get("/announcements/{announcement_id}", response_model=AnnouncementResponse)
+async def get_public_announcement(announcement_id: str, event_id: Optional[str] = None):
+    """Return one published, unexpired announcement in the requested event."""
+    service = require_announcement_service()
+    announcement = await service.get(announcement_id, get_event_id(event_id), public=True)
+    if not announcement:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    return announcement
+
+
+async def notify_announcement(
+    announcement_id: str,
+    audience: Literal["test", "everyone"],
+    current_user: dict,
+) -> NotificationDeliveryResponse:
+    require_announcement_manager_role(current_user)
+    announcements = require_announcement_service()
+    deliveries = require_notification_delivery_service()
+    provider = require_webpushr_client()
+    event_id = get_admin_event_id(current_user)
+
+    announcement = await announcements.get(announcement_id, event_id, public=True)
+    if not announcement:
+        raise HTTPException(
+            status_code=409,
+            detail="Only published, unexpired announcements can be notified",
+        )
+    if audience == "test" and not WEBPUSHR_TEST_SUBSCRIBER_IDS:
+        raise HTTPException(status_code=503, detail="No Webpushr test subscribers are configured")
+
+    target_url = f"{PUBLIC_APP_URL}/announcements/{quote(announcement_id, safe='')}"
+    content = provider.notification_content(
+        announcement["title"], announcement["message"], target_url
+    )
+    try:
+        delivery = await deliveries.create_requested(
+            event_id=event_id,
+            announcement_id=announcement_id,
+            audience=audience,
+            requested_by=current_user.get("display_name") or current_user["username"],
+            target_url=content["target_url"],
+            notification_title=content["title"],
+            notification_message=content["message"],
+        )
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 409 and audience == "everyone":
+            raise HTTPException(
+                status_code=409,
+                detail="An everyone notification has already been requested or sent for this announcement",
+            ) from exc
+        raise
+
+    try:
+        if audience == "test":
+            campaign_id = await provider.send_test(
+                **content, subscriber_ids=WEBPUSHR_TEST_SUBSCRIBER_IDS
+            )
+        else:
+            campaign_id = await provider.send_everyone(**content)
+    except WebpushrError as exc:
+        await deliveries.mark_failed(delivery["id"], str(exc))
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    sent = await deliveries.mark_sent(delivery["id"], campaign_id)
+    return NotificationDeliveryResponse(**sent)
+
+
+@api_router.post(
+    "/admin/announcements/{announcement_id}/notify/test",
+    response_model=NotificationDeliveryResponse,
+)
+async def notify_announcement_test(
+    announcement_id: str,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    return await notify_announcement(announcement_id, "test", current_user)
+
+
+@api_router.post(
+    "/admin/announcements/{announcement_id}/notify/everyone",
+    response_model=NotificationDeliveryResponse,
+)
+async def notify_announcement_everyone(
+    announcement_id: str,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    return await notify_announcement(announcement_id, "everyone", current_user)
 
 
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)

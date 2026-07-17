@@ -14,6 +14,86 @@ from zoneinfo import ZoneInfo
 import httpx
 
 
+class WebpushrError(Exception):
+    """Normalized provider error safe to expose through the admin API."""
+
+
+class WebpushrClient:
+    """Small server-side client for the Webpushr campaign API."""
+
+    BASE_URL = "https://api.webpushr.com/v1"
+    TITLE_LIMIT = 100
+    MESSAGE_LIMIT = 255
+    TARGET_URL_LIMIT = 255
+
+    def __init__(self, *, api_key: str, auth_token: str, timeout: float = 10.0):
+        self.api_key = api_key
+        self.auth_token = auth_token
+        self.timeout = timeout
+
+    @staticmethod
+    def shorten(value: str, limit: int) -> str:
+        normalized = " ".join(value.split())
+        if len(normalized) <= limit:
+            return normalized
+        return normalized[: limit - 1].rstrip() + "…"
+
+    def notification_content(self, title: str, message: str, target_url: str) -> dict[str, str]:
+        return {
+            "title": self.shorten(title, self.TITLE_LIMIT),
+            "message": self.shorten(message, self.MESSAGE_LIMIT),
+            "target_url": self.shorten(target_url, self.TARGET_URL_LIMIT),
+        }
+
+    async def _send(self, endpoint: str, payload: dict[str, Any]) -> str:
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(
+                    f"{self.BASE_URL}{endpoint}",
+                    headers={
+                        "webpushrKey": self.api_key,
+                        "webpushrAuthToken": self.auth_token,
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                )
+        except httpx.TimeoutException as exc:
+            raise WebpushrError("Webpushr request timed out") from exc
+        except httpx.RequestError as exc:
+            raise WebpushrError("Webpushr could not be reached") from exc
+
+        try:
+            result = response.json()
+        except ValueError as exc:
+            raise WebpushrError(f"Webpushr returned an invalid response ({response.status_code})") from exc
+        if not isinstance(result, dict):
+            raise WebpushrError(f"Webpushr returned an invalid response ({response.status_code})")
+        if response.status_code >= 400 or result.get("status") != "success":
+            description = result.get("description") or f"HTTP {response.status_code}"
+            raise WebpushrError(f"Webpushr rejected the notification: {description}")
+        campaign_id = result.get("ID")
+        if campaign_id is None:
+            raise WebpushrError("Webpushr response did not include a campaign ID")
+        return str(campaign_id)
+
+    async def send_everyone(self, *, title: str, message: str, target_url: str) -> str:
+        content = self.notification_content(title, message, target_url)
+        return await self._send("/notification/send/all", content)
+
+    async def send_test(
+        self, *, title: str, message: str, target_url: str, subscriber_ids: list[str]
+    ) -> str:
+        if not subscriber_ids:
+            raise WebpushrError("No Webpushr test subscriber IDs are configured")
+        content = self.notification_content(title, message, target_url)
+        campaign_ids = []
+        for subscriber_id in subscriber_ids:
+            campaign_ids.append(await self._send(
+                "/notification/send/sid", {**content, "sid": subscriber_id}
+            ))
+        return ",".join(campaign_ids)
+
+
 class EventService:
     """Resolve platform event context for backend content services."""
 
@@ -616,6 +696,28 @@ class SupabaseAnnouncementService:
             ]
         return self._sort(announcements)
 
+    async def get(
+        self, announcement_id: str, event_id: Optional[str] = None, *, public: bool = False
+    ) -> Optional[dict[str, Any]]:
+        resolved_event_id = await self._get_event_id(event_id)
+        params = {
+            "select": "*",
+            "id": f"eq.{announcement_id}",
+            "event_id": f"eq.{resolved_event_id}",
+            "limit": "1",
+        }
+        if public:
+            params["status"] = "eq.published"
+        rows = await self.client.request("GET", "/alerts", params=params)
+        if not rows:
+            return None
+        announcement = self.row_to_announcement(rows[0])
+        if public and announcement["expires_at"]:
+            expiry = datetime.fromisoformat(str(announcement["expires_at"]).replace("Z", "+00:00"))
+            if expiry <= datetime.now(timezone.utc):
+                return None
+        return announcement
+
     async def create(self, payload: Any, created_by: str, event_id: Optional[str] = None) -> dict[str, Any]:
         resolved_event_id = await self._get_event_id(event_id)
         rows = await self.client.request(
@@ -675,3 +777,72 @@ class SupabaseAnnouncementService:
             headers={"Prefer": "return=representation"},
         )
         return bool(rows)
+
+
+class SupabaseNotificationDeliveryService:
+    """Event-scoped persistence for announcement notification attempts."""
+
+    def __init__(self, *, supabase_url: str, service_role_key: str, event_slug: str):
+        self.client = SupabaseContentClient(
+            supabase_url=supabase_url,
+            service_role_key=service_role_key,
+        )
+        self.event_slug = event_slug
+
+    async def _get_event_id(self, event_id: Optional[str] = None) -> str:
+        return await self.client.get_event_id(event_id or self.event_slug)
+
+    async def create_requested(
+        self,
+        *,
+        event_id: str,
+        announcement_id: str,
+        audience: str,
+        requested_by: str,
+        target_url: str,
+        notification_title: str,
+        notification_message: str,
+    ) -> dict[str, Any]:
+        resolved_event_id = await self._get_event_id(event_id)
+        rows = await self.client.request(
+            "POST",
+            "/notification_deliveries",
+            json={
+                "event_id": resolved_event_id,
+                "announcement_id": announcement_id,
+                "audience": audience,
+                "provider": "webpushr",
+                "status": "requested",
+                "requested_by": requested_by,
+                "target_url": target_url,
+                "notification_title": notification_title,
+                "notification_message": notification_message,
+            },
+            headers={"Prefer": "return=representation"},
+        )
+        return rows[0]
+
+    async def mark_sent(self, delivery_id: str, provider_campaign_id: str) -> dict[str, Any]:
+        rows = await self.client.request(
+            "PATCH",
+            "/notification_deliveries",
+            params={"id": f"eq.{delivery_id}"},
+            json={
+                "status": "sent",
+                "provider_campaign_id": provider_campaign_id,
+                "sent_at": datetime.now(timezone.utc).isoformat(),
+                "error_message": None,
+            },
+            headers={"Prefer": "return=representation"},
+        )
+        return rows[0]
+
+    async def mark_failed(self, delivery_id: str, error_message: str) -> dict[str, Any]:
+        rows = await self.client.request(
+            "PATCH",
+            "/notification_deliveries",
+            params={"id": f"eq.{delivery_id}"},
+            json={"status": "failed", "error_message": error_message[:1000]},
+            headers={"Prefer": "return=representation"},
+        )
+        return rows[0]

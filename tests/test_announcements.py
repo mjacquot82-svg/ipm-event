@@ -2,7 +2,12 @@ import asyncio
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
-from backend.platform_services import SupabaseAnnouncementService
+import httpx
+import pytest
+from fastapi import HTTPException
+
+from backend import server
+from backend.platform_services import SupabaseAnnouncementService, WebpushrClient, WebpushrError
 
 
 class FakeClient:
@@ -19,6 +24,9 @@ class FakeClient:
         assert path == "/alerts"
         event_id = params["event_id"].removeprefix("eq.")
         rows = list(self.rows_by_event.get(event_id, []))
+        if "id" in params:
+            announcement_id = params["id"].removeprefix("eq.")
+            rows = [row for row in rows if row["id"] == announcement_id]
         if params.get("status") == "eq.published":
             rows = [row for row in rows if row["status"] == "published"]
         return rows
@@ -137,3 +145,212 @@ def test_crud_writes_are_scoped_to_the_event():
     assert client.calls[2][2]["json"]["published_at"] is not None
     for method, _, kwargs in client.calls[1:]:
         assert kwargs["params"]["event_id"] == "eq.event-a"
+
+
+def test_single_announcement_public_visibility_rules():
+    service = SupabaseAnnouncementService(
+        supabase_url="https://example.supabase.co", service_role_key="test", event_slug="event-a"
+    )
+    published = make_row("event-a", "Published", "info")
+    draft = make_row("event-a", "Draft", "info", status="draft")
+    archived = make_row("event-a", "Archived", "info", status="archived")
+    expired = make_row("event-a", "Expired", "info", expires_offset=-1)
+    other_event = make_row("event-b", "Other", "info")
+    service.client = FakeClient({
+        "event-a": [published, draft, archived, expired],
+        "event-b": [other_event],
+    })
+
+    assert asyncio.run(service.get(published["id"], "event-a", public=True))["title"] == "Published"
+    assert asyncio.run(service.get(draft["id"], "event-a", public=True)) is None
+    assert asyncio.run(service.get(archived["id"], "event-a", public=True)) is None
+    assert asyncio.run(service.get(expired["id"], "event-a", public=True)) is None
+    assert asyncio.run(service.get(other_event["id"], "event-a", public=True)) is None
+    assert asyncio.run(service.get("missing", "event-a", public=True)) is None
+
+
+def test_single_announcement_endpoint_returns_404_for_non_public_items(monkeypatch):
+    visible = announcement()
+    monkeypatch.setattr(
+        server,
+        "announcement_service",
+        FakeAnnouncementService({("event-a", "announcement-1"): visible}),
+    )
+    result = asyncio.run(server.get_public_announcement("announcement-1", "event-a"))
+    assert result["id"] == "announcement-1"
+
+    monkeypatch.setattr(server, "announcement_service", FakeAnnouncementService({}))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(server.get_public_announcement("announcement-1", "event-a"))
+    assert error.value.status_code == 404
+
+
+class FakeAnnouncementService:
+    def __init__(self, announcements):
+        self.announcements = announcements
+
+    async def get(self, announcement_id, event_id, public=False):
+        announcement = self.announcements.get((event_id, announcement_id))
+        if not announcement or not public:
+            return announcement
+        if announcement["status"] != "published":
+            return None
+        if announcement.get("expires_at") and datetime.fromisoformat(announcement["expires_at"]) <= datetime.now(timezone.utc):
+            return None
+        return announcement
+
+
+class FakeDeliveryService:
+    def __init__(self):
+        self.rows = []
+        self.active_everyone = set()
+
+    async def create_requested(self, **values):
+        key = (values["event_id"], values["announcement_id"])
+        if values["audience"] == "everyone" and key in self.active_everyone:
+            request = httpx.Request("POST", "https://example.test/notification_deliveries")
+            response = httpx.Response(409, request=request)
+            raise httpx.HTTPStatusError("duplicate", request=request, response=response)
+        if values["audience"] == "everyone":
+            self.active_everyone.add(key)
+        row = {
+            "id": f"delivery-{len(self.rows) + 1}",
+            **values,
+            "provider": "webpushr",
+            "provider_campaign_id": None,
+            "status": "requested",
+            "requested_at": datetime.now(timezone.utc),
+            "sent_at": None,
+            "error_message": None,
+        }
+        self.rows.append(row)
+        return row
+
+    async def mark_sent(self, delivery_id, campaign_id):
+        row = next(row for row in self.rows if row["id"] == delivery_id)
+        row.update(status="sent", provider_campaign_id=campaign_id, sent_at=datetime.now(timezone.utc))
+        return row
+
+    async def mark_failed(self, delivery_id, error_message):
+        row = next(row for row in self.rows if row["id"] == delivery_id)
+        row.update(status="failed", error_message=error_message)
+        if row["audience"] == "everyone":
+            self.active_everyone.discard((row["event_id"], row["announcement_id"]))
+        return row
+
+
+class FakeWebpushr:
+    def __init__(self, fail=False):
+        self.fail = fail
+        self.test_subscribers = None
+
+    def notification_content(self, title, message, target_url):
+        return WebpushrClient(api_key="key", auth_token="token").notification_content(
+            title, message, target_url
+        )
+
+    async def send_test(self, *, title, message, target_url, subscriber_ids):
+        self.test_subscribers = list(subscriber_ids)
+        if self.fail:
+            raise WebpushrError("provider failed")
+        return "test-campaign"
+
+    async def send_everyone(self, **kwargs):
+        if self.fail:
+            raise WebpushrError("provider failed")
+        return "everyone-campaign"
+
+
+def announcement(status="published", *, expires_at=None):
+    now = datetime.now(timezone.utc)
+    return {
+        "id": "announcement-1", "event_id": "event-a", "title": "Title",
+        "message": "Message", "priority": "Information", "status": status,
+        "expires_at": expires_at, "created_by": "Organizer",
+        "created_at": now, "updated_at": now,
+    }
+
+
+def configure_notification_fakes(monkeypatch, item, *, provider=None, deliveries=None):
+    provider = provider or FakeWebpushr()
+    deliveries = deliveries or FakeDeliveryService()
+    monkeypatch.setattr(server, "announcement_service", FakeAnnouncementService({("event-a", "announcement-1"): item}))
+    monkeypatch.setattr(server, "notification_delivery_service", deliveries)
+    monkeypatch.setattr(server, "webpushr_client", provider)
+    monkeypatch.setattr(server, "WEBPUSHR_TEST_SUBSCRIBER_IDS", ["test-1", "test-2"])
+    monkeypatch.setattr(server, "PUBLIC_APP_URL", "https://theipm.ca")
+    return provider, deliveries
+
+
+@pytest.mark.parametrize("status", ["draft", "archived"])
+def test_non_published_announcement_cannot_notify(monkeypatch, status):
+    configure_notification_fakes(monkeypatch, announcement(status))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+            "username": "owner", "role": "Owner", "event_id": "event-a"
+        }))
+    assert error.value.status_code == 409
+
+
+def test_expired_announcement_cannot_notify(monkeypatch):
+    expired = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+    configure_notification_fakes(monkeypatch, announcement(expires_at=expired))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+            "username": "owner", "role": "Owner", "event_id": "event-a"
+        }))
+    assert error.value.status_code == 409
+
+
+def test_cross_event_and_unauthorized_notification_attempts_are_rejected(monkeypatch):
+    configure_notification_fakes(monkeypatch, announcement())
+    with pytest.raises(HTTPException) as cross_event:
+        asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+            "username": "owner", "role": "Owner", "event_id": "event-b"
+        }))
+    assert cross_event.value.status_code == 409
+    with pytest.raises(HTTPException) as unauthorized:
+        asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+            "username": "scheduler", "role": "Schedule", "event_id": "event-a"
+        }))
+    assert unauthorized.value.status_code == 403
+
+
+def test_test_send_uses_only_configured_subscribers(monkeypatch):
+    provider, deliveries = configure_notification_fakes(monkeypatch, announcement())
+    result = asyncio.run(server.notify_announcement("announcement-1", "test", {
+        "username": "comms", "role": "Communications", "event_id": "event-a"
+    }))
+    assert provider.test_subscribers == ["test-1", "test-2"]
+    assert result.audience == "test"
+    assert deliveries.rows[0]["provider_campaign_id"] == "test-campaign"
+
+
+def test_everyone_send_cannot_duplicate_after_success(monkeypatch):
+    _, deliveries = configure_notification_fakes(monkeypatch, announcement())
+    user = {"username": "owner", "role": "Owner", "event_id": "event-a"}
+    first = asyncio.run(server.notify_announcement("announcement-1", "everyone", user))
+    assert first.provider_campaign_id == "everyone-campaign"
+    with pytest.raises(HTTPException) as duplicate:
+        asyncio.run(server.notify_announcement("announcement-1", "everyone", user))
+    assert duplicate.value.status_code == 409
+
+
+def test_provider_failure_is_persisted(monkeypatch):
+    _, deliveries = configure_notification_fakes(monkeypatch, announcement(), provider=FakeWebpushr(fail=True))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+            "username": "owner", "role": "Owner", "event_id": "event-a"
+        }))
+    assert error.value.status_code == 502
+    assert deliveries.rows[0]["status"] == "failed"
+    assert deliveries.rows[0]["error_message"] == "provider failed"
+
+
+def test_webpushr_content_is_deterministically_shortened():
+    client = WebpushrClient(api_key="key", auth_token="token")
+    content = client.notification_content("T" * 120, "M" * 300, "https://example.test/" + "x" * 300)
+    assert len(content["title"]) == 100 and content["title"].endswith("…")
+    assert len(content["message"]) == 255 and content["message"].endswith("…")
+    assert len(content["target_url"]) == 255 and content["target_url"].endswith("…")
+    assert content == client.notification_content("T" * 120, "M" * 300, "https://example.test/" + "x" * 300)
