@@ -7,6 +7,7 @@ import CachedDataBanner from '../../src/components/CachedDataBanner';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { Announcement, AnnouncementsResponse, CachedApiResult, CachedApiSource, getAnnouncementsData } from '../../src/services/spreadsheetDataService';
+import { getUnreadAnnouncementIds, useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
 
 export default function AnnouncementsScreen() {
   const router = useRouter();
@@ -17,6 +18,8 @@ export default function AnnouncementsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
+  const { hydrated, lastReadAnnouncementId } = useAnnouncementReadState();
+  const unreadIds = getUnreadAnnouncementIds(announcements, lastReadAnnouncementId);
 
   const applyResult = useCallback((result: CachedApiResult<AnnouncementsResponse>) => {
     setAnnouncements(getVisibleAnnouncements(result.data.announcements || []));
@@ -76,7 +79,14 @@ export default function AnnouncementsScreen() {
             <View style={styles.state}><Feather name="message-square" size={42} color={colors.textMuted} /><Text style={styles.stateTitle}>No published announcements</Text><Text style={styles.stateText}>Event updates will appear here when available.</Text></View>
           ) : (
             <View style={[styles.list, sectionStyle]}>
-              {announcements.map((announcement) => <AnnouncementCard key={announcement.id} announcement={announcement} />)}
+              {announcements.map((announcement) => (
+                <AnnouncementCard
+                  key={announcement.id}
+                  announcement={announcement}
+                  unread={hydrated && unreadIds.has(announcement.id)}
+                  onPress={() => router.push(`/announcements/${announcement.id}` as never)}
+                />
+              ))}
             </View>
           )}
         </View>

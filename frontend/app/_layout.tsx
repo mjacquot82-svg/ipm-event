@@ -15,6 +15,7 @@ import { AdProvider } from '../src/context/AdContext';
 import ErrorBoundary from '../src/components/ErrorBoundary';
 import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
 import SplashScreen from '../src/components/SplashScreen';
+import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext';
 
 // Initialize Webpushr for web platform
 const initWebpushr = () => {
@@ -86,8 +87,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <SafeAreaProvider>
         <AdProvider>
-          <ErrorBoundary>
-            <StatusBar style="dark" backgroundColor={colors.background} />
+          <AnnouncementReadProvider>
+            <ErrorBoundary>
+              <StatusBar style="dark" backgroundColor={colors.background} />
             
             {isInitializing ? (
               <SplashScreen />
@@ -104,7 +106,8 @@ export default function RootLayout() {
                 <PWAInstallPrompt />
               </>
             )}
-          </ErrorBoundary>
+            </ErrorBoundary>
+          </AnnouncementReadProvider>
         </AdProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

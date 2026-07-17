@@ -43,19 +43,24 @@ export default function AnnouncementCard({
   announcement,
   preview = false,
   onPress,
+  unread = false,
 }: {
   announcement: Announcement;
   preview?: boolean;
   onPress?: () => void;
+  unread?: boolean;
 }) {
   const isEmergency = announcement.priority === 'Emergency';
   const isImportant = announcement.priority === 'Important';
   const content = (
     <>
       <View style={styles.headingRow}>
-        <View style={[styles.badge, isEmergency && styles.emergencyBadge, isImportant && styles.importantBadge]}>
-          <Feather name={isEmergency ? 'alert-triangle' : isImportant ? 'alert-circle' : 'info'} size={13} color={isEmergency ? '#FFFFFF' : colors.textPrimary} />
-          <Text style={[styles.badgeText, isEmergency && styles.emergencyBadgeText]}>{announcement.priority}</Text>
+        <View style={styles.badgeGroup}>
+          {unread && <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>}
+          <View style={[styles.badge, isEmergency && styles.emergencyBadge, isImportant && styles.importantBadge]}>
+            <Feather name={isEmergency ? 'alert-triangle' : isImportant ? 'alert-circle' : 'info'} size={13} color={isEmergency ? '#FFFFFF' : colors.textPrimary} />
+            <Text style={[styles.badgeText, isEmergency && styles.emergencyBadgeText]}>{announcement.priority}</Text>
+          </View>
         </View>
         <Text style={styles.posted}>{formatAnnouncementTime(announcement.created_at, !preview)}</Text>
       </View>
@@ -65,15 +70,19 @@ export default function AnnouncementCard({
     </>
   );
 
-  const cardStyle = [styles.card, isEmergency && styles.emergencyCard, isImportant && styles.importantCard];
+  const cardStyle = [styles.card, unread && styles.unreadCard, isEmergency && styles.emergencyCard, isImportant && styles.importantCard];
   return onPress ? <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.8}>{content}</TouchableOpacity> : <View style={cardStyle}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: ATTENDEE_CARD_RADIUS, borderWidth: 1, padding: 16, position: 'relative' },
+  unreadCard: { backgroundColor: '#FFFCF3', borderColor: '#D8B866' },
   emergencyCard: { backgroundColor: '#FFF5F5', borderColor: colors.error, borderLeftWidth: 5 },
   importantCard: { backgroundColor: '#FFFBEB', borderColor: '#D97706', borderLeftWidth: 4 },
   headingRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  badgeGroup: { alignItems: 'center', flexDirection: 'row', flexShrink: 1, gap: 7 },
+  newBadge: { backgroundColor: '#EFE4C3', borderColor: '#D8B866', borderRadius: 999, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
+  newBadgeText: { color: '#735B1B', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
   badge: { alignItems: 'center', alignSelf: 'flex-start', backgroundColor: colors.surfaceHighlight, borderRadius: 999, flexDirection: 'row', gap: 5, paddingHorizontal: 9, paddingVertical: 5 },
   emergencyBadge: { backgroundColor: colors.error },
   importantBadge: { backgroundColor: '#FDE68A' },

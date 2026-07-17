@@ -14,12 +14,13 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
-import AnnouncementCard, { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
+import { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { openExternalLink } from '../../src/utils/externalLinks';
 import { getFavorites } from '../../src/utils/favoritesStorage';
+import { getUnreadAnnouncementIds, useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
 import {
   CachedApiSource,
   CachedApiResult,
@@ -212,6 +213,7 @@ export default function HomeScreen() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementDataSource, setAnnouncementDataSource] = useState<CachedApiSource>('network');
   const [announcementLastUpdate, setAnnouncementLastUpdate] = useState<string | null>(null);
+  const { hydrated: announcementReadStateHydrated, lastReadAnnouncementId } = useAnnouncementReadState();
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
@@ -374,6 +376,12 @@ export default function HomeScreen() {
 
   const sectionStyle = [styles.section, attendeeSectionStyle];
   const isShowingCachedData = dataSource === 'cache' && !loading && events.length > 0;
+  const unreadAnnouncementIds = getUnreadAnnouncementIds(announcements, lastReadAnnouncementId);
+  const newestUnreadAnnouncement = announcementReadStateHydrated
+    ? announcements
+      .filter((announcement) => unreadAnnouncementIds.has(announcement.id))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null
+    : null;
 
   return (
     <View style={styles.container}>
@@ -395,6 +403,26 @@ export default function HomeScreen() {
         {isShowingCachedData && (
           <View style={sectionStyle}>
             <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
+          </View>
+        )}
+
+        {newestUnreadAnnouncement && (
+          <View style={sectionStyle}>
+            <TouchableOpacity
+              style={styles.newAnnouncementCard}
+              onPress={() => router.push(`/announcements/${newestUnreadAnnouncement.id}` as never)}
+              activeOpacity={0.82}
+              accessibilityLabel={`New announcement: ${newestUnreadAnnouncement.title}`}
+            >
+              <View style={styles.newAnnouncementIcon}><Feather name="bell" size={21} color="#735B1B" /></View>
+              <View style={styles.newAnnouncementContent}>
+                <Text style={styles.newAnnouncementEyebrow}>New Announcement</Text>
+                <Text style={styles.newAnnouncementTitle} numberOfLines={2}>{newestUnreadAnnouncement.title}</Text>
+                <Text style={styles.newAnnouncementPreview} numberOfLines={2}>{newestUnreadAnnouncement.message}</Text>
+                <Text style={styles.newAnnouncementAction}>Tap to read</Text>
+              </View>
+              <Feather name="chevron-right" size={21} color="#8A712E" />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -422,25 +450,8 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {announcements.length > 0 && (
-          <View style={sectionStyle}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Announcements</Text>
-              {announcements.length > 1 && (
-                <TouchableOpacity onPress={() => router.push('/announcements' as never)}>
-                  <Text style={styles.seeAll}>View all announcements</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            {announcementDataSource === 'cache' && (
-              <CachedDataBanner lastSuccessfulUpdate={announcementLastUpdate} />
-            )}
-            <AnnouncementCard
-              announcement={announcements[0]}
-              preview
-              onPress={() => router.push('/announcements' as never)}
-            />
-          </View>
+        {announcementDataSource === 'cache' && announcements.length > 0 && (
+          <View style={sectionStyle}><CachedDataBanner lastSuccessfulUpdate={announcementLastUpdate} /></View>
         )}
 
         <View style={sectionStyle}>
@@ -552,14 +563,15 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionCard, styles.alertCard]}
-              onPress={() => showUnavailableNotice('Alerts')}
+              style={[styles.actionCard, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionUnread]}
+              onPress={() => router.push('/announcements' as never)}
               activeOpacity={0.8}
             >
-              <View style={[styles.actionIcon, { backgroundColor: '#9E9E9E' }]}>
-                <Feather name="bell" size={22} color="#FFFFFF" />
+              <View style={[styles.actionIcon, styles.announcementBell, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementBellUnread]}>
+                <Feather name="bell" size={22} color={unreadAnnouncementIds.size > 0 && announcementReadStateHydrated ? '#735B1B' : '#FFFFFF'} />
+                {unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && <View style={styles.bellAccent}><Feather name="star" size={9} color="#735B1B" /></View>}
               </View>
-              <Text style={[styles.actionTitle, { color: '#9E9E9E' }]}>Alerts</Text>
+              <Text style={[styles.actionTitle, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionText]}>Announcements</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -727,10 +739,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D32F2F',
   },
-  alertCard: {
-    borderWidth: 1,
-    borderColor: '#FF5722',
-  },
+  announcementActionUnread: { backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderWidth: 1 },
+  announcementBell: { backgroundColor: '#9E9E9E', position: 'relative' },
+  announcementBellUnread: { backgroundColor: '#F3E5B9', borderColor: '#D8B866', borderWidth: 1 },
+  bellAccent: { alignItems: 'center', backgroundColor: '#FFF8E2', borderColor: '#D8B866', borderRadius: 8, borderWidth: 1, height: 16, justifyContent: 'center', position: 'absolute', right: -3, top: -3, width: 16 },
+  announcementActionText: { color: '#735B1B' },
+  newAnnouncementCard: { alignItems: 'center', backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 12, padding: 16 },
+  newAnnouncementIcon: { alignItems: 'center', backgroundColor: '#F3E5B9', borderRadius: 22, height: 44, justifyContent: 'center', width: 44 },
+  newAnnouncementContent: { flex: 1 },
+  newAnnouncementEyebrow: { color: '#735B1B', fontSize: 12, fontWeight: '900', letterSpacing: 0.3, textTransform: 'uppercase' },
+  newAnnouncementTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '800', marginTop: 4 },
+  newAnnouncementPreview: { color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 4 },
+  newAnnouncementAction: { color: '#735B1B', fontSize: 12, fontWeight: '800', marginTop: 8 },
   actionIcon: {
     width: 44,
     height: 44,

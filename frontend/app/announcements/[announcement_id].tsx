@@ -6,6 +6,7 @@ import AnnouncementCard from '../../src/components/AnnouncementCard';
 import { Announcement, getAnnouncementById } from '../../src/services/spreadsheetDataService';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import colors from '../../src/theme/colors';
+import { useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
 
 export default function AnnouncementDetailScreen() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function AnnouncementDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState(false);
+  const { markAnnouncementRead } = useAnnouncementReadState();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -30,12 +32,13 @@ export default function AnnouncementDetailScreen() {
       const result = await getAnnouncementById(announcementId);
       setAnnouncement(result);
       setNotFound(result === null);
+      if (result) await markAnnouncementRead(result.id);
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, [announcementId]);
+  }, [announcementId, markAnnouncementRead]);
 
   useEffect(() => { void load(); }, [load]);
 
