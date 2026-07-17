@@ -61,6 +61,7 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
   const [installing, setInstalling] = useState(false);
   const [awaitingInstallation, setAwaitingInstallation] = useState(false);
   const [installationComplete, setInstallationComplete] = useState(false);
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
   const installationHandledRef = useRef(false);
 
   const hideAsInstalled = useCallback(() => {
@@ -190,9 +191,16 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
       <View style={styles.panel}>
         {installationComplete ? (
           <InstalledScreen onContinue={continueToApp} />
+        ) : platformKind === 'ios-safari' && !showIOSGuide ? (
+          <>
+            <IOSInstallReady onShowGuide={() => setShowIOSGuide(true)} />
+            <TouchableOpacity style={styles.notNowButton} onPress={dismiss} accessibilityRole="button" accessibilityLabel="Continue without installing">
+              <Text style={styles.notNowText}>Maybe later — continue to the app</Text>
+            </TouchableOpacity>
+          </>
         ) : (
           <>
-            <Welcome />
+            {platformKind === 'ios-safari' ? <GuideHeading /> : <Welcome />}
             <InstallAction
               platformKind={platformKind}
               hasNativePrompt={hasNativePrompt}
@@ -208,6 +216,32 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
       </View>
     </ScrollView>
   );
+}
+
+function IOSInstallReady({ onShowGuide }: { onShowGuide: () => void }) {
+  return <View style={styles.installReady}>
+    <View style={styles.installTitleRow}>
+      <Text style={styles.installEmoji} accessibilityElementsHidden>📱</Text>
+      <Text style={styles.installTitle}>Install IPM 2026</Text>
+    </View>
+    <Text style={styles.installLead}>You&apos;re ready to install:</Text>
+    <View style={styles.detectedList} accessibilityLabel="iPhone and Safari detected">
+      <View style={styles.detectedItem}><View style={styles.detectedCheck}><Feather name="check" size={20} color="#FFFFFF" /></View><Text style={styles.detectedText}>iPhone</Text></View>
+      <View style={styles.detectedItem}><View style={styles.detectedCheck}><Feather name="check" size={20} color="#FFFFFF" /></View><Text style={styles.detectedText}>Safari</Text></View>
+    </View>
+    <Text style={styles.installTime}>It only takes about 10 seconds.</Text>
+    <TouchableOpacity style={styles.installButton} onPress={onShowGuide} accessibilityRole="button" accessibilityLabel="Show installation guide">
+      <Text style={styles.installButtonText}>Show Me How</Text>
+      <Feather name="arrow-right" size={27} color="#FFFFFF" />
+    </TouchableOpacity>
+  </View>;
+}
+
+function GuideHeading() {
+  return <View style={styles.guideHeading}>
+    <Text style={styles.guideTitle}>Add IPM 2026</Text>
+    <Text style={styles.guideSubtitle}>Two quick steps</Text>
+  </View>;
 }
 
 function Welcome() {
@@ -273,19 +307,25 @@ function VisualSteps({ firstIcon, firstLabel, secondIcon, secondLabel }: {
   secondLabel: string;
 }) {
   return <View style={styles.steps}>
-    <View style={styles.step}><Text style={styles.stepNumber}>STEP 1</Text><View style={styles.stepGraphic}><Feather name={firstIcon} size={50} color={colors.primary} /></View><Text style={styles.stepLabel}>{firstLabel}</Text></View>
+    <View style={styles.step}><Text style={styles.stepNumber}>STEP 1</Text><View style={styles.stepGraphic}><Feather name={firstIcon} size={64} color={colors.primary} /></View><Text style={styles.stepLabel}>{firstLabel}</Text></View>
     <Feather name="arrow-down" size={34} color={colors.accentDark} accessibilityElementsHidden />
-    <View style={styles.step}><Text style={styles.stepNumber}>STEP 2</Text><View style={styles.stepGraphic}><Feather name={secondIcon} size={50} color={colors.primary} /></View><Text style={styles.stepLabel}>{secondLabel}</Text></View>
+    <View style={styles.step}><Text style={styles.stepNumber}>STEP 2</Text><View style={styles.stepGraphic}><Feather name={secondIcon} size={64} color={colors.primary} /></View><Text style={styles.stepLabel}>{secondLabel}</Text></View>
   </View>;
 }
 
 function InstalledScreen({ onContinue }: { onContinue: () => void }) {
   return <View style={styles.ready}>
-    <View style={styles.celebration}><Feather name="check" size={54} color="#FFFFFF" /></View>
-    <Text style={styles.readyTitle}>You’re ready!</Text>
-    <Text style={styles.readyText}>The IPM App has been installed.</Text>
-    <TouchableOpacity style={styles.installButton} onPress={onContinue} accessibilityRole="button" accessibilityLabel="Continue to the IPM app">
-      <Text style={styles.installButtonText}>Continue</Text><Feather name="arrow-right" size={27} color="#FFFFFF" />
+    <Text style={styles.celebrationEmoji} accessibilityElementsHidden>🎉</Text>
+    <Text style={styles.readyTitle}>You&apos;re All Set!</Text>
+    <Text style={styles.readyText}>IPM 2026 has been installed.</Text>
+    <Text style={styles.benefitsTitle}>You&apos;ll now receive:</Text>
+    <View style={styles.benefits}>
+      <View style={styles.benefit}><Feather name="bell" size={22} color={colors.primary} /><Text style={styles.benefitText}>Live event announcements</Text></View>
+      <View style={styles.benefit}><Feather name="calendar" size={22} color={colors.primary} /><Text style={styles.benefitText}>Schedule updates</Text></View>
+      <View style={styles.benefit}><Feather name="home" size={22} color={colors.primary} /><Text style={styles.benefitText}>Quick access from your Home Screen</Text></View>
+    </View>
+    <TouchableOpacity style={styles.installButton} onPress={onContinue} accessibilityRole="button" accessibilityLabel="Open IPM 2026">
+      <Text style={styles.installButtonText}>Open App</Text><Feather name="arrow-right" size={27} color="#FFFFFF" />
     </TouchableOpacity>
   </View>;
 }
@@ -294,6 +334,19 @@ const styles = StyleSheet.create({
   page: { ...StyleSheet.absoluteFillObject, backgroundColor: '#FFFDF7', zIndex: 2000 },
   pageContent: { alignItems: 'center', flexGrow: 1, justifyContent: 'center', padding: 16 },
   panel: { backgroundColor: '#FFFFFF', borderColor: '#B9B3A3', borderRadius: 24, borderWidth: 2, elevation: 8, maxWidth: 620, paddingHorizontal: 22, paddingVertical: 26, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, width: '100%' },
+  installReady: { alignItems: 'center', paddingVertical: 10 },
+  installTitleRow: { alignItems: 'center', flexDirection: 'row', gap: 10, justifyContent: 'center' },
+  installEmoji: { fontSize: 34, lineHeight: 42 },
+  installTitle: { color: colors.textPrimary, fontSize: 30, fontWeight: '900', lineHeight: 38 },
+  installLead: { color: colors.textSecondary, fontSize: 18, fontWeight: '700', marginTop: 26, textAlign: 'center' },
+  detectedList: { gap: 12, marginTop: 18, width: '100%' },
+  detectedItem: { alignItems: 'center', backgroundColor: '#F8F6EF', borderRadius: 14, flexDirection: 'row', gap: 13, minHeight: 58, paddingHorizontal: 16 },
+  detectedCheck: { alignItems: 'center', backgroundColor: colors.success, borderRadius: 16, height: 32, justifyContent: 'center', width: 32 },
+  detectedText: { color: colors.textPrimary, fontSize: 20, fontWeight: '800' },
+  installTime: { color: colors.textSecondary, fontSize: 17, fontWeight: '700', marginTop: 24, textAlign: 'center' },
+  guideHeading: { alignItems: 'center', marginBottom: 4 },
+  guideTitle: { color: colors.textPrimary, fontSize: 30, fontWeight: '900' },
+  guideSubtitle: { color: colors.textSecondary, fontSize: 17, fontWeight: '700', marginTop: 5 },
   officialBadge: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primary, borderRadius: 28, flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingVertical: 12 },
   officialBadgeText: { color: '#FFFFFF', fontSize: 19, fontWeight: '900' },
   noStore: { color: colors.textSecondary, fontSize: 15, fontWeight: '700', marginTop: 10, textAlign: 'center' },
@@ -311,7 +364,7 @@ const styles = StyleSheet.create({
   steps: { alignItems: 'center', marginTop: 22 },
   step: { alignItems: 'center', backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderRadius: 18, borderWidth: 2, padding: 14, width: '100%' },
   stepNumber: { color: '#735B1B', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
-  stepGraphic: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 17, height: 78, justifyContent: 'center', marginVertical: 9, width: 78 },
+  stepGraphic: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 24, height: 104, justifyContent: 'center', marginVertical: 10, width: 104 },
   stepLabel: { color: colors.textPrimary, fontSize: 20, fontWeight: '900', textAlign: 'center' },
   embeddedBox: { alignItems: 'center', backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderRadius: 18, borderWidth: 2, marginTop: 22, padding: 18 },
   bigIcon: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 42, height: 84, justifyContent: 'center', width: 84 },
@@ -319,7 +372,11 @@ const styles = StyleSheet.create({
   embeddedText: { color: colors.textSecondary, fontSize: 16, fontWeight: '600', marginTop: 8, textAlign: 'center' },
   embeddedChoice: { color: colors.primary, fontSize: 20, fontWeight: '900', marginTop: 5 },
   ready: { alignItems: 'center', paddingVertical: 24 },
-  celebration: { alignItems: 'center', backgroundColor: colors.success, borderRadius: 52, height: 104, justifyContent: 'center', width: 104 },
+  celebrationEmoji: { fontSize: 68, lineHeight: 82 },
   readyTitle: { color: colors.textPrimary, fontSize: 34, fontWeight: '900', marginTop: 24 },
   readyText: { color: colors.textSecondary, fontSize: 19, fontWeight: '600', marginTop: 10, textAlign: 'center' },
+  benefitsTitle: { alignSelf: 'flex-start', color: colors.textPrimary, fontSize: 18, fontWeight: '900', marginTop: 28 },
+  benefits: { gap: 11, marginTop: 14, width: '100%' },
+  benefit: { alignItems: 'center', backgroundColor: '#F8F6EF', borderRadius: 12, flexDirection: 'row', gap: 12, minHeight: 50, paddingHorizontal: 14 },
+  benefitText: { color: colors.textPrimary, flex: 1, fontSize: 16, fontWeight: '700' },
 });
