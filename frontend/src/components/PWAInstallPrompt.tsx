@@ -317,9 +317,9 @@ function InstallingScreen({ onContinue }: { onContinue: () => void }) {
   return <View style={styles.installingConfirmation}>
     <Text style={styles.installingEmoji} accessibilityElementsHidden>📱</Text>
     <Text style={styles.installingTitle}>Installing IPM 2026</Text>
-    <Text style={styles.installingLead}>Chrome is finishing the installation.</Text>
-    <Text style={styles.installingText}>You can continue using the website while the app is prepared in the background.</Text>
-    <Text style={styles.installingText}>When installation finishes, you&apos;ll be able to launch IPM 2026 from your apps.</Text>
+    <Text style={styles.installingLead}>Chrome is installing the app in the background.</Text>
+    <Text style={styles.installingText}>You can continue using the website while installation finishes.</Text>
+    <Text style={styles.installingText}>Chrome will let you know when the app is ready.</Text>
     <TouchableOpacity style={styles.installButton} onPress={onContinue} accessibilityRole="button" accessibilityLabel="Continue using the website">
       <Text style={styles.installButtonText}>Continue</Text><Feather name="arrow-right" size={27} color="#FFFFFF" />
     </TouchableOpacity>
