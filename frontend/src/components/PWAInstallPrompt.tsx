@@ -2,7 +2,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import colors from '../theme/colors';
@@ -10,7 +10,6 @@ import colors from '../theme/colors';
 const DISMISS_KEY = 'pwa_install_dismissed_at';
 const INSTALLED_KEY = 'pwa_install_installed';
 const DISMISS_COOLDOWN_MS = 5 * 24 * 60 * 60 * 1000;
-const PROMPT_READY_EVENT = 'ipm:pwa-prompt-ready';
 
 type InstallOutcome = 'accepted' | 'dismissed';
 type BeforeInstallPromptEvent = Event & {
@@ -24,7 +23,6 @@ declare global {
   interface Window {
     deferredPWAPrompt?: BeforeInstallPromptEvent | null;
     deferredPWAPromptCapturedAt?: number;
-    ipmPWAListenersReady?: boolean;
   }
   interface Navigator {
     standalone?: boolean;
@@ -52,20 +50,6 @@ export function detectInstallPlatform(userAgent: string, platform = '', maxTouch
   return 'unsupported';
 }
 
-if (typeof window !== 'undefined' && !window.ipmPWAListenersReady) {
-  window.ipmPWAListenersReady = true;
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    window.deferredPWAPrompt = event as BeforeInstallPromptEvent;
-    window.deferredPWAPromptCapturedAt = Date.now();
-    window.dispatchEvent(new Event(PROMPT_READY_EVENT));
-  });
-  window.addEventListener('appinstalled', () => {
-    window.deferredPWAPrompt = null;
-    void AsyncStorage.setItem(INSTALLED_KEY, 'true');
-  });
-}
-
 interface PWAInstallPromptProps {
   onDismiss?: () => void;
 }
@@ -75,7 +59,9 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
   const [platformKind, setPlatformKind] = useState<PlatformKind>('unsupported');
   const [hasNativePrompt, setHasNativePrompt] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const [awaitingInstallation, setAwaitingInstallation] = useState(false);
   const [installationComplete, setInstallationComplete] = useState(false);
+  const installationHandledRef = useRef(false);
 
   const hideAsInstalled = useCallback(() => {
     setVisible(false);
@@ -84,8 +70,12 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
   }, []);
 
   const showInstalledConfirmation = useCallback(() => {
+    if (installationHandledRef.current) return;
+    installationHandledRef.current = true;
+    window.deferredPWAPrompt = null;
     setHasNativePrompt(false);
     setInstalling(false);
+    setAwaitingInstallation(false);
     setInstallationComplete(true);
     setVisible(true);
     void AsyncStorage.setItem(INSTALLED_KEY, 'true');
@@ -97,6 +87,7 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
     let showTimer: ReturnType<typeof setTimeout> | undefined;
 
     const evaluate = async (nativePromptJustArrived = false) => {
+      if (installationHandledRef.current) return;
       if (isStandalonePWA()) {
         hideAsInstalled();
         return;
@@ -129,16 +120,21 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
       }, 0);
     };
 
-    const handlePromptReady = () => { void evaluate(true); };
+    const handlePromptReady = (event: Event) => {
+      event.preventDefault();
+      window.deferredPWAPrompt = event as BeforeInstallPromptEvent;
+      window.deferredPWAPromptCapturedAt = Date.now();
+      void evaluate(true);
+    };
     const handleInstalled = () => showInstalledConfirmation();
-    window.addEventListener(PROMPT_READY_EVENT, handlePromptReady);
+    window.addEventListener('beforeinstallprompt', handlePromptReady);
     window.addEventListener('appinstalled', handleInstalled);
     void evaluate();
 
     return () => {
       active = false;
       if (showTimer) clearTimeout(showTimer);
-      window.removeEventListener(PROMPT_READY_EVENT, handlePromptReady);
+      window.removeEventListener('beforeinstallprompt', handlePromptReady);
       window.removeEventListener('appinstalled', handleInstalled);
     };
   }, [hideAsInstalled, showInstalledConfirmation]);
@@ -167,18 +163,20 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
       window.deferredPWAPrompt = null;
       setHasNativePrompt(false);
       if (outcome === 'accepted') {
-        showInstalledConfirmation();
+        if (!installationHandledRef.current) setAwaitingInstallation(true);
       } else {
+        setAwaitingInstallation(false);
         await dismiss();
       }
     } catch (error) {
       console.warn('Unable to open the browser install prompt:', error);
       window.deferredPWAPrompt = null;
       setHasNativePrompt(false);
+      setAwaitingInstallation(false);
     } finally {
       setInstalling(false);
     }
-  }, [dismiss, showInstalledConfirmation]);
+  }, [dismiss]);
 
   const continueToApp = useCallback(() => {
     setVisible(false);
@@ -199,6 +197,7 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
               platformKind={platformKind}
               hasNativePrompt={hasNativePrompt}
               installing={installing}
+              awaitingInstallation={awaitingInstallation}
               onInstall={install}
             />
             <TouchableOpacity style={styles.notNowButton} onPress={dismiss} accessibilityRole="button" accessibilityLabel="Continue without installing">
@@ -230,12 +229,19 @@ function Welcome() {
   </>;
 }
 
-function InstallAction({ platformKind, hasNativePrompt, installing, onInstall }: {
+function InstallAction({ platformKind, hasNativePrompt, installing, awaitingInstallation, onInstall }: {
   platformKind: PlatformKind;
   hasNativePrompt: boolean;
   installing: boolean;
+  awaitingInstallation: boolean;
   onInstall: () => void;
 }) {
+  if (awaitingInstallation) {
+    return <View style={[styles.installButton, styles.disabledButton]} accessibilityRole="progressbar" accessibilityLabel="Finishing app installation">
+      <Feather name="download" size={27} color="#FFFFFF" />
+      <Text style={styles.installButtonText}>Finishing installation…</Text>
+    </View>;
+  }
   if (hasNativePrompt) {
     return <TouchableOpacity style={[styles.installButton, installing && styles.disabledButton]} onPress={onInstall} disabled={installing} accessibilityRole="button" accessibilityLabel="Install App">
       <Feather name="download" size={27} color="#FFFFFF" />
