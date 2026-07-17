@@ -1,50 +1,68 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
-// PWA Install Prompt - Native Browser Install Trigger
 
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Modal,
-  Platform,
-  Animated,
-} from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Feather } from '@expo/vector-icons';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
 import colors from '../theme/colors';
 
 const DISMISS_KEY = 'pwa_install_dismissed_at';
-const DISMISS_DURATION = 24 * 60 * 60 * 1000;
+const INSTALLED_KEY = 'pwa_install_installed';
+const DISMISS_COOLDOWN_MS = 5 * 24 * 60 * 60 * 1000;
+const PROMPT_READY_EVENT = 'ipm:pwa-prompt-ready';
 
-// CRITICAL: Store the install prompt event globally
-// This MUST be outside the component to persist across renders
+type InstallOutcome = 'accepted' | 'dismissed';
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: InstallOutcome }>;
+};
+
+type PlatformKind = 'android' | 'ios-safari' | 'ios-in-app' | 'in-app' | 'desktop' | 'unsupported';
+
 declare global {
   interface Window {
-    deferredPWAPrompt: any;
-    pwaPromptCaptured: boolean;
+    deferredPWAPrompt?: BeforeInstallPromptEvent | null;
+    deferredPWAPromptCapturedAt?: number;
+    ipmPWAListenersReady?: boolean;
+  }
+  interface Navigator {
+    standalone?: boolean;
   }
 }
 
-// Initialize global tracking
-if (typeof window !== 'undefined') {
-  window.pwaPromptCaptured = false;
-  
-  // Capture the beforeinstallprompt event IMMEDIATELY
-  window.addEventListener('beforeinstallprompt', (e: Event) => {
-    console.log('🎯 [PWA] beforeinstallprompt event CAPTURED!');
-    e.preventDefault(); // Prevent the mini-infobar from appearing
-    window.deferredPWAPrompt = e;
-    window.pwaPromptCaptured = true;
-  });
+export function isStandalonePWA() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
 
-  // Listen for successful install
+export function detectInstallPlatform(userAgent: string, platform = '', maxTouchPoints = 0): PlatformKind {
+  const ua = userAgent.toLowerCase();
+  const isIPadDesktopMode = platform === 'MacIntel' && maxTouchPoints > 1;
+  const isIOS = /iphone|ipad|ipod/.test(ua) || isIPadDesktopMode;
+  const isFacebook = /fban|fbav/.test(ua);
+  const isInstagram = /instagram/.test(ua);
+  const isMessenger = /messenger|fb_iab|fb4a/.test(ua);
+  const isInApp = isFacebook || isInstagram || isMessenger;
+
+  if (isInApp) return isIOS ? 'ios-in-app' : 'in-app';
+  if (isIOS) return /safari/.test(ua) && !/crios|fxios|edgios/.test(ua) ? 'ios-safari' : 'unsupported';
+  if (/android/.test(ua)) return /chrome|crios/.test(ua) ? 'android' : 'unsupported';
+  if (/edg\//.test(ua) || (/chrome\//.test(ua) && !/opr\//.test(ua))) return 'desktop';
+  return 'unsupported';
+}
+
+if (typeof window !== 'undefined' && !window.ipmPWAListenersReady) {
+  window.ipmPWAListenersReady = true;
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    window.deferredPWAPrompt = event as BeforeInstallPromptEvent;
+    window.deferredPWAPromptCapturedAt = Date.now();
+    window.dispatchEvent(new Event(PROMPT_READY_EVENT));
+  });
   window.addEventListener('appinstalled', () => {
-    console.log('✅ [PWA] App was installed!');
     window.deferredPWAPrompt = null;
-    window.pwaPromptCaptured = false;
+    void AsyncStorage.setItem(INSTALLED_KEY, 'true');
   });
 }
 
@@ -54,404 +72,248 @@ interface PWAInstallPromptProps {
 
 export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
   const [visible, setVisible] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [platformKind, setPlatformKind] = useState<PlatformKind>('unsupported');
   const [hasNativePrompt, setHasNativePrompt] = useState(false);
   const [installing, setInstalling] = useState(false);
-  const slideAnim = useRef(new Animated.Value(400)).current;
+  const [installationComplete, setInstallationComplete] = useState(false);
+
+  const hideAsInstalled = useCallback(() => {
+    setVisible(false);
+    setHasNativePrompt(false);
+    void AsyncStorage.setItem(INSTALLED_KEY, 'true');
+  }, []);
+
+  const showInstalledConfirmation = useCallback(() => {
+    setHasNativePrompt(false);
+    setInstalling(false);
+    setInstallationComplete(true);
+    setVisible(true);
+    void AsyncStorage.setItem(INSTALLED_KEY, 'true');
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
+    let active = true;
+    let showTimer: ReturnType<typeof setTimeout> | undefined;
 
-    const init = async () => {
-      // Check dismiss status
-      try {
-        const dismissedAt = await AsyncStorage.getItem(DISMISS_KEY);
-        if (dismissedAt) {
-          const dismissTime = parseInt(dismissedAt, 10);
-          if (Date.now() - dismissTime < DISMISS_DURATION) {
-            return;
-          }
-        }
-      } catch (e) {}
-
-      // Check if already installed (standalone mode)
-      const standalone = 
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true;
-      
-      if (standalone) {
-        console.log('[PWA] Already installed, not showing prompt');
+    const evaluate = async (nativePromptJustArrived = false) => {
+      if (isStandalonePWA()) {
+        hideAsInstalled();
         return;
       }
 
-      // Detect iOS
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      const iosDevice = /iphone|ipad|ipod/.test(userAgent);
-      setIsIOS(iosDevice);
+      const kind = detectInstallPlatform(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
+      const supportsNativePrompt = kind === 'android' || kind === 'desktop';
+      const nativeAvailable = supportsNativePrompt && !!window.deferredPWAPrompt;
+      setPlatformKind(kind);
+      setHasNativePrompt(nativeAvailable);
 
-      // Check if we captured the native prompt
-      setHasNativePrompt(!!window.deferredPWAPrompt);
-      console.log('[PWA] Native prompt available:', !!window.deferredPWAPrompt);
+      if (kind === 'unsupported' && !nativeAvailable) return;
 
-      // Show our UI after a delay
-      setTimeout(() => {
-        // Re-check if prompt is available (might have been captured after init)
-        setHasNativePrompt(!!window.deferredPWAPrompt);
-        setVisible(true);
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 40,
-          friction: 8,
-        }).start();
-      }, 2500);
+      try {
+        const [installed, dismissedAt] = await Promise.all([
+          AsyncStorage.getItem(INSTALLED_KEY),
+          AsyncStorage.getItem(DISMISS_KEY),
+        ]);
+        if (!active || installed === 'true') return;
+        const dismissedTime = dismissedAt === null ? 0 : Number(dismissedAt);
+        const dismissedRecently = dismissedTime > 0 && Date.now() - dismissedTime < DISMISS_COOLDOWN_MS;
+        const promptIsNewerThanDismissal = nativeAvailable && (window.deferredPWAPromptCapturedAt || 0) > dismissedTime;
+        if (dismissedRecently && !(promptIsNewerThanDismissal || (nativePromptJustArrived && nativeAvailable))) return;
+      } catch (error) {
+        console.warn('Unable to load PWA install preference:', error);
+      }
+
+      showTimer = setTimeout(() => {
+        if (active && !isStandalonePWA()) setVisible(true);
+      }, 0);
     };
 
-    init();
+    const handlePromptReady = () => { void evaluate(true); };
+    const handleInstalled = () => showInstalledConfirmation();
+    window.addEventListener(PROMPT_READY_EVENT, handlePromptReady);
+    window.addEventListener('appinstalled', handleInstalled);
+    void evaluate();
 
-    // Also check periodically if the prompt becomes available
-    const checkInterval = setInterval(() => {
-      if (window.deferredPWAPrompt && !hasNativePrompt) {
-        console.log('[PWA] Native prompt became available');
-        setHasNativePrompt(true);
-      }
-    }, 1000);
+    return () => {
+      active = false;
+      if (showTimer) clearTimeout(showTimer);
+      window.removeEventListener(PROMPT_READY_EVENT, handlePromptReady);
+      window.removeEventListener('appinstalled', handleInstalled);
+    };
+  }, [hideAsInstalled, showInstalledConfirmation]);
 
-    return () => clearInterval(checkInterval);
-  }, []);
+  const dismiss = useCallback(async () => {
+    setVisible(false);
+    onDismiss?.();
+    try {
+      await AsyncStorage.setItem(DISMISS_KEY, String(Date.now()));
+    } catch (error) {
+      console.warn('Unable to save PWA install dismissal:', error);
+    }
+  }, [onDismiss]);
 
-  const triggerNativeInstall = async () => {
-    console.log('[PWA] Install button clicked');
-    console.log('[PWA] deferredPWAPrompt exists:', !!window.deferredPWAPrompt);
-    
-    if (!window.deferredPWAPrompt) {
-      console.log('[PWA] No native prompt available');
-      // Fallback - show instructions
+  const install = useCallback(async () => {
+    const promptEvent = window.deferredPWAPrompt;
+    if (!promptEvent) {
       setHasNativePrompt(false);
       return;
     }
 
     setInstalling(true);
-
     try {
-      // IMPORTANT: prompt() must be called directly from a user gesture
-      const promptEvent = window.deferredPWAPrompt;
-      console.log('[PWA] Calling prompt()...');
-      
-      // Show the native install prompt
-      promptEvent.prompt();
-      
-      // Wait for the user to respond
+      await promptEvent.prompt();
       const { outcome } = await promptEvent.userChoice;
-      console.log('[PWA] User choice:', outcome);
-      
-      if (outcome === 'accepted') {
-        console.log('[PWA] User accepted installation');
-        handleDismiss();
-      } else {
-        console.log('[PWA] User dismissed installation');
-        setInstalling(false);
-      }
-      
-      // Clear the prompt - it can only be used once
       window.deferredPWAPrompt = null;
       setHasNativePrompt(false);
-      
+      if (outcome === 'accepted') {
+        showInstalledConfirmation();
+      } else {
+        await dismiss();
+      }
     } catch (error) {
-      console.error('[PWA] Error triggering install:', error);
-      setInstalling(false);
+      console.warn('Unable to open the browser install prompt:', error);
+      window.deferredPWAPrompt = null;
       setHasNativePrompt(false);
+    } finally {
+      setInstalling(false);
     }
-  };
+  }, [dismiss, showInstalledConfirmation]);
 
-  const handleDismiss = async () => {
-    try {
-      await AsyncStorage.setItem(DISMISS_KEY, Date.now().toString());
-    } catch (e) {}
-    
-    Animated.timing(slideAnim, {
-      toValue: 400,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
-      setVisible(false);
-      onDismiss?.();
-    });
-  };
+  const continueToApp = useCallback(() => {
+    setVisible(false);
+    onDismiss?.();
+  }, [onDismiss]);
 
-  if (Platform.OS !== 'web' || !visible) {
-    return null;
-  }
+  if (Platform.OS !== 'web' || !visible || (isStandalonePWA() && !installationComplete)) return null;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={handleDismiss}
-    >
-      <View style={styles.overlay}>
-        <TouchableOpacity 
-          style={styles.backdrop} 
-          activeOpacity={1} 
-          onPress={handleDismiss}
-        />
-
-        <Animated.View 
-          style={[
-            styles.container,
-            { transform: [{ translateY: slideAnim }] }
-          ]}
-        >
-          <View style={styles.handleBar} />
-          
-          <View style={styles.content}>
-            {/* Logo */}
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../../assets/images/icon.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-            </View>
-
-            <Text style={styles.title}>Install IPM 2026</Text>
-            <Text style={styles.subtitle}>Add to your home screen for the best experience</Text>
-
-            {/* Benefits */}
-            <View style={styles.benefitsRow}>
-              <View style={styles.benefit}>
-                <Feather name="wifi-off" size={16} color={colors.primary} />
-                <Text style={styles.benefitText}>Works offline</Text>
-              </View>
-              <View style={styles.benefit}>
-                <Feather name="bell" size={16} color={colors.primary} />
-                <Text style={styles.benefitText}>Live alerts</Text>
-              </View>
-              <View style={styles.benefit}>
-                <Feather name="zap" size={16} color={colors.primary} />
-                <Text style={styles.benefitText}>Fast access</Text>
-              </View>
-            </View>
-
-            {/* Show native install button OR manual instructions */}
-            {(hasNativePrompt && !isIOS) ? (
-              // Native install available - show install button
-              <TouchableOpacity 
-                style={[styles.installButton, installing && styles.installButtonDisabled]} 
-                onPress={triggerNativeInstall}
-                activeOpacity={0.8}
-                disabled={installing}
-              >
-                {installing ? (
-                  <Text style={styles.installButtonText}>Installing...</Text>
-                ) : (
-                  <>
-                    <Feather name="download" size={20} color="#FFFFFF" />
-                    <Text style={styles.installButtonText}>Install Now</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            ) : (
-              // Manual instructions for iOS or when native prompt not available
-              <View style={styles.instructionsBox}>
-                {isIOS ? (
-                  <>
-                    <View style={styles.step}>
-                      <View style={styles.stepIconBox}>
-                        <Feather name="share" size={20} color="#FFFFFF" />
-                      </View>
-                      <View style={styles.stepTextBox}>
-                        <Text style={styles.stepDesc}>
-                          Tap <Text style={styles.highlight}>Share</Text> at the bottom
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.step}>
-                      <View style={[styles.stepIconBox, { backgroundColor: colors.accent }]}>
-                        <Feather name="plus-square" size={20} color="#FFFFFF" />
-                      </View>
-                      <View style={styles.stepTextBox}>
-                        <Text style={styles.stepDesc}>
-                          Then <Text style={styles.highlight}>"Add to Home Screen"</Text>
-                        </Text>
-                      </View>
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    <View style={styles.step}>
-                      <View style={styles.stepIconBox}>
-                        <Feather name="more-vertical" size={20} color="#FFFFFF" />
-                      </View>
-                      <View style={styles.stepTextBox}>
-                        <Text style={styles.stepDesc}>
-                          Tap <Text style={styles.highlight}>⋮ menu</Text> (top-right)
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.step}>
-                      <View style={[styles.stepIconBox, { backgroundColor: colors.accent }]}>
-                        <Feather name="download" size={20} color="#FFFFFF" />
-                      </View>
-                      <View style={styles.stepTextBox}>
-                        <Text style={styles.stepDesc}>
-                          Then <Text style={styles.highlight}>"Install app"</Text>
-                        </Text>
-                      </View>
-                    </View>
-                  </>
-                )}
-              </View>
-            )}
-
-            {/* Dismiss Button */}
-            <TouchableOpacity 
-              style={styles.dismissButton} 
-              onPress={handleDismiss}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.dismissButtonText}>Not Now</Text>
+    <ScrollView style={styles.page} contentContainerStyle={styles.pageContent} keyboardShouldPersistTaps="handled" accessibilityLabel={installationComplete ? 'Installation complete' : 'Install the official IPM app'}>
+      <View style={styles.panel}>
+        {installationComplete ? (
+          <InstalledScreen onContinue={continueToApp} />
+        ) : (
+          <>
+            <Welcome />
+            <InstallAction
+              platformKind={platformKind}
+              hasNativePrompt={hasNativePrompt}
+              installing={installing}
+              onInstall={install}
+            />
+            <TouchableOpacity style={styles.notNowButton} onPress={dismiss} accessibilityRole="button" accessibilityLabel="Continue without installing">
+              <Text style={styles.notNowText}>Maybe later — continue to the app</Text>
             </TouchableOpacity>
-          </View>
-        </Animated.View>
+          </>
+        )}
       </View>
-    </Modal>
+    </ScrollView>
   );
 }
 
+function Welcome() {
+  const features: { icon: keyof typeof Feather.glyphMap; label: string }[] = [
+    { icon: 'calendar', label: 'Schedule' },
+    { icon: 'map', label: 'Interactive Map' },
+    { icon: 'bell', label: 'Live Announcements' },
+    { icon: 'shopping-bag', label: 'Vendors' },
+    { icon: 'info', label: 'Event Information' },
+  ];
+  return <>
+    <View style={styles.officialBadge}><Feather name="smartphone" size={27} color="#FFFFFF" /><Text style={styles.officialBadgeText}>Official IPM App</Text></View>
+    <Text style={styles.noStore}>No App Store download required.</Text>
+    <Text style={styles.headline}>Everything you need during the event.</Text>
+    <View style={styles.featureGrid}>
+      {features.map((feature) => <View key={feature.label} style={styles.feature}><View style={styles.check}><Feather name="check" size={17} color="#FFFFFF" /></View><Feather name={feature.icon} size={21} color={colors.primary} /><Text style={styles.featureText}>{feature.label}</Text></View>)}
+    </View>
+    <Text style={styles.fiveSeconds}>Installation takes about 5 seconds.</Text>
+  </>;
+}
+
+function InstallAction({ platformKind, hasNativePrompt, installing, onInstall }: {
+  platformKind: PlatformKind;
+  hasNativePrompt: boolean;
+  installing: boolean;
+  onInstall: () => void;
+}) {
+  if (hasNativePrompt) {
+    return <TouchableOpacity style={[styles.installButton, installing && styles.disabledButton]} onPress={onInstall} disabled={installing} accessibilityRole="button" accessibilityLabel="Install App">
+      <Feather name="download" size={27} color="#FFFFFF" />
+      <Text style={styles.installButtonText}>{installing ? 'Opening…' : 'Install App'}</Text>
+    </TouchableOpacity>;
+  }
+  if (platformKind === 'ios-in-app' || platformKind === 'in-app') {
+    const browser = platformKind === 'ios-in-app' ? 'Safari' : 'Chrome';
+    return <View style={styles.embeddedBox} accessibilityLabel={`Open this page in ${browser} before installing`}>
+      <View style={styles.bigIcon}><Feather name={platformKind === 'ios-in-app' ? 'compass' : 'chrome'} size={45} color={colors.primary} /></View>
+      <Text style={styles.embeddedTitle}>Next: Open in {browser}</Text>
+      <Text style={styles.embeddedText}>Tap this browser’s menu, then choose</Text>
+      <Text style={styles.embeddedChoice}>Open in {browser}</Text>
+    </View>;
+  }
+  if (platformKind === 'ios-safari') {
+    return <VisualSteps firstIcon="share" firstLabel="Tap the Share button" secondIcon="plus-square" secondLabel="Add to Home Screen" />;
+  }
+  if (platformKind === 'desktop') {
+    return <VisualSteps firstIcon="more-vertical" firstLabel="Open the browser menu" secondIcon="download" secondLabel="Install IPM App" />;
+  }
+  return <VisualSteps firstIcon="more-vertical" firstLabel="Tap the three-dot menu" secondIcon="download" secondLabel="Install App or Add to Home Screen" />;
+}
+
+function VisualSteps({ firstIcon, firstLabel, secondIcon, secondLabel }: {
+  firstIcon: keyof typeof Feather.glyphMap;
+  firstLabel: string;
+  secondIcon: keyof typeof Feather.glyphMap;
+  secondLabel: string;
+}) {
+  return <View style={styles.steps}>
+    <View style={styles.step}><Text style={styles.stepNumber}>STEP 1</Text><View style={styles.stepGraphic}><Feather name={firstIcon} size={50} color={colors.primary} /></View><Text style={styles.stepLabel}>{firstLabel}</Text></View>
+    <Feather name="arrow-down" size={34} color={colors.accentDark} accessibilityElementsHidden />
+    <View style={styles.step}><Text style={styles.stepNumber}>STEP 2</Text><View style={styles.stepGraphic}><Feather name={secondIcon} size={50} color={colors.primary} /></View><Text style={styles.stepLabel}>{secondLabel}</Text></View>
+  </View>;
+}
+
+function InstalledScreen({ onContinue }: { onContinue: () => void }) {
+  return <View style={styles.ready}>
+    <View style={styles.celebration}><Feather name="check" size={54} color="#FFFFFF" /></View>
+    <Text style={styles.readyTitle}>You’re ready!</Text>
+    <Text style={styles.readyText}>The IPM App has been installed.</Text>
+    <TouchableOpacity style={styles.installButton} onPress={onContinue} accessibilityRole="button" accessibilityLabel="Continue to the IPM app">
+      <Text style={styles.installButtonText}>Continue</Text><Feather name="arrow-right" size={27} color="#FFFFFF" />
+    </TouchableOpacity>
+  </View>;
+}
+
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  container: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingBottom: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 25,
-  },
-  handleBar: {
-    width: 36,
-    height: 4,
-    backgroundColor: '#D1D5DB',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-  },
-  content: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    alignItems: 'center',
-  },
-  logoContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 14,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  logo: {
-    width: 48,
-    height: 48,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 16,
-  },
-  benefitsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 20,
-    gap: 16,
-  },
-  benefit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  benefitText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  installButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 14,
-    width: '100%',
-    maxWidth: 280,
-    marginBottom: 8,
-    gap: 10,
-  },
-  installButtonDisabled: {
-    backgroundColor: colors.textSecondary,
-  },
-  installButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  instructionsBox: {
-    width: '100%',
-    backgroundColor: colors.background,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    gap: 12,
-  },
-  step: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stepIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  stepTextBox: {
-    flex: 1,
-  },
-  stepDesc: {
-    fontSize: 15,
-    color: colors.textPrimary,
-  },
-  highlight: {
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  dismissButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  dismissButtonText: {
-    color: colors.textSecondary,
-    fontSize: 15,
-    fontWeight: '500',
-  },
+  page: { ...StyleSheet.absoluteFillObject, backgroundColor: '#FFFDF7', zIndex: 2000 },
+  pageContent: { alignItems: 'center', flexGrow: 1, justifyContent: 'center', padding: 16 },
+  panel: { backgroundColor: '#FFFFFF', borderColor: '#B9B3A3', borderRadius: 24, borderWidth: 2, elevation: 8, maxWidth: 620, paddingHorizontal: 22, paddingVertical: 26, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, width: '100%' },
+  officialBadge: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primary, borderRadius: 28, flexDirection: 'row', gap: 10, paddingHorizontal: 20, paddingVertical: 12 },
+  officialBadgeText: { color: '#FFFFFF', fontSize: 19, fontWeight: '900' },
+  noStore: { color: colors.textSecondary, fontSize: 15, fontWeight: '700', marginTop: 10, textAlign: 'center' },
+  headline: { color: colors.textPrimary, fontSize: 27, fontWeight: '900', lineHeight: 34, marginTop: 15, textAlign: 'center' },
+  featureGrid: { gap: 9, marginTop: 20 },
+  feature: { alignItems: 'center', backgroundColor: '#F8F6EF', borderRadius: 12, flexDirection: 'row', gap: 10, minHeight: 48, paddingHorizontal: 13 },
+  check: { alignItems: 'center', backgroundColor: colors.success, borderRadius: 13, height: 26, justifyContent: 'center', width: 26 },
+  featureText: { color: colors.textPrimary, flex: 1, fontSize: 17, fontWeight: '800' },
+  fiveSeconds: { color: colors.textSecondary, fontSize: 16, fontWeight: '700', marginTop: 18, textAlign: 'center' },
+  installButton: { alignItems: 'center', backgroundColor: '#8A1F25', borderColor: '#5F1116', borderRadius: 15, borderWidth: 2, flexDirection: 'row', gap: 12, justifyContent: 'center', marginTop: 22, minHeight: 68, paddingHorizontal: 22, width: '100%' },
+  disabledButton: { opacity: 0.65 },
+  installButtonText: { color: '#FFFFFF', fontSize: 22, fontWeight: '900' },
+  notNowButton: { alignItems: 'center', justifyContent: 'center', marginTop: 9, minHeight: 52, paddingHorizontal: 16 },
+  notNowText: { color: colors.textSecondary, fontSize: 15, fontWeight: '700', textDecorationLine: 'underline' },
+  steps: { alignItems: 'center', marginTop: 22 },
+  step: { alignItems: 'center', backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderRadius: 18, borderWidth: 2, padding: 14, width: '100%' },
+  stepNumber: { color: '#735B1B', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
+  stepGraphic: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 17, height: 78, justifyContent: 'center', marginVertical: 9, width: 78 },
+  stepLabel: { color: colors.textPrimary, fontSize: 20, fontWeight: '900', textAlign: 'center' },
+  embeddedBox: { alignItems: 'center', backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderRadius: 18, borderWidth: 2, marginTop: 22, padding: 18 },
+  bigIcon: { alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 42, height: 84, justifyContent: 'center', width: 84 },
+  embeddedTitle: { color: colors.textPrimary, fontSize: 24, fontWeight: '900', marginTop: 12 },
+  embeddedText: { color: colors.textSecondary, fontSize: 16, fontWeight: '600', marginTop: 8, textAlign: 'center' },
+  embeddedChoice: { color: colors.primary, fontSize: 20, fontWeight: '900', marginTop: 5 },
+  ready: { alignItems: 'center', paddingVertical: 24 },
+  celebration: { alignItems: 'center', backgroundColor: colors.success, borderRadius: 52, height: 104, justifyContent: 'center', width: 104 },
+  readyTitle: { color: colors.textPrimary, fontSize: 34, fontWeight: '900', marginTop: 24 },
+  readyText: { color: colors.textSecondary, fontSize: 19, fontWeight: '600', marginTop: 10, textAlign: 'center' },
 });
