@@ -43,7 +43,7 @@ const initWebpushr = () => {
     script.onload = () => {
       // @ts-ignore
       window.webpushr('setup', {
-        'key': 'BCIwNZy_j_9nCjf9Fln0Z8F-1gARSMEPFcQns5htCMaLsHL2FGKgtNxHmmhwxgM5nV8ovgoYigmSbdQ00IPYNzg'
+        'key': '5aa5f0b704a726f8ff1ac6d26c535ccf'
       });
     };
   }
