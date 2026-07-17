@@ -55,22 +55,25 @@ export default function RootLayout() {
   useEffect(() => {
     initWebpushr();
 
-    const cleanupNotifications = addNotificationListeners(
-      (notification) => {
-        console.log('Notification received:', notification);
-      },
-      (response) => {
-        console.log('Notification tapped:', response);
-      }
-    );
+    let cleanupNotifications: () => void = () => undefined;
+    if (Platform.OS !== 'web') {
+      cleanupNotifications = addNotificationListeners(
+        (notification) => {
+          console.log('Notification received:', notification);
+        },
+        (response) => {
+          console.log('Notification tapped:', response);
+        }
+      );
 
-    registerForPushNotificationsAsync().then((token) => {
-      if (token) {
-        console.log('Push notification token:', token);
-      }
-    }).catch((error) => {
-      console.warn('Push notification registration failed:', error);
-    });
+      registerForPushNotificationsAsync().then((token) => {
+        if (token) {
+          console.log('Push notification token:', token);
+        }
+      }).catch((error) => {
+        console.warn('Push notification registration failed:', error);
+      });
+    }
 
     setIsInitializing(false);
 
