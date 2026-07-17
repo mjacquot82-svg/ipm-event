@@ -8,10 +8,14 @@ the providers without changing frontend API contracts.
 
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
+import logging
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 import httpx
+
+
+logger = logging.getLogger(__name__)
 
 
 class WebpushrError(Exception):
@@ -45,7 +49,13 @@ class WebpushrClient:
             "target_url": self.shorten(target_url, self.TARGET_URL_LIMIT),
         }
 
-    async def _send(self, endpoint: str, payload: dict[str, Any]) -> str:
+    async def _send(
+        self,
+        endpoint: str,
+        payload: dict[str, Any],
+        *,
+        success_reference: Optional[str] = None,
+    ) -> str:
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
@@ -62,6 +72,12 @@ class WebpushrClient:
         except httpx.RequestError as exc:
             raise WebpushrError("Webpushr could not be reached") from exc
 
+        logger.info(
+            "Webpushr response endpoint=%s status_code=%s body=%s",
+            endpoint,
+            response.status_code,
+            response.text,
+        )
         try:
             result = response.json()
         except ValueError as exc:
@@ -73,6 +89,8 @@ class WebpushrClient:
             raise WebpushrError(f"Webpushr rejected the notification: {description}")
         campaign_id = result.get("ID")
         if campaign_id is None:
+            if success_reference is not None:
+                return success_reference
             raise WebpushrError("Webpushr response did not include a campaign ID")
         return str(campaign_id)
 
@@ -89,7 +107,9 @@ class WebpushrClient:
         campaign_ids = []
         for subscriber_id in subscriber_ids:
             campaign_ids.append(await self._send(
-                "/notification/send/sid", {**content, "sid": subscriber_id}
+                "/notification/send/sid",
+                {**content, "sid": subscriber_id},
+                success_reference=f"sid:{subscriber_id}",
             ))
         return ",".join(campaign_ids)
 

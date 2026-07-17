@@ -354,3 +354,58 @@ def test_webpushr_content_is_deterministically_shortened():
     assert len(content["message"]) == 255 and content["message"].endswith("…")
     assert len(content["target_url"]) == 255 and content["target_url"].endswith("…")
     assert content == client.notification_content("T" * 120, "M" * 300, "https://example.test/" + "x" * 300)
+
+
+def test_webpushr_subscriber_success_does_not_require_campaign_id(monkeypatch):
+    class FakeHttpClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def post(self, *args, **kwargs):
+            return httpx.Response(
+                200,
+                json={
+                    "status": "success",
+                    "description": "Notification sent successfully!",
+                },
+            )
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
+    client = WebpushrClient(api_key="key", auth_token="token")
+
+    result = asyncio.run(client.send_test(
+        title="Title",
+        message="Message",
+        target_url="https://example.test",
+        subscriber_ids=["123", "456"],
+    ))
+
+    assert result == "sid:123,sid:456"
+
+
+def test_webpushr_everyone_success_still_requires_campaign_id(monkeypatch):
+    class FakeHttpClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def post(self, *args, **kwargs):
+            return httpx.Response(
+                200,
+                json={"status": "success", "description": "Campaign created successfully!"},
+            )
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
+    client = WebpushrClient(api_key="key", auth_token="token")
+
+    with pytest.raises(WebpushrError, match="did not include a campaign ID"):
+        asyncio.run(client.send_everyone(
+            title="Title",
+            message="Message",
+            target_url="https://example.test",
+        ))
