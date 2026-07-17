@@ -60,7 +60,7 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
   const [hasNativePrompt, setHasNativePrompt] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [awaitingInstallation, setAwaitingInstallation] = useState(false);
-  const [installationComplete, setInstallationComplete] = useState(false);
+  const [installationInProgress, setInstallationInProgress] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const installationHandledRef = useRef(false);
 
@@ -70,14 +70,14 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
     void AsyncStorage.setItem(INSTALLED_KEY, 'true');
   }, []);
 
-  const showInstalledConfirmation = useCallback(() => {
+  const showInstallingConfirmation = useCallback(() => {
     if (installationHandledRef.current) return;
     installationHandledRef.current = true;
     window.deferredPWAPrompt = null;
     setHasNativePrompt(false);
     setInstalling(false);
     setAwaitingInstallation(false);
-    setInstallationComplete(true);
+    setInstallationInProgress(true);
     setVisible(true);
     void AsyncStorage.setItem(INSTALLED_KEY, 'true');
   }, []);
@@ -127,7 +127,7 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
       window.deferredPWAPromptCapturedAt = Date.now();
       void evaluate(true);
     };
-    const handleInstalled = () => showInstalledConfirmation();
+    const handleInstalled = () => showInstallingConfirmation();
     window.addEventListener('beforeinstallprompt', handlePromptReady);
     window.addEventListener('appinstalled', handleInstalled);
     void evaluate();
@@ -138,7 +138,7 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
       window.removeEventListener('beforeinstallprompt', handlePromptReady);
       window.removeEventListener('appinstalled', handleInstalled);
     };
-  }, [hideAsInstalled, showInstalledConfirmation]);
+  }, [hideAsInstalled, showInstallingConfirmation]);
 
   const dismiss = useCallback(async () => {
     setVisible(false);
@@ -184,13 +184,13 @@ export default function PWAInstallPrompt({ onDismiss }: PWAInstallPromptProps) {
     onDismiss?.();
   }, [onDismiss]);
 
-  if (Platform.OS !== 'web' || !visible || (isStandalonePWA() && !installationComplete)) return null;
+  if (Platform.OS !== 'web' || !visible || (isStandalonePWA() && !installationInProgress)) return null;
 
   return (
-    <ScrollView style={styles.page} contentContainerStyle={styles.pageContent} keyboardShouldPersistTaps="handled" accessibilityLabel={installationComplete ? 'Installation complete' : 'Install the official IPM app'}>
+    <ScrollView style={styles.page} contentContainerStyle={styles.pageContent} keyboardShouldPersistTaps="handled" accessibilityLabel={installationInProgress ? 'Installation in progress' : 'Install the official IPM app'}>
       <View style={styles.panel}>
-        {installationComplete ? (
-          <InstalledScreen onContinue={continueToApp} />
+        {installationInProgress ? (
+          <InstallingScreen onContinue={continueToApp} />
         ) : platformKind === 'ios-safari' && !showIOSGuide ? (
           <>
             <IOSInstallReady onShowGuide={() => setShowIOSGuide(true)} />
@@ -313,19 +313,15 @@ function VisualSteps({ firstIcon, firstLabel, secondIcon, secondLabel }: {
   </View>;
 }
 
-function InstalledScreen({ onContinue }: { onContinue: () => void }) {
-  return <View style={styles.ready}>
-    <Text style={styles.celebrationEmoji} accessibilityElementsHidden>🎉</Text>
-    <Text style={styles.readyTitle}>You&apos;re All Set!</Text>
-    <Text style={styles.readyText}>IPM 2026 has been installed.</Text>
-    <Text style={styles.benefitsTitle}>You&apos;ll now receive:</Text>
-    <View style={styles.benefits}>
-      <View style={styles.benefit}><Feather name="bell" size={22} color={colors.primary} /><Text style={styles.benefitText}>Live event announcements</Text></View>
-      <View style={styles.benefit}><Feather name="calendar" size={22} color={colors.primary} /><Text style={styles.benefitText}>Schedule updates</Text></View>
-      <View style={styles.benefit}><Feather name="home" size={22} color={colors.primary} /><Text style={styles.benefitText}>Quick access from your Home Screen</Text></View>
-    </View>
-    <TouchableOpacity style={styles.installButton} onPress={onContinue} accessibilityRole="button" accessibilityLabel="Open IPM 2026">
-      <Text style={styles.installButtonText}>Open App</Text><Feather name="arrow-right" size={27} color="#FFFFFF" />
+function InstallingScreen({ onContinue }: { onContinue: () => void }) {
+  return <View style={styles.installingConfirmation}>
+    <Text style={styles.installingEmoji} accessibilityElementsHidden>📱</Text>
+    <Text style={styles.installingTitle}>Installing IPM 2026</Text>
+    <Text style={styles.installingLead}>Chrome is finishing the installation.</Text>
+    <Text style={styles.installingText}>You can continue using the website while the app is prepared in the background.</Text>
+    <Text style={styles.installingText}>When installation finishes, you&apos;ll be able to launch IPM 2026 from your apps.</Text>
+    <TouchableOpacity style={styles.installButton} onPress={onContinue} accessibilityRole="button" accessibilityLabel="Continue using the website">
+      <Text style={styles.installButtonText}>Continue</Text><Feather name="arrow-right" size={27} color="#FFFFFF" />
     </TouchableOpacity>
   </View>;
 }
@@ -371,12 +367,9 @@ const styles = StyleSheet.create({
   embeddedTitle: { color: colors.textPrimary, fontSize: 24, fontWeight: '900', marginTop: 12 },
   embeddedText: { color: colors.textSecondary, fontSize: 16, fontWeight: '600', marginTop: 8, textAlign: 'center' },
   embeddedChoice: { color: colors.primary, fontSize: 20, fontWeight: '900', marginTop: 5 },
-  ready: { alignItems: 'center', paddingVertical: 24 },
-  celebrationEmoji: { fontSize: 68, lineHeight: 82 },
-  readyTitle: { color: colors.textPrimary, fontSize: 34, fontWeight: '900', marginTop: 24 },
-  readyText: { color: colors.textSecondary, fontSize: 19, fontWeight: '600', marginTop: 10, textAlign: 'center' },
-  benefitsTitle: { alignSelf: 'flex-start', color: colors.textPrimary, fontSize: 18, fontWeight: '900', marginTop: 28 },
-  benefits: { gap: 11, marginTop: 14, width: '100%' },
-  benefit: { alignItems: 'center', backgroundColor: '#F8F6EF', borderRadius: 12, flexDirection: 'row', gap: 12, minHeight: 50, paddingHorizontal: 14 },
-  benefitText: { color: colors.textPrimary, flex: 1, fontSize: 16, fontWeight: '700' },
+  installingConfirmation: { alignItems: 'center', paddingVertical: 18 },
+  installingEmoji: { fontSize: 60, lineHeight: 74 },
+  installingTitle: { color: colors.textPrimary, fontSize: 32, fontWeight: '900', marginTop: 16, textAlign: 'center' },
+  installingLead: { color: colors.textPrimary, fontSize: 20, fontWeight: '800', marginTop: 22, textAlign: 'center' },
+  installingText: { color: colors.textSecondary, fontSize: 17, fontWeight: '600', lineHeight: 25, marginTop: 16, maxWidth: 480, textAlign: 'center' },
 });
