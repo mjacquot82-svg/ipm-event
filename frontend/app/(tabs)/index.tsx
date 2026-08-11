@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
@@ -549,6 +549,19 @@ export default function HomeScreen() {
                 <Feather name="clipboard" size={22} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Personal Itinerary</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/queen-of-the-furrow' as never)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Queen of the Furrow"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.accentDark }]}>
+                <MaterialCommunityIcons name="crown-outline" size={24} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Queen of the Furrow</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
