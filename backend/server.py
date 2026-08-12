@@ -88,6 +88,7 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "development").strip().lower()
 CONTENT_SOURCE = os.environ.get("CONTENT_SOURCE", "google_sheets").strip().lower()
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+LOCAL_VENDORS_CSV = os.environ.get("LOCAL_VENDORS_CSV", "").strip()
 WEBPUSHR_API_KEY = os.environ.get("WEBPUSHR_API_KEY", "")
 WEBPUSHR_AUTH_TOKEN = os.environ.get("WEBPUSHR_AUTH_TOKEN", "")
 WEBPUSHR_TEST_SUBSCRIBER_IDS = [
@@ -120,6 +121,8 @@ CORS_ORIGIN_REGEX = os.environ.get(
 )
 if CONTENT_SOURCE not in {"google_sheets", "supabase"}:
     raise RuntimeError("CONTENT_SOURCE must be either 'google_sheets' or 'supabase'")
+if LOCAL_VENDORS_CSV and ENVIRONMENT == "production":
+    raise RuntimeError("LOCAL_VENDORS_CSV is only available outside production")
 
 # Create the main app without a prefix. API documentation is development-only.
 api_docs_enabled = ENVIRONMENT != "production"
@@ -694,6 +697,42 @@ async def get_public_vendors_from_google() -> VendorsResponse:
     )
 
 
+async def get_public_vendors_from_local_csv() -> VendorsResponse:
+    """Read a development-only vendor preview without changing a remote source."""
+    csv_path = Path(LOCAL_VENDORS_CSV).expanduser()
+    if not csv_path.is_absolute():
+        csv_path = Path(__file__).resolve().parent.parent / csv_path
+
+    with csv_path.open(newline="", encoding="utf-8-sig") as csv_file:
+        reader = csv.DictReader(csv_file)
+        vendors = []
+        for index, row in enumerate(reader):
+            name = (row.get("name") or row.get("Name") or "").strip()
+            if not name:
+                continue
+            vendor_type = (row.get("type") or row.get("Type") or "").strip()
+            vendor_id = str(uuid.uuid5(
+                uuid.NAMESPACE_URL,
+                f"ipm-local-vendor:{index}:{name}:{vendor_type}",
+            ))
+            vendors.append(Vendor(
+                id=vendor_id,
+                name=name,
+                type=vendor_type,
+                location="",
+                hours_of_operation="",
+                days_of_operation="",
+                priority=99,
+            ))
+
+    vendors.sort(key=lambda vendor: (vendor.name.casefold(), vendor.type.casefold()))
+    return VendorsResponse(
+        vendors=vendors,
+        last_updated=datetime.utcnow(),
+        total_count=len(vendors),
+    )
+
+
 event_service = EventService(DEFAULT_EVENT_ID)
 if CONTENT_SOURCE == "supabase":
     if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
@@ -718,7 +757,11 @@ else:
         update_schedule_event=update_schedule_event_row,
         clear_schedule_event=clear_schedule_event_row,
     )
-if CONTENT_SOURCE == "supabase":
+if LOCAL_VENDORS_CSV:
+    vendor_service = VendorService(
+        list_public_vendors=get_public_vendors_from_local_csv,
+    )
+elif CONTENT_SOURCE == "supabase":
     vendor_service = SupabaseVendorService(
         supabase_url=SUPABASE_URL,
         service_role_key=SUPABASE_SERVICE_ROLE_KEY,
@@ -1629,7 +1672,7 @@ async def get_schedule():
 
 @api_router.get("/vendors", response_model=VendorsResponse)
 async def get_vendors():
-    """Fetch vendors from Google Sheets"""
+    """Fetch vendors from the active content source."""
     try:
         return await vendor_service.list_public_vendors()
     except httpx.HTTPError as e:
