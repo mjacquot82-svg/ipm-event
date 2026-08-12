@@ -24,6 +24,7 @@ export default function QueenOfTheFurrowScreen() {
   const { width } = useWindowDimensions();
   const { sectionStyle } = useAttendeeLayout();
   const isDesktop = width >= ATTENDEE_DESKTOP_BREAKPOINT;
+  const mobilePhotoWidth = Math.min(Math.max(width - 42, 0), 280);
 
   const renderQueen = useCallback<ListRenderItem<QueenOfTheFurrowEntry>>(({ item }) => (
     <View style={[styles.card, isDesktop && styles.cardDesktop]}>
@@ -32,7 +33,9 @@ export default function QueenOfTheFurrowScreen() {
           source={item.image}
           style={[
             styles.photo,
-            isDesktop ? styles.photoDesktop : { aspectRatio: item.imageAspectRatio },
+            isDesktop
+              ? styles.photoDesktop
+              : { width: mobilePhotoWidth, height: mobilePhotoWidth / item.imageAspectRatio },
           ]}
           resizeMode="contain"
           accessible
@@ -51,7 +54,7 @@ export default function QueenOfTheFurrowScreen() {
         <Text style={styles.blurb}>{item.blurb}</Text>
       </View>
     </View>
-  ), [isDesktop]);
+  ), [isDesktop, mobilePhotoWidth]);
 
   return (
     <View style={styles.container}>
@@ -138,14 +141,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  cardDesktop: { flexDirection: 'row', minHeight: 420 },
+  cardDesktop: { flexDirection: 'row', minHeight: 420, marginBottom: 20 },
   imagePanel: { width: '100%', backgroundColor: colors.surfaceHighlight, alignItems: 'center', justifyContent: 'center' },
   imagePanelDesktop: { width: '42%', minWidth: 320 },
   photo: { width: '100%' },
   photoDesktop: { height: '100%' },
-  details: { padding: 20 },
+  details: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 },
   detailsDesktop: { flex: 1, paddingHorizontal: 30, paddingVertical: 28, justifyContent: 'center' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   titleText: { flex: 1 },
