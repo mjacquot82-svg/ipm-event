@@ -16,6 +16,33 @@ from io import StringIO
 import asyncio
 import hashlib
 import json
+
+try:
+    from backend.analytics import (
+        ANALYTICS_EVENT_SCOPE,
+        AnalyticsEventsRequest,
+        AnalyticsSessionEndRequest,
+        AnalyticsSessionRequest,
+        AnalyticsValidationError,
+        MongoAnalyticsRepository,
+        end_session as end_analytics_session,
+        heartbeat_session as heartbeat_analytics_session,
+        ingest_events as ingest_analytics_events,
+        start_session as start_analytics_session,
+    )
+except ModuleNotFoundError:
+    from analytics import (
+        ANALYTICS_EVENT_SCOPE,
+        AnalyticsEventsRequest,
+        AnalyticsSessionEndRequest,
+        AnalyticsSessionRequest,
+        AnalyticsValidationError,
+        MongoAnalyticsRepository,
+        end_session as end_analytics_session,
+        heartbeat_session as heartbeat_analytics_session,
+        ingest_events as ingest_analytics_events,
+        start_session as start_analytics_session,
+    )
 import secrets
 import base64
 import hmac
@@ -67,6 +94,8 @@ else:
     db_name = os.environ.get('DB_NAME', 'ipm2026')
     client = AsyncIOMotorClient(mongo_url)
     db = client[db_name]
+
+analytics_repository = MongoAnalyticsRepository(db) if db is not None else None
 
 # Google Sheet URLs (public CSV export)
 EVENTS_SHEET_ID = "1tnfBd7Ffg5S4hyk5c5CpB-VGkJcSnLpdsKGbNJIiQCs"
@@ -1157,6 +1186,52 @@ async def get_status_checks():
     database = require_mongodb()
     status_checks = await database.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
+
+
+def require_analytics_repository():
+    if analytics_repository is None:
+        raise HTTPException(status_code=503, detail="Analytics storage is not configured")
+    return analytics_repository
+
+
+@api_router.post("/analytics/session/start", status_code=202)
+async def analytics_session_start(data: AnalyticsSessionRequest):
+    """Start one anonymous attendee session in the server-owned IPM scope."""
+    try:
+        result = await start_analytics_session(require_analytics_repository(), data)
+        return {"eventScope": ANALYTICS_EVENT_SCOPE, **result}
+    except AnalyticsValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@api_router.post("/analytics/session/heartbeat", status_code=202)
+async def analytics_session_heartbeat(data: AnalyticsSessionRequest):
+    """Refresh activity for an existing, non-expired anonymous session."""
+    try:
+        result = await heartbeat_analytics_session(require_analytics_repository(), data)
+        return {"eventScope": ANALYTICS_EVENT_SCOPE, **result}
+    except AnalyticsValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@api_router.post("/analytics/session/end", status_code=202)
+async def analytics_session_end(data: AnalyticsSessionEndRequest):
+    """End an anonymous attendee session. Repeated endings are idempotent."""
+    try:
+        result = await end_analytics_session(require_analytics_repository(), data)
+        return {"eventScope": ANALYTICS_EVENT_SCOPE, **result}
+    except AnalyticsValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@api_router.post("/analytics/events", status_code=202)
+async def analytics_events(data: AnalyticsEventsRequest):
+    """Validate and ingest a bounded batch of allowlisted attendee events."""
+    try:
+        result = await ingest_analytics_events(require_analytics_repository(), data)
+        return {"eventScope": ANALYTICS_EVENT_SCOPE, **result}
+    except AnalyticsValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @api_router.post("/admin/bootstrap", response_model=OrganizerAuthResponse)
@@ -2257,6 +2332,7 @@ async def startup_event():
         [("event_id", 1), ("sent_at", -1)],
         name="broadcast_event_sent_at",
     )
+    await analytics_repository.ensure_indexes()
     logger.info("Starting cron scheduler for event change detection...")
     asyncio.create_task(cron_scheduler())
 
