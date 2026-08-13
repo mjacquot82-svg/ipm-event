@@ -8,6 +8,7 @@ import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { Announcement, AnnouncementsResponse, CachedApiResult, CachedApiSource, getAnnouncementsData } from '../../src/services/spreadsheetDataService';
 import { getUnreadAnnouncementIds, useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
+import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 
 export default function AnnouncementsScreen() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function AnnouncementsScreen() {
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
   const { hydrated, lastReadAnnouncementId } = useAnnouncementReadState();
   const unreadIds = getUnreadAnnouncementIds(announcements, lastReadAnnouncementId);
+  usePageAnalytics('announcements', 'home_quick_action', 'announcement_list_viewed', { unread_count: unreadIds.size });
 
   const applyResult = useCallback((result: CachedApiResult<AnnouncementsResponse>) => {
     setAnnouncements(getVisibleAnnouncements(result.data.announcements || []));
@@ -84,7 +86,9 @@ export default function AnnouncementsScreen() {
                   key={announcement.id}
                   announcement={announcement}
                   unread={hydrated && unreadIds.has(announcement.id)}
-                  onPress={() => router.push(`/announcements/${announcement.id}` as never)}
+                  onPress={() => {
+                    router.push(`/announcements/${announcement.id}?source=list` as never);
+                  }}
                 />
               ))}
             </View>

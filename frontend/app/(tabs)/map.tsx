@@ -10,11 +10,15 @@ import {
   attendeePageContent,
   useAttendeeLayout,
 } from '../../src/theme/attendeePageLayout';
+import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import { mapLocations } from '../../src/config/mapLocations';
 
 export default function MapScreen() {
   const { contentWidth } = useAttendeeLayout();
   // Get location parameter from navigation
-  const { location, showOnly } = useLocalSearchParams<{ location?: string; showOnly?: string }>();
+  const { location, showOnly, source } = useLocalSearchParams<{ location?: string; showOnly?: string; source?: string }>();
+  const locationId = mapLocations.find((item) => item.name === location)?.id;
+  usePageAnalytics('map', source || 'other', 'map_opened', locationId ? { location_id: locationId } : {});
 
   return (
     <View style={[styles.container, attendeePageContent]}>

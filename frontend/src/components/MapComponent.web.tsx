@@ -21,6 +21,7 @@ import {
   MapLocation,
   LocationCategory 
 } from '../config/mapLocations';
+import { queueAnalyticsEvent } from '../analytics/analyticsClient';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAP_HEIGHT = SCREEN_HEIGHT - 180;
@@ -82,6 +83,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [selectedPin, pulseAnim]);
 
   const handlePinPress = (location: MapLocation) => {
+    if (selectedPin?.id !== location.id) {
+      void queueAnalyticsEvent('map_opened', { location_id: location.id, source: 'map_pin' });
+    }
     setSelectedPin(selectedPin?.id === location.id ? null : location);
     onLocationSelect?.(location);
   };

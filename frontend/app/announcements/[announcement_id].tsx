@@ -7,10 +7,12 @@ import { Announcement, getAnnouncementById } from '../../src/services/spreadshee
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import colors from '../../src/theme/colors';
 import { useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
+import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 
 export default function AnnouncementDetailScreen() {
   const router = useRouter();
-  const { announcement_id: rawAnnouncementId } = useLocalSearchParams<{ announcement_id?: string | string[] }>();
+  const { announcement_id: rawAnnouncementId, source } = useLocalSearchParams<{ announcement_id?: string | string[]; source?: string }>();
   const announcementId = Array.isArray(rawAnnouncementId) ? rawAnnouncementId[0] : rawAnnouncementId;
   const { frameStyle, sectionStyle } = useAttendeeLayout();
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
@@ -18,6 +20,8 @@ export default function AnnouncementDetailScreen() {
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState(false);
   const { markAnnouncementRead } = useAnnouncementReadState();
+  usePageAnalytics('announcement_detail', source || 'other');
+  const trackedOpenId = React.useRef<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -32,13 +36,21 @@ export default function AnnouncementDetailScreen() {
       const result = await getAnnouncementById(announcementId);
       setAnnouncement(result);
       setNotFound(result === null);
-      if (result) await markAnnouncementRead(result.id);
+      if (result) {
+        await markAnnouncementRead(result.id);
+        if (trackedOpenId.current !== result.id) {
+          trackedOpenId.current = result.id;
+          void queueAnalyticsEvent('announcement_opened', {
+            announcement_id: result.id, source: source || 'other', load_status: 'success',
+          });
+        }
+      }
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, [announcementId, markAnnouncementRead]);
+  }, [announcementId, markAnnouncementRead, source]);
 
   useEffect(() => { void load(); }, [load]);
 

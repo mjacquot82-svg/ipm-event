@@ -15,7 +15,8 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { eventInfo } from '../../src/data/mockData';
-import { openExternalLink } from '../../src/utils/externalLinks';
+import { openTrackedLink, trackControlledOutbound } from '../../src/analytics/trackedLinks';
+import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 
 const OFFICIAL_IPM_CONTENT = [
   "It is the largest event of its kind in North America.\nWith so much to see and do, plan to spend more than one day!\nThe IPM is held in a different community each year, highlighting the many great things the area has to offer and attracting on average 70,000 people from across Ontario, throughout Canada, the United States and beyond.",
@@ -33,9 +34,10 @@ const EVENT_HISTORY = [
 ] as const;
 
 export default function AboutScreen() {
+  usePageAnalytics('about', 'bottom_nav');
   const { frameStyle } = useAttendeeLayout();
   const openJdsWebsite = () => {
-    Linking.openURL('https://jdsstudio.ca');
+    void openTrackedLink('jds_studio', 'about');
   };
 
   const openMaps = () => {
@@ -45,19 +47,20 @@ export default function AboutScreen() {
       android: `geo:${lat},${lng}?q=${lat},${lng}(IPM 2026)`,
       default: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
     });
+    trackControlledOutbound('event_directions', 'directions', 'about');
     Linking.openURL(url as string);
   };
 
   const openPastIpmPhotos = () => {
-    openExternalLink('https://www.plowingmatch.org/ipm2026/visitor-info/photos-of-past-ipms/');
+    void openTrackedLink('past_ipm_photos', 'about');
   };
 
   const openFrequentlyAskedQuestions = () => {
-    openExternalLink('https://www.plowingmatch.org/ipm2026/visitor-info/faq/');
+    void openTrackedLink('faq', 'about');
   };
 
   const openAccessibilityInformation = () => {
-    openExternalLink('https://www.plowingmatch.org/ipm2026/visitor-info/accessibility/');
+    void openTrackedLink('accessibility', 'about');
   };
 
   return (

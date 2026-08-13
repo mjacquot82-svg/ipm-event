@@ -10,6 +10,8 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
+import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import {
   ATTENDEE_HORIZONTAL_MARGIN,
@@ -26,6 +28,7 @@ import {
 } from '../../src/services/spreadsheetDataService';
 
 export default function ItineraryScreen() {
+  usePageAnalytics('itinerary', 'home_quick_action');
   const { frameStyle } = useAttendeeLayout();
   const router = useRouter();
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -81,6 +84,7 @@ export default function ItineraryScreen() {
   const handleRemove = async (eventId: string) => {
     const result = await toggleFavorite(eventId);
     setFavorites(result.favorites);
+    void queueAnalyticsEvent('favorite_changed', { schedule_item_id: eventId, action: 'removed' });
   };
 
   const formatDate = (dateStr: string) => {

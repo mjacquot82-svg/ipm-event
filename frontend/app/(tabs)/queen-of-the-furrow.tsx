@@ -18,8 +18,10 @@ import {
   attendeePageContent,
   useAttendeeLayout,
 } from '../../src/theme/attendeePageLayout';
+import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 
 export default function QueenOfTheFurrowScreen() {
+  usePageAnalytics('queen_archive', 'home_quick_action', 'queen_archive_opened');
   const router = useRouter();
   const { width } = useWindowDimensions();
   const { sectionStyle } = useAttendeeLayout();

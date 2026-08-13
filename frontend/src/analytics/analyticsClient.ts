@@ -1,0 +1,178 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import { AppState, Platform } from 'react-native';
+import {
+  ANALYTICS_MAX_BATCH_EVENTS,
+  AnalyticsRequestBuffer,
+  clearSession,
+  generateAnalyticsUuid,
+  getOrCreateSession,
+  getOrCreateVisitorId,
+  isAttendeeAnalyticsPath,
+  takeAnalyticsBatch,
+} from './analyticsCore';
+
+export type AnalyticsValue = string | number | boolean | null;
+export type AnalyticsProperties = Record<string, AnalyticsValue>;
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const HEARTBEAT_MS = 60_000;
+const EVENT_FLUSH_MS = 2_000;
+const transport = new AnalyticsRequestBuffer(AsyncStorage, fetch, API_BASE_URL, __DEV__);
+
+let visitorId: string | null = null;
+let sessionId: string | null = null;
+let routePath = '/';
+let initialized = false;
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingEvents: { clientEventId: string; eventName: string; properties: AnalyticsProperties; occurredAt: string }[] = [];
+let previousPage: string | null = null;
+let ensureSessionPromise: Promise<boolean> | null = null;
+
+export function detectInstalledPwa(): boolean {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+  const navigatorWithStandalone = window.navigator as Navigator & { standalone?: boolean };
+  return Boolean(window.matchMedia?.('(display-mode: standalone)').matches || navigatorWithStandalone.standalone || document.referrer.startsWith('android-app://'));
+}
+
+export function getLaunchMode(): 'browser' | 'installed_pwa' | 'native' {
+  if (Platform.OS !== 'web') return 'native';
+  return detectInstalledPwa() ? 'installed_pwa' : 'browser';
+}
+
+function lifecycleBody(clientEventId: string) {
+  return {
+    visitorId, sessionId, clientEventId,
+    occurredAt: new Date().toISOString(), launchMode: getLaunchMode(),
+    appVersion: Constants.expoConfig?.version ?? 'unknown',
+  };
+}
+
+async function createOrResumeSession(): Promise<boolean> {
+  if (!isAttendeeAnalyticsPath(routePath) || !API_BASE_URL) return false;
+  try {
+    visitorId = await getOrCreateVisitorId(AsyncStorage);
+    const result = await getOrCreateSession(AsyncStorage, Date.now());
+    sessionId = result.session.id;
+    if (result.created) {
+      await transport.sendOrBuffer({ endpoint: '/api/analytics/session/start', body: lifecycleBody(generateAnalyticsUuid()) });
+      appendPendingEvent('app_launched', {
+        launch_mode: getLaunchMode(), app_version: Constants.expoConfig?.version ?? 'unknown',
+      });
+    }
+    return true;
+  } catch (error) {
+    if (__DEV__) console.debug('[Analytics] Session unavailable', error);
+    return false;
+  }
+}
+
+async function ensureSession(): Promise<boolean> {
+  if (ensureSessionPromise) return ensureSessionPromise;
+  ensureSessionPromise = createOrResumeSession();
+  try {
+    return await ensureSessionPromise;
+  } finally {
+    ensureSessionPromise = null;
+  }
+}
+
+async function heartbeat(): Promise<void> {
+  if (!(await ensureSession()) || !visitorId || !sessionId) return;
+  await transport.sendOrBuffer({ endpoint: '/api/analytics/session/heartbeat', body: lifecycleBody(generateAnalyticsUuid()) });
+  void transport.flush();
+}
+
+function startHeartbeat(): void {
+  if (heartbeatTimer || !isAttendeeAnalyticsPath(routePath)) return;
+  heartbeatTimer = setInterval(() => void heartbeat(), HEARTBEAT_MS);
+}
+
+function stopHeartbeat(): void {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  heartbeatTimer = null;
+}
+
+export async function initializeAttendeeAnalytics(pathname: string): Promise<void> {
+  routePath = pathname;
+  if (!isAttendeeAnalyticsPath(pathname)) return;
+  if (!initialized) {
+    initialized = true;
+    AppState.addEventListener('change', (state) => {
+      if (state === 'active' && isAttendeeAnalyticsPath(routePath)) {
+        void ensureSession().then(() => transport.flush());
+        startHeartbeat();
+      } else {
+        stopHeartbeat();
+        void flushAnalyticsEvents();
+      }
+    });
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('pagehide', () => void endAttendeeSession('pagehide'));
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') void ensureSession();
+        else void flushAnalyticsEvents();
+      });
+    }
+  }
+  await ensureSession();
+  startHeartbeat();
+  void transport.flush();
+}
+
+export async function setAnalyticsRoute(pathname: string): Promise<void> {
+  routePath = pathname;
+  if (!isAttendeeAnalyticsPath(pathname)) {
+    stopHeartbeat();
+    await flushAnalyticsEvents();
+    return;
+  }
+  await initializeAttendeeAnalytics(pathname);
+}
+
+export async function endAttendeeSession(reason: 'pagehide' | 'background' | 'explicit' = 'explicit'): Promise<void> {
+  stopHeartbeat();
+  await flushAnalyticsEvents();
+  if (visitorId && sessionId && isAttendeeAnalyticsPath(routePath)) {
+    await transport.sendOrBuffer({ endpoint: '/api/analytics/session/end', body: { ...lifecycleBody(generateAnalyticsUuid()), reason } });
+  }
+  sessionId = null;
+  try { await clearSession(AsyncStorage); } catch { /* analytics must remain non-blocking */ }
+}
+
+export async function queueAnalyticsEvent(eventName: string, properties: AnalyticsProperties = {}): Promise<void> {
+  if (!(await ensureSession()) || !visitorId || !sessionId) return;
+  appendPendingEvent(eventName, properties);
+}
+
+function appendPendingEvent(eventName: string, properties: AnalyticsProperties): void {
+  pendingEvents.push({ clientEventId: generateAnalyticsUuid(), eventName, properties, occurredAt: new Date().toISOString() });
+  if (pendingEvents.length >= ANALYTICS_MAX_BATCH_EVENTS) {
+    void flushAnalyticsEvents();
+  } else if (!flushTimer) {
+    flushTimer = setTimeout(() => void flushAnalyticsEvents(), EVENT_FLUSH_MS);
+  }
+}
+
+export async function flushAnalyticsEvents(): Promise<void> {
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = null;
+  if (!visitorId || !sessionId || pendingEvents.length === 0) return;
+  const events = takeAnalyticsBatch(pendingEvents);
+  await transport.sendOrBuffer({ endpoint: '/api/analytics/events', body: { visitorId, sessionId, events } });
+  if (pendingEvents.length > 0) await flushAnalyticsEvents();
+}
+
+export function pageNavigationProperties(pageId: string, source?: string): AnalyticsProperties {
+  const properties: AnalyticsProperties = { page_id: pageId };
+  if (source) properties.source = source;
+  if (previousPage && previousPage !== pageId) properties.previous_page_id = previousPage;
+  previousPage = pageId;
+  return properties;
+}
+
+export function resetAnalyticsForTests(): void {
+  stopHeartbeat();
+  visitorId = null; sessionId = null; initialized = false; pendingEvents = []; previousPage = null; routePath = '/'; ensureSessionPromise = null;
+}

@@ -51,10 +51,10 @@ function TabItem({ routeName }: { routeName: string }) {
         router.push('/');
         break;
       case 'map':
-        router.push('/map');
+        router.push({ pathname: '/map', params: { source: 'bottom_nav' } });
         break;
       case 'schedule':
-        router.push('/schedule');
+        router.push({ pathname: '/schedule', params: { source: 'bottom_nav' } });
         break;
       case 'about':
         router.push('/about');

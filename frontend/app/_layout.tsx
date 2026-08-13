@@ -1,7 +1,7 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import ErrorBoundary from '../src/components/ErrorBoundary';
 import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
 import SplashScreen from '../src/components/SplashScreen';
 import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext';
+import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
 
 // Initialize Webpushr for web platform
 const initWebpushr = () => {
@@ -52,6 +53,11 @@ const initWebpushr = () => {
 
 export default function RootLayout() {
   const [isInitializing, setIsInitializing] = useState(true);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    void setAnalyticsRoute(pathname);
+  }, [pathname]);
 
   useEffect(() => {
     initWebpushr();

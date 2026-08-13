@@ -25,8 +25,12 @@ import {
   VendorsResponse,
   getVendorsData,
 } from '../../src/services/spreadsheetDataService';
+import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
+import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
 
 export default function VendorsScreen() {
+  usePageAnalytics('vendors', 'home_quick_action', 'vendor_directory_opened');
   const { frameStyle, sectionStyle } = useAttendeeLayout();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,6 +110,15 @@ export default function VendorsScreen() {
   }, [searchQuery, selectedType, vendors]);
 
   const hasActiveFilters = Boolean(searchQuery.trim() || selectedType);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (!query) return undefined;
+    const timer = setTimeout(() => {
+      void queueAnalyticsEvent('vendor_search_used', buildSearchAnalyticsProperties(query, filteredVendors.length));
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [filteredVendors.length, searchQuery]);
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -187,7 +200,7 @@ export default function VendorsScreen() {
         >
           <TouchableOpacity
             style={[styles.typeChip, !selectedType && styles.typeChipActive]}
-            onPress={() => setSelectedType(null)}
+            onPress={() => { setSelectedType(null); void queueAnalyticsEvent('vendor_filter_used', { filter_value: 'all' }); }}
           >
             <Feather name="list" size={14} color={!selectedType ? '#FFFFFF' : '#4B5563'} />
             <Text style={[styles.typeChipText, !selectedType && styles.typeChipTextActive]}>
@@ -200,7 +213,12 @@ export default function VendorsScreen() {
               <TouchableOpacity
                 key={type}
                 style={[styles.typeChip, isActive && styles.typeChipActive]}
-                onPress={() => setSelectedType(isActive ? null : type)}
+                onPress={() => {
+                  setSelectedType(isActive ? null : type);
+                  const normalized = type.toLowerCase();
+                  const filterValue = normalized.includes('food') ? 'food' : normalized.includes('indoor') ? 'indoor' : normalized.includes('outdoor') ? 'outdoor' : 'all';
+                  void queueAnalyticsEvent('vendor_filter_used', { filter_value: filterValue });
+                }}
               >
                 <Feather name="tag" size={14} color={isActive ? '#FFFFFF' : '#4B5563'} />
                 <Text style={[styles.typeChipText, isActive && styles.typeChipTextActive]}>

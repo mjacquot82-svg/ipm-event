@@ -1,6 +1,6 @@
 // © 2026 1001538341 ONTARIO INC.
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,9 @@ import { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
-import { openExternalLink } from '../../src/utils/externalLinks';
+import { openTrackedLink, IpmDestinationId } from '../../src/analytics/trackedLinks';
+import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
+import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { getFavorites } from '../../src/utils/favoritesStorage';
 import { getUnreadAnnouncementIds, useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
 import {
@@ -200,6 +202,7 @@ function getTimeUntil(eventDate: Date | null) {
 }
 
 export default function HomeScreen() {
+  usePageAnalytics('home', 'launch');
   const router = useRouter();
   const { sectionStyle: attendeeSectionStyle } = useAttendeeLayout();
 
@@ -325,10 +328,15 @@ export default function HomeScreen() {
     await Promise.all([fetchSchedule(true), fetchAnnouncements(true), loadFavorites()]);
   }, [fetchAnnouncements, fetchSchedule, loadFavorites]);
 
-  const openLink = (url: string) => openExternalLink(url);
+  const quickAction = (actionId: string, destinationType: string, action: () => void) => {
+    void queueAnalyticsEvent('home_quick_action_clicked', {
+      action_id: actionId, destination_type: destinationType, source: 'home',
+    });
+    action();
+  };
 
-  const openBrowserLink = (url: string) => {
-    openExternalLink(url);
+  const openQuickLink = (actionId: string, destinationId: IpmDestinationId) => {
+    quickAction(actionId, 'outbound_link', () => { void openTrackedLink(destinationId, 'home_quick_action'); });
   };
 
   const showUnavailableNotice = (title: string) => {
@@ -382,6 +390,15 @@ export default function HomeScreen() {
       .filter((announcement) => unreadAnnouncementIds.has(announcement.id))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null
     : null;
+  const impressedAnnouncementId = useRef<string | null>(null);
+  useEffect(() => {
+    if (newestUnreadAnnouncement && impressedAnnouncementId.current !== newestUnreadAnnouncement.id) {
+      impressedAnnouncementId.current = newestUnreadAnnouncement.id;
+      void queueAnalyticsEvent('announcement_impression', {
+        announcement_id: newestUnreadAnnouncement.id, surface: 'home',
+      });
+    }
+  }, [newestUnreadAnnouncement]);
 
   return (
     <View style={styles.container}>
@@ -410,7 +427,9 @@ export default function HomeScreen() {
           <View style={sectionStyle}>
             <TouchableOpacity
               style={styles.newAnnouncementCard}
-              onPress={() => router.push(`/announcements/${newestUnreadAnnouncement.id}` as never)}
+              onPress={() => {
+                router.push(`/announcements/${newestUnreadAnnouncement.id}?source=home` as never);
+              }}
               activeOpacity={0.82}
               accessibilityLabel={`New announcement: ${newestUnreadAnnouncement.title}`}
             >
@@ -457,21 +476,21 @@ export default function HomeScreen() {
         <View style={sectionStyle}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
-            <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/map')} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => quickAction('map', 'internal', () => router.push({ pathname: '/map', params: { source: 'home_quick_action' } }))} activeOpacity={0.8}>
               <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
                 <Feather name="map" size={22} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Map</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/schedule')} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => quickAction('schedule', 'internal', () => router.push({ pathname: '/schedule', params: { source: 'home_quick_action' } }))} activeOpacity={0.8}>
               <View style={[styles.actionIcon, { backgroundColor: colors.accent }]}>
                 <Feather name="calendar" size={22} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Schedule</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/vendors')} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => quickAction('vendors', 'internal', () => router.push('/vendors'))} activeOpacity={0.8}>
               <View style={[styles.actionIcon, { backgroundColor: colors.vendor }]}>
                 <Feather name="shopping-bag" size={22} color="#FFFFFF" />
               </View>
@@ -480,7 +499,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/partners-and-sponsors/')}
+              onPress={() => openQuickLink('sponsors', 'partners')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.info }]}>
@@ -491,7 +510,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-a-volunteer/')}
+              onPress={() => openQuickLink('volunteer', 'volunteer')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.success }]}>
@@ -502,7 +521,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://www.plowingmatch.org/ipm2026/get-involved/become-an-exhibitor/')}
+              onPress={() => openQuickLink('exhibitors', 'exhibitor')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.vendor }]}>
@@ -513,7 +532,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openBrowserLink('https://www.tix123.com/tickets/?code=IPMRE26')}
+              onPress={() => openQuickLink('tickets', 'tickets')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.stage }]}>
@@ -524,7 +543,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openBrowserLink('https://letscamp.ca/camps/ipm-2026')}
+              onPress={() => openQuickLink('camping', 'camping')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
@@ -535,7 +554,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openBrowserLink('https://ipm26.itemorder.com/shop/home/')}
+              onPress={() => openQuickLink('souvenirs', 'merchandise')}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: '#9C27B0' }]}>
@@ -544,7 +563,7 @@ export default function HomeScreen() {
               <Text style={styles.actionTitle}>Souvenirs</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={() => router.push('/itinerary')} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => quickAction('itinerary', 'internal', () => router.push('/itinerary'))} activeOpacity={0.8}>
               <View style={[styles.actionIcon, { backgroundColor: colors.utility }]}>
                 <Feather name="clipboard" size={22} color="#FFFFFF" />
               </View>
@@ -553,7 +572,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => router.push('/queen-of-the-furrow' as never)}
+              onPress={() => quickAction('queen_archive', 'internal', () => router.push('/queen-of-the-furrow' as never))}
               activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel="Queen of the Furrow"
@@ -566,7 +585,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[styles.actionCard, styles.sosCard]}
-              onPress={() => showUnavailableNotice('SOS')}
+              onPress={() => quickAction('sos', 'unavailable_notice', () => showUnavailableNotice('SOS'))}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: '#D32F2F' }]}>
@@ -577,7 +596,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={[styles.actionCard, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionUnread]}
-              onPress={() => router.push('/announcements' as never)}
+              onPress={() => quickAction('announcements', 'internal', () => router.push('/announcements' as never))}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, styles.announcementBell, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementBellUnread]}>

@@ -14,7 +14,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
 import {
   ATTENDEE_HORIZONTAL_MARGIN,
@@ -31,10 +31,15 @@ import {
   ScheduleResponse,
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
+import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
+import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
 
 export default function ScheduleScreen() {
   const { frameStyle, sectionStyle } = useAttendeeLayout();
   const router = useRouter();
+  const { source } = useLocalSearchParams<{ source?: string }>();
+  usePageAnalytics('schedule', source || 'other', 'schedule_viewed');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -126,6 +131,9 @@ export default function ScheduleScreen() {
   const handleToggleFavorite = async (eventId: string) => {
     const result = await toggleFavorite(eventId);
     setFavorites(result.favorites);
+    void queueAnalyticsEvent('favorite_changed', {
+      schedule_item_id: eventId, action: result.isFavorite ? 'added' : 'removed',
+    });
     // Sync with backend for notifications
     syncStarredEventsWithBackend(result.favorites);
   };
@@ -296,6 +304,15 @@ export default function ScheduleScreen() {
     [filteredGroupedEvents],
   );
 
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (!query) return undefined;
+    const timer = setTimeout(() => {
+      void queueAnalyticsEvent('schedule_search_used', buildSearchAnalyticsProperties(query, filteredEvents.length));
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [filteredEvents.length, searchQuery]);
+
   const handleFilterPress = (value: string | null) => {
     if (value === 'starred') {
       setShowFavoritesOnly((current) => !current);
@@ -457,7 +474,10 @@ export default function ScheduleScreen() {
                 <TouchableOpacity
                   key={category}
                   style={[styles.filterPill, isActive && styles.filterPillActive]}
-                  onPress={() => setSelectedCategory(isActive ? null : category)}
+                  onPress={() => {
+                    setSelectedCategory(isActive ? null : category);
+                    void queueAnalyticsEvent('schedule_filter_used', { filter_type: 'category', filter_value: isActive ? 'all' : category });
+                  }}
                 >
                   <Feather
                     name="tag"
@@ -484,7 +504,10 @@ export default function ScheduleScreen() {
                 <TouchableOpacity
                   key={day}
                   style={[styles.filterPill, isActive && styles.filterPillActive]}
-                  onPress={() => setSelectedDay(isActive ? null : day)}
+                  onPress={() => {
+                    setSelectedDay(isActive ? null : day);
+                    void queueAnalyticsEvent('schedule_filter_used', { filter_type: 'day', filter_value: isActive ? 'all' : day });
+                  }}
                 >
                   <Feather
                     name="calendar"
@@ -573,6 +596,9 @@ export default function ScheduleScreen() {
                   <TouchableOpacity 
                     style={styles.eventCard}
                     onPress={() => {
+                      void queueAnalyticsEvent('schedule_event_opened', {
+                        schedule_item_id: event.id, category: event.category || 'uncategorized', source: 'schedule',
+                      });
                       setSelectedEvent(event);
                       setShowEventModal(true);
                     }}
@@ -727,7 +753,7 @@ export default function ScheduleScreen() {
                         setShowEventModal(false);
                         router.push({
                           pathname: '/(tabs)/map',
-                          params: { location: selectedEvent.location_name, showOnly: 'true' }
+                          params: { location: selectedEvent.location_name, showOnly: 'true', source: 'schedule' }
                         });
                       }}
                       activeOpacity={0.7}
