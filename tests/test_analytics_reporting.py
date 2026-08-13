@@ -14,6 +14,8 @@ from backend.analytics_reporting import (
     build_summary,
     build_traffic,
     content_report,
+    live_report,
+    normalize_utc_datetime,
     reporting_bounds,
     summary_report,
     traffic_report,
@@ -45,19 +47,19 @@ class MemoryReportingRepository:
         return [row for row in self.visitors if row.get("eventScope", ANALYTICS_EVENT_SCOPE) == scope]
 
     async def fetch_sessions(self, scope, start, end):
-        return [row for row in self.sessions if row.get("eventScope", ANALYTICS_EVENT_SCOPE) == scope and (start is None or row["startedAt"] >= start) and row["startedAt"] < end]
+        return [row for row in self.sessions if row.get("eventScope", ANALYTICS_EVENT_SCOPE) == scope and (start is None or normalize_utc_datetime(row["startedAt"]) >= start) and normalize_utc_datetime(row["startedAt"]) < end]
 
     async def fetch_events(self, scope, start, end, event_names=None):
-        return [row for row in self.events if row.get("eventScope") == scope and (start is None or row["receivedAt"] >= start) and row["receivedAt"] < end and (not event_names or row.get("eventName") in event_names)]
+        return [row for row in self.events if row.get("eventScope") == scope and (start is None or normalize_utc_datetime(row["receivedAt"]) >= start) and normalize_utc_datetime(row["receivedAt"]) < end and (not event_names or row.get("eventName") in event_names)]
 
     async def fetch_rollups(self, scope, first_date, last_date):
         return [row for row in self.rollups if row.get("eventScope", ANALYTICS_EVENT_SCOPE) == scope and (first_date is None or row["localDate"] >= first_date) and row["localDate"] <= last_date]
 
     async def fetch_recent_events(self, scope, cutoff, now):
-        return [row for row in self.events if row.get("eventScope") == scope and cutoff <= row["receivedAt"] <= now]
+        return [row for row in self.events if row.get("eventScope") == scope and cutoff <= normalize_utc_datetime(row["receivedAt"]) <= now]
 
     async def fetch_active_sessions(self, scope, cutoff, now):
-        return [row for row in self.sessions if row.get("eventScope", ANALYTICS_EVENT_SCOPE) == scope and row.get("status") == "active" and cutoff <= row["lastActivityAt"] <= now]
+        return [row for row in self.sessions if row.get("eventScope", ANALYTICS_EVENT_SCOPE) == scope and row.get("status") == "active" and cutoff <= normalize_utc_datetime(row["lastActivityAt"]) <= now]
 
 
 def fixture_repository():
@@ -116,6 +118,39 @@ def test_ranges_cover_today_7d_30d_all_and_reject_unknown():
     with pytest.raises(AnalyticsRangeError): reporting_bounds("yesterday", NOW)
 
 
+def test_utc_normalization_preserves_aware_instants_and_interprets_mongo_naive_values_as_utc():
+    naive = datetime(2026, 8, 13, 12, 30)
+    aware_utc = datetime(2026, 8, 13, 12, 30, tzinfo=UTC)
+    aware_toronto = datetime(2026, 8, 13, 8, 30, tzinfo=__import__("zoneinfo").ZoneInfo("America/Toronto"))
+    assert normalize_utc_datetime(naive) == aware_utc
+    assert normalize_utc_datetime(aware_utc) is aware_utc
+    assert normalize_utc_datetime(aware_toronto) == aware_utc
+
+
+def test_summary_range_comparisons_accept_mixed_naive_and_aware_mongo_datetimes():
+    start, end, _, _ = reporting_bounds("today", NOW)
+    visitors = [
+        {"visitorId": "new-naive", "firstSeenAt": datetime(2026, 11, 1, 12), "visitCount": 1},
+        {"visitorId": "returning-aware", "firstSeenAt": datetime(2026, 10, 30, 12, tzinfo=UTC), "visitCount": 2},
+    ]
+    sessions = [{"visitorId": "new-naive"}, {"visitorId": "returning-aware"}]
+    overview = build_summary(visitors, sessions, [], start, end)
+    assert overview["uniqueVisitors"] == 2
+    assert overview["newVisitors"] == 1
+    assert overview["returningVisitors"] == 1
+
+
+def test_live_comparisons_accept_mixed_naive_and_aware_mongo_datetimes():
+    events = [
+        {"eventName": "page_viewed", "receivedAt": datetime(2026, 11, 1, 17, 59, 30), "properties": {"page_id": "map"}},
+        {"eventName": "page_viewed", "receivedAt": datetime(2026, 11, 1, 17, 57, tzinfo=UTC), "properties": {"page_id": "schedule"}},
+    ]
+    live = build_live(events, [{"status": "active"}], NOW)
+    assert live["activityLastMinute"] == 1
+    assert live["activityLastFiveMinutes"] == 2
+    assert live["mostRecentActivityAt"] == datetime(2026, 11, 1, 17, 59, 30, tzinfo=UTC)
+
+
 def test_summary_distinguishes_unique_new_returning_sessions_and_launches():
     repository = fixture_repository()
     payload = asyncio.run(summary_report(repository, "today", NOW))["overview"]
@@ -147,6 +182,12 @@ def test_traffic_is_zero_filled_toronto_local_and_combines_dst_hour():
     fall_start = reporting_bounds("today", datetime(2026, 11, 1, 12, tzinfo=UTC))[0]
     assert spring_start == datetime(2026, 3, 8, 5, tzinfo=UTC)
     assert fall_start == datetime(2026, 11, 1, 4, tzinfo=UTC)
+    assert normalize_utc_datetime(datetime(2026, 11, 1, 5, 30)).astimezone(
+        __import__("zoneinfo").ZoneInfo("America/Toronto")
+    ).strftime("%H:00") == "01:00"
+    assert normalize_utc_datetime(datetime(2026, 11, 1, 6, 30)).astimezone(
+        __import__("zoneinfo").ZoneInfo("America/Toronto")
+    ).strftime("%H:00") == "01:00"
 
 
 def test_content_metrics_rankings_adoption_and_intentional_non_metrics():
@@ -223,5 +264,30 @@ def test_authenticated_endpoints_validate_range_and_event_scope(monkeypatch):
         server.app.dependency_overrides[server.get_current_organizer_user] = other_user
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=server.app), base_url="http://test") as client:
             assert (await client.get("/api/admin/analytics/live")).status_code == 403
+    try: asyncio.run(verify())
+    finally: server.app.dependency_overrides.clear()
+
+
+def test_summary_and_live_endpoints_accept_mongo_style_naive_datetimes(monkeypatch):
+    current = datetime.now(UTC)
+    naive_recent = (current - timedelta(seconds=20)).replace(tzinfo=None)
+    repository = MemoryReportingRepository(
+        visitors=[{"eventScope": ANALYTICS_EVENT_SCOPE, "visitorId": "local", "firstSeenAt": naive_recent, "visitCount": 1}],
+        sessions=[{"eventScope": ANALYTICS_EVENT_SCOPE, "visitorId": "local", "startedAt": naive_recent,
+                   "lastActivityAt": naive_recent, "status": "active"}],
+        events=[event("page_viewed", visitor="local", at=current - timedelta(seconds=20), page_id="home")],
+    )
+    repository.events[0]["receivedAt"] = naive_recent
+    async def ipm_user(): return {"event_id": ANALYTICS_EVENT_SCOPE}
+    monkeypatch.setattr(server, "analytics_reporting_repository", repository)
+    server.app.dependency_overrides[server.get_current_organizer_user] = ipm_user
+    async def verify():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=server.app), base_url="http://test") as client:
+            summary = await client.get("/api/admin/analytics/summary?range=today")
+            live = await client.get("/api/admin/analytics/live")
+            assert summary.status_code == 200
+            assert summary.json()["overview"]["newVisitors"] == 1
+            assert live.status_code == 200
+            assert live.json()["live"]["activityLastMinute"] == 1
     try: asyncio.run(verify())
     finally: server.app.dependency_overrides.clear()

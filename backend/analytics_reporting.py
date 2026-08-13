@@ -93,9 +93,17 @@ class MongoAnalyticsReportingRepository:
         ).to_list(length=None)
 
 
+def normalize_utc_datetime(value: datetime) -> datetime:
+    """Interpret MongoDB's timezone-naive BSON datetimes as UTC.
+
+    PyMongo returns UTC BSON datetimes without tzinfo unless configured with
+    tz_aware=True. Aware values retain their instant and are converted to UTC.
+    """
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
 def normalize_now(value: Optional[datetime] = None) -> datetime:
-    current = value or datetime.now(UTC)
-    return current.replace(tzinfo=UTC) if current.tzinfo is None else current.astimezone(UTC)
+    return normalize_utc_datetime(value or datetime.now(UTC))
 
 
 def reporting_bounds(range_name: str, now: Optional[datetime] = None) -> tuple[Optional[datetime], datetime, date, date]:
@@ -132,14 +140,20 @@ def _events_named(events: Iterable[dict[str, Any]], name: str) -> list[dict[str,
 
 
 def build_summary(visitors: list[dict[str, Any]], sessions: list[dict[str, Any]], events: list[dict[str, Any]], start: Optional[datetime], end: datetime) -> dict[str, Any]:
+    normalized_start = normalize_utc_datetime(start) if start is not None else None
+    normalized_end = normalize_utc_datetime(end)
     active_visitor_ids = {session.get("visitorId") for session in sessions if session.get("visitorId")}
     visitor_by_id = {visitor.get("visitorId"): visitor for visitor in visitors}
     if start is None:
         new_visitors = sum(1 for visitor_id in active_visitor_ids if visitor_by_id.get(visitor_id, {}).get("visitCount", 0) <= 1)
         returning_visitors = sum(1 for visitor_id in active_visitor_ids if visitor_by_id.get(visitor_id, {}).get("visitCount", 0) > 1)
     else:
-        new_visitors = sum(1 for visitor_id in active_visitor_ids if start <= visitor_by_id.get(visitor_id, {}).get("firstSeenAt", end) < end)
-        returning_visitors = sum(1 for visitor_id in active_visitor_ids if visitor_by_id.get(visitor_id, {}).get("firstSeenAt", end) < start)
+        first_seen = {
+            visitor_id: normalize_utc_datetime(visitor_by_id.get(visitor_id, {}).get("firstSeenAt", normalized_end))
+            for visitor_id in active_visitor_ids
+        }
+        new_visitors = sum(1 for visitor_id in active_visitor_ids if normalized_start <= first_seen[visitor_id] < normalized_end)
+        returning_visitors = sum(1 for visitor_id in active_visitor_ids if first_seen[visitor_id] < normalized_start)
     launches = _events_named(events, "app_launched")
     installed = {event.get("visitorId") for event in launches if event.get("properties", {}).get("launch_mode") in {"installed_pwa", "native"}}
     browser = {event.get("visitorId") for event in launches if event.get("properties", {}).get("launch_mode") == "browser"} - installed
@@ -159,17 +173,22 @@ def build_summary(visitors: list[dict[str, Any]], sessions: list[dict[str, Any]]
 
 
 def build_live(events: list[dict[str, Any]], active_sessions: list[dict[str, Any]], now: datetime) -> dict[str, Any]:
-    one = now - timedelta(minutes=1)
-    five = now - timedelta(minutes=5)
+    current = normalize_utc_datetime(now)
+    one = current - timedelta(minutes=1)
+    five = current - timedelta(minutes=5)
+    received_at = {
+        id(event): normalize_utc_datetime(event["receivedAt"])
+        for event in events if isinstance(event.get("receivedAt"), datetime)
+    }
     recent_pages = Counter(
         event.get("properties", {}).get("page_id") for event in events
-        if event.get("eventName") == "page_viewed" and event.get("receivedAt") and event["receivedAt"] >= five
+        if event.get("eventName") == "page_viewed" and id(event) in received_at and received_at[id(event)] >= five
     )
-    latest = max((event.get("receivedAt") for event in events if event.get("receivedAt")), default=None)
+    latest = max(received_at.values(), default=None)
     return {
         "activeSessions": len(active_sessions),
-        "activityLastMinute": sum(1 for event in events if event.get("receivedAt") and event["receivedAt"] >= one),
-        "activityLastFiveMinutes": sum(1 for event in events if event.get("receivedAt") and event["receivedAt"] >= five),
+        "activityLastMinute": sum(1 for event in events if id(event) in received_at and received_at[id(event)] >= one),
+        "activityLastFiveMinutes": sum(1 for event in events if id(event) in received_at and received_at[id(event)] >= five),
         "mostRecentActivityAt": latest,
         "topActivePages": _rank(recent_pages, sum(recent_pages.values()), label_key="pageId")[:5],
         "activityWindowMinutes": 30,
