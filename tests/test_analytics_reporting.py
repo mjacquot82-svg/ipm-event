@@ -37,11 +37,15 @@ def event(name, visitor="visitor-a", at=NOW - timedelta(hours=1), **properties):
 
 
 class MemoryReportingRepository:
-    def __init__(self, visitors=None, sessions=None, events=None, rollups=None):
+    def __init__(self, visitors=None, sessions=None, events=None, rollups=None, collection_started_at=None):
         self.visitors = visitors or []
         self.sessions = sessions or []
         self.events = events or []
         self.rollups = rollups or []
+        self.collection_started_at = collection_started_at
+
+    async def fetch_collection_started_at(self, scope):
+        return self.collection_started_at if scope == ANALYTICS_EVENT_SCOPE else None
 
     async def fetch_visitors(self, scope):
         return [row for row in self.visitors if row.get("eventScope", ANALYTICS_EVENT_SCOPE) == scope]
@@ -159,6 +163,16 @@ def test_summary_distinguishes_unique_new_returning_sessions_and_launches():
     assert payload["sessions"] == 2 and payload["launches"] == 1
     assert payload["installedPwaVisitors"] == 1 and payload["browserOnlyVisitors"] == 0
     assert payload["averageSessionDurationSeconds"] == 600 and payload["sessionDurationSampleSize"] == 1
+
+
+def test_summary_exposes_server_owned_collection_start_or_truthful_not_started_state():
+    started = datetime(2026, 8, 13, 14, 30)
+    established = asyncio.run(summary_report(
+        MemoryReportingRepository(collection_started_at=started), "all", NOW,
+    ))
+    not_started = asyncio.run(summary_report(MemoryReportingRepository(), "all", NOW))
+    assert established["collectionStartedAt"] == datetime(2026, 8, 13, 14, 30, tzinfo=UTC)
+    assert not_started["collectionStartedAt"] is None
 
 
 def test_live_activity_uses_recent_aggregate_window_without_identifiers():

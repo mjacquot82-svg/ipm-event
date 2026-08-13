@@ -374,6 +374,15 @@ class MongoAnalyticsRepository:
 
     async def record_event(self, document: dict[str, Any]) -> bool:
         document = {**document, "expiresAt": document["receivedAt"] + self.retention}
+        await self.db.analytics_metadata.update_one(
+            {"_id": f"collection-start:{ANALYTICS_EVENT_SCOPE}"},
+            {"$setOnInsert": {
+                "eventScope": ANALYTICS_EVENT_SCOPE,
+                "collectionStartedAt": document["receivedAt"],
+                "createdAt": document["receivedAt"],
+            }},
+            upsert=True,
+        )
         try:
             await self.db.analytics_events.insert_one(document)
             return True

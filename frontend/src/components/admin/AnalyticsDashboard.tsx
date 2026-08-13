@@ -55,6 +55,14 @@ function formatTime(value: string | null) {
   }).format(new Date(value));
 }
 
+function formatCollectionStart(value: string | null | undefined) {
+  if (value === undefined) return 'Checking production start…';
+  if (!value) return 'Not started in production';
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Toronto', year: 'numeric', month: 'long', day: 'numeric',
+  }).format(new Date(value));
+}
+
 function MetricCard({ label, value, help, icon }: MetricProps) {
   return <View style={styles.metricCard}>
     <View style={styles.metricIcon}><Feather name={icon} size={18} color={colors.primary} /></View>
@@ -169,6 +177,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
   const mapSources = useMemo(() => Object.fromEntries((report?.map.sources || []).map((item) => [item.source, item.count])), [report]);
 
   return <ContentPage title="Analytics" subtitle="Aggregate attendee engagement · America/Toronto">
+    <Text style={styles.collectionStart}>Analytics collecting since: {formatCollectionStart(summary?.collectionStartedAt)} · “All Time” includes all analytics collected since this date.</Text>
     <View style={styles.toolbar}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangeRow}>
         {RANGE_OPTIONS.map((option) => <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected: range === option.value }} style={[styles.rangeButton, range === option.value && styles.rangeButtonActive]} onPress={() => setRange(option.value)}>
@@ -275,6 +284,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
 }
 
 const styles = StyleSheet.create({
+  collectionStart: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
   toolbar: { flexDirection: 'row', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' },
   rangeRow: { gap: 8 }, rangeButton: { minHeight: 40, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'center' },
   rangeButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary }, rangeText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary }, rangeTextActive: { color: '#FFFFFF' },

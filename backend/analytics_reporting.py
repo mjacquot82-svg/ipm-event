@@ -34,6 +34,7 @@ class AnalyticsRangeError(ValueError):
 
 
 class AnalyticsReportingRepository(Protocol):
+    async def fetch_collection_started_at(self, event_scope: str) -> Optional[datetime]: ...
     async def fetch_visitors(self, event_scope: str) -> list[dict[str, Any]]: ...
     async def fetch_sessions(self, event_scope: str, start: Optional[datetime], end: datetime) -> list[dict[str, Any]]: ...
     async def fetch_events(self, event_scope: str, start: Optional[datetime], end: datetime, event_names: Optional[set[str]] = None) -> list[dict[str, Any]]: ...
@@ -47,6 +48,13 @@ class MongoAnalyticsReportingRepository:
 
     def __init__(self, database: Any):
         self.db = database
+
+    async def fetch_collection_started_at(self, event_scope: str) -> Optional[datetime]:
+        metadata = await self.db.analytics_metadata.find_one(
+            {"_id": f"collection-start:{event_scope}", "eventScope": event_scope},
+            {"_id": 0, "collectionStartedAt": 1},
+        )
+        return metadata.get("collectionStartedAt") if metadata else None
 
     async def fetch_visitors(self, event_scope: str) -> list[dict[str, Any]]:
         return await self.db.analytics_visitors.find(
@@ -301,10 +309,16 @@ def count_in(events: Iterable[dict[str, Any]], event_name: str) -> int:
 
 async def summary_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
     current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
+    collection_started_at = await repository.fetch_collection_started_at(ANALYTICS_EVENT_SCOPE)
     visitors = await repository.fetch_visitors(ANALYTICS_EVENT_SCOPE)
     sessions = await repository.fetch_sessions(ANALYTICS_EVENT_SCOPE, start, end)
     events = await repository.fetch_events(ANALYTICS_EVENT_SCOPE, start, end, {"app_launched", "page_viewed"})
-    return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "overview": build_summary(visitors, sessions, events, start, end)}
+    return {
+        "range": range_name,
+        "timezone": ANALYTICS_TIMEZONE,
+        "collectionStartedAt": normalize_utc_datetime(collection_started_at) if collection_started_at else None,
+        "overview": build_summary(visitors, sessions, events, start, end),
+    }
 
 
 async def live_report(repository: AnalyticsReportingRepository, now: Optional[datetime] = None) -> dict[str, Any]:

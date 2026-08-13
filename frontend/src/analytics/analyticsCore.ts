@@ -8,7 +8,13 @@ export type AnalyticsStorage = {
   removeItem(key: string): Promise<void>;
 };
 
-export type AnalyticsFetch = (url: string, init: RequestInit) => Promise<{ ok: boolean; status?: number }>;
+export type AnalyticsFetchResponse = {
+  ok: boolean;
+  status?: number;
+  json?: () => Promise<unknown>;
+};
+
+export type AnalyticsFetch = (url: string, init: RequestInit) => Promise<AnalyticsFetchResponse>;
 
 export type BufferedRequest = {
   endpoint: string;
@@ -18,6 +24,17 @@ export type BufferedRequest = {
 const VISITOR_KEY = '@ipm_analytics_visitor_v1';
 const SESSION_KEY = '@ipm_analytics_session_v1';
 const BUFFER_KEY = '@ipm_analytics_buffer_v1';
+const INVALID_SESSION_DETAIL = 'session is missing, ended, or inactive';
+
+export class AnalyticsSessionRecovery {
+  private inFlight: Promise<void> | null = null;
+
+  run(recover: () => Promise<void>): Promise<void> {
+    if (this.inFlight) return this.inFlight;
+    this.inFlight = recover().finally(() => { this.inFlight = null; });
+    return this.inFlight;
+  }
+}
 
 export function generateAnalyticsUuid(randomUuid?: () => string): string {
   if (randomUuid) return randomUuid();
@@ -113,17 +130,45 @@ export class AnalyticsRequestBuffer {
   private fetcher: AnalyticsFetch;
   private apiBaseUrl: string;
   private development: boolean;
+  private onSessionInvalid?: (sessionId: string) => void | Promise<void>;
 
   constructor(
     storage: AnalyticsStorage,
     fetcher: AnalyticsFetch,
     apiBaseUrl: string,
     development = false,
+    onSessionInvalid?: (sessionId: string) => void | Promise<void>,
   ) {
     this.storage = storage;
     this.fetcher = fetcher;
     this.apiBaseUrl = apiBaseUrl;
     this.development = development;
+    this.onSessionInvalid = onSessionInvalid;
+  }
+
+  private requestSessionId(request: BufferedRequest): string | null {
+    return typeof request.body.sessionId === 'string' ? request.body.sessionId : null;
+  }
+
+  private async invalidSessionId(response: AnalyticsFetchResponse, request: BufferedRequest): Promise<string | null> {
+    if (response.status !== 422 || !response.json) return null;
+    try {
+      const body = await response.json();
+      const detail = body && typeof body === 'object' && 'detail' in body ? body.detail : null;
+      return detail === INVALID_SESSION_DETAIL ? this.requestSessionId(request) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async retireInvalidSession(sessionId: string): Promise<void> {
+    await this.load();
+    // Requests retain their original session ID for semantic correctness. Once
+    // that server session is invalid, discard them instead of rewriting history
+    // onto the replacement session.
+    this.queue = this.queue.filter((request) => this.requestSessionId(request) !== sessionId);
+    await this.persist();
+    await this.onSessionInvalid?.(sessionId);
   }
 
   private async load(): Promise<void> {
@@ -161,6 +206,11 @@ export class AnalyticsRequestBuffer {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request.body), keepalive: true,
       });
       if (response.ok) return true;
+      const invalidSessionId = await this.invalidSessionId(response, request);
+      if (invalidSessionId) {
+        await this.retireInvalidSession(invalidSessionId);
+        return false;
+      }
       if (response.status && response.status >= 400 && response.status < 500 && ![408, 429].includes(response.status)) {
         if (this.development) console.debug(`[Analytics] Dropped rejected payload (${response.status})`);
         return false;
@@ -184,6 +234,11 @@ export class AnalyticsRequestBuffer {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request.body), keepalive: true,
           });
           if (!response.ok) {
+            const invalidSessionId = await this.invalidSessionId(response, request);
+            if (invalidSessionId) {
+              await this.retireInvalidSession(invalidSessionId);
+              continue;
+            }
             if (response.status && response.status >= 400 && response.status < 500 && ![408, 429].includes(response.status)) {
               this.queue.shift();
               await this.persist();

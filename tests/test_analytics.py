@@ -141,6 +141,24 @@ class IndexDatabase:
         self.analytics_daily_rollups = IndexCollection()
 
 
+class RecordingCollection:
+    def __init__(self):
+        self.documents = []
+        self.updates = []
+
+    async def insert_one(self, document):
+        self.documents.append(document)
+
+    async def update_one(self, query, update, **options):
+        self.updates.append((query, update, options))
+
+
+class RecordingDatabase:
+    def __init__(self):
+        self.analytics_events = RecordingCollection()
+        self.analytics_metadata = RecordingCollection()
+
+
 def session_request(**overrides):
     values = {
         "visitorId": VISITOR_ID,
@@ -156,6 +174,23 @@ def session_request(**overrides):
 
 def events_request(*events, visitor_id=VISITOR_ID, session_id=SESSION_ID):
     return AnalyticsEventsRequest(visitorId=visitor_id, sessionId=session_id, events=list(events))
+
+
+def test_first_persisted_event_establishes_server_owned_collection_start_metadata():
+    database = RecordingDatabase()
+    repository = MongoAnalyticsRepository(database)
+    received_at = datetime(2026, 9, 15, 13, tzinfo=UTC)
+    inserted = asyncio.run(repository.record_event({
+        "eventScope": ANALYTICS_EVENT_SCOPE,
+        "clientEventId": str(uuid4()),
+        "receivedAt": received_at,
+    }))
+    assert inserted
+    query, update, options = database.analytics_metadata.updates[0]
+    assert query == {"_id": "collection-start:ipm-2026"}
+    assert update["$setOnInsert"]["collectionStartedAt"] == received_at
+    assert update["$setOnInsert"]["eventScope"] == "ipm-2026"
+    assert options == {"upsert": True}
 
 
 @pytest.mark.parametrize("event_name", sorted(EVENT_CATALOG))

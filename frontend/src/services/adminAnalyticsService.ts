@@ -6,6 +6,7 @@ export type RankedMetric = { count: number; share: number; [key: string]: string
 export type AnalyticsSummaryResponse = {
   range: AnalyticsRange;
   timezone: 'America/Toronto';
+  collectionStartedAt: string | null;
   overview: {
     uniqueVisitors: number;
     newVisitors: number;

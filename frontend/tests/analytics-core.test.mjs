@@ -4,9 +4,11 @@ import {
   ANALYTICS_MAX_BUFFERED_REQUESTS,
   ANALYTICS_SESSION_TIMEOUT_MS,
   AnalyticsRequestBuffer,
+  AnalyticsSessionRecovery,
   PageFocusDeduplicator,
   buildOutboundAnalyticsProperties,
   buildSearchAnalyticsProperties,
+  clearSession,
   generateAnalyticsUuid,
   getOrCreateSession,
   getOrCreateVisitorId,
@@ -99,6 +101,136 @@ test('permanently rejected payloads are not retried forever', async () => {
   const buffer = new AnalyticsRequestBuffer(storage, async () => ({ ok: false, status: 422 }), '');
   await buffer.sendOrBuffer({ endpoint: '/events', body: { malformed: true } });
   assert.equal(await buffer.size(), 0);
+});
+
+const invalidSessionResponse = () => ({
+  ok: false,
+  status: 422,
+  json: async () => ({ detail: 'session is missing, ended, or inactive' }),
+});
+
+test('long offline activity retires the expired session, discards its events, and starts a fresh session', async () => {
+  const storage = new MemoryStorage();
+  const recovery = new AnalyticsSessionRecovery();
+  const first = await getOrCreateSession(storage, 0, uuidSource);
+  const oldSessionId = first.session.id;
+  // Local activity at 20 and 40 minutes keeps the client session locally fresh,
+  // while the server has received nothing for longer than its 30-minute limit.
+  await getOrCreateSession(storage, 20 * 60_000, uuidSource);
+  const locallyActive = await getOrCreateSession(storage, 40 * 60_000, uuidSource);
+  assert.equal(locallyActive.session.id, oldSessionId);
+
+  let online = false;
+  let currentSessionId = oldSessionId;
+  let recoveryCount = 0;
+  const calls = [];
+  let buffer;
+  const fetcher = async (url, init) => {
+    const body = JSON.parse(init.body);
+    calls.push({ url, body });
+    if (!online) throw new Error('offline');
+    if (body.sessionId === oldSessionId) return invalidSessionResponse();
+    return { ok: true, status: 202 };
+  };
+  buffer = new AnalyticsRequestBuffer(storage, fetcher, 'https://example.test', false, async (rejectedSessionId) => {
+    assert.equal(rejectedSessionId, oldSessionId);
+    await recovery.run(async () => {
+      recoveryCount += 1;
+      await clearSession(storage);
+      const fresh = await getOrCreateSession(storage, 40 * 60_000 + 1, uuidSource);
+      currentSessionId = fresh.session.id;
+      await buffer.sendOrBuffer({
+        endpoint: '/api/analytics/session/start',
+        body: { visitorId: 'visitor', sessionId: currentSessionId, clientEventId: 'fresh-start' },
+      });
+    });
+  });
+
+  const oldRequest = {
+    endpoint: '/api/analytics/events',
+    body: { visitorId: 'visitor', sessionId: oldSessionId, events: [{ clientEventId: 'old-event' }] },
+  };
+  await buffer.sendOrBuffer(oldRequest);
+  assert.equal(await buffer.size(), 1);
+  online = true;
+  await buffer.flush();
+
+  assert.equal(recoveryCount, 1);
+  assert.notEqual(currentSessionId, oldSessionId);
+  assert.equal(await buffer.size(), 0);
+  assert.equal(calls.filter((call) => call.body.events?.[0]?.clientEventId === 'old-event').length, 2);
+  assert.equal(calls.filter((call) => call.body.clientEventId === 'fresh-start').length, 1);
+
+  const newEventAccepted = await buffer.sendOrBuffer({
+    endpoint: '/api/analytics/events',
+    body: { visitorId: 'visitor', sessionId: currentSessionId, events: [{ clientEventId: 'new-event' }] },
+  });
+  assert.equal(newEventAccepted, true);
+});
+
+test('concurrent invalid-session signals use one recovery and cannot loop', async () => {
+  const recovery = new AnalyticsSessionRecovery();
+  let releases;
+  const gate = new Promise((resolve) => { releases = resolve; });
+  let recoveries = 0;
+  const task = async () => { recoveries += 1; await gate; };
+  const first = recovery.run(task);
+  const second = recovery.run(task);
+  assert.equal(first, second);
+  releases();
+  await Promise.all([first, second]);
+  assert.equal(recoveries, 1);
+});
+
+test('short offline periods replay the existing session without recovery', async () => {
+  const storage = new MemoryStorage();
+  const first = await getOrCreateSession(storage, 0, uuidSource);
+  const resumed = await getOrCreateSession(storage, ANALYTICS_SESSION_TIMEOUT_MS - 1, uuidSource);
+  assert.equal(resumed.session.id, first.session.id);
+  let recoveries = 0;
+  let online = false;
+  const buffer = new AnalyticsRequestBuffer(storage, async () => {
+    if (!online) throw new Error('offline');
+    return { ok: true, status: 202 };
+  }, '', false, () => { recoveries += 1; });
+  await buffer.sendOrBuffer({ endpoint: '/api/analytics/events', body: { sessionId: first.session.id } });
+  online = true;
+  await buffer.flush();
+  assert.equal(recoveries, 0);
+  assert.equal(await buffer.size(), 0);
+});
+
+test('an explicitly ended session is retired and attendee work remains non-blocking', async () => {
+  const storage = new MemoryStorage();
+  const oldSessionId = (await getOrCreateSession(storage, 0, uuidSource)).session.id;
+  let recovered = false;
+  const buffer = new AnalyticsRequestBuffer(storage, async () => invalidSessionResponse(), '', false, async () => {
+    await clearSession(storage);
+    await getOrCreateSession(storage, 1, uuidSource);
+    recovered = true;
+  });
+  const analyticsWork = buffer.sendOrBuffer({
+    endpoint: '/api/analytics/session/heartbeat', body: { sessionId: oldSessionId },
+  });
+  let attendeeActionCompleted = false;
+  attendeeActionCompleted = true;
+  await analyticsWork;
+  assert.equal(attendeeActionCompleted, true);
+  assert.equal(recovered, true);
+  const replacement = JSON.parse(await storage.getItem('@ipm_analytics_session_v1'));
+  assert.notEqual(replacement.id, oldSessionId);
+});
+
+test('unrelated 422 validation failures do not rotate a valid session', async () => {
+  const storage = new MemoryStorage();
+  const session = await getOrCreateSession(storage, 0, uuidSource);
+  let recoveries = 0;
+  const buffer = new AnalyticsRequestBuffer(storage, async () => ({
+    ok: false, status: 422, json: async () => ({ detail: 'unknown analytics event' }),
+  }), '', false, () => { recoveries += 1; });
+  await buffer.sendOrBuffer({ endpoint: '/api/analytics/events', body: { sessionId: session.session.id } });
+  assert.equal(recoveries, 0);
+  assert.equal((await getOrCreateSession(storage, 1, uuidSource)).session.id, session.session.id);
 });
 
 test('page focus deduplicates rerenders but counts a later refocus', () => {

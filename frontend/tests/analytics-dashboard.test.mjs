@@ -58,6 +58,14 @@ test('range switching, loading, retry, error and empty states are implemented', 
   assert.match(dashboardSource, /Promise\.allSettled/);
 });
 
+test('collection start is server-owned and All Time is explained without a misleading preview date', () => {
+  assert.match(serviceSource, /collectionStartedAt: string \| null/);
+  assert.match(dashboardSource, /Analytics collecting since:/);
+  assert.match(dashboardSource, /Not started in production/);
+  assert.match(dashboardSource, /All Time.*all analytics collected since this date/);
+  assert.doesNotMatch(dashboardSource, /2026-08-13/);
+});
+
 test('only live activity polls every 30 seconds while aggregate loads are range-driven', () => {
   assert.match(dashboardSource, /const LIVE_REFRESH_MS = 30_000/);
   assert.match(dashboardSource, /setInterval\(\(\) => void loadLive\(\), LIVE_REFRESH_MS\)/);

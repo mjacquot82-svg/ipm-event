@@ -4,6 +4,7 @@ import { AppState, Platform } from 'react-native';
 import {
   ANALYTICS_MAX_BATCH_EVENTS,
   AnalyticsRequestBuffer,
+  AnalyticsSessionRecovery,
   clearSession,
   generateAnalyticsUuid,
   getOrCreateSession,
@@ -18,7 +19,11 @@ export type AnalyticsProperties = Record<string, AnalyticsValue>;
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 const HEARTBEAT_MS = 60_000;
 const EVENT_FLUSH_MS = 2_000;
-const transport = new AnalyticsRequestBuffer(AsyncStorage, fetch, API_BASE_URL, __DEV__);
+const sessionRecovery = new AnalyticsSessionRecovery();
+const transport = new AnalyticsRequestBuffer(
+  AsyncStorage, fetch, API_BASE_URL, __DEV__,
+  (rejectedSessionId) => recoverInvalidSession(rejectedSessionId),
+);
 
 let visitorId: string | null = null;
 let sessionId: string | null = null;
@@ -29,6 +34,28 @@ let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingEvents: { clientEventId: string; eventName: string; properties: AnalyticsProperties; occurredAt: string }[] = [];
 let previousPage: string | null = null;
 let ensureSessionPromise: Promise<boolean> | null = null;
+let invalidSessionRecoveryPromise: Promise<void> | null = null;
+
+async function recoverInvalidSession(rejectedSessionId: string): Promise<void> {
+  if (rejectedSessionId !== sessionId) return;
+  if (invalidSessionRecoveryPromise) return invalidSessionRecoveryPromise;
+  const recovery = sessionRecovery.run(async () => {
+    if (rejectedSessionId !== sessionId) return;
+    stopHeartbeat();
+    sessionId = null;
+    pendingEvents = [];
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = null;
+    try { await clearSession(AsyncStorage); } catch { /* recovery remains best-effort and non-blocking */ }
+    await createOrResumeSession();
+    startHeartbeat();
+    void transport.flush();
+  });
+  invalidSessionRecoveryPromise = recovery.finally(() => {
+    invalidSessionRecoveryPromise = null;
+  });
+  await invalidSessionRecoveryPromise;
+}
 
 export function detectInstalledPwa(): boolean {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
@@ -69,6 +96,10 @@ async function createOrResumeSession(): Promise<boolean> {
 }
 
 async function ensureSession(): Promise<boolean> {
+  if (invalidSessionRecoveryPromise) {
+    await invalidSessionRecoveryPromise;
+    return Boolean(visitorId && sessionId);
+  }
   if (ensureSessionPromise) return ensureSessionPromise;
   ensureSessionPromise = createOrResumeSession();
   try {
@@ -174,5 +205,5 @@ export function pageNavigationProperties(pageId: string, source?: string): Analy
 
 export function resetAnalyticsForTests(): void {
   stopHeartbeat();
-  visitorId = null; sessionId = null; initialized = false; pendingEvents = []; previousPage = null; routePath = '/'; ensureSessionPromise = null;
+  visitorId = null; sessionId = null; initialized = false; pendingEvents = []; previousPage = null; routePath = '/'; ensureSessionPromise = null; invalidSessionRecoveryPromise = null;
 }
