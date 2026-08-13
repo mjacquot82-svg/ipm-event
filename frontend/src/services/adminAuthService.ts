@@ -205,7 +205,17 @@ function getEventId(eventId?: string) {
   return eventId?.trim() || process.env.EXPO_PUBLIC_EVENT_ID || DEFAULT_EVENT_ID;
 }
 
-async function adminRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+export class AdminRequestError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'AdminRequestError';
+    this.status = status;
+  }
+}
+
+export async function adminRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...options,
     credentials: 'include',
@@ -235,7 +245,7 @@ async function adminRequest<T>(path: string, options: RequestInit = {}): Promise
     } catch {
       message = response.statusText || message;
     }
-    throw new Error(message);
+    throw new AdminRequestError(message, response.status);
   }
 
   if (response.status === 204) return undefined as T;

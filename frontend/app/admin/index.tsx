@@ -16,6 +16,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../../src/theme/colors';
 import { AdminShell, AdminNavItem } from '../../src/components/admin/AdminShell';
+import { AnalyticsDashboard } from '../../src/components/admin/AnalyticsDashboard';
 import {
   ContentPage,
   ContentToolbar,
@@ -55,7 +56,7 @@ import {
   updateScheduleEvent,
 } from '../../src/services/adminAuthService';
 
-type AdminSection = 'dashboard' | 'vendors' | 'schedule' | 'communications' | 'team' | 'settings';
+type AdminSection = 'dashboard' | 'analytics' | 'vendors' | 'schedule' | 'communications' | 'team' | 'settings';
 type VendorEditorMode = 'closed' | 'create' | 'edit';
 type ScheduleEditorMode = 'closed' | 'view' | 'add' | 'edit';
 type AnnouncementEditorMode = 'closed' | 'create' | 'edit';
@@ -69,6 +70,7 @@ type ImportMapping = Partial<Record<PlatformFieldKey, string>>;
 
 const NAV_ITEMS: AdminNavItem[] = [
   { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
+  { key: 'analytics', label: 'Analytics', icon: 'bar-chart-2' },
   { key: 'vendors', label: 'Vendors', icon: 'shopping-bag' },
   { key: 'schedule', label: 'Schedule', icon: 'calendar' },
   { key: 'communications', label: 'Announcements', icon: 'message-square' },
@@ -561,6 +563,14 @@ export default function AdminDashboardScreen() {
           scheduleCount={scheduleEvents.length}
           onOpenSchedule={() => setActiveSection('schedule')}
         />
+      )}
+
+      {activeSection === 'analytics' && (
+        <AnalyticsDashboard onAuthenticationExpired={() => {
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+          router.replace('/admin/login');
+        }} />
       )}
 
       {activeSection === 'vendors' && (
