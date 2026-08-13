@@ -328,6 +328,10 @@ class MongoAnalyticsRepository:
             [("eventScope", ASCENDING), ("visitorId", ASCENDING)], unique=True,
             name="analytics_visitor_scope_unique",
         )
+        await self.db.analytics_visitors.create_index(
+            [("eventScope", ASCENDING), ("firstSeenAt", ASCENDING), ("lastSeenAt", DESCENDING)],
+            name="analytics_visitors_reporting",
+        )
         await self.db.analytics_sessions.create_index(
             [("eventScope", ASCENDING), ("sessionId", ASCENDING)], unique=True,
             name="analytics_session_scope_unique",
@@ -336,6 +340,10 @@ class MongoAnalyticsRepository:
             [("eventScope", ASCENDING), ("lastActivityAt", DESCENDING)],
             name="analytics_sessions_active",
         )
+        await self.db.analytics_sessions.create_index(
+            [("eventScope", ASCENDING), ("startedAt", DESCENDING)],
+            name="analytics_sessions_reporting",
+        )
         await self.db.analytics_events.create_index(
             [("eventScope", ASCENDING), ("clientEventId", ASCENDING)], unique=True,
             name="analytics_event_idempotency_unique",
@@ -343,6 +351,10 @@ class MongoAnalyticsRepository:
         await self.db.analytics_events.create_index(
             [("eventScope", ASCENDING), ("eventName", ASCENDING), ("receivedAt", DESCENDING)],
             name="analytics_events_name_received",
+        )
+        await self.db.analytics_events.create_index(
+            [("eventScope", ASCENDING), ("receivedAt", DESCENDING)],
+            name="analytics_events_reporting_window",
         )
         await self.db.analytics_events.create_index(
             [("eventScope", ASCENDING), ("sessionId", ASCENDING), ("receivedAt", DESCENDING)],

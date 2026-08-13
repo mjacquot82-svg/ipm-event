@@ -30,6 +30,14 @@ try:
         ingest_events as ingest_analytics_events,
         start_session as start_analytics_session,
     )
+    from backend.analytics_reporting import (
+        AnalyticsRangeError,
+        MongoAnalyticsReportingRepository,
+        content_report as get_analytics_content_report,
+        live_report as get_analytics_live_report,
+        summary_report as get_analytics_summary_report,
+        traffic_report as get_analytics_traffic_report,
+    )
 except ModuleNotFoundError:
     from analytics import (
         ANALYTICS_EVENT_SCOPE,
@@ -42,6 +50,14 @@ except ModuleNotFoundError:
         heartbeat_session as heartbeat_analytics_session,
         ingest_events as ingest_analytics_events,
         start_session as start_analytics_session,
+    )
+    from analytics_reporting import (
+        AnalyticsRangeError,
+        MongoAnalyticsReportingRepository,
+        content_report as get_analytics_content_report,
+        live_report as get_analytics_live_report,
+        summary_report as get_analytics_summary_report,
+        traffic_report as get_analytics_traffic_report,
     )
 import secrets
 import base64
@@ -96,6 +112,7 @@ else:
     db = client[db_name]
 
 analytics_repository = MongoAnalyticsRepository(db) if db is not None else None
+analytics_reporting_repository = MongoAnalyticsReportingRepository(db) if db is not None else None
 
 # Google Sheet URLs (public CSV export)
 EVENTS_SHEET_ID = "1tnfBd7Ffg5S4hyk5c5CpB-VGkJcSnLpdsKGbNJIiQCs"
@@ -1232,6 +1249,52 @@ async def analytics_events(data: AnalyticsEventsRequest):
         return {"eventScope": ANALYTICS_EVENT_SCOPE, **result}
     except AnalyticsValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+def require_analytics_reporting_repository(current_user: dict):
+    if get_admin_event_id(current_user) != ANALYTICS_EVENT_SCOPE:
+        raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")
+    if analytics_reporting_repository is None:
+        raise HTTPException(status_code=503, detail="Analytics reporting storage is not configured")
+    return analytics_reporting_repository
+
+
+async def run_ranged_analytics_report(report, range_name: str, current_user: dict):
+    repository = require_analytics_reporting_repository(current_user)
+    try:
+        return await report(repository, range_name)
+    except AnalyticsRangeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@api_router.get("/admin/analytics/summary")
+async def admin_analytics_summary(
+    range: str = "7d",
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    return await run_ranged_analytics_report(get_analytics_summary_report, range, current_user)
+
+
+@api_router.get("/admin/analytics/live")
+async def admin_analytics_live(current_user: dict = Depends(get_current_organizer_user)):
+    repository = require_analytics_reporting_repository(current_user)
+    return await get_analytics_live_report(repository)
+
+
+@api_router.get("/admin/analytics/traffic")
+async def admin_analytics_traffic(
+    range: str = "7d",
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    return await run_ranged_analytics_report(get_analytics_traffic_report, range, current_user)
+
+
+@api_router.get("/admin/analytics/content")
+async def admin_analytics_content(
+    range: str = "7d",
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    return await run_ranged_analytics_report(get_analytics_content_report, range, current_user)
 
 
 @api_router.post("/admin/bootstrap", response_model=OrganizerAuthResponse)

@@ -242,11 +242,11 @@ def test_mongo_indexes_include_uniqueness_query_paths_retention_and_rollups():
     event_options = {options["name"]: options for _, options in database.analytics_events.indexes}
     rollup_names = {options["name"] for _, options in database.analytics_daily_rollups.indexes}
 
-    assert visitor_names == {"analytics_visitor_scope_unique"}
-    assert session_names == {"analytics_session_scope_unique", "analytics_sessions_active"}
+    assert visitor_names == {"analytics_visitor_scope_unique", "analytics_visitors_reporting"}
+    assert session_names == {"analytics_session_scope_unique", "analytics_sessions_active", "analytics_sessions_reporting"}
     assert event_options["analytics_event_idempotency_unique"]["unique"] is True
     assert event_options["analytics_events_retention_ttl"]["expireAfterSeconds"] == 0
-    assert {"analytics_events_name_received", "analytics_events_session_received", "analytics_events_visitor_received"} <= set(event_options)
+    assert {"analytics_events_name_received", "analytics_events_session_received", "analytics_events_visitor_received", "analytics_events_reporting_window"} <= set(event_options)
     assert rollup_names == {"analytics_daily_event_hour_unique"}
 
 
