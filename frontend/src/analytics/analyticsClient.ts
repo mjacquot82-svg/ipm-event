@@ -95,7 +95,7 @@ async function createOrResumeSession(): Promise<boolean> {
     const result = await getOrCreateSession(analyticsStorage, Date.now());
     sessionId = result.session.id;
     if (runtimeSessionStart.claim()) {
-      await transport.sendOrBuffer({ endpoint: '/api/analytics/session/start', body: lifecycleBody(generateAnalyticsUuid()) });
+      await transport.sendOrBuffer({ endpoint: '/api/activity/session/start', body: lifecycleBody(generateAnalyticsUuid()) });
     }
     if (result.created) {
       appendPendingEvent('app_launched', {
@@ -126,7 +126,7 @@ async function ensureSession(): Promise<boolean> {
 
 async function heartbeat(): Promise<void> {
   if (!(await ensureSession()) || !visitorId || !sessionId) return;
-  await transport.sendOrBuffer({ endpoint: '/api/analytics/session/heartbeat', body: lifecycleBody(generateAnalyticsUuid()) });
+  await transport.sendOrBuffer({ endpoint: '/api/activity/session/heartbeat', body: lifecycleBody(generateAnalyticsUuid()) });
   void transport.flush();
 }
 
@@ -186,7 +186,7 @@ export async function endAttendeeSession(reason: 'pagehide' | 'background' | 'ex
   stopHeartbeat();
   await flushAnalyticsEvents();
   if (visitorId && sessionId && isAttendeeAnalyticsPath(routePath)) {
-    await transport.sendOrBuffer({ endpoint: '/api/analytics/session/end', body: { ...lifecycleBody(generateAnalyticsUuid()), reason } });
+    await transport.sendOrBuffer({ endpoint: '/api/activity/session/end', body: { ...lifecycleBody(generateAnalyticsUuid()), reason } });
   }
   sessionId = null;
   try { await clearSession(analyticsStorage); } catch { /* analytics must remain non-blocking */ }
@@ -212,7 +212,7 @@ export async function flushAnalyticsEvents(): Promise<void> {
   flushTimer = null;
   if (!visitorId || !sessionId || pendingEvents.length === 0) return;
   const events = takeAnalyticsBatch(pendingEvents);
-  await transport.sendOrBuffer({ endpoint: '/api/analytics/events', body: { visitorId, sessionId, events } });
+  await transport.sendOrBuffer({ endpoint: '/api/activity/events', body: { visitorId, sessionId, events } });
   if (pendingEvents.length > 0) await flushAnalyticsEvents();
 }
 

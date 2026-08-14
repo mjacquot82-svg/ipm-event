@@ -1118,7 +1118,11 @@ def log_analytics_ingestion_exception(operation: str, exc: Exception) -> None:
 
 async def analytics_session_start_exception_diagnostics(request: Request, call_next):
     """Capture failures that occur outside the session-start route function."""
-    if request.method != "POST" or request.url.path != "/api/analytics/session/start":
+    session_start_paths = {
+        "/api/activity/session/start",
+        "/api/analytics/session/start",
+    }
+    if request.method != "POST" or request.url.path not in session_start_paths:
         return await call_next(request)
     try:
         return await call_next(request)
@@ -1253,7 +1257,8 @@ def require_analytics_repository():
     return analytics_repository
 
 
-@api_router.post("/analytics/session/start", status_code=202)
+@api_router.post("/analytics/session/start", status_code=202, include_in_schema=False)
+@api_router.post("/activity/session/start", status_code=202)
 async def analytics_session_start(data: AnalyticsSessionRequest):
     """Start one anonymous attendee session in the server-owned IPM scope."""
     try:
@@ -1266,7 +1271,8 @@ async def analytics_session_start(data: AnalyticsSessionRequest):
         return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 
-@api_router.post("/analytics/session/heartbeat", status_code=202)
+@api_router.post("/analytics/session/heartbeat", status_code=202, include_in_schema=False)
+@api_router.post("/activity/session/heartbeat", status_code=202)
 async def analytics_session_heartbeat(data: AnalyticsSessionRequest):
     """Refresh activity for an existing, non-expired anonymous session."""
     try:
@@ -1276,7 +1282,8 @@ async def analytics_session_heartbeat(data: AnalyticsSessionRequest):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-@api_router.post("/analytics/session/end", status_code=202)
+@api_router.post("/analytics/session/end", status_code=202, include_in_schema=False)
+@api_router.post("/activity/session/end", status_code=202)
 async def analytics_session_end(data: AnalyticsSessionEndRequest):
     """End an anonymous attendee session. Repeated endings are idempotent."""
     try:
@@ -1286,7 +1293,8 @@ async def analytics_session_end(data: AnalyticsSessionEndRequest):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-@api_router.post("/analytics/events", status_code=202)
+@api_router.post("/analytics/events", status_code=202, include_in_schema=False)
+@api_router.post("/activity/events", status_code=202)
 async def analytics_events(data: AnalyticsEventsRequest):
     """Validate and ingest a bounded batch of allowlisted attendee events."""
     try:

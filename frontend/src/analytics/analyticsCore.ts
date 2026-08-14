@@ -225,10 +225,10 @@ export class AnalyticsRequestBuffer {
 
   private requestOperation(request: BufferedRequest): string {
     switch (request.endpoint) {
-      case '/api/analytics/session/start': return 'session_start';
-      case '/api/analytics/session/heartbeat': return 'session_heartbeat';
-      case '/api/analytics/session/end': return 'session_end';
-      case '/api/analytics/events': return 'events';
+      case '/api/activity/session/start': return 'session_start';
+      case '/api/activity/session/heartbeat': return 'session_heartbeat';
+      case '/api/activity/session/end': return 'session_end';
+      case '/api/activity/events': return 'events';
       default: return 'unknown';
     }
   }
@@ -321,7 +321,7 @@ export class AnalyticsRequestBuffer {
     try {
       responsePromise = this.fetcher(`${this.apiBaseUrl}${request.endpoint}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
-        keepalive: request.endpoint === '/api/analytics/session/end',
+        keepalive: request.endpoint === '/api/activity/session/end',
       });
     } catch (error) {
       if (this.development) console.debug('[Analytics] Request deferred', error);

@@ -396,19 +396,38 @@ def test_api_never_accepts_client_event_scope_and_returns_fixed_scope(monkeypatc
                 "visitorId": str(VISITOR_ID), "sessionId": str(SESSION_ID),
                 "clientEventId": str(uuid4()), "launchMode": "browser",
             }
-            response = await client.post("/api/analytics/session/start", json=payload)
+            response = await client.post("/api/activity/session/start", json=payload)
             assert response.status_code == 202
             assert response.json()["eventScope"] == "ipm-2026"
 
+            # Keep the former ingestion path as a compatibility alias for
+            # cached clients while new attendee bundles use /api/activity.
+            payload["clientEventId"] = str(uuid4())
+            compatibility = await client.post("/api/analytics/session/start", json=payload)
+            assert compatibility.status_code == 202
+            assert compatibility.json()["eventScope"] == "ipm-2026"
+
             payload["clientEventId"] = str(uuid4())
             payload["appId"] = "another-app"
-            response = await client.post("/api/analytics/session/start", json=payload)
+            response = await client.post("/api/activity/session/start", json=payload)
             assert response.status_code == 422
 
-            malformed = await client.post("/api/analytics/events", json={"visitorId": "bad"})
+            malformed = await client.post("/api/activity/events", json={"visitorId": "bad"})
             assert malformed.status_code == 422
 
     asyncio.run(verify())
+
+
+def test_neutral_ingestion_routes_are_public_and_legacy_aliases_are_hidden_from_schema():
+    paths = server.app.openapi()["paths"]
+    assert "/api/activity/session/start" in paths
+    assert "/api/activity/session/heartbeat" in paths
+    assert "/api/activity/session/end" in paths
+    assert "/api/activity/events" in paths
+    assert "/api/analytics/session/start" not in paths
+    assert "/api/analytics/session/heartbeat" not in paths
+    assert "/api/analytics/session/end" not in paths
+    assert "/api/analytics/events" not in paths
 
 
 def test_session_start_logs_privacy_safe_unexpected_failure_and_returns_cors_500(monkeypatch, caplog):
@@ -431,7 +450,7 @@ def test_session_start_logs_privacy_safe_unexpected_failure_and_returns_cors_500
         transport = httpx.ASGITransport(app=server.app, raise_app_exceptions=False)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
-                "/api/analytics/session/start",
+                "/api/activity/session/start",
                 headers={"Origin": "https://theipm.ca"},
                 json={
                     "visitorId": sensitive_visitor_id,
@@ -478,7 +497,7 @@ def test_session_start_analytics_validation_error_remains_422(monkeypatch):
         transport = httpx.ASGITransport(app=server.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
-                "/api/analytics/session/start",
+                "/api/activity/session/start",
                 json={
                     "visitorId": str(VISITOR_ID),
                     "sessionId": str(SESSION_ID),
@@ -522,18 +541,18 @@ def diagnostic_stage_app(stage, sensitive_message):
             def reject_during_parsing(cls, value):
                 unexpected_failure()
 
-        @diagnostic_app.post("/api/analytics/session/start")
+        @diagnostic_app.post("/api/activity/session/start")
         async def parsing_endpoint(data: ExplodingRequest):
             return {"accepted": True}
     elif stage == "dependency_resolution":
         @diagnostic_app.post(
-            "/api/analytics/session/start",
+            "/api/activity/session/start",
             dependencies=[Depends(unexpected_dependency_failure)],
         )
         async def dependency_endpoint():
             return {"accepted": True}
     elif stage == "response_handling":
-        @diagnostic_app.post("/api/analytics/session/start")
+        @diagnostic_app.post("/api/activity/session/start")
         async def response_endpoint():
             return {"unencodable": object()}
     else:
@@ -561,7 +580,7 @@ def test_session_start_asgi_diagnostic_captures_framework_stage_failures_without
         transport = httpx.ASGITransport(app=diagnostic_app, raise_app_exceptions=False)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
-                "/api/analytics/session/start",
+                "/api/activity/session/start",
                 headers={"Origin": "https://theipm.ca"},
                 json=payload,
             )

@@ -52,12 +52,12 @@ test('production attendee root initializes and attempts session start', async ()
   }, 'https://ipm-backend-eoiw.onrender.com');
   if (session.created) {
     await transport.sendOrBuffer({
-      endpoint: '/api/analytics/session/start',
+      endpoint: '/api/activity/session/start',
       body: { visitorId, sessionId: session.session.id, clientEventId: generateAnalyticsUuid(uuidSource) },
     });
   }
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, 'https://ipm-backend-eoiw.onrender.com/api/analytics/session/start');
+  assert.equal(calls[0].url, 'https://ipm-backend-eoiw.onrender.com/api/activity/session/start');
   assert.deepEqual(calls[0].headers, { 'Content-Type': 'application/json' });
   assert.equal(calls[0].keepalive, false);
 });
@@ -68,7 +68,7 @@ test('ordinary analytics delivery avoids keepalive while direct session end reta
     new MemoryStorage(),
     async (url, init) => {
       calls.push({ url, keepalive: init.keepalive });
-      if (init.keepalive && !url.endsWith('/api/analytics/session/end')) {
+      if (init.keepalive && !url.endsWith('/api/activity/session/end')) {
         throw new TypeError('Failed to fetch');
       }
       return { ok: true, status: 202 };
@@ -77,10 +77,10 @@ test('ordinary analytics delivery avoids keepalive while direct session end reta
   );
   const body = { visitorId: 'visitor', sessionId: 'session', clientEventId: 'event' };
 
-  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/analytics/session/start', body }), true);
-  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/analytics/events', body }), true);
-  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/analytics/session/heartbeat', body }), true);
-  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/analytics/session/end', body }), true);
+  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/activity/session/start', body }), true);
+  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/activity/events', body }), true);
+  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/activity/session/heartbeat', body }), true);
+  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/activity/session/end', body }), true);
   assert.deepEqual(calls.map(({ keepalive }) => keepalive), [false, false, false, true]);
 });
 
@@ -97,7 +97,7 @@ test('durable queue retries never use keepalive', async () => {
   );
 
   await transport.enqueue({
-    endpoint: '/api/analytics/session/start',
+    endpoint: '/api/activity/session/start',
     body: { visitorId: 'visitor', sessionId: 'session', clientEventId: 'event' },
   });
   await transport.flush();
@@ -121,13 +121,13 @@ test('a fresh app runtime attempts session start when local session storage resu
 
   if (runtimeStart.claim()) {
     await transport.sendOrBuffer({
-      endpoint: '/api/analytics/session/start',
+      endpoint: '/api/activity/session/start',
       body: { visitorId: 'visitor', sessionId: resumed.session.id, clientEventId: generateAnalyticsUuid(uuidSource) },
     });
   }
   if (runtimeStart.claim()) throw new Error('rerender must not claim another session start');
 
-  assert.deepEqual(calls, ['https://example.test/api/analytics/session/start']);
+  assert.deepEqual(calls, ['https://example.test/api/activity/session/start']);
 });
 
 test('excluded and unconfigured routes do not initialize analytics', () => {
@@ -154,12 +154,12 @@ test('storage unavailable falls back to memory and still supports a session star
     return { ok: true, status: 202 };
   }, 'https://example.test');
   await transport.sendOrBuffer({
-    endpoint: '/api/analytics/session/start',
+    endpoint: '/api/activity/session/start',
     body: { visitorId, sessionId: session.session.id, clientEventId: generateAnalyticsUuid(uuidSource) },
   });
   assert.equal(storage.isUsingFallback(), true);
   assert.deepEqual(diagnostics, ['storage_fallback']);
-  assert.deepEqual(calls, ['https://example.test/api/analytics/session/start']);
+  assert.deepEqual(calls, ['https://example.test/api/activity/session/start']);
 });
 
 test('storage that throws during a write switches once to a stable memory fallback', async () => {
@@ -228,7 +228,7 @@ test('failed requests are buffered and retry uses the identical idempotency body
     return { ok: true };
   };
   const buffer = new AnalyticsRequestBuffer(storage, fetcher, 'https://example.test');
-  const request = { endpoint: '/api/analytics/events', body: { events: [{ clientEventId: 'fixed-id' }] } };
+  const request = { endpoint: '/api/activity/events', body: { events: [{ clientEventId: 'fixed-id' }] } };
   assert.equal(await buffer.sendOrBuffer(request), false);
   assert.equal(await buffer.size(), 1);
   online = true;
@@ -239,7 +239,7 @@ test('failed requests are buffered and retry uses the identical idempotency body
 
 test('transport diagnostics distinguish serialization, fetch invocation, rejection, and HTTP response stages', async () => {
   const request = {
-    endpoint: '/api/analytics/session/start',
+    endpoint: '/api/activity/session/start',
     body: { visitorId: 'visitor', sessionId: 'session', clientEventId: 'event' },
   };
 
@@ -297,7 +297,7 @@ test('transport diagnostics distinguish serialization, fetch invocation, rejecti
 
 test('queued retry diagnostics distinguish fetch rejection from a readable retryable response', async () => {
   const request = {
-    endpoint: '/api/analytics/session/start',
+    endpoint: '/api/activity/session/start',
     body: { visitorId: 'visitor', sessionId: 'session', clientEventId: 'event' },
   };
 
@@ -391,14 +391,14 @@ test('long offline activity retires the expired session, discards its events, an
       const fresh = await getOrCreateSession(storage, 40 * 60_000 + 1, uuidSource);
       currentSessionId = fresh.session.id;
       await buffer.sendOrBuffer({
-        endpoint: '/api/analytics/session/start',
+        endpoint: '/api/activity/session/start',
         body: { visitorId: 'visitor', sessionId: currentSessionId, clientEventId: 'fresh-start' },
       });
     });
   });
 
   const oldRequest = {
-    endpoint: '/api/analytics/events',
+    endpoint: '/api/activity/events',
     body: { visitorId: 'visitor', sessionId: oldSessionId, events: [{ clientEventId: 'old-event' }] },
   };
   await buffer.sendOrBuffer(oldRequest);
@@ -413,7 +413,7 @@ test('long offline activity retires the expired session, discards its events, an
   assert.equal(calls.filter((call) => call.body.clientEventId === 'fresh-start').length, 1);
 
   const newEventAccepted = await buffer.sendOrBuffer({
-    endpoint: '/api/analytics/events',
+    endpoint: '/api/activity/events',
     body: { visitorId: 'visitor', sessionId: currentSessionId, events: [{ clientEventId: 'new-event' }] },
   });
   assert.equal(newEventAccepted, true);
@@ -444,7 +444,7 @@ test('short offline periods replay the existing session without recovery', async
     if (!online) throw new Error('offline');
     return { ok: true, status: 202 };
   }, '', false, () => { recoveries += 1; });
-  await buffer.sendOrBuffer({ endpoint: '/api/analytics/events', body: { sessionId: first.session.id } });
+  await buffer.sendOrBuffer({ endpoint: '/api/activity/events', body: { sessionId: first.session.id } });
   online = true;
   await buffer.flush();
   assert.equal(recoveries, 0);
@@ -461,7 +461,7 @@ test('an explicitly ended session is retired and attendee work remains non-block
     recovered = true;
   });
   const analyticsWork = buffer.sendOrBuffer({
-    endpoint: '/api/analytics/session/heartbeat', body: { sessionId: oldSessionId },
+    endpoint: '/api/activity/session/heartbeat', body: { sessionId: oldSessionId },
   });
   let attendeeActionCompleted = false;
   attendeeActionCompleted = true;
@@ -479,7 +479,7 @@ test('unrelated 422 validation failures do not rotate a valid session', async ()
   const buffer = new AnalyticsRequestBuffer(storage, async () => ({
     ok: false, status: 422, json: async () => ({ detail: 'unknown analytics event' }),
   }), '', false, () => { recoveries += 1; });
-  await buffer.sendOrBuffer({ endpoint: '/api/analytics/events', body: { sessionId: session.session.id } });
+  await buffer.sendOrBuffer({ endpoint: '/api/activity/events', body: { sessionId: session.session.id } });
   assert.equal(recoveries, 0);
   assert.equal((await getOrCreateSession(storage, 1, uuidSource)).session.id, session.session.id);
 });
