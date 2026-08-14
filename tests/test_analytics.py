@@ -5,6 +5,7 @@ from uuid import uuid4
 import httpx
 import pytest
 from pydantic import ValidationError
+from pymongo.errors import OperationFailure
 
 from backend import server
 from backend.analytics import (
@@ -404,5 +405,86 @@ def test_api_never_accepts_client_event_scope_and_returns_fixed_scope(monkeypatc
 
             malformed = await client.post("/api/analytics/events", json={"visitorId": "bad"})
             assert malformed.status_code == 422
+
+    asyncio.run(verify())
+
+
+def test_session_start_logs_privacy_safe_unexpected_failure_and_returns_cors_500(monkeypatch, caplog):
+    sensitive_visitor_id = "11111111-1111-4111-8111-111111111111"
+    sensitive_session_id = "22222222-2222-4222-8222-222222222222"
+    sensitive_event_id = "33333333-3333-4333-8333-333333333333"
+    sensitive_message = "document for attendee@example.com included forbidden payload values"
+
+    class FailingRepository(InMemoryAnalyticsRepository):
+        async def start_session(self, **kwargs):
+            raise OperationFailure(
+                sensitive_message,
+                code=121,
+                details={"codeName": "DocumentValidationFailure", "errmsg": sensitive_message},
+            )
+
+    monkeypatch.setattr(server, "analytics_repository", FailingRepository())
+
+    async def verify():
+        transport = httpx.ASGITransport(app=server.app, raise_app_exceptions=False)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/analytics/session/start",
+                headers={"Origin": "https://theipm.ca"},
+                json={
+                    "visitorId": sensitive_visitor_id,
+                    "sessionId": sensitive_session_id,
+                    "clientEventId": sensitive_event_id,
+                    "occurredAt": "2026-08-14T12:00:00Z",
+                    "launchMode": "browser",
+                    "appVersion": "1.0.0",
+                },
+            )
+
+        assert response.status_code == 500
+        assert response.json() == {"detail": "Internal Server Error"}
+        assert response.headers["access-control-allow-origin"] == "https://theipm.ca"
+
+    with caplog.at_level("ERROR", logger=server.__name__):
+        asyncio.run(verify())
+
+    log_output = caplog.text
+    assert "analytics_ingestion_unexpected" in log_output
+    assert "operation=analytics_session_start" in log_output
+    assert "exception_type=OperationFailure" in log_output
+    assert "error_code=121" in log_output
+    assert "code_name=DocumentValidationFailure" in log_output
+    assert "stack_trace=" in log_output
+    assert sensitive_visitor_id not in log_output
+    assert sensitive_session_id not in log_output
+    assert sensitive_event_id not in log_output
+    assert sensitive_message not in log_output
+    assert "attendee@example.com" not in log_output
+    assert "2026-08-14T12:00:00Z" not in log_output
+    assert "launchMode" not in log_output
+    assert "appVersion" not in log_output
+
+
+def test_session_start_analytics_validation_error_remains_422(monkeypatch):
+    class RejectingRepository(InMemoryAnalyticsRepository):
+        async def start_session(self, **kwargs):
+            raise AnalyticsValidationError("analytics request rejected")
+
+    monkeypatch.setattr(server, "analytics_repository", RejectingRepository())
+
+    async def verify():
+        transport = httpx.ASGITransport(app=server.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/analytics/session/start",
+                json={
+                    "visitorId": str(VISITOR_ID),
+                    "sessionId": str(SESSION_ID),
+                    "clientEventId": str(uuid4()),
+                },
+            )
+
+        assert response.status_code == 422
+        assert response.json() == {"detail": "analytics request rejected"}
 
     asyncio.run(verify())

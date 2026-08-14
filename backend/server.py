@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import PlainTextResponse, FileResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -16,6 +16,7 @@ from io import StringIO
 import asyncio
 import hashlib
 import json
+import traceback
 
 try:
     from backend.analytics import (
@@ -1088,6 +1089,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+def log_analytics_ingestion_exception(operation: str, exc: Exception) -> None:
+    """Log an unexpected ingestion failure without request or document data."""
+    error_code = getattr(exc, "code", None)
+    if not isinstance(error_code, int):
+        error_code = None
+
+    details = getattr(exc, "details", None)
+    code_name = details.get("codeName") if isinstance(details, dict) else None
+    if not isinstance(code_name, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,64}", code_name):
+        code_name = None
+
+    # format_tb includes call frames but not the exception message, whose text
+    # can contain Mongo commands or document values.
+    stack_trace = "".join(traceback.format_tb(exc.__traceback__)).rstrip()
+    logger.error(
+        "analytics_ingestion_unexpected operation=%s exception_type=%s "
+        "error_code=%s code_name=%s message=unexpected_analytics_ingestion_failure "
+        "stack_trace=%s",
+        operation,
+        type(exc).__name__,
+        error_code,
+        code_name,
+        stack_trace,
+    )
+
 def require_mongodb():
     if db is None:
         raise HTTPException(
@@ -1219,6 +1246,9 @@ async def analytics_session_start(data: AnalyticsSessionRequest):
         return {"eventScope": ANALYTICS_EVENT_SCOPE, **result}
     except AnalyticsValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        log_analytics_ingestion_exception("analytics_session_start", exc)
+        return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 
 @api_router.post("/analytics/session/heartbeat", status_code=202)
