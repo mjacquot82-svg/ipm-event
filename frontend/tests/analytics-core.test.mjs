@@ -59,7 +59,51 @@ test('production attendee root initializes and attempts session start', async ()
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://ipm-backend-eoiw.onrender.com/api/analytics/session/start');
   assert.deepEqual(calls[0].headers, { 'Content-Type': 'application/json' });
-  assert.equal(calls[0].keepalive, true);
+  assert.equal(calls[0].keepalive, false);
+});
+
+test('ordinary analytics delivery avoids keepalive while direct session end retains unload delivery', async () => {
+  const calls = [];
+  const transport = new AnalyticsRequestBuffer(
+    new MemoryStorage(),
+    async (url, init) => {
+      calls.push({ url, keepalive: init.keepalive });
+      if (init.keepalive && !url.endsWith('/api/analytics/session/end')) {
+        throw new TypeError('Failed to fetch');
+      }
+      return { ok: true, status: 202 };
+    },
+    'https://example.test',
+  );
+  const body = { visitorId: 'visitor', sessionId: 'session', clientEventId: 'event' };
+
+  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/analytics/session/start', body }), true);
+  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/analytics/events', body }), true);
+  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/analytics/session/heartbeat', body }), true);
+  assert.equal(await transport.sendOrBuffer({ endpoint: '/api/analytics/session/end', body }), true);
+  assert.deepEqual(calls.map(({ keepalive }) => keepalive), [false, false, false, true]);
+});
+
+test('durable queue retries never use keepalive', async () => {
+  const calls = [];
+  const transport = new AnalyticsRequestBuffer(
+    new MemoryStorage(),
+    async (_url, init) => {
+      calls.push(init.keepalive);
+      if (init.keepalive) throw new TypeError('Failed to fetch');
+      return { ok: true, status: 202 };
+    },
+    'https://example.test',
+  );
+
+  await transport.enqueue({
+    endpoint: '/api/analytics/session/start',
+    body: { visitorId: 'visitor', sessionId: 'session', clientEventId: 'event' },
+  });
+  await transport.flush();
+
+  assert.deepEqual(calls, [undefined]);
+  assert.equal(await transport.size(), 0);
 });
 
 test('a fresh app runtime attempts session start when local session storage resumes a session', async () => {

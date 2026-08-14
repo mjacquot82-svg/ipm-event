@@ -320,7 +320,8 @@ export class AnalyticsRequestBuffer {
     let responsePromise: Promise<AnalyticsFetchResponse>;
     try {
       responsePromise = this.fetcher(`${this.apiBaseUrl}${request.endpoint}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true,
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
+        keepalive: request.endpoint === '/api/analytics/session/end',
       });
     } catch (error) {
       if (this.development) console.debug('[Analytics] Request deferred', error);
@@ -380,7 +381,7 @@ export class AnalyticsRequestBuffer {
         let responsePromise: Promise<AnalyticsFetchResponse>;
         try {
           responsePromise = this.fetcher(`${this.apiBaseUrl}${request.endpoint}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true,
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
           });
         } catch {
           this.reportDeferred(request, 'queue_fetch_invocation_failed');
