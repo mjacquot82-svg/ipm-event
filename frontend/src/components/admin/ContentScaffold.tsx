@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -27,16 +28,17 @@ type ContentPageProps = {
 };
 
 export function ContentPage({ title, subtitle, primaryAction, children }: ContentPageProps) {
+  const isMobile = useWindowDimensions().width < 600;
   return (
     <View style={styles.page}>
-      <View style={styles.pageHeader}>
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>{title}</Text>
+      <View style={[styles.pageHeader, isMobile && styles.pageHeaderMobile]}>
+        <View style={[styles.titleBlock, isMobile && styles.titleBlockMobile]}>
+          <Text style={[styles.title, isMobile && styles.titleMobile]}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
         {primaryAction && (
           <Pressable
-            style={[styles.primaryButton, primaryAction.disabled && styles.buttonDisabled]}
+            style={[styles.primaryButton, isMobile && styles.actionButtonMobile, primaryAction.disabled && styles.buttonDisabled]}
             disabled={primaryAction.disabled}
             onPress={primaryAction.onPress}
           >
@@ -63,9 +65,10 @@ export function ContentToolbar({
   onSearchChange,
   secondaryAction,
 }: ContentToolbarProps) {
+  const isMobile = useWindowDimensions().width < 600;
   return (
-    <View style={styles.toolbar}>
-      <View style={styles.searchBox}>
+    <View style={[styles.toolbar, isMobile && styles.toolbarMobile]}>
+      <View style={[styles.searchBox, isMobile && styles.searchBoxMobile]}>
         <Feather name="search" size={18} color={colors.textMuted} />
         <TextInput
           value={searchValue}
@@ -77,7 +80,7 @@ export function ContentToolbar({
       </View>
       {secondaryAction && (
         <Pressable
-          style={[styles.secondaryButton, secondaryAction.disabled && styles.buttonDisabled]}
+          style={[styles.secondaryButton, isMobile && styles.actionButtonMobile, secondaryAction.disabled && styles.buttonDisabled]}
           disabled={secondaryAction.disabled}
           onPress={secondaryAction.onPress}
         >
@@ -170,15 +173,18 @@ const styles = StyleSheet.create({
     gap: 16,
     flexWrap: 'wrap',
   },
+  pageHeaderMobile: { flexDirection: 'column', alignItems: 'stretch', gap: 12 },
   titleBlock: {
     flex: 1,
     minWidth: 260,
   },
+  titleBlockMobile: { minWidth: 0, width: '100%' },
   title: {
     fontSize: 28,
     fontWeight: '700',
     color: colors.textPrimary,
   },
+  titleMobile: { fontSize: 24 },
   subtitle: {
     marginTop: 6,
     fontSize: 14,
@@ -225,6 +231,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
   },
+  toolbarMobile: { flexDirection: 'column', alignItems: 'stretch' },
   searchBox: {
     flex: 1,
     minWidth: 240,
@@ -238,6 +245,8 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 12,
   },
+  searchBoxMobile: { flex: 0, minWidth: 0, width: '100%' },
+  actionButtonMobile: { width: '100%', minHeight: 44 },
   searchInput: {
     flex: 1,
     minWidth: 0,

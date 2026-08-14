@@ -1,7 +1,8 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -39,10 +40,73 @@ export function AdminShell({
 }: AdminShellProps) {
   const { width } = useWindowDimensions();
   const isCompact = width < 860;
+  const isMobile = width < 600;
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const navigate = (key: string) => {
+    setMenuOpen(false);
+    onNavigate(key);
+  };
+
+  const navigation = (
+    <>
+      <View style={[styles.navList, isCompact && styles.navListCompact, isMobile && styles.navListMobile]}>
+        {navItems.map((item) => {
+          const isActive = activeKey === item.key;
+          return (
+            <Pressable
+              key={item.key}
+              disabled={item.disabled}
+              style={[
+                styles.navButton,
+                isMobile && styles.navButtonMobile,
+                isActive && styles.navButtonActive,
+                item.disabled && styles.navButtonDisabled,
+              ]}
+              onPress={() => navigate(item.key)}
+            >
+              <Feather
+                name={item.icon}
+                size={18}
+                color={isActive ? '#FFFFFF' : item.disabled ? colors.textMuted : colors.textSecondary}
+              />
+              <Text style={[styles.navText, isActive && styles.navTextActive, item.disabled && styles.navTextDisabled]}>
+                {item.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Pressable style={[styles.logoutButton, isMobile && styles.logoutButtonMobile]} onPress={onLogout}>
+        <Feather name="log-out" size={18} color={colors.error} />
+        <Text style={styles.logoutText}>Sign out</Text>
+      </Pressable>
+    </>
+  );
 
   return (
     <View style={[styles.root, isCompact && styles.rootCompact]}>
-      <View style={[styles.sidebar, isCompact && styles.sidebarCompact]}>
+      {isMobile ? (
+        <View style={styles.mobileBar}>
+          <View style={styles.brandRow}>
+            <View style={[styles.brandMark, styles.brandMarkMobile]}>
+              <Feather name="layers" size={18} color="#FFFFFF" />
+            </View>
+            <View style={styles.brandText}>
+              <Text style={styles.brandTitle}>JDS Events</Text>
+              <Text style={styles.brandSubtitle} numberOfLines={1}>{currentUser?.event_id || 'Event Platform'}</Text>
+            </View>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open admin navigation"
+            style={styles.menuButton}
+            onPress={() => setMenuOpen(true)}
+          >
+            <Feather name="menu" size={22} color={colors.textPrimary} />
+          </Pressable>
+        </View>
+      ) : <View style={[styles.sidebar, isCompact && styles.sidebarCompact]}>
         <View style={styles.brandRow}>
           <View style={styles.brandMark}>
             <Feather name="layers" size={20} color="#FFFFFF" />
@@ -55,55 +119,37 @@ export function AdminShell({
           </View>
         </View>
 
-        <View style={[styles.navList, isCompact && styles.navListCompact]}>
-          {navItems.map((item) => {
-            const isActive = activeKey === item.key;
-            return (
-              <Pressable
-                key={item.key}
-                disabled={item.disabled}
-                style={[
-                  styles.navButton,
-                  isActive && styles.navButtonActive,
-                  item.disabled && styles.navButtonDisabled,
-                ]}
-                onPress={() => onNavigate(item.key)}
-              >
-                <Feather
-                  name={item.icon}
-                  size={18}
-                  color={isActive ? '#FFFFFF' : item.disabled ? colors.textMuted : colors.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.navText,
-                    isActive && styles.navTextActive,
-                    item.disabled && styles.navTextDisabled,
-                  ]}
-                >
-                  {item.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        {navigation}
+      </View>}
 
-        <Pressable style={styles.logoutButton} onPress={onLogout}>
-          <Feather name="log-out" size={18} color={colors.error} />
-          <Text style={styles.logoutText}>Sign out</Text>
-        </Pressable>
-      </View>
+      <Modal visible={isMobile && menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <View style={styles.menuBackdrop}>
+          <Pressable style={styles.menuDismissArea} onPress={() => setMenuOpen(false)} />
+          <View style={styles.mobileMenu}>
+            <View style={styles.mobileMenuHeader}>
+              <View>
+                <Text style={styles.mobileMenuTitle}>Administration</Text>
+                <Text style={styles.brandSubtitle}>{currentUser?.event_id || 'Event Platform'}</Text>
+              </View>
+              <Pressable accessibilityLabel="Close admin navigation" style={styles.menuButton} onPress={() => setMenuOpen(false)}>
+                <Feather name="x" size={22} color={colors.textPrimary} />
+              </Pressable>
+            </View>
+            {navigation}
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.main}>
-        <View style={styles.header}>
+        {!isMobile && <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>Administration</Text>
             <Text style={styles.headerSubtitle}>
               {currentUser?.display_name || currentUser?.username} · {currentUser?.role}
             </Text>
           </View>
-        </View>
-        <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
+        </View>}
+        <ScrollView style={styles.content} contentContainerStyle={[styles.contentInner, isMobile && styles.contentInnerMobile]}>
           {children}
         </ScrollView>
       </View>
@@ -134,6 +180,38 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  mobileBar: {
+    minHeight: 64,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  brandMarkMobile: { width: 36, height: 36 },
+  menuButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  menuBackdrop: { flex: 1, flexDirection: 'row', backgroundColor: 'rgba(15, 23, 42, 0.42)' },
+  menuDismissArea: { flex: 1 },
+  mobileMenu: {
+    width: 292,
+    maxWidth: '86%',
+    backgroundColor: colors.surface,
+    padding: 16,
+    gap: 16,
+  },
+  mobileMenuHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  mobileMenuTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -169,6 +247,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     flex: 0,
   },
+  navListMobile: { flexDirection: 'column', flexWrap: 'nowrap', flex: 1 },
+  navButtonMobile: { minHeight: 46 },
   navButton: {
     minHeight: 42,
     borderRadius: 8,
@@ -209,6 +289,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.error,
   },
+  logoutButtonMobile: { minHeight: 46 },
   main: {
     flex: 1,
     minWidth: 0,
@@ -239,4 +320,5 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 16,
   },
+  contentInnerMobile: { padding: 16, gap: 14 },
 });

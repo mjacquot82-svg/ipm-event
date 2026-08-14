@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
@@ -927,6 +928,7 @@ function SchedulePage({
   onPrepareImport: () => void;
   onRunImport: () => void;
 }) {
+  const isMobile = useWindowDimensions().width < 600;
   const days = ['All', ...Array.from(new Set(events.map(getScheduleDay))).filter(Boolean)];
   const normalizedSearch = search.trim().toLowerCase();
   const visibleEvents = events.filter((event) => {
@@ -953,8 +955,8 @@ function SchedulePage({
         secondaryAction={{ label: 'Refresh', icon: 'refresh-cw', onPress: onRefresh, disabled: loading }}
       />
 
-      <View style={styles.scheduleToolbarExtras}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayFilterList}>
+      <View style={[styles.scheduleToolbarExtras, isMobile && styles.scheduleToolbarExtrasMobile]}>
+        <ScrollView style={isMobile && styles.dayFilterScrollMobile} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayFilterList}>
           {days.map((day) => (
             <Pressable
               key={day}
@@ -967,7 +969,7 @@ function SchedulePage({
             </Pressable>
           ))}
         </ScrollView>
-        <Pressable style={styles.importButton} onPress={() => onImportOpenChange(!importOpen)}>
+        <Pressable style={[styles.importButton, isMobile && styles.importButtonMobile]} onPress={() => onImportOpenChange(!importOpen)}>
           <Feather name="upload" size={17} color={colors.textSecondary} />
           <Text style={styles.importButtonText}>{importOpen ? 'Close import' : 'Import schedule'}</Text>
         </Pressable>
@@ -1204,6 +1206,28 @@ function ScheduleList({
   onOpenForm: (mode: ScheduleEditorMode, event?: AdminScheduleEvent) => void;
   onDelete: (event: AdminScheduleEvent) => void;
 }) {
+  const isMobile = useWindowDimensions().width < 600;
+
+  if (isMobile) {
+    return (
+      <View style={styles.mobileCardList}>
+        {events.map((event) => (
+          <View key={event.id} style={styles.mobileDataCard}>
+            <Text style={styles.vendorName}>{event.title}</Text>
+            <Text style={styles.vendorMeta}>{[event.start_date, event.category].filter(Boolean).join(' · ')}</Text>
+            <Text style={styles.mobileCardDetail}>{[event.start_time, event.end_time].filter(Boolean).join(' - ') || 'No time'}</Text>
+            <Text style={styles.mobileCardDetail}>{event.location_name || 'No location'}</Text>
+            <View style={styles.mobileCardActions}>
+              <Pressable style={styles.iconButton} onPress={() => onOpenForm('view', event)}><Feather name="eye" size={16} color={colors.textSecondary} /></Pressable>
+              <Pressable style={styles.iconButton} onPress={() => onOpenForm('edit', event)}><Feather name="edit-2" size={16} color={colors.textSecondary} /></Pressable>
+              <Pressable style={styles.iconButton} onPress={() => onDelete(event)}><Feather name="trash-2" size={16} color={colors.error} /></Pressable>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.table}>
       <View style={[styles.tableRow, styles.tableHeader]}>
@@ -1353,6 +1377,27 @@ function VendorList({
   onEdit: (vendor: AdminVendor) => void;
   onDelete: (vendor: AdminVendor) => void;
 }) {
+  const isMobile = useWindowDimensions().width < 600;
+
+  if (isMobile) {
+    return (
+      <View style={styles.mobileCardList}>
+        {vendors.map((vendor) => (
+          <View key={vendor.id} style={styles.mobileDataCard}>
+            <Text style={styles.vendorName}>{vendor.name}</Text>
+            <Text style={styles.vendorMeta}>{[vendor.days_of_operation, vendor.hours_of_operation].filter(Boolean).join(' · ') || 'No hours set'}</Text>
+            <Text style={styles.mobileCardDetail}>{vendor.type || 'Uncategorized'}</Text>
+            <Text style={styles.mobileCardDetail}>{vendor.location || 'No location'} · Priority {vendor.priority}</Text>
+            <View style={styles.mobileCardActions}>
+              <Pressable style={styles.iconButton} onPress={() => onEdit(vendor)}><Feather name="edit-2" size={16} color={colors.textSecondary} /></Pressable>
+              <Pressable style={styles.iconButton} onPress={() => onDelete(vendor)}><Feather name="trash-2" size={16} color={colors.error} /></Pressable>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.table}>
       <View style={[styles.tableRow, styles.tableHeader]}>
@@ -1505,6 +1550,7 @@ function AnnouncementsPage({
   onCloseEditor: () => void; onSave: (status: AnnouncementStatus) => void;
   onSendTest: () => void; onNotifyEveryone: () => void;
 }) {
+  const isMobile = useWindowDimensions().width < 600;
   const statusLabel = (status: AnnouncementStatus) => status.charAt(0).toUpperCase() + status.slice(1);
 
   return (
@@ -1538,7 +1584,7 @@ function AnnouncementsPage({
       ) : (
         <View style={styles.table}>
           {announcements.map((item) => (
-            <View key={item.id} style={styles.announcementRow}>
+            <View key={item.id} style={[styles.announcementRow, isMobile && styles.announcementRowMobile]}>
               <View style={styles.announcementBody}>
                 <View style={styles.announcementHeading}>
                   <Text style={styles.vendorName}>{item.title}</Text>
@@ -1551,7 +1597,7 @@ function AnnouncementsPage({
                   {item.expires_at ? ` · Expires ${new Date(item.expires_at).toLocaleString()}` : ''}
                 </Text>
               </View>
-              <View style={styles.announcementActions}>
+              <View style={[styles.announcementActions, isMobile && styles.announcementActionsMobile]}>
                 <Pressable style={styles.iconButton} onPress={() => onEdit(item)}><Feather name="edit-2" size={16} color={colors.textSecondary} /></Pressable>
                 <Pressable style={styles.iconButton} onPress={() => onStatusChange(item, item.status === 'published' ? 'draft' : 'published')}>
                   <Feather name={item.status === 'published' ? 'pause' : 'play'} size={16} color={colors.textSecondary} />
@@ -1931,6 +1977,8 @@ const styles = StyleSheet.create({
     gap: 12,
     flexWrap: 'wrap',
   },
+  scheduleToolbarExtrasMobile: { flexDirection: 'column', alignItems: 'stretch' },
+  dayFilterScrollMobile: { width: '100%' },
   dayFilterList: {
     gap: 8,
     alignItems: 'center',
@@ -1974,6 +2022,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  importButtonMobile: { width: '100%', minHeight: 44 },
+  mobileCardList: { gap: 10 },
+  mobileDataCard: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: 14,
+    gap: 6,
+  },
+  mobileCardDetail: { fontSize: 14, color: colors.textSecondary },
+  mobileCardActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 6 },
+  announcementRowMobile: { flexDirection: 'column', alignItems: 'stretch', gap: 12 },
+  announcementActionsMobile: { justifyContent: 'flex-end', flexWrap: 'wrap' },
   mappingGrid: {
     gap: 12,
   },
