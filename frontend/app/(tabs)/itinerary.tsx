@@ -13,6 +13,7 @@ import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
+import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
   ATTENDEE_HORIZONTAL_MARGIN,
   ATTENDEE_CARD_RADIUS,
@@ -109,6 +110,7 @@ export default function ItineraryScreen() {
             {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
           </Text>
         </View>
+        <AttendeeAttribution source="itinerary_attribution" />
       </View>
     );
   }
@@ -121,6 +123,7 @@ export default function ItineraryScreen() {
           <Text style={styles.errorText}>{error}</Text>
           <Text style={styles.helperText}>Please try again later.</Text>
         </View>
+        <AttendeeAttribution source="itinerary_attribution" />
       </View>
     );
   }
@@ -143,6 +146,7 @@ export default function ItineraryScreen() {
         data={starredEvents}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.list, attendeePageContent]}
+        ListFooterComponent={<AttendeeAttribution source="itinerary_attribution" />}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}

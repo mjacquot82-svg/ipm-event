@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AnnouncementCard, { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
+import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { Announcement, AnnouncementsResponse, CachedApiResult, CachedApiSource, getAnnouncementsData } from '../../src/services/spreadsheetDataService';
@@ -94,6 +95,7 @@ export default function AnnouncementsScreen() {
             </View>
           )}
         </View>
+        <AttendeeAttribution source="announcements_attribution" />
       </ScrollView>
     </View>
   );

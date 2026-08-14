@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
+import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
   ATTENDEE_HORIZONTAL_MARGIN,
   ATTENDEE_CARD_RADIUS,
@@ -135,6 +136,7 @@ export default function VendorsScreen() {
             {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
           </Text>
         </View>
+        <AttendeeAttribution source="vendors_attribution" />
       </View>
     );
   }
@@ -154,6 +156,7 @@ export default function VendorsScreen() {
             <Text style={styles.primaryButtonText}>Try Again</Text>
           </TouchableOpacity>
         </View>
+        <AttendeeAttribution source="vendors_attribution" />
       </View>
     );
   }
@@ -250,6 +253,7 @@ export default function VendorsScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => fetchVendors(true)} />
         }
+        ListFooterComponent={<AttendeeAttribution source="vendors_attribution" />}
         renderItem={({ item }) => (
           <View style={sectionStyle}>
             <View style={styles.card}>

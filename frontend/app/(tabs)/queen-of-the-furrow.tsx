@@ -19,6 +19,7 @@ import {
   useAttendeeLayout,
 } from '../../src/theme/attendeePageLayout';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 
 export default function QueenOfTheFurrowScreen() {
   usePageAnalytics('queen_archive', 'home_quick_action', 'queen_archive_opened');
@@ -94,6 +95,7 @@ export default function QueenOfTheFurrowScreen() {
           </View>
         )}
         ListHeaderComponentStyle={styles.headerSpacing}
+        ListFooterComponent={<AttendeeAttribution source="queen_archive_attribution" />}
       />
     </View>
   );

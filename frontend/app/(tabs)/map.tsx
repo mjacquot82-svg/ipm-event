@@ -4,6 +4,7 @@ import React from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import MapComponent from '../../src/components/MapComponent';
+import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import colors from '../../src/theme/colors';
 import {
   ATTENDEE_CARD_RADIUS,
@@ -30,6 +31,7 @@ export default function MapScreen() {
           showOnlyHighlighted={showOnly === 'true'}
         />
       </View>
+      <AttendeeAttribution source="map_attribution" />
     </View>
   );
 }

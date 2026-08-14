@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import AnnouncementCard from '../../src/components/AnnouncementCard';
+import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import { Announcement, getAnnouncementById } from '../../src/services/spreadsheetDataService';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import colors from '../../src/theme/colors';
@@ -75,6 +76,7 @@ export default function AnnouncementDetailScreen() {
             <View style={sectionStyle}><AnnouncementCard announcement={announcement} /></View>
           ) : null}
         </View>
+        <AttendeeAttribution source="announcement_detail_attribution" />
       </ScrollView>
     </View>
   );

@@ -17,6 +17,7 @@ import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendee
 import { eventInfo } from '../../src/data/mockData';
 import { openTrackedLink, trackControlledOutbound } from '../../src/analytics/trackedLinks';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 
 const OFFICIAL_IPM_CONTENT = [
   "It is the largest event of its kind in North America.\nWith so much to see and do, plan to spend more than one day!\nThe IPM is held in a different community each year, highlighting the many great things the area has to offer and attracting on average 70,000 people from across Ontario, throughout Canada, the United States and beyond.",
@@ -36,10 +37,6 @@ const EVENT_HISTORY = [
 export default function AboutScreen() {
   usePageAnalytics('about', 'bottom_nav');
   const { frameStyle } = useAttendeeLayout();
-  const openJdsWebsite = () => {
-    void openTrackedLink('jds_studio', 'about');
-  };
-
   const openMaps = () => {
     const { lat, lng } = eventInfo.coordinates;
     const url = Platform.select({
@@ -171,13 +168,7 @@ export default function AboutScreen() {
           </View>
         </View>
 
-        {/* Copyright Footer */}
-        <View style={styles.copyrightSection}>
-          <TouchableOpacity onPress={openJdsWebsite} activeOpacity={0.75}>
-            <Text style={styles.copyrightText}>© 2026 Jacquot Digital Solutions</Text>
-            <Text style={styles.copyrightLink}>jdsstudio.ca</Text>
-          </TouchableOpacity>
-        </View>
+        <AttendeeAttribution source="about_attribution" />
 
       </ScrollView>
     </View>
@@ -365,22 +356,5 @@ const styles = StyleSheet.create({
     color: colors.accent,
     marginTop: 4,
     fontStyle: 'italic',
-  },
-  copyrightSection: {
-    marginTop: 24,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  copyrightText: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-  },
-  copyrightLink: {
-    fontSize: 13,
-    color: colors.accent,
-    fontWeight: '600',
-    marginTop: 4,
-    textAlign: 'center',
   },
 });

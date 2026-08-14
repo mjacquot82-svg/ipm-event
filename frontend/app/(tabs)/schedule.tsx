@@ -24,6 +24,7 @@ import {
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
+import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
   CachedApiSource,
   CachedApiResult,
@@ -346,6 +347,7 @@ export default function ScheduleScreen() {
             </Text>
           </View>
         </View>
+        <AttendeeAttribution source="schedule_attribution" />
       </View>
     );
   }
@@ -367,6 +369,7 @@ export default function ScheduleScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        <AttendeeAttribution source="schedule_attribution" />
       </View>
     );
   }
@@ -588,6 +591,7 @@ export default function ScheduleScreen() {
           </View>
         )}
         renderSectionFooter={() => <View style={styles.sectionFooter} />}
+        ListFooterComponent={<AttendeeAttribution source="schedule_attribution" />}
         renderItem={({ item: event }) => {
           const isFavorite = favorites.includes(event.id);
 

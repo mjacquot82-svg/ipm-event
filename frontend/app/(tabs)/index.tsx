@@ -16,6 +16,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
+import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { openTrackedLink, IpmDestinationId } from '../../src/analytics/trackedLinks';
@@ -678,6 +679,7 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
+        <AttendeeAttribution source="home_attribution" />
       </ScrollView>
     </View>
   );
