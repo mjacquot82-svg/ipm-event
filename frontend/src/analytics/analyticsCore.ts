@@ -9,6 +9,9 @@ export type AnalyticsStorage = {
 };
 
 export type AnalyticsDiagnosticCode =
+  | 'initializer_invoked'
+  | 'initializer_skipped_excluded'
+  | 'initializer_skipped_unconfigured'
   | 'storage_fallback'
   | 'initialization_failed'
   | 'transport_deferred'
@@ -102,6 +105,20 @@ export class AnalyticsSessionRecovery {
     if (this.inFlight) return this.inFlight;
     this.inFlight = recover().finally(() => { this.inFlight = null; });
     return this.inFlight;
+  }
+}
+
+export class AnalyticsRuntimeSessionStart {
+  private attempted = false;
+
+  claim(): boolean {
+    if (this.attempted) return false;
+    this.attempted = true;
+    return true;
+  }
+
+  reset(): void {
+    this.attempted = false;
   }
 }
 

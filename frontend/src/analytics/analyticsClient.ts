@@ -4,6 +4,7 @@ import { AppState, Platform } from 'react-native';
 import {
   ANALYTICS_MAX_BATCH_EVENTS,
   AnalyticsRequestBuffer,
+  AnalyticsRuntimeSessionStart,
   ResilientAnalyticsStorage,
   AnalyticsSessionRecovery,
   clearSession,
@@ -24,6 +25,7 @@ const HEARTBEAT_MS = 60_000;
 const EVENT_FLUSH_MS = 2_000;
 const analyticsStorage = new ResilientAnalyticsStorage(AsyncStorage, recordAnalyticsDiagnostic);
 const sessionRecovery = new AnalyticsSessionRecovery();
+const runtimeSessionStart = new AnalyticsRuntimeSessionStart();
 const transport = new AnalyticsRequestBuffer(
   analyticsStorage, fetch, API_BASE_URL, __DEV__,
   (rejectedSessionId) => recoverInvalidSession(rejectedSessionId),
@@ -52,6 +54,7 @@ async function recoverInvalidSession(rejectedSessionId: string): Promise<void> {
     if (flushTimer) clearTimeout(flushTimer);
     flushTimer = null;
     try { await clearSession(analyticsStorage); } catch { /* recovery remains best-effort and non-blocking */ }
+    runtimeSessionStart.reset();
     await createOrResumeSession();
     startHeartbeat();
     void transport.flush();
@@ -82,13 +85,19 @@ function lifecycleBody(clientEventId: string) {
 }
 
 async function createOrResumeSession(): Promise<boolean> {
+  if (!API_BASE_URL) {
+    recordAnalyticsDiagnostic('initializer_skipped_unconfigured');
+    return false;
+  }
   if (!shouldInitializeAttendeeAnalytics(routePath, API_BASE_URL)) return false;
   try {
     visitorId = await getOrCreateVisitorId(analyticsStorage);
     const result = await getOrCreateSession(analyticsStorage, Date.now());
     sessionId = result.session.id;
-    if (result.created) {
+    if (runtimeSessionStart.claim()) {
       await transport.sendOrBuffer({ endpoint: '/api/analytics/session/start', body: lifecycleBody(generateAnalyticsUuid()) });
+    }
+    if (result.created) {
       appendPendingEvent('app_launched', {
         launch_mode: getLaunchMode(), app_version: Constants.expoConfig?.version ?? 'unknown',
       });
@@ -133,7 +142,11 @@ function stopHeartbeat(): void {
 
 export async function initializeAttendeeAnalytics(pathname: string): Promise<void> {
   routePath = pathname;
-  if (!isAttendeeAnalyticsPath(pathname)) return;
+  if (!isAttendeeAnalyticsPath(pathname)) {
+    recordAnalyticsDiagnostic('initializer_skipped_excluded');
+    return;
+  }
+  recordAnalyticsDiagnostic('initializer_invoked');
   if (!initialized) {
     initialized = true;
     AppState.addEventListener('change', (state) => {
@@ -161,6 +174,7 @@ export async function initializeAttendeeAnalytics(pathname: string): Promise<voi
 export async function setAnalyticsRoute(pathname: string): Promise<void> {
   routePath = pathname;
   if (!isAttendeeAnalyticsPath(pathname)) {
+    recordAnalyticsDiagnostic('initializer_skipped_excluded');
     stopHeartbeat();
     await flushAnalyticsEvents();
     return;
@@ -176,6 +190,7 @@ export async function endAttendeeSession(reason: 'pagehide' | 'background' | 'ex
   }
   sessionId = null;
   try { await clearSession(analyticsStorage); } catch { /* analytics must remain non-blocking */ }
+  runtimeSessionStart.reset();
 }
 
 export async function queueAnalyticsEvent(eventName: string, properties: AnalyticsProperties = {}): Promise<void> {
@@ -211,5 +226,6 @@ export function pageNavigationProperties(pageId: string, source?: string): Analy
 
 export function resetAnalyticsForTests(): void {
   stopHeartbeat();
+  runtimeSessionStart.reset();
   visitorId = null; sessionId = null; initialized = false; pendingEvents = []; previousPage = null; routePath = '/'; ensureSessionPromise = null; invalidSessionRecoveryPromise = null;
 }

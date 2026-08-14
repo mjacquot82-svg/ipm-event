@@ -4,6 +4,7 @@ import {
   ANALYTICS_MAX_BUFFERED_REQUESTS,
   ANALYTICS_SESSION_TIMEOUT_MS,
   AnalyticsRequestBuffer,
+  AnalyticsRuntimeSessionStart,
   AnalyticsSessionRecovery,
   ResilientAnalyticsStorage,
   PageFocusDeduplicator,
@@ -57,6 +58,30 @@ test('production attendee root initializes and attempts session start', async ()
   }
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://ipm-backend-eoiw.onrender.com/api/analytics/session/start');
+});
+
+test('a fresh app runtime attempts session start when local session storage resumes a session', async () => {
+  const storage = new MemoryStorage();
+  await getOrCreateSession(storage, 1_000, uuidSource);
+  const resumed = await getOrCreateSession(storage, 2_000, uuidSource);
+  assert.equal(resumed.created, false);
+
+  const runtimeStart = new AnalyticsRuntimeSessionStart();
+  const calls = [];
+  const transport = new AnalyticsRequestBuffer(storage, async (url) => {
+    calls.push(url);
+    return { ok: true, status: 202 };
+  }, 'https://example.test');
+
+  if (runtimeStart.claim()) {
+    await transport.sendOrBuffer({
+      endpoint: '/api/analytics/session/start',
+      body: { visitorId: 'visitor', sessionId: resumed.session.id, clientEventId: generateAnalyticsUuid(uuidSource) },
+    });
+  }
+  if (runtimeStart.claim()) throw new Error('rerender must not claim another session start');
+
+  assert.deepEqual(calls, ['https://example.test/api/analytics/session/start']);
 });
 
 test('excluded and unconfigured routes do not initialize analytics', () => {
