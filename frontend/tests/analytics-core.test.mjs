@@ -8,6 +8,7 @@ import {
   AnalyticsSessionRecovery,
   ResilientAnalyticsStorage,
   PageFocusDeduplicator,
+  bindAnalyticsFetch,
   buildOutboundAnalyticsProperties,
   buildSearchAnalyticsProperties,
   clearSession,
@@ -103,6 +104,34 @@ test('durable queue retries never use keepalive', async () => {
   await transport.flush();
 
   assert.deepEqual(calls, [undefined]);
+  assert.equal(await transport.size(), 0);
+});
+
+test('bound analytics fetch preserves the global receiver for direct sends and queued flushes', async () => {
+  const calls = [];
+  function receiverSensitiveFetch(url, init) {
+    if (this !== globalThis) return Promise.reject(new TypeError('Illegal invocation'));
+    calls.push({ url, keepalive: init.keepalive });
+    return Promise.resolve({ ok: true, status: 202 });
+  }
+  const transport = new AnalyticsRequestBuffer(
+    new MemoryStorage(),
+    bindAnalyticsFetch(receiverSensitiveFetch),
+    'https://example.test',
+  );
+  const request = {
+    endpoint: '/api/activity/session/start',
+    body: { visitorId: 'visitor', sessionId: 'session', clientEventId: 'event' },
+  };
+
+  assert.equal(await transport.sendOrBuffer(request), true);
+  await transport.enqueue(request);
+  await transport.flush();
+
+  assert.deepEqual(calls, [
+    { url: 'https://example.test/api/activity/session/start', keepalive: false },
+    { url: 'https://example.test/api/activity/session/start', keepalive: undefined },
+  ]);
   assert.equal(await transport.size(), 0);
 });
 

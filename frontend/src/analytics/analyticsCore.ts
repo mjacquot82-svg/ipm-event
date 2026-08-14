@@ -89,6 +89,10 @@ export type AnalyticsFetchResponse = {
 
 export type AnalyticsFetch = (url: string, init: RequestInit) => Promise<AnalyticsFetchResponse>;
 
+export function bindAnalyticsFetch(fetcher: AnalyticsFetch): AnalyticsFetch {
+  return fetcher.bind(globalThis);
+}
+
 export type BufferedRequest = {
   endpoint: string;
   body: Record<string, unknown>;

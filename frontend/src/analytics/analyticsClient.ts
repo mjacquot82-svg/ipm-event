@@ -7,6 +7,7 @@ import {
   AnalyticsRuntimeSessionStart,
   ResilientAnalyticsStorage,
   AnalyticsSessionRecovery,
+  bindAnalyticsFetch,
   clearSession,
   generateAnalyticsUuid,
   getOrCreateSession,
@@ -27,7 +28,7 @@ const analyticsStorage = new ResilientAnalyticsStorage(AsyncStorage, recordAnaly
 const sessionRecovery = new AnalyticsSessionRecovery();
 const runtimeSessionStart = new AnalyticsRuntimeSessionStart();
 const transport = new AnalyticsRequestBuffer(
-  analyticsStorage, fetch, API_BASE_URL, __DEV__,
+  analyticsStorage, bindAnalyticsFetch(fetch), API_BASE_URL, __DEV__,
   (rejectedSessionId) => recoverInvalidSession(rejectedSessionId),
   recordAnalyticsDiagnostic,
 );
