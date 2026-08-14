@@ -47,7 +47,7 @@ test('production attendee root initializes and attempts session start', async ()
   const session = await getOrCreateSession(storage, 1_000, uuidSource);
   const calls = [];
   const transport = new AnalyticsRequestBuffer(storage, async (url, init) => {
-    calls.push({ url, body: JSON.parse(init.body) });
+    calls.push({ url, body: JSON.parse(init.body), headers: init.headers, keepalive: init.keepalive });
     return { ok: true, status: 202 };
   }, 'https://ipm-backend-eoiw.onrender.com');
   if (session.created) {
@@ -58,6 +58,8 @@ test('production attendee root initializes and attempts session start', async ()
   }
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://ipm-backend-eoiw.onrender.com/api/analytics/session/start');
+  assert.deepEqual(calls[0].headers, { 'Content-Type': 'application/json' });
+  assert.equal(calls[0].keepalive, true);
 });
 
 test('a fresh app runtime attempts session start when local session storage resumes a session', async () => {
@@ -189,6 +191,95 @@ test('failed requests are buffered and retry uses the identical idempotency body
   await buffer.flush();
   assert.equal(await buffer.size(), 0);
   assert.equal(calls[0].body, calls[1].body);
+});
+
+test('transport diagnostics distinguish serialization, fetch invocation, rejection, and HTTP response stages', async () => {
+  const request = {
+    endpoint: '/api/analytics/session/start',
+    body: { visitorId: 'visitor', sessionId: 'session', clientEventId: 'event' },
+  };
+
+  const serializationDiagnostics = [];
+  const cyclicBody = {};
+  cyclicBody.self = cyclicBody;
+  let serializationFetchCalled = false;
+  const serializationBuffer = new AnalyticsRequestBuffer(
+    new MemoryStorage(),
+    async () => { serializationFetchCalled = true; return { ok: true }; },
+    'https://example.test', false, undefined,
+    (code, detail) => serializationDiagnostics.push({ code, detail }),
+  );
+  await serializationBuffer.sendOrBuffer({ ...request, body: cyclicBody });
+  assert.equal(serializationFetchCalled, false);
+  assert.deepEqual(serializationDiagnostics, [
+    { code: 'transport_deferred', detail: 'session_start:serialize_failed' },
+  ]);
+
+  const invocationDiagnostics = [];
+  const invocationBuffer = new AnalyticsRequestBuffer(
+    new MemoryStorage(),
+    () => { throw new TypeError('native fetch rejected the request'); },
+    'https://example.test', false, undefined,
+    (code, detail) => invocationDiagnostics.push({ code, detail }),
+  );
+  await invocationBuffer.sendOrBuffer(request);
+  assert.deepEqual(invocationDiagnostics, [
+    { code: 'transport_deferred', detail: 'session_start:fetch_invocation_failed' },
+  ]);
+
+  const rejectionDiagnostics = [];
+  const rejectionBuffer = new AnalyticsRequestBuffer(
+    new MemoryStorage(),
+    async () => { throw new TypeError('Failed to fetch'); },
+    'https://example.test', false, undefined,
+    (code, detail) => rejectionDiagnostics.push({ code, detail }),
+  );
+  await rejectionBuffer.sendOrBuffer(request);
+  assert.deepEqual(rejectionDiagnostics, [
+    { code: 'transport_deferred', detail: 'session_start:fetch_rejected' },
+  ]);
+
+  const responseDiagnostics = [];
+  const responseBuffer = new AnalyticsRequestBuffer(
+    new MemoryStorage(), async () => ({ ok: false, status: 500 }),
+    'https://example.test', false, undefined,
+    (code, detail) => responseDiagnostics.push({ code, detail }),
+  );
+  await responseBuffer.sendOrBuffer(request);
+  assert.deepEqual(responseDiagnostics, [
+    { code: 'transport_deferred', detail: 'session_start:http_retryable_response' },
+  ]);
+});
+
+test('queued retry diagnostics distinguish fetch rejection from a readable retryable response', async () => {
+  const request = {
+    endpoint: '/api/analytics/session/start',
+    body: { visitorId: 'visitor', sessionId: 'session', clientEventId: 'event' },
+  };
+
+  const rejectionDiagnostics = [];
+  const rejectionBuffer = new AnalyticsRequestBuffer(
+    new MemoryStorage(), async () => { throw new TypeError('Failed to fetch'); },
+    'https://example.test', false, undefined,
+    (code, detail) => rejectionDiagnostics.push({ code, detail }),
+  );
+  await rejectionBuffer.enqueue(request);
+  await rejectionBuffer.flush();
+  assert.deepEqual(rejectionDiagnostics, [
+    { code: 'transport_deferred', detail: 'session_start:queue_fetch_rejected' },
+  ]);
+
+  const responseDiagnostics = [];
+  const responseBuffer = new AnalyticsRequestBuffer(
+    new MemoryStorage(), async () => ({ ok: false, status: 503 }),
+    'https://example.test', false, undefined,
+    (code, detail) => responseDiagnostics.push({ code, detail }),
+  );
+  await responseBuffer.enqueue(request);
+  await responseBuffer.flush();
+  assert.deepEqual(responseDiagnostics, [
+    { code: 'transport_deferred', detail: 'session_start:queue_http_retryable_response' },
+  ]);
 });
 
 test('buffer drops oldest requests when its bounded capacity is exceeded', async () => {

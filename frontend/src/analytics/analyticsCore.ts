@@ -223,6 +223,20 @@ export class AnalyticsRequestBuffer {
   private onSessionInvalid?: (sessionId: string) => void | Promise<void>;
   private report?: AnalyticsDiagnosticReporter;
 
+  private requestOperation(request: BufferedRequest): string {
+    switch (request.endpoint) {
+      case '/api/analytics/session/start': return 'session_start';
+      case '/api/analytics/session/heartbeat': return 'session_heartbeat';
+      case '/api/analytics/session/end': return 'session_end';
+      case '/api/analytics/events': return 'events';
+      default: return 'unknown';
+    }
+  }
+
+  private reportDeferred(request: BufferedRequest, stage: string): void {
+    this.report?.('transport_deferred', `${this.requestOperation(request)}:${stage}`);
+  }
+
   constructor(
     storage: AnalyticsStorage,
     fetcher: AnalyticsFetch,
@@ -294,10 +308,38 @@ export class AnalyticsRequestBuffer {
   }
 
   async sendOrBuffer(request: BufferedRequest): Promise<boolean> {
+    let body: string;
     try {
-      const response = await this.fetcher(`${this.apiBaseUrl}${request.endpoint}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request.body), keepalive: true,
+      body = JSON.stringify(request.body);
+    } catch {
+      this.reportDeferred(request, 'serialize_failed');
+      await this.enqueue(request);
+      return false;
+    }
+
+    let responsePromise: Promise<AnalyticsFetchResponse>;
+    try {
+      responsePromise = this.fetcher(`${this.apiBaseUrl}${request.endpoint}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true,
       });
+    } catch (error) {
+      if (this.development) console.debug('[Analytics] Request deferred', error);
+      this.reportDeferred(request, 'fetch_invocation_failed');
+      await this.enqueue(request);
+      return false;
+    }
+
+    let response: AnalyticsFetchResponse;
+    try {
+      response = await responsePromise;
+    } catch (error) {
+      if (this.development) console.debug('[Analytics] Request deferred', error);
+      this.reportDeferred(request, 'fetch_rejected');
+      await this.enqueue(request);
+      return false;
+    }
+
+    try {
       if (response.ok) return true;
       const invalidSessionId = await this.invalidSessionId(response, request);
       if (invalidSessionId) {
@@ -311,8 +353,11 @@ export class AnalyticsRequestBuffer {
       }
     } catch (error) {
       if (this.development) console.debug('[Analytics] Request deferred', error);
+      this.reportDeferred(request, 'response_processing_failed');
+      await this.enqueue(request);
+      return false;
     }
-    this.report?.('transport_deferred');
+    this.reportDeferred(request, 'http_retryable_response');
     await this.enqueue(request);
     return false;
   }
@@ -324,10 +369,33 @@ export class AnalyticsRequestBuffer {
     try {
       while (this.queue.length > 0) {
         const request = this.queue[0];
+        let body: string;
         try {
-          const response = await this.fetcher(`${this.apiBaseUrl}${request.endpoint}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request.body), keepalive: true,
+          body = JSON.stringify(request.body);
+        } catch {
+          this.reportDeferred(request, 'queue_serialize_failed');
+          break;
+        }
+
+        let responsePromise: Promise<AnalyticsFetchResponse>;
+        try {
+          responsePromise = this.fetcher(`${this.apiBaseUrl}${request.endpoint}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true,
           });
+        } catch {
+          this.reportDeferred(request, 'queue_fetch_invocation_failed');
+          break;
+        }
+
+        let response: AnalyticsFetchResponse;
+        try {
+          response = await responsePromise;
+        } catch {
+          this.reportDeferred(request, 'queue_fetch_rejected');
+          break;
+        }
+
+        try {
           if (!response.ok) {
             const invalidSessionId = await this.invalidSessionId(response, request);
             if (invalidSessionId) {
@@ -340,12 +408,13 @@ export class AnalyticsRequestBuffer {
               await this.persist();
               continue;
             }
+            this.reportDeferred(request, 'queue_http_retryable_response');
             break;
           }
           this.queue.shift();
           await this.persist();
         } catch {
-          this.report?.('transport_deferred');
+          this.reportDeferred(request, 'queue_response_processing_failed');
           break;
         }
       }
