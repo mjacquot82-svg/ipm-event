@@ -8,6 +8,75 @@ export type AnalyticsStorage = {
   removeItem(key: string): Promise<void>;
 };
 
+export type AnalyticsDiagnosticCode =
+  | 'storage_fallback'
+  | 'initialization_failed'
+  | 'transport_deferred'
+  | 'transport_rejected';
+
+export type AnalyticsDiagnostic = {
+  code: AnalyticsDiagnosticCode;
+  at: string;
+  detail?: string;
+};
+
+export type AnalyticsDiagnosticReporter = (code: AnalyticsDiagnosticCode, detail?: string) => void;
+
+export class MemoryAnalyticsStorage implements AnalyticsStorage {
+  private values = new Map<string, string>();
+
+  async getItem(key: string): Promise<string | null> {
+    return this.values.get(key) ?? null;
+  }
+
+  async setItem(key: string, value: string): Promise<void> {
+    this.values.set(key, value);
+  }
+
+  async removeItem(key: string): Promise<void> {
+    this.values.delete(key);
+  }
+}
+
+export class ResilientAnalyticsStorage implements AnalyticsStorage {
+  private persistent: AnalyticsStorage;
+  private fallback = new MemoryAnalyticsStorage();
+  private persistentAvailable = true;
+  private report?: AnalyticsDiagnosticReporter;
+
+  constructor(persistent: AnalyticsStorage, report?: AnalyticsDiagnosticReporter) {
+    this.persistent = persistent;
+    this.report = report;
+  }
+
+  private async run<T>(persistentOperation: () => Promise<T>, fallbackOperation: () => Promise<T>): Promise<T> {
+    if (!this.persistentAvailable) return fallbackOperation();
+    try {
+      return await persistentOperation();
+    } catch {
+      this.persistentAvailable = false;
+      this.report?.('storage_fallback');
+      return fallbackOperation();
+    }
+  }
+
+  getItem(key: string): Promise<string | null> {
+    return this.run(() => this.persistent.getItem(key), () => this.fallback.getItem(key));
+  }
+
+  setItem(key: string, value: string): Promise<void> {
+    return this.run(() => this.persistent.setItem(key, value), () => this.fallback.setItem(key, value));
+  }
+
+  removeItem(key: string): Promise<void> {
+    return this.run(() => this.persistent.removeItem(key), () => this.fallback.removeItem(key));
+  }
+
+  isUsingFallback(): boolean {
+    return !this.persistentAvailable;
+  }
+}
+
 export type AnalyticsFetchResponse = {
   ok: boolean;
   status?: number;
@@ -92,6 +161,10 @@ export function isAttendeeAnalyticsPath(pathname: string): boolean {
   );
 }
 
+export function shouldInitializeAttendeeAnalytics(pathname: string, apiBaseUrl: string): boolean {
+  return Boolean(apiBaseUrl) && isAttendeeAnalyticsPath(pathname || '/');
+}
+
 export class PageFocusDeduplicator {
   private focused = new Set<string>();
 
@@ -131,6 +204,7 @@ export class AnalyticsRequestBuffer {
   private apiBaseUrl: string;
   private development: boolean;
   private onSessionInvalid?: (sessionId: string) => void | Promise<void>;
+  private report?: AnalyticsDiagnosticReporter;
 
   constructor(
     storage: AnalyticsStorage,
@@ -138,12 +212,14 @@ export class AnalyticsRequestBuffer {
     apiBaseUrl: string,
     development = false,
     onSessionInvalid?: (sessionId: string) => void | Promise<void>,
+    report?: AnalyticsDiagnosticReporter,
   ) {
     this.storage = storage;
     this.fetcher = fetcher;
     this.apiBaseUrl = apiBaseUrl;
     this.development = development;
     this.onSessionInvalid = onSessionInvalid;
+    this.report = report;
   }
 
   private requestSessionId(request: BufferedRequest): string | null {
@@ -212,12 +288,14 @@ export class AnalyticsRequestBuffer {
         return false;
       }
       if (response.status && response.status >= 400 && response.status < 500 && ![408, 429].includes(response.status)) {
+        this.report?.('transport_rejected', String(response.status));
         if (this.development) console.debug(`[Analytics] Dropped rejected payload (${response.status})`);
         return false;
       }
     } catch (error) {
       if (this.development) console.debug('[Analytics] Request deferred', error);
     }
+    this.report?.('transport_deferred');
     await this.enqueue(request);
     return false;
   }
@@ -240,6 +318,7 @@ export class AnalyticsRequestBuffer {
               continue;
             }
             if (response.status && response.status >= 400 && response.status < 500 && ![408, 429].includes(response.status)) {
+              this.report?.('transport_rejected', String(response.status));
               this.queue.shift();
               await this.persist();
               continue;
@@ -249,6 +328,7 @@ export class AnalyticsRequestBuffer {
           this.queue.shift();
           await this.persist();
         } catch {
+          this.report?.('transport_deferred');
           break;
         }
       }

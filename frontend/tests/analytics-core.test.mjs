@@ -5,6 +5,7 @@ import {
   ANALYTICS_SESSION_TIMEOUT_MS,
   AnalyticsRequestBuffer,
   AnalyticsSessionRecovery,
+  ResilientAnalyticsStorage,
   PageFocusDeduplicator,
   buildOutboundAnalyticsProperties,
   buildSearchAnalyticsProperties,
@@ -13,8 +14,13 @@ import {
   getOrCreateSession,
   getOrCreateVisitorId,
   isAttendeeAnalyticsPath,
+  shouldInitializeAttendeeAnalytics,
   takeAnalyticsBatch,
 } from '../src/analytics/analyticsCore.ts';
+import {
+  getAnalyticsDiagnostics,
+  recordAnalyticsDiagnostic,
+} from '../src/analytics/analyticsDiagnostics.ts';
 
 class MemoryStorage {
   values = new Map();
@@ -31,6 +37,91 @@ test('visitor ID is generated once and persists', async () => {
   const first = await getOrCreateVisitorId(storage, uuidSource);
   const second = await getOrCreateVisitorId(storage, () => { throw new Error('must not regenerate'); });
   assert.equal(first, second);
+});
+
+test('production attendee root initializes and attempts session start', async () => {
+  assert.equal(shouldInitializeAttendeeAnalytics('/', 'https://ipm-backend-eoiw.onrender.com'), true);
+  const storage = new MemoryStorage();
+  const visitorId = await getOrCreateVisitorId(storage, uuidSource);
+  const session = await getOrCreateSession(storage, 1_000, uuidSource);
+  const calls = [];
+  const transport = new AnalyticsRequestBuffer(storage, async (url, init) => {
+    calls.push({ url, body: JSON.parse(init.body) });
+    return { ok: true, status: 202 };
+  }, 'https://ipm-backend-eoiw.onrender.com');
+  if (session.created) {
+    await transport.sendOrBuffer({
+      endpoint: '/api/analytics/session/start',
+      body: { visitorId, sessionId: session.session.id, clientEventId: generateAnalyticsUuid(uuidSource) },
+    });
+  }
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, 'https://ipm-backend-eoiw.onrender.com/api/analytics/session/start');
+});
+
+test('excluded and unconfigured routes do not initialize analytics', () => {
+  const backend = 'https://ipm-backend-eoiw.onrender.com';
+  for (const path of ['/admin', '/admin/login', '/preview', '/preview-2026', '/coming-soon']) {
+    assert.equal(shouldInitializeAttendeeAnalytics(path, backend), false, path);
+  }
+  assert.equal(shouldInitializeAttendeeAnalytics('/', ''), false);
+});
+
+test('storage unavailable falls back to memory and still supports a session start', async () => {
+  const diagnostics = [];
+  const unavailable = {
+    async getItem() { throw new Error('storage unavailable'); },
+    async setItem() { throw new Error('storage unavailable'); },
+    async removeItem() { throw new Error('storage unavailable'); },
+  };
+  const storage = new ResilientAnalyticsStorage(unavailable, (code) => diagnostics.push(code));
+  const visitorId = await getOrCreateVisitorId(storage, uuidSource);
+  const session = await getOrCreateSession(storage, 1_000, uuidSource);
+  const calls = [];
+  const transport = new AnalyticsRequestBuffer(storage, async (url) => {
+    calls.push(url);
+    return { ok: true, status: 202 };
+  }, 'https://example.test');
+  await transport.sendOrBuffer({
+    endpoint: '/api/analytics/session/start',
+    body: { visitorId, sessionId: session.session.id, clientEventId: generateAnalyticsUuid(uuidSource) },
+  });
+  assert.equal(storage.isUsingFallback(), true);
+  assert.deepEqual(diagnostics, ['storage_fallback']);
+  assert.deepEqual(calls, ['https://example.test/api/analytics/session/start']);
+});
+
+test('storage that throws during a write switches once to a stable memory fallback', async () => {
+  let writes = 0;
+  const throwing = {
+    async getItem() { return null; },
+    async setItem() { writes += 1; throw new Error('quota denied'); },
+    async removeItem() { throw new Error('quota denied'); },
+  };
+  const storage = new ResilientAnalyticsStorage(throwing);
+  const visitor = await getOrCreateVisitorId(storage, uuidSource);
+  assert.equal(await getOrCreateVisitorId(storage, () => { throw new Error('must reuse fallback visitor'); }), visitor);
+  assert.equal(writes, 1);
+});
+
+test('resilient storage preserves persistent visitor and 30-minute session behavior when available', async () => {
+  const persistent = new MemoryStorage();
+  const storage = new ResilientAnalyticsStorage(persistent);
+  const visitor = await getOrCreateVisitorId(storage, uuidSource);
+  assert.equal(await getOrCreateVisitorId(storage, () => { throw new Error('must persist'); }), visitor);
+  const first = await getOrCreateSession(storage, 1_000, uuidSource);
+  const resumed = await getOrCreateSession(storage, 1_000 + ANALYTICS_SESSION_TIMEOUT_MS - 1, uuidSource);
+  assert.equal(resumed.created, false);
+  assert.equal(resumed.session.id, first.session.id);
+  assert.equal(storage.isUsingFallback(), false);
+});
+
+test('production diagnostics are bounded and contain only technical codes', () => {
+  for (let index = 0; index < 20; index += 1) recordAnalyticsDiagnostic('transport_rejected', '422');
+  const entries = getAnalyticsDiagnostics();
+  assert.equal(entries.length, 12);
+  assert.deepEqual(Object.keys(entries[0]).sort(), ['at', 'code', 'detail']);
+  assert.equal(entries.every((entry) => entry.code === 'transport_rejected' && entry.detail === '422'), true);
 });
 
 test('session is reused within 30 minutes and rolls over after inactivity', async () => {

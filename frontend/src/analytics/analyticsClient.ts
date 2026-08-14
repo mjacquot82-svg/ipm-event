@@ -4,14 +4,17 @@ import { AppState, Platform } from 'react-native';
 import {
   ANALYTICS_MAX_BATCH_EVENTS,
   AnalyticsRequestBuffer,
+  ResilientAnalyticsStorage,
   AnalyticsSessionRecovery,
   clearSession,
   generateAnalyticsUuid,
   getOrCreateSession,
   getOrCreateVisitorId,
   isAttendeeAnalyticsPath,
+  shouldInitializeAttendeeAnalytics,
   takeAnalyticsBatch,
 } from './analyticsCore';
+import { recordAnalyticsDiagnostic } from './analyticsDiagnostics';
 
 export type AnalyticsValue = string | number | boolean | null;
 export type AnalyticsProperties = Record<string, AnalyticsValue>;
@@ -19,10 +22,12 @@ export type AnalyticsProperties = Record<string, AnalyticsValue>;
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 const HEARTBEAT_MS = 60_000;
 const EVENT_FLUSH_MS = 2_000;
+const analyticsStorage = new ResilientAnalyticsStorage(AsyncStorage, recordAnalyticsDiagnostic);
 const sessionRecovery = new AnalyticsSessionRecovery();
 const transport = new AnalyticsRequestBuffer(
-  AsyncStorage, fetch, API_BASE_URL, __DEV__,
+  analyticsStorage, fetch, API_BASE_URL, __DEV__,
   (rejectedSessionId) => recoverInvalidSession(rejectedSessionId),
+  recordAnalyticsDiagnostic,
 );
 
 let visitorId: string | null = null;
@@ -46,7 +51,7 @@ async function recoverInvalidSession(rejectedSessionId: string): Promise<void> {
     pendingEvents = [];
     if (flushTimer) clearTimeout(flushTimer);
     flushTimer = null;
-    try { await clearSession(AsyncStorage); } catch { /* recovery remains best-effort and non-blocking */ }
+    try { await clearSession(analyticsStorage); } catch { /* recovery remains best-effort and non-blocking */ }
     await createOrResumeSession();
     startHeartbeat();
     void transport.flush();
@@ -77,10 +82,10 @@ function lifecycleBody(clientEventId: string) {
 }
 
 async function createOrResumeSession(): Promise<boolean> {
-  if (!isAttendeeAnalyticsPath(routePath) || !API_BASE_URL) return false;
+  if (!shouldInitializeAttendeeAnalytics(routePath, API_BASE_URL)) return false;
   try {
-    visitorId = await getOrCreateVisitorId(AsyncStorage);
-    const result = await getOrCreateSession(AsyncStorage, Date.now());
+    visitorId = await getOrCreateVisitorId(analyticsStorage);
+    const result = await getOrCreateSession(analyticsStorage, Date.now());
     sessionId = result.session.id;
     if (result.created) {
       await transport.sendOrBuffer({ endpoint: '/api/analytics/session/start', body: lifecycleBody(generateAnalyticsUuid()) });
@@ -90,6 +95,7 @@ async function createOrResumeSession(): Promise<boolean> {
     }
     return true;
   } catch (error) {
+    recordAnalyticsDiagnostic('initialization_failed');
     if (__DEV__) console.debug('[Analytics] Session unavailable', error);
     return false;
   }
@@ -169,7 +175,7 @@ export async function endAttendeeSession(reason: 'pagehide' | 'background' | 'ex
     await transport.sendOrBuffer({ endpoint: '/api/analytics/session/end', body: { ...lifecycleBody(generateAnalyticsUuid()), reason } });
   }
   sessionId = null;
-  try { await clearSession(AsyncStorage); } catch { /* analytics must remain non-blocking */ }
+  try { await clearSession(analyticsStorage); } catch { /* analytics must remain non-blocking */ }
 }
 
 export async function queueAnalyticsEvent(eventName: string, properties: AnalyticsProperties = {}): Promise<void> {
