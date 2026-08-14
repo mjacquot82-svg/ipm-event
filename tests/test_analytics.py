@@ -4,8 +4,10 @@ from uuid import uuid4
 
 import httpx
 import pytest
-from pydantic import ValidationError
+from fastapi import Depends, FastAPI
+from pydantic import BaseModel, ValidationError, field_validator
 from pymongo.errors import OperationFailure
+from starlette.middleware.cors import CORSMiddleware
 
 from backend import server
 from backend.analytics import (
@@ -488,3 +490,98 @@ def test_session_start_analytics_validation_error_remains_422(monkeypatch):
         assert response.json() == {"detail": "analytics request rejected"}
 
     asyncio.run(verify())
+
+
+def diagnostic_stage_app(stage, sensitive_message):
+    diagnostic_app = FastAPI()
+    diagnostic_app.middleware("http")(server.analytics_session_start_exception_diagnostics)
+    diagnostic_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["https://theipm.ca"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    def unexpected_failure():
+        raise OperationFailure(
+            sensitive_message,
+            code=91,
+            details={"codeName": "ShutdownInProgress", "errmsg": sensitive_message},
+        )
+
+    async def unexpected_dependency_failure():
+        unexpected_failure()
+
+    if stage == "request_validation":
+        class ExplodingRequest(BaseModel):
+            marker: str
+
+            @field_validator("marker")
+            @classmethod
+            def reject_during_parsing(cls, value):
+                unexpected_failure()
+
+        @diagnostic_app.post("/api/analytics/session/start")
+        async def parsing_endpoint(data: ExplodingRequest):
+            return {"accepted": True}
+    elif stage == "dependency_resolution":
+        @diagnostic_app.post(
+            "/api/analytics/session/start",
+            dependencies=[Depends(unexpected_dependency_failure)],
+        )
+        async def dependency_endpoint():
+            return {"accepted": True}
+    elif stage == "response_handling":
+        @diagnostic_app.post("/api/analytics/session/start")
+        async def response_endpoint():
+            return {"unencodable": object()}
+    else:
+        raise AssertionError(f"unknown diagnostic stage: {stage}")
+
+    return diagnostic_app
+
+
+@pytest.mark.parametrize(
+    "stage,payload,exception_type,error_code,code_name",
+    [
+        ("request_validation", {"marker": "private-request-value"}, "OperationFailure", "91", "ShutdownInProgress"),
+        ("dependency_resolution", {}, "OperationFailure", "91", "ShutdownInProgress"),
+        ("response_handling", {}, "ValueError", "None", "None"),
+    ],
+)
+def test_session_start_asgi_diagnostic_captures_framework_stage_failures_without_leaks(
+    stage, payload, exception_type, error_code, code_name, caplog,
+):
+    sensitive_uuid = "44444444-4444-4444-8444-444444444444"
+    sensitive_message = f"database failure included {sensitive_uuid} and attendee@example.com"
+    diagnostic_app = diagnostic_stage_app(stage, sensitive_message)
+
+    async def verify():
+        transport = httpx.ASGITransport(app=diagnostic_app, raise_app_exceptions=False)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/analytics/session/start",
+                headers={"Origin": "https://theipm.ca"},
+                json=payload,
+            )
+
+        assert response.status_code == 500
+        assert response.json() == {"detail": "Internal Server Error"}
+        assert response.headers["access-control-allow-origin"] == "https://theipm.ca"
+
+    with caplog.at_level("ERROR", logger=server.__name__):
+        asyncio.run(verify())
+
+    log_output = caplog.text
+    assert "analytics_ingestion_unexpected" in log_output
+    assert "operation=analytics_session_start_asgi" in log_output
+    assert f"exception_type={exception_type}" in log_output
+    assert f"error_code={error_code}" in log_output
+    assert f"code_name={code_name}" in log_output
+    assert "message=unexpected_analytics_ingestion_failure" in log_output
+    assert "stack_trace=" in log_output
+    assert sensitive_uuid not in log_output
+    assert sensitive_message not in log_output
+    assert "attendee@example.com" not in log_output
+    assert "private-request-value" not in log_output

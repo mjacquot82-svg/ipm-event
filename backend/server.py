@@ -1115,6 +1115,21 @@ def log_analytics_ingestion_exception(operation: str, exc: Exception) -> None:
         stack_trace,
     )
 
+
+async def analytics_session_start_exception_diagnostics(request: Request, call_next):
+    """Capture failures that occur outside the session-start route function."""
+    if request.method != "POST" or request.url.path != "/api/analytics/session/start":
+        return await call_next(request)
+    try:
+        return await call_next(request)
+    except Exception as exc:
+        log_analytics_ingestion_exception("analytics_session_start_asgi", exc)
+        return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
+
+
+app.middleware("http")(analytics_session_start_exception_diagnostics)
+
+
 def require_mongodb():
     if db is None:
         raise HTTPException(
