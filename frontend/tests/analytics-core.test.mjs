@@ -326,6 +326,31 @@ test('queued retry diagnostics distinguish fetch rejection from a readable retry
   ]);
 });
 
+test('successful transport diagnostics identify only the allowlisted operation and delivery path', async () => {
+  const diagnostics = [];
+  const buffer = new AnalyticsRequestBuffer(
+    new MemoryStorage(), async () => ({ ok: true, status: 202 }),
+    'https://example.test', false, undefined,
+    (code, detail) => diagnostics.push({ code, detail }),
+  );
+
+  await buffer.sendOrBuffer({
+    endpoint: '/api/activity/session/start',
+    body: { visitorId: 'private-visitor', sessionId: 'private-session' },
+  });
+  await buffer.enqueue({
+    endpoint: '/api/analytics/events',
+    body: { events: [{ private: 'payload' }] },
+  });
+  await buffer.flush();
+
+  assert.deepEqual(diagnostics, [
+    { code: 'transport_confirmed', detail: 'session_start:direct' },
+    { code: 'transport_confirmed', detail: 'events:queue' },
+  ]);
+  assert.equal(JSON.stringify(diagnostics).includes('private'), false);
+});
+
 test('buffer drops oldest requests when its bounded capacity is exceeded', async () => {
   const storage = new MemoryStorage();
   const buffer = new AnalyticsRequestBuffer(storage, async () => { throw new Error('offline'); }, '');

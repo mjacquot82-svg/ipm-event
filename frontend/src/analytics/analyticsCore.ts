@@ -14,6 +14,7 @@ export type AnalyticsDiagnosticCode =
   | 'initializer_skipped_unconfigured'
   | 'storage_fallback'
   | 'initialization_failed'
+  | 'transport_confirmed'
   | 'transport_deferred'
   | 'transport_rejected';
 
@@ -226,9 +227,13 @@ export class AnalyticsRequestBuffer {
   private requestOperation(request: BufferedRequest): string {
     switch (request.endpoint) {
       case '/api/activity/session/start': return 'session_start';
+      case '/api/analytics/session/start': return 'session_start';
       case '/api/activity/session/heartbeat': return 'session_heartbeat';
+      case '/api/analytics/session/heartbeat': return 'session_heartbeat';
       case '/api/activity/session/end': return 'session_end';
+      case '/api/analytics/session/end': return 'session_end';
       case '/api/activity/events': return 'events';
+      case '/api/analytics/events': return 'events';
       default: return 'unknown';
     }
   }
@@ -341,7 +346,10 @@ export class AnalyticsRequestBuffer {
     }
 
     try {
-      if (response.ok) return true;
+      if (response.ok) {
+        this.report?.('transport_confirmed', `${this.requestOperation(request)}:direct`);
+        return true;
+      }
       const invalidSessionId = await this.invalidSessionId(response, request);
       if (invalidSessionId) {
         await this.retireInvalidSession(invalidSessionId);
@@ -414,6 +422,7 @@ export class AnalyticsRequestBuffer {
           }
           this.queue.shift();
           await this.persist();
+          this.report?.('transport_confirmed', `${this.requestOperation(request)}:queue`);
         } catch {
           this.reportDeferred(request, 'queue_response_processing_failed');
           break;
