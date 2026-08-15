@@ -6,9 +6,15 @@ through these services so future Supabase-backed implementations can replace
 the providers without changing frontend API contracts.
 """
 
+from __future__ import annotations
+
+import asyncio
+from collections import OrderedDict
 from collections.abc import Awaitable, Callable
+from copy import deepcopy
 from datetime import datetime, timezone
 import logging
+import time
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
@@ -16,6 +22,68 @@ import httpx
 
 
 logger = logging.getLogger(__name__)
+
+
+class AsyncTTLCache:
+    """Small process-local TTL cache with per-key request coalescing."""
+
+    def __init__(self, *, ttl_seconds: float, max_entries: int, stale_if_error_seconds: float = 0):
+        self.ttl_seconds = ttl_seconds
+        self.max_entries = max_entries
+        self.stale_if_error_seconds = stale_if_error_seconds
+        self._values: OrderedDict[str, tuple[float, Any]] = OrderedDict()
+        self._inflight: dict[str, asyncio.Task[Any]] = {}
+        self._inflight_generations: dict[str, int] = {}
+        self._generation = 0
+
+    def invalidate(self, key: Optional[str] = None) -> None:
+        self._generation += 1
+        if key is None:
+            self._values.clear()
+        else:
+            self._values.pop(key, None)
+
+    async def get_or_load(self, key: str, loader: Callable[[], Awaitable[Any]]) -> Any:
+        now = time.monotonic()
+        cached = self._values.get(key)
+        if cached and now - cached[0] < self.ttl_seconds:
+            self._values.move_to_end(key)
+            return deepcopy(cached[1])
+
+        task = self._inflight.get(key)
+        if task is None:
+            task = asyncio.create_task(loader())
+            self._inflight[key] = task
+            self._inflight_generations[key] = self._generation
+            task.add_done_callback(lambda completed, cache_key=key: self._finish_load(cache_key, completed))
+        load_generation = self._inflight_generations[key]
+        try:
+            value = await asyncio.shield(task)
+        except Exception:
+            if self._inflight.get(key) is task and task.done():
+                self._inflight.pop(key, None)
+                self._inflight_generations.pop(key, None)
+            cached = self._values.get(key)
+            if cached and time.monotonic() - cached[0] < self.ttl_seconds + self.stale_if_error_seconds:
+                return deepcopy(cached[1])
+            raise
+        if self._inflight.get(key) is task:
+            self._inflight.pop(key, None)
+            self._inflight_generations.pop(key, None)
+        if load_generation != self._generation:
+            return await self.get_or_load(key, loader)
+        self._values[key] = (time.monotonic(), deepcopy(value))
+        self._values.move_to_end(key)
+        while len(self._values) > self.max_entries:
+            self._values.popitem(last=False)
+        return deepcopy(value)
+
+    def _finish_load(self, key: str, task: asyncio.Task[Any]) -> None:
+        if self._inflight.get(key) is task:
+            self._inflight.pop(key, None)
+            self._inflight_generations.pop(key, None)
+        if not task.cancelled():
+            task.exception()
 
 
 class WebpushrError(Exception):
@@ -199,6 +267,22 @@ class SupabaseContentClient:
     def __init__(self, *, supabase_url: str, service_role_key: str):
         self.supabase_url = supabase_url.rstrip("/")
         self.service_role_key = service_role_key
+        self.timeout = httpx.Timeout(30.0, connect=5.0, pool=5.0)
+        self.limits = httpx.Limits(max_connections=50, max_keepalive_connections=20, keepalive_expiry=30.0)
+        self._http_client: Optional[httpx.AsyncClient] = None
+        self._event_ids = AsyncTTLCache(ttl_seconds=3600, max_entries=16)
+
+    async def start(self) -> None:
+        if self._http_client is None:
+            self._http_client = httpx.AsyncClient(timeout=self.timeout, limits=self.limits)
+
+    async def close(self) -> None:
+        client, self._http_client = self._http_client, None
+        if client is not None:
+            await client.aclose()
+
+    def invalidate_event_id(self, event_slug: Optional[str] = None) -> None:
+        self._event_ids.invalidate(event_slug)
 
     @property
     def rest_url(self) -> str:
@@ -213,14 +297,13 @@ class SupabaseContentClient:
         }
 
     async def request(self, method: str, path: str, **kwargs: Any) -> Any:
-        async with httpx.AsyncClient() as client:
-            response = await client.request(
-                method,
-                f"{self.rest_url}{path}",
-                headers={**self.headers, **kwargs.pop("headers", {})},
-                timeout=30.0,
-                **kwargs,
-            )
+        await self.start()
+        response = await self._http_client.request(
+            method,
+            f"{self.rest_url}{path}",
+            headers={**self.headers, **kwargs.pop("headers", {})},
+            **kwargs,
+        )
         if response.status_code >= 400:
             raise httpx.HTTPStatusError(
                 f"Supabase request failed with status {response.status_code}: {response.text}",
@@ -230,6 +313,9 @@ class SupabaseContentClient:
         return response.json() if response.content else None
 
     async def get_event_id(self, event_slug: str) -> str:
+        return await self._event_ids.get_or_load(event_slug, lambda: self._load_event_id(event_slug))
+
+    async def _load_event_id(self, event_slug: str) -> str:
         events = await self.request(
             "GET",
             "/events",
@@ -271,8 +357,9 @@ class SupabaseScheduleService:
         admin_schedule_response_model: type[Any],
         admin_schedule_event_model: type[Any],
         timezone_name: str = "America/Toronto",
+        client: Optional[SupabaseContentClient] = None,
     ):
-        self.client = SupabaseContentClient(
+        self.client = client or SupabaseContentClient(
             supabase_url=supabase_url,
             service_role_key=service_role_key,
         )
@@ -282,6 +369,7 @@ class SupabaseScheduleService:
         self.admin_schedule_response_model = admin_schedule_response_model
         self.admin_schedule_event_model = admin_schedule_event_model
         self.timezone = ZoneInfo(timezone_name)
+        self._public_cache = AsyncTTLCache(ttl_seconds=30, max_entries=8, stale_if_error_seconds=3600)
 
     async def _get_event_id(self, event_id: Optional[str] = None) -> str:
         return await self.client.get_event_id(event_id or self.event_slug)
@@ -379,13 +467,20 @@ class SupabaseScheduleService:
         )
 
     async def list_public_schedule(self, event_id: Optional[str] = None) -> Any:
-        rows = await self._list_rows(event_id)
-        events = [self._row_to_schedule_event(row) for row in rows]
-        return self.schedule_response_model(
-            events=events,
-            last_updated=datetime.utcnow(),
-            total_count=len(events),
+        resolved_event_id = await self._get_event_id(event_id)
+        return await self._public_cache.get_or_load(
+            resolved_event_id, lambda: self._load_public_schedule(resolved_event_id),
         )
+
+    async def _load_public_schedule(self, event_id: str) -> Any:
+        rows = await self.client.request(
+            "GET", "/schedule_items", params={"select": "*", "event_id": f"eq.{event_id}", "status": "neq.archived", "order": "starts_at.asc.nullslast,sort_order.asc"},
+        )
+        events = [self._row_to_schedule_event(row) for row in rows]
+        return self.schedule_response_model(events=events, last_updated=datetime.utcnow(), total_count=len(events))
+
+    def invalidate_public_cache(self, event_id: Optional[str] = None) -> None:
+        self._public_cache.invalidate(event_id)
 
     async def list_admin_schedule(self, event_id: Optional[str] = None) -> Any:
         rows = await self._list_rows(event_id)
@@ -420,6 +515,7 @@ class SupabaseScheduleService:
             "/schedule_items",
             params={"event_id": f"eq.{event_id}"},
         )
+        self.invalidate_public_cache(event_id)
 
         payload = [self._payload_to_row(row.data, event_id) for row in rows]
         if payload:
@@ -439,6 +535,7 @@ class SupabaseScheduleService:
             json=self._payload_to_row(payload, event_id),
             headers={"Prefer": "return=minimal"},
         )
+        self.invalidate_public_cache(event_id)
         return await self.list_admin_schedule(event_id)
 
     async def update_event(
@@ -458,6 +555,7 @@ class SupabaseScheduleService:
             json=self._payload_to_row(payload, platform_event_id),
             headers={"Prefer": "return=minimal"},
         )
+        self.invalidate_public_cache(platform_event_id)
         return await self.list_admin_schedule(event_id)
 
     async def clear_event(
@@ -474,6 +572,7 @@ class SupabaseScheduleService:
                 "event_id": f"eq.{platform_event_id}",
             },
         )
+        self.invalidate_public_cache(platform_event_id)
         return await self.list_admin_schedule(event_id)
 
 
@@ -534,14 +633,16 @@ class SupabaseVendorService:
         event_slug: str,
         vendors_response_model: type[Any],
         vendor_model: type[Any],
+        client: Optional[SupabaseContentClient] = None,
     ):
-        self.client = SupabaseContentClient(
+        self.client = client or SupabaseContentClient(
             supabase_url=supabase_url,
             service_role_key=service_role_key,
         )
         self.event_slug = event_slug
         self.vendors_response_model = vendors_response_model
         self.vendor_model = vendor_model
+        self._public_cache = AsyncTTLCache(ttl_seconds=180, max_entries=8, stale_if_error_seconds=21600)
 
     async def _get_event_id(self, event_id: Optional[str] = None) -> str:
         return await self.client.get_event_id(event_id or self.event_slug)
@@ -589,13 +690,24 @@ class SupabaseVendorService:
         )
 
     async def list_public_vendors(self, event_id: Optional[str] = None) -> Any:
-        rows = await self._list_rows(event_id)
+        resolved_event_id = await self._get_event_id(event_id)
+        return await self._public_cache.get_or_load(
+            resolved_event_id, lambda: self._load_public_vendors(resolved_event_id),
+        )
+
+    async def _load_public_vendors(self, event_id: str) -> Any:
+        rows = await self.client.request(
+            "GET", "/vendors", params={"select": "*", "event_id": f"eq.{event_id}", "status": "neq.archived", "order": "priority.asc,name.asc"},
+        )
         vendors = [self._row_to_vendor(row) for row in rows]
         return self.vendors_response_model(
             vendors=vendors,
             last_updated=datetime.utcnow(),
             total_count=len(vendors),
         )
+
+    def invalidate_public_cache(self, event_id: Optional[str] = None) -> None:
+        self._public_cache.invalidate(event_id)
 
     async def get_vendor(self, vendor_id: str, event_id: Optional[str] = None) -> Any:
         event_id = await self._get_event_id(event_id)
@@ -622,6 +734,7 @@ class SupabaseVendorService:
             json=self._payload_to_row(payload, event_id),
             headers={"Prefer": "return=minimal"},
         )
+        self.invalidate_public_cache(event_id)
         return await self.list_public_vendors(event_id)
 
     async def update_vendor(
@@ -641,6 +754,7 @@ class SupabaseVendorService:
             json=self._payload_to_row(payload, event_id),
             headers={"Prefer": "return=minimal"},
         )
+        self.invalidate_public_cache(event_id)
         return await self.list_public_vendors(event_id)
 
     async def delete_vendor(self, vendor_id: str, event_id: Optional[str] = None) -> Any:
@@ -653,6 +767,7 @@ class SupabaseVendorService:
                 "event_id": f"eq.{event_id}",
             },
         )
+        self.invalidate_public_cache(event_id)
         return await self.list_public_vendors(event_id)
 
 
@@ -667,12 +782,13 @@ class SupabaseAnnouncementService:
     }
     SEVERITY_TO_PRIORITY = {value: key for key, value in PRIORITY_TO_SEVERITY.items()}
 
-    def __init__(self, *, supabase_url: str, service_role_key: str, event_slug: str):
-        self.client = SupabaseContentClient(
+    def __init__(self, *, supabase_url: str, service_role_key: str, event_slug: str, client: Optional[SupabaseContentClient] = None):
+        self.client = client or SupabaseContentClient(
             supabase_url=supabase_url,
             service_role_key=service_role_key,
         )
         self.event_slug = event_slug
+        self._public_cache = AsyncTTLCache(ttl_seconds=10, max_entries=8, stale_if_error_seconds=20)
 
     async def _get_event_id(self, event_id: Optional[str] = None) -> str:
         return await self.client.get_event_id(event_id or self.event_slug)
@@ -702,40 +818,48 @@ class SupabaseAnnouncementService:
 
     async def list(self, event_id: Optional[str] = None, *, public: bool = False) -> list[dict[str, Any]]:
         resolved_event_id = await self._get_event_id(event_id)
-        params = {"select": "*", "event_id": f"eq.{resolved_event_id}"}
         if public:
-            params["status"] = "eq.published"
+            announcements = await self._public_cache.get_or_load(
+                resolved_event_id, lambda: self._load_public_announcements(resolved_event_id),
+            )
+            return self._currently_public(announcements)
+        params = {"select": "*", "event_id": f"eq.{resolved_event_id}"}
         rows = await self.client.request("GET", "/alerts", params=params)
         announcements = [self.row_to_announcement(row) for row in rows]
-        if public:
-            now = datetime.now().astimezone()
-            announcements = [
-                item for item in announcements
-                if not item["expires_at"]
-                or datetime.fromisoformat(str(item["expires_at"]).replace("Z", "+00:00")) > now
-            ]
         return self._sort(announcements)
+
+    async def _load_public_announcements(self, event_id: str) -> list[dict[str, Any]]:
+        rows = await self.client.request("GET", "/alerts", params={"select": "*", "event_id": f"eq.{event_id}", "status": "eq.published"})
+        return self._sort(self._currently_public([self.row_to_announcement(row) for row in rows]))
+
+    @staticmethod
+    def _currently_public(announcements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        now = datetime.now(timezone.utc)
+        return [item for item in announcements if item.get("status") == "published" and (not item.get("expires_at") or datetime.fromisoformat(str(item["expires_at"]).replace("Z", "+00:00")) > now)]
+
+    def invalidate_public_cache(self, event_id: Optional[str] = None) -> None:
+        self._public_cache.invalidate(event_id)
 
     async def get(
         self, announcement_id: str, event_id: Optional[str] = None, *, public: bool = False
     ) -> Optional[dict[str, Any]]:
         resolved_event_id = await self._get_event_id(event_id)
+        if public:
+            announcements = await self._public_cache.get_or_load(
+                resolved_event_id, lambda: self._load_public_announcements(resolved_event_id),
+            )
+            announcements = self._currently_public(announcements)
+            return next((item for item in announcements if item["id"] == announcement_id), None)
         params = {
             "select": "*",
             "id": f"eq.{announcement_id}",
             "event_id": f"eq.{resolved_event_id}",
             "limit": "1",
         }
-        if public:
-            params["status"] = "eq.published"
         rows = await self.client.request("GET", "/alerts", params=params)
         if not rows:
             return None
         announcement = self.row_to_announcement(rows[0])
-        if public and announcement["expires_at"]:
-            expiry = datetime.fromisoformat(str(announcement["expires_at"]).replace("Z", "+00:00"))
-            if expiry <= datetime.now(timezone.utc):
-                return None
         return announcement
 
     async def create(self, payload: Any, created_by: str, event_id: Optional[str] = None) -> dict[str, Any]:
@@ -755,6 +879,7 @@ class SupabaseAnnouncementService:
             },
             headers={"Prefer": "return=representation"},
         )
+        self.invalidate_public_cache(resolved_event_id)
         return self.row_to_announcement(rows[0])
 
     async def update(self, announcement_id: str, payload: Any, event_id: Optional[str] = None) -> Optional[dict[str, Any]]:
@@ -774,6 +899,7 @@ class SupabaseAnnouncementService:
             json=body,
             headers={"Prefer": "return=representation"},
         )
+        self.invalidate_public_cache(resolved_event_id)
         return self.row_to_announcement(rows[0]) if rows else None
 
     async def set_status(self, announcement_id: str, status: str, event_id: Optional[str] = None) -> Optional[dict[str, Any]]:
@@ -787,6 +913,7 @@ class SupabaseAnnouncementService:
             json=body,
             headers={"Prefer": "return=representation"},
         )
+        self.invalidate_public_cache(resolved_event_id)
         return self.row_to_announcement(rows[0]) if rows else None
 
     async def delete(self, announcement_id: str, event_id: Optional[str] = None) -> bool:
@@ -796,14 +923,15 @@ class SupabaseAnnouncementService:
             params={"id": f"eq.{announcement_id}", "event_id": f"eq.{resolved_event_id}"},
             headers={"Prefer": "return=representation"},
         )
+        self.invalidate_public_cache(resolved_event_id)
         return bool(rows)
 
 
 class SupabaseNotificationDeliveryService:
     """Event-scoped persistence for announcement notification attempts."""
 
-    def __init__(self, *, supabase_url: str, service_role_key: str, event_slug: str):
-        self.client = SupabaseContentClient(
+    def __init__(self, *, supabase_url: str, service_role_key: str, event_slug: str, client: Optional[SupabaseContentClient] = None):
+        self.client = client or SupabaseContentClient(
             supabase_url=supabase_url,
             service_role_key=service_role_key,
         )

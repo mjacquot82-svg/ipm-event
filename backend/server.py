@@ -74,6 +74,7 @@ try:
         ScheduleService,
         SupabaseScheduleService,
         SupabaseAnnouncementService,
+        SupabaseContentClient,
         SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
@@ -86,6 +87,7 @@ except ImportError:
         ScheduleService,
         SupabaseScheduleService,
         SupabaseAnnouncementService,
+        SupabaseContentClient,
         SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
@@ -742,11 +744,16 @@ async def get_public_vendors_from_google() -> VendorsResponse:
 
 
 event_service = EventService(DEFAULT_EVENT_ID)
+supabase_content_client = None
 if CONTENT_SOURCE == "supabase":
     if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
         raise RuntimeError(
             "CONTENT_SOURCE=supabase requires SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
         )
+    supabase_content_client = SupabaseContentClient(
+        supabase_url=SUPABASE_URL,
+        service_role_key=SUPABASE_SERVICE_ROLE_KEY,
+    )
     schedule_service = SupabaseScheduleService(
         supabase_url=SUPABASE_URL,
         service_role_key=SUPABASE_SERVICE_ROLE_KEY,
@@ -755,6 +762,7 @@ if CONTENT_SOURCE == "supabase":
         schedule_event_model=ScheduleEvent,
         admin_schedule_response_model=AdminScheduleResponse,
         admin_schedule_event_model=AdminScheduleEvent,
+        client=supabase_content_client,
     )
 else:
     schedule_service = ScheduleService(
@@ -772,6 +780,7 @@ if CONTENT_SOURCE == "supabase":
         event_slug=event_service.get_public_event_id(),
         vendors_response_model=VendorsResponse,
         vendor_model=Vendor,
+        client=supabase_content_client,
     )
 else:
     vendor_service = VendorService(
@@ -785,11 +794,13 @@ if CONTENT_SOURCE == "supabase":
         supabase_url=SUPABASE_URL,
         service_role_key=SUPABASE_SERVICE_ROLE_KEY,
         event_slug=event_service.get_public_event_id(),
+        client=supabase_content_client,
     )
     notification_delivery_service = SupabaseNotificationDeliveryService(
         supabase_url=SUPABASE_URL,
         service_role_key=SUPABASE_SERVICE_ROLE_KEY,
         event_slug=event_service.get_public_event_id(),
+        client=supabase_content_client,
     )
 
 webpushr_client = None
@@ -2426,6 +2437,8 @@ async def cron_scheduler():
 @app.on_event("startup")
 async def startup_event():
     """Start the cron job when the server starts"""
+    if supabase_content_client is not None:
+        await supabase_content_client.start()
     if db is None:
         logger.warning("MongoDB unavailable; event change notification cron is disabled")
         return
@@ -2454,5 +2467,7 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    if supabase_content_client is not None:
+        await supabase_content_client.close()
     if client is not None:
         client.close()
