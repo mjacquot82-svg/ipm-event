@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import List, Optional, Dict, Literal
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -17,6 +17,7 @@ import asyncio
 import hashlib
 import json
 import traceback
+from collections import OrderedDict
 
 try:
     from backend.analytics import (
@@ -190,7 +191,8 @@ class StatusCheck(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 class StatusCheckCreate(BaseModel):
-    client_name: str
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    client_name: str = Field(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9 ._:/-]+$")
 
 class Event(BaseModel):
     id: str
@@ -981,6 +983,11 @@ def require_vendor_manager_role(user: dict):
         )
 
 
+def require_sos_admin_role(user: dict):
+    if user.get("role") not in ("Owner", "Communications"):
+        raise HTTPException(status_code=403, detail="Your organizer role cannot manage SOS alerts")
+
+
 def set_admin_session_cookie(response: Response, token: str, expires_at: datetime):
     cookie_expires_at = expires_at
     if cookie_expires_at.tzinfo is None:
@@ -1008,12 +1015,30 @@ def clear_admin_session_cookie(response: Response):
 
 
 class PushTokenRegister(BaseModel):
-    push_token: str
-    device_id: str
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    push_token: str = Field(min_length=20, max_length=256, pattern=r"^(Exponent|Expo)PushToken\[[A-Za-z0-9_-]+\]$")
+    device_id: str = Field(min_length=1, max_length=128)
+
+    @field_validator("device_id")
+    @classmethod
+    def validate_device_id(cls, value: str) -> str:
+        if any(ord(character) < 32 for character in value):
+            raise ValueError("device_id contains control characters")
+        return value
 
 class StarredEventsUpdate(BaseModel):
-    push_token: str
-    starred_event_ids: List[str]
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    push_token: str = Field(min_length=20, max_length=256, pattern=r"^(Exponent|Expo)PushToken\[[A-Za-z0-9_-]+\]$")
+    starred_event_ids: List[str] = Field(max_length=200)
+
+    @field_validator("starred_event_ids")
+    @classmethod
+    def validate_event_ids(cls, values: List[str]) -> List[str]:
+        if len(values) != len(set(values)):
+            raise ValueError("starred_event_ids must not contain duplicates")
+        if any(not re.fullmatch(r"[A-Za-z0-9_.:-]{1,128}", value) for value in values):
+            raise ValueError("starred_event_ids contains an invalid event id")
+        return values
 
 class SOSReport(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -1036,22 +1061,24 @@ class SOSReport(BaseModel):
     archived_at: Optional[datetime] = None
 
 class SOSReportCreate(BaseModel):
-    name: str
-    sex: str
-    age: str
-    height: str
-    hair_color: str
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    name: str = Field(min_length=1, max_length=120)
+    sex: str = Field(min_length=1, max_length=40)
+    age: str = Field(min_length=1, max_length=20)
+    height: str = Field(default="", max_length=40)
+    hair_color: str = Field(default="", max_length=60)
     glasses: bool
-    shirt_color: str
-    pants_color: str
-    last_location: str
-    description: Optional[str] = ""
-    reporter_name: str = ""  # Required
-    reporter_phone: str = ""  # Required
-    reporter_token: Optional[str] = None
+    shirt_color: str = Field(default="", max_length=80)
+    pants_color: str = Field(default="", max_length=80)
+    last_location: str = Field(min_length=1, max_length=200)
+    description: Optional[str] = Field(default="", max_length=1000)
+    reporter_name: str = Field(default="", max_length=120)
+    reporter_phone: str = Field(default="", max_length=40, pattern=r"^[0-9+(). xX-]*$")
+    reporter_token: Optional[str] = Field(default=None, min_length=16, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
 
 class SOSResolveRequest(BaseModel):
-    pin: str
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    pin: str = Field(min_length=1, max_length=64)
 
 # Public response - hides reporter info for privacy
 class SOSReportResponse(BaseModel):
@@ -1070,6 +1097,13 @@ class SOSReportResponse(BaseModel):
     created_at: datetime
     resolved_at: Optional[datetime] = None
     archived_at: Optional[datetime] = None
+    notification_status: Optional[Literal["accepted", "partial", "failed", "no_recipients"]] = None
+    notification_batches_attempted: Optional[int] = None
+    notification_batches_succeeded: Optional[int] = None
+
+
+class SOSReportCreatedResponse(SOSReportResponse):
+    reporter_token: str
 
 # Admin response - includes reporter contact info
 class SOSReportAdminResponse(BaseModel):
@@ -1100,6 +1134,77 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+class BoundedRateLimiter:
+    """Fixed-window, process-local limiter with bounded key cardinality."""
+
+    def __init__(self, max_keys: int = 4096):
+        self.max_keys = max_keys
+        self.entries: OrderedDict[str, tuple[float, int]] = OrderedDict()
+
+    def check(self, key: str, *, limit: int, window_seconds: int) -> bool:
+        now = time.monotonic()
+        cutoff = now - window_seconds
+        while self.entries and next(iter(self.entries.values()))[0] <= cutoff:
+            self.entries.popitem(last=False)
+        started, count = self.entries.get(key, (now, 0))
+        if started <= cutoff:
+            started, count = now, 0
+        if count >= limit:
+            self.entries[key] = (started, count)
+            self.entries.move_to_end(key)
+            return False
+        self.entries[key] = (started, count + 1)
+        self.entries.move_to_end(key)
+        while len(self.entries) > self.max_keys:
+            self.entries.popitem(last=False)
+        return True
+
+
+public_write_rate_limiter = BoundedRateLimiter()
+
+
+def rate_limit_identity(request: Request, value: str = "") -> str:
+    # Uvicorn/Render's trusted proxy handling supplies request.client. Raw
+    # forwarding headers are deliberately ignored because clients can spoof them.
+    client_host = request.client.host if request.client else "unknown"
+    digest = hashlib.sha256(value.encode()).hexdigest()[:16] if value else "none"
+    return f"{client_host}:{digest}"
+
+
+def enforce_public_write_limit(
+    request: Request, bucket: str, *, identifier: str = "", limit: int, window_seconds: int,
+) -> None:
+    key = f"{bucket}:{rate_limit_identity(request, identifier)}"
+    if not public_write_rate_limiter.check(key, limit=limit, window_seconds=window_seconds):
+        raise HTTPException(status_code=429, detail="Too many requests; please try again later")
+
+
+def validate_sos_report_id(report_id: str) -> None:
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", report_id):
+        raise HTTPException(status_code=404, detail="SOS report is unavailable")
+
+
+PUBLIC_WRITE_BODY_LIMITS = {
+    "/api/status": 1024,
+    "/api/register-push-token": 2048,
+    "/api/update-starred-events": 32768,
+    "/api/sos/report": 16384,
+}
+
+
+@app.middleware("http")
+async def public_write_body_limits(request: Request, call_next):
+    limit = PUBLIC_WRITE_BODY_LIMITS.get(request.url.path)
+    if request.method in {"POST", "PUT", "PATCH"} and limit is not None:
+        content_length = request.headers.get("content-length")
+        if content_length and content_length.isdigit() and int(content_length) > limit:
+            return JSONResponse(status_code=413, content={"detail": "Request body is too large"})
+        body = await request.body()
+        if len(body) > limit:
+            return JSONResponse(status_code=413, content={"detail": "Request body is too large"})
+    return await call_next(request)
 
 
 def log_analytics_ingestion_exception(operation: str, exc: Exception) -> None:
@@ -1249,7 +1354,8 @@ async def download_dist_zip():
     raise HTTPException(status_code=404, detail="dist.zip not found")
 
 @api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
+async def create_status_check(input: StatusCheckCreate, request: Request):
+    enforce_public_write_limit(request, "status", limit=30, window_seconds=60)
     database = require_mongodb()
     status_dict = input.dict()
     status_obj = StatusCheck(**status_dict)
@@ -1845,9 +1951,11 @@ async def get_vendors():
         raise HTTPException(status_code=500, detail="Error processing vendors data")
 
 @api_router.post("/register-push-token")
-async def register_push_token(data: PushTokenRegister):
+async def register_push_token(data: PushTokenRegister, request: Request):
     """Register a device's push notification token"""
     database = require_mongodb()
+    enforce_public_write_limit(request, "push-token-device", identifier=data.device_id, limit=10, window_seconds=60)
+    enforce_public_write_limit(request, "push-token-ip", limit=300, window_seconds=60)
     try:
         # Upsert the token (update if exists, insert if not)
         await database.push_tokens.update_one(
@@ -1867,9 +1975,11 @@ async def register_push_token(data: PushTokenRegister):
         raise HTTPException(status_code=500, detail="Failed to register push token")
 
 @api_router.post("/update-starred-events")
-async def update_starred_events(data: StarredEventsUpdate):
+async def update_starred_events(data: StarredEventsUpdate, request: Request):
     """Update the list of starred events for a user (for notification tracking)"""
     database = require_mongodb()
+    enforce_public_write_limit(request, "starred-token", identifier=data.push_token, limit=30, window_seconds=60)
+    enforce_public_write_limit(request, "starred-ip", limit=600, window_seconds=60)
     try:
         await database.user_starred_events.update_one(
             {"push_token": data.push_token},
@@ -1889,10 +1999,51 @@ async def update_starred_events(data: StarredEventsUpdate):
 
 # ============== SOS MISSING PERSON ENDPOINTS ==============
 
-@api_router.post("/sos/report", response_model=SOSReportResponse)
-async def create_sos_report(data: SOSReportCreate):
+SOS_MAX_PUSH_RECIPIENTS = 5000
+EXPO_PUSH_BATCH_SIZE = 100
+EXPO_PUSH_CONCURRENCY = 10
+
+
+async def broadcast_sos_notification(database, *, title: str, body: str, data: dict) -> dict[str, int | str]:
+    token_documents = await database.push_tokens.find().to_list(SOS_MAX_PUSH_RECIPIENTS)
+    tokens = [row.get("push_token") for row in token_documents if row.get("push_token")]
+    batches = [tokens[offset:offset + EXPO_PUSH_BATCH_SIZE] for offset in range(0, len(tokens), EXPO_PUSH_BATCH_SIZE)]
+    if not batches:
+        return {"status": "no_recipients", "attempted": 0, "succeeded": 0}
+    semaphore = asyncio.Semaphore(EXPO_PUSH_CONCURRENCY)
+    async with httpx.AsyncClient(
+        timeout=httpx.Timeout(15.0, connect=5.0),
+        limits=httpx.Limits(max_connections=EXPO_PUSH_CONCURRENCY),
+    ) as http_client:
+        async def send_batch(batch: list[str]) -> bool:
+            messages = [
+                {"to": token, "sound": "default", "title": title, "body": body, "data": data,
+                 "priority": "high", "channelId": "sos-alerts"}
+                for token in batch
+            ]
+            try:
+                async with semaphore:
+                    response = await http_client.post(
+                        "https://exp.host/--/api/v2/push/send",
+                        json=messages,
+                        headers={"Content-Type": "application/json"},
+                    )
+                return response.status_code == 200
+            except Exception as exc:
+                logger.error("SOS notification batch failed: %s", exc)
+                return False
+        results = await asyncio.gather(*(send_batch(batch) for batch in batches))
+    succeeded = sum(results)
+    status = "accepted" if succeeded == len(batches) else ("partial" if succeeded else "failed")
+    return {"status": status, "attempted": len(batches), "succeeded": succeeded}
+
+@api_router.post("/sos/report", response_model=SOSReportCreatedResponse)
+async def create_sos_report(data: SOSReportCreate, request: Request):
     """Create an SOS missing person report and broadcast to all users"""
     database = require_mongodb()
+    identity = data.reporter_token or data.reporter_phone or f"{data.reporter_name}:{data.name}"
+    enforce_public_write_limit(request, "sos-report-identity", identifier=identity, limit=3, window_seconds=600)
+    enforce_public_write_limit(request, "sos-report-ip", limit=30, window_seconds=600)
     try:
         # Create the report
         report = SOSReport(
@@ -1908,7 +2059,7 @@ async def create_sos_report(data: SOSReportCreate):
             description=data.description,
             reporter_name=data.reporter_name,
             reporter_phone=data.reporter_phone,
-            reporter_token=data.reporter_token
+            reporter_token=data.reporter_token or secrets.token_urlsafe(32)
         )
         
         # Save to database
@@ -1926,23 +2077,22 @@ async def create_sos_report(data: SOSReportCreate):
             f"Last seen: {data.last_location}"
         )
         
-        # Get all registered push tokens
-        all_tokens = await database.push_tokens.find().to_list(10000)
+        delivery = await broadcast_sos_notification(
+            database,
+            title="🚨 MISSING PERSON ALERT",
+            body=notification_body,
+            data={"type": "sos_alert", "sos_id": report.id},
+        )
+        await database.sos_reports.update_one(
+            {"id": report.id},
+            {"$set": {
+                "notification_status": delivery["status"],
+                "notification_batches_attempted": delivery["attempted"],
+                "notification_batches_succeeded": delivery["succeeded"],
+            }},
+        )
         
-        logger.info(f"SOS: Broadcasting alert to {len(all_tokens)} devices")
-        
-        # Send notification to all registered devices
-        for token_doc in all_tokens:
-            push_token = token_doc.get('push_token')
-            if push_token:
-                await send_sos_push_notification(
-                    push_token=push_token,
-                    title="🚨 MISSING PERSON ALERT",
-                    body=notification_body,
-                    data={"type": "sos_alert", "sos_id": report.id}
-                )
-        
-        return SOSReportResponse(
+        return SOSReportCreatedResponse(
             id=report.id,
             name=report.name,
             sex=report.sex,
@@ -1955,7 +2105,11 @@ async def create_sos_report(data: SOSReportCreate):
             last_location=report.last_location,
             description=report.description,
             status=report.status,
-            created_at=report.created_at
+            created_at=report.created_at,
+            notification_status=delivery["status"],
+            notification_batches_attempted=delivery["attempted"],
+            notification_batches_succeeded=delivery["succeeded"],
+            reporter_token=report.reporter_token,
         )
         
     except Exception as e:
@@ -1978,18 +2132,20 @@ async def get_active_sos_reports():
         return []
 
 @api_router.post("/sos/cancel/{report_id}")
-async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None):
+async def cancel_sos_report(report_id: str, request: Request, reporter_token: Optional[str] = None):
     """Cancel/resolve an SOS report (person found)"""
     database = require_mongodb()
+    validate_sos_report_id(report_id)
+    enforce_public_write_limit(request, "sos-cancel", identifier=reporter_token or "missing", limit=10, window_seconds=600)
     try:
-        # Find the report
         report = await database.sos_reports.find_one({"id": report_id})
-        if not report:
-            raise HTTPException(status_code=404, detail="SOS report not found")
+        stored_token = report.get("reporter_token") if report else None
+        if not reporter_token or not stored_token or not secrets.compare_digest(reporter_token, stored_token):
+            raise HTTPException(status_code=404, detail="SOS report is unavailable")
         
         # Update status
-        await database.sos_reports.update_one(
-            {"id": report_id},
+        result = await database.sos_reports.update_one(
+            {"id": report_id, "status": "active", "reporter_token": stored_token},
             {
                 "$set": {
                     "status": "resolved",
@@ -1997,23 +2153,15 @@ async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None
                 }
             }
         )
-        
-        # Notify all users that the person was found
-        all_tokens = await database.push_tokens.find().to_list(10000)
-        
-        logger.info(f"SOS: Broadcasting FOUND alert to {len(all_tokens)} devices")
-        
-        for token_doc in all_tokens:
-            push_token = token_doc.get('push_token')
-            if push_token:
-                await send_expo_push_notification(
-                    push_token=push_token,
-                    title="✅ Person Found - Alert Cancelled",
-                    body=f"{report['name']} has been found! Thank you for your help.",
-                    data={"type": "sos_cancelled", "sos_id": report_id}
-                )
-        
-        return {"status": "success", "message": "SOS report cancelled, person found"}
+        if not getattr(result, "modified_count", 0):
+            raise HTTPException(status_code=404, detail="SOS report is unavailable")
+        delivery = await broadcast_sos_notification(
+            database,
+            title="✅ Person Found - Alert Cancelled",
+            body=f"{report['name']} has been found! Thank you for your help.",
+            data={"type": "sos_cancelled", "sos_id": report_id},
+        )
+        return {"status": "success", "message": "SOS report cancelled, person found", "notification_status": delivery["status"]}
         
     except HTTPException:
         raise
@@ -2022,9 +2170,15 @@ async def cancel_sos_report(report_id: str, reporter_token: Optional[str] = None
         raise HTTPException(status_code=500, detail="Failed to cancel SOS report")
 
 @api_router.post("/sos/resolve/{report_id}")
-async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
+async def secure_resolve_sos_report(
+    report_id: str,
+    data: SOSResolveRequest,
+    current_user: dict = Depends(get_current_organizer_user),
+):
     """Securely resolve an SOS report with PIN verification (Admin only)"""
     database = require_mongodb()
+    validate_sos_report_id(report_id)
+    require_sos_admin_role(current_user)
     try:
         # Verify PIN
         if data.pin != ADMIN_PIN:
@@ -2048,24 +2202,18 @@ async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
             }}
         )
         
-        # Broadcast "Resolved" notification to all registered devices
-        all_tokens = await database.push_tokens.find().to_list(1000)
-        logger.info(f"SOS RESOLVED: Broadcasting to {len(all_tokens)} devices")
-        
-        for token_doc in all_tokens:
-            push_token = token_doc.get("push_token")
-            if push_token:
-                await send_expo_push_notification(
-                    push_token=push_token,
-                    title="✅ Alert Resolved",
-                    body=f"Update: The situation regarding {report['name']} has been resolved. Thank you for your help.",
-                    data={"type": "sos_resolved", "sos_id": report_id}
-                )
+        delivery = await broadcast_sos_notification(
+            database,
+            title="✅ Alert Resolved",
+            body=f"Update: The situation regarding {report['name']} has been resolved. Thank you for your help.",
+            data={"type": "sos_resolved", "sos_id": report_id},
+        )
         
         return {
             "status": "success", 
             "message": "Alert resolved successfully",
-            "resolved_at": resolved_time.isoformat()
+            "resolved_at": resolved_time.isoformat(),
+            "notification_status": delivery["status"],
         }
         
     except HTTPException:
@@ -2075,9 +2223,15 @@ async def secure_resolve_sos_report(report_id: str, data: SOSResolveRequest):
         raise HTTPException(status_code=500, detail="Failed to resolve SOS report")
 
 @api_router.post("/sos/archive/{report_id}")
-async def archive_sos_report(report_id: str, data: SOSResolveRequest):
+async def archive_sos_report(
+    report_id: str,
+    data: SOSResolveRequest,
+    current_user: dict = Depends(get_current_organizer_user),
+):
     """Archive an SOS report with PIN verification (Admin only)"""
     database = require_mongodb()
+    validate_sos_report_id(report_id)
+    require_sos_admin_role(current_user)
     try:
         # Verify PIN
         if data.pin != ADMIN_PIN:
@@ -2131,9 +2285,10 @@ async def get_archived_sos_reports():
         return []
 
 @api_router.post("/sos/test-alert")
-async def create_test_alert():
+async def create_test_alert(current_user: dict = Depends(get_current_organizer_user)):
     """Create a test SOS alert for testing purposes (Admin endpoint)"""
     database = require_mongodb()
+    require_sos_admin_role(current_user)
     try:
         test_report = SOSReport(
             id=str(uuid.uuid4()),
@@ -2165,12 +2320,17 @@ async def create_test_alert():
         }
     except Exception as e:
         logger.error(f"Error creating test alert: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create test alert: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create test alert")
 
 @api_router.delete("/sos/test-alert/{alert_id}")
-async def delete_test_alert(alert_id: str):
+async def delete_test_alert(
+    alert_id: str,
+    current_user: dict = Depends(get_current_organizer_user),
+):
     """Delete a test SOS alert"""
     database = require_mongodb()
+    validate_sos_report_id(alert_id)
+    require_sos_admin_role(current_user)
     try:
         result = await database.sos_reports.delete_one({"id": alert_id})
         if result.deleted_count == 0:
@@ -2184,9 +2344,15 @@ async def delete_test_alert(alert_id: str):
 
 
 @api_router.post("/sos/admin/{report_id}", response_model=SOSReportAdminResponse)
-async def get_sos_admin_details(report_id: str, data: SOSResolveRequest):
+async def get_sos_admin_details(
+    report_id: str,
+    data: SOSResolveRequest,
+    current_user: dict = Depends(get_current_organizer_user),
+):
     """Get full SOS report details including reporter info (Admin PIN required)"""
     database = require_mongodb()
+    validate_sos_report_id(report_id)
+    require_sos_admin_role(current_user)
     try:
         # Verify PIN
         if data.pin != ADMIN_PIN:
