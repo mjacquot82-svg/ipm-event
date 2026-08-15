@@ -51,6 +51,20 @@ const initWebpushr = () => {
   }
 };
 
+// Install the same root worker Webpushr uses so the offline shell is available
+// before an attendee chooses whether to subscribe to notifications.
+const initOfflineWorker = () => {
+  if (
+    Platform.OS === 'web' &&
+    typeof navigator !== 'undefined' &&
+    'serviceWorker' in navigator
+  ) {
+    navigator.serviceWorker.register('/webpushr-sw.js', { scope: '/' }).catch((error) => {
+      console.warn('Offline worker registration failed:', error);
+    });
+  }
+};
+
 export default function RootLayout() {
   const [isInitializing, setIsInitializing] = useState(true);
   const pathname = usePathname();
@@ -60,6 +74,7 @@ export default function RootLayout() {
   }, [pathname]);
 
   useEffect(() => {
+    initOfflineWorker();
     initWebpushr();
 
     let cleanupNotifications: () => void = () => undefined;
