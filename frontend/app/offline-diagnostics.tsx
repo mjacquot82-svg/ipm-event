@@ -5,6 +5,17 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type DiagnosticRow = { label: string; value: string };
+type RegistrationDiagnostic = {
+  attempted: boolean;
+  attemptTimestamp: string;
+  registrationUrl: string;
+  requestedScope: string;
+  outcome: string;
+  errorName: string;
+  errorMessage: string;
+  webpushrInitializedAtAttempt: boolean;
+  webpushrInitializedAtCompletion: boolean;
+};
 
 const READY_TIMEOUT_MS = 5000;
 const SHELL_PREFIX = 'ipm-app-shell-';
@@ -55,6 +66,27 @@ async function collectDiagnostics(): Promise<DiagnosticRow[]> {
   const supportsServiceWorker = 'serviceWorker' in navigator;
   rows.push({ label: 'Service Worker API exists', value: String(supportsServiceWorker) });
   if (!supportsServiceWorker) return rows;
+
+  const registrationDiagnostic = (
+    window as typeof window & { __IPM_SW_REGISTRATION_DIAGNOSTIC__?: RegistrationDiagnostic }
+  ).__IPM_SW_REGISTRATION_DIAGNOSTIC__;
+  rows.push(
+    { label: 'Registration attempted', value: String(registrationDiagnostic?.attempted ?? false) },
+    { label: 'Registration attempt timestamp', value: registrationDiagnostic?.attemptTimestamp || 'absent' },
+    { label: 'Registration URL', value: registrationDiagnostic?.registrationUrl || 'absent' },
+    { label: 'Requested scope', value: registrationDiagnostic?.requestedScope || 'absent' },
+    { label: 'Registration outcome', value: registrationDiagnostic?.outcome || 'absent' },
+    { label: 'Registration error.name', value: registrationDiagnostic?.errorName || 'absent' },
+    { label: 'Registration error.message', value: registrationDiagnostic?.errorMessage || 'absent' },
+    {
+      label: 'Webpushr SDK initialized at registration attempt',
+      value: String(registrationDiagnostic?.webpushrInitializedAtAttempt ?? false),
+    },
+    {
+      label: 'Webpushr SDK initialized at registration completion',
+      value: String(registrationDiagnostic?.webpushrInitializedAtCompletion ?? false),
+    },
+  );
 
   const controller = navigator.serviceWorker.controller;
   rows.push(

@@ -59,9 +59,56 @@ const initOfflineWorker = () => {
     typeof navigator !== 'undefined' &&
     'serviceWorker' in navigator
   ) {
-    navigator.serviceWorker.register('/webpushr-sw.js', { scope: '/' }).catch((error) => {
+    const registrationUrl = '/webpushr-sw.js';
+    const requestedScope = '/';
+    const isDeployPreview = typeof window !== 'undefined'
+      && /^deploy-preview-\d+--/.test(window.location.hostname);
+    const isWebpushrInitialized = () => {
+      if (typeof window === 'undefined') return false;
+      // Webpushr's bootstrap queue has a `q` property; the loaded SDK replaces it.
+      const webpushr = (window as typeof window & { webpushr?: { q?: unknown[] } }).webpushr;
+      return typeof webpushr === 'function' && !('q' in webpushr);
+    };
+    const diagnostic = isDeployPreview ? {
+      attempted: true,
+      attemptTimestamp: new Date().toISOString(),
+      registrationUrl,
+      requestedScope,
+      outcome: 'pending',
+      errorName: 'absent',
+      errorMessage: 'absent',
+      webpushrInitializedAtAttempt: isWebpushrInitialized(),
+      webpushrInitializedAtCompletion: false,
+    } : undefined;
+
+    if (diagnostic) {
+      // @ts-ignore Temporary Deploy Preview diagnostic read by /offline-diagnostics.
+      window.__IPM_SW_REGISTRATION_DIAGNOSTIC__ = diagnostic;
+    }
+
+    try {
+      navigator.serviceWorker.register('/webpushr-sw.js', { scope: '/' }).then(() => {
+        if (!diagnostic) return;
+        diagnostic.outcome = 'success';
+        diagnostic.webpushrInitializedAtCompletion = isWebpushrInitialized();
+      }).catch((error) => {
+        if (diagnostic) {
+          diagnostic.outcome = 'failure';
+          diagnostic.errorName = error instanceof Error ? error.name : typeof error;
+          diagnostic.errorMessage = error instanceof Error ? error.message : String(error);
+          diagnostic.webpushrInitializedAtCompletion = isWebpushrInitialized();
+        }
+        console.warn('Offline worker registration failed:', error);
+      });
+    } catch (error) {
+      if (diagnostic) {
+        diagnostic.outcome = 'failure (synchronous)';
+        diagnostic.errorName = error instanceof Error ? error.name : typeof error;
+        diagnostic.errorMessage = error instanceof Error ? error.message : String(error);
+        diagnostic.webpushrInitializedAtCompletion = isWebpushrInitialized();
+      }
       console.warn('Offline worker registration failed:', error);
-    });
+    }
   }
 };
 
