@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -41,12 +41,14 @@ export default function VendorsScreen() {
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const hasVendorDataRef = useRef(false);
 
   const applyVendorsResult = useCallback((result: CachedApiResult<VendorsResponse>) => {
     if (!Array.isArray(result.data.vendors)) {
       throw new Error('Invalid vendors response');
     }
     setVendors(result.data.vendors);
+    hasVendorDataRef.current = result.data.vendors.length > 0;
     if (result.source === 'network') {
       setDataSource('network');
     }
@@ -63,13 +65,16 @@ export default function VendorsScreen() {
       setError(null);
 
       const result = await getVendorsData({
+        preferCache: !isRefresh,
         onBackgroundRefresh: applyVendorsResult,
         onBackgroundRefreshError: () => setDataSource('cache'),
       });
       applyVendorsResult(result);
     } catch (err) {
       console.error('Error fetching vendors:', err);
-      setError("We couldn't load vendor information. Please check your connection and try again.");
+      if (!hasVendorDataRef.current) {
+        setError("We couldn't load vendor information. Please check your connection and try again.");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

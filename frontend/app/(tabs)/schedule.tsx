@@ -56,12 +56,14 @@ export default function ScheduleScreen() {
   const [showEventModal, setShowEventModal] = useState(false);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
+  const hasScheduleDataRef = useRef(false);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     if (!Array.isArray(result.data.events)) {
       throw new Error('Invalid schedule response');
     }
     setEvents(result.data.events);
+    hasScheduleDataRef.current = result.data.events.length > 0;
     setLastUpdated(result.lastSuccessfulUpdate);
     if (result.source === 'network') {
       setDataSource('network');
@@ -97,7 +99,9 @@ export default function ScheduleScreen() {
       applyScheduleResult(result);
     } catch (err) {
       console.error('Error fetching schedule:', err);
-      setError("We couldn't load the schedule. Please check your connection and try again.");
+      if (!hasScheduleDataRef.current) {
+        setError("We couldn't load the schedule. Please check your connection and try again.");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
