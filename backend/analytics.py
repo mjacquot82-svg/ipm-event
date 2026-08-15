@@ -151,6 +151,28 @@ EVENT_CATALOG: dict[str, dict[str, PropertyRule]] = {
         "launch_mode": rule(str, required=True, choices={"browser", "installed_pwa", "native"}),
         "app_version": rule(str, max_length=32),
     },
+    "install_guidance_shown": {
+        "platform": rule(str, required=True, choices={"ios", "android", "desktop", "unknown"}),
+        "browser": rule(str, required=True, choices={"safari", "chrome", "samsung_internet", "edge", "firefox", "other"}),
+        "install_state": rule(str, required=True, choices={"install_prompt_available", "manual_install_required", "unsupported_or_unknown"}),
+        "native_prompt_available": rule(bool, required=True),
+    },
+    "install_action_selected": {
+        "platform": rule(str, required=True, choices={"ios", "android", "desktop", "unknown"}),
+        "browser": rule(str, required=True, choices={"safari", "chrome", "samsung_internet", "edge", "firefox", "other"}),
+        "install_state": rule(str, required=True, choices={"install_prompt_available", "manual_install_required", "unsupported_or_unknown"}),
+        "native_prompt_available": rule(bool, required=True),
+    },
+    "install_guidance_continued": {
+        "platform": rule(str, required=True, choices={"ios", "android", "desktop", "unknown"}),
+        "browser": rule(str, required=True, choices={"safari", "chrome", "samsung_internet", "edge", "firefox", "other"}),
+        "install_state": rule(str, required=True, choices={"install_prompt_available", "manual_install_required", "unsupported_or_unknown"}),
+        "native_prompt_available": rule(bool, required=True),
+    },
+    "installed_launch_observed": {
+        "platform": rule(str, required=True, choices={"ios", "android", "desktop", "unknown"}),
+        "browser": rule(str, required=True, choices={"safari", "chrome", "samsung_internet", "edge", "firefox", "other"}),
+    },
     "session_started": {
         "launch_mode": rule(str, choices={"browser", "installed_pwa", "native"}),
         "app_version": rule(str, max_length=32),

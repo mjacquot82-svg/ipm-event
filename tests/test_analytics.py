@@ -38,6 +38,10 @@ SESSION_ID = uuid4()
 
 VALID_PROPERTIES = {
     "app_launched": {"launch_mode": "browser", "app_version": "1.0.0"},
+    "install_guidance_shown": {"platform": "ios", "browser": "safari", "install_state": "manual_install_required", "native_prompt_available": False},
+    "install_action_selected": {"platform": "android", "browser": "chrome", "install_state": "install_prompt_available", "native_prompt_available": True},
+    "install_guidance_continued": {"platform": "desktop", "browser": "edge", "install_state": "manual_install_required", "native_prompt_available": False},
+    "installed_launch_observed": {"platform": "android", "browser": "samsung_internet"},
     "session_started": {"launch_mode": "browser"},
     "session_heartbeat": {},
     "session_ended": {"duration_seconds": 12, "reason": "explicit"},
