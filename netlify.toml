@@ -6,6 +6,9 @@
 [build.environment]
   EXPO_PUBLIC_BACKEND_URL = "https://ipm-backend-eoiw.onrender.com"
 
+[context.deploy-preview.environment]
+  EXPO_PUBLIC_BACKEND_URL = "https://super-duper-potato-pj564j5467gw279vx-8000.app.github.dev"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
