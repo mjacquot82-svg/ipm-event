@@ -1,6 +1,7 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
 import json
+import inspect
 
 import httpx
 import pytest
@@ -20,6 +21,10 @@ from backend.analytics_reporting import (
     summary_report,
     traffic_report,
     zero_filled_hours,
+    MongoAnalyticsReportingRepository,
+    MAX_RANKING_ROWS,
+    build_content_from_aggregates,
+    build_traffic_from_aggregates,
 )
 
 
@@ -64,6 +69,26 @@ class MemoryReportingRepository:
 
     async def fetch_active_sessions(self, scope, cutoff, now):
         return [row for row in self.sessions if row.get("eventScope", ANALYTICS_EVENT_SCOPE) == scope and row.get("status") == "active" and cutoff <= normalize_utc_datetime(row["lastActivityAt"]) <= now]
+
+    async def aggregate_summary(self, scope, start, end):
+        return build_summary(
+            await self.fetch_visitors(scope), await self.fetch_sessions(scope, start, end),
+            await self.fetch_events(scope, start, end, {"app_launched", "page_viewed"}), start, end,
+        )
+
+    async def aggregate_traffic(self, scope, start, end, first_date, last_date):
+        first = __import__("datetime").date.min if first_date is None else __import__("datetime").date.fromisoformat(first_date)
+        return build_traffic(
+            await self.fetch_rollups(scope, first_date, last_date),
+            await self.fetch_events(scope, start, end, {"session_started"}), first,
+            __import__("datetime").date.fromisoformat(last_date),
+        )
+
+    async def aggregate_content(self, scope, start, end):
+        return build_content(await self.fetch_events(scope, start, end))
+
+    async def aggregate_live(self, scope, cutoff, now):
+        return build_live(await self.fetch_recent_events(scope, cutoff, now), await self.fetch_active_sessions(scope, cutoff, now), now)
 
 
 def fixture_repository():
@@ -305,3 +330,49 @@ def test_summary_and_live_endpoints_accept_mongo_style_naive_datetimes(monkeypat
             assert live.json()["live"]["activityLastMinute"] == 1
     try: asyncio.run(verify())
     finally: server.app.dependency_overrides.clear()
+
+
+def test_production_reporting_repository_has_no_unbounded_cursor_materialization():
+    source = inspect.getsource(MongoAnalyticsReportingRepository)
+    assert "to_list(length=None)" not in source
+    assert ".find(" not in source
+    assert "allowDiskUse=True" in source
+    assert "maxTimeMS=" in source
+
+
+def test_content_rankings_are_bounded_without_changing_total_metrics():
+    many = [event("schedule_event_opened", schedule_item_id=f"item-{index:03d}") for index in range(MAX_RANKING_ROWS + 20)]
+    content = build_content(many)
+    assert content["schedule"]["eventOpens"] == MAX_RANKING_ROWS + 20
+    assert len(content["schedule"]["mostOpenedEvents"]) == MAX_RANKING_ROWS
+
+
+def test_reporting_bulkhead_is_small_and_does_not_wrap_attendee_ingestion():
+    assert server.analytics_reporting_semaphore._value == 2
+    assert "analytics_reporting_semaphore" not in inspect.getsource(server.analytics_events)
+
+
+def test_aggregate_content_rows_preserve_counts_shares_privacy_and_controlled_properties():
+    content = build_content_from_aggregates({
+        "eventCounts": [{"_id": "page_viewed", "count": 4}, {"_id": "map_opened", "count": 3}, {"_id": "announcement_impression", "count": 2}, {"_id": "announcement_opened", "count": 1}],
+        "allVisitors": [{"count": 2}],
+        "pages": [{"_id": "schedule", "count": 3}], "pageVisitors": [{"_id": "schedule", "count": 2}],
+        "mapSources": [{"_id": "bottom_navigation", "count": 2}, {"_id": "other", "count": 1}],
+        "announcements": [{"_id": "notice-1", "impressions": 2, "opens": 1}],
+        "adoption_map": [{"count": 2}], "dayCounts": [{"_id": "2026-11-01", "pageViews": 4, "mapUsage": 3}],
+        "dayVisitors": [{"_id": "2026-11-01", "count": 2}],
+    })
+    assert content["pages"] == [{"pageId": "schedule", "count": 3, "share": 75.0, "uniqueVisitors": 2}]
+    assert content["announcements"]["ranking"][0]["openImpressionRate"] == 50.0
+    assert content["map"]["sources"] == [{"source": "bottom_navigation", "count": 2}, {"source": "home_quick_action", "count": 0}, {"source": "schedule", "count": 0}, {"source": "other", "count": 1}]
+    assert "visitorId" not in json.dumps(content) and "url" not in json.dumps(content).lower()
+
+
+def test_aggregate_traffic_rows_keep_all_time_totals_bounded_to_daily_shapes():
+    traffic = build_traffic_from_aggregates(
+        [{"_id": {"date": "2026-11-01", "name": "session_started"}, "count": 7}],
+        [{"_id": "09:00", "count": 4}], [{"date": "2026-11-01", "count": 5}], None, "2026-11-01",
+    )
+    assert traffic["byDay"] == [{"date": "2026-11-01", "visitors": 5, "sessions": 7, "launches": 0, "pageViews": 0}]
+    assert traffic["todayByHour"][9] == {"hour": "09:00", "sessions": 4}
+    assert traffic["selectedRange"]["firstLocalDate"] is None

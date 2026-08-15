@@ -114,6 +114,7 @@ else:
 
 analytics_repository = MongoAnalyticsRepository(db) if db is not None else None
 analytics_reporting_repository = MongoAnalyticsReportingRepository(db) if db is not None else None
+analytics_reporting_semaphore = asyncio.Semaphore(2)
 
 # Google Sheet URLs (public CSV export)
 EVENTS_SHEET_ID = "1tnfBd7Ffg5S4hyk5c5CpB-VGkJcSnLpdsKGbNJIiQCs"
@@ -1315,7 +1316,8 @@ def require_analytics_reporting_repository(current_user: dict):
 async def run_ranged_analytics_report(report, range_name: str, current_user: dict):
     repository = require_analytics_reporting_repository(current_user)
     try:
-        return await report(repository, range_name)
+        async with analytics_reporting_semaphore:
+            return await report(repository, range_name)
     except AnalyticsRangeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -1331,7 +1333,8 @@ async def admin_analytics_summary(
 @api_router.get("/admin/analytics/live")
 async def admin_analytics_live(current_user: dict = Depends(get_current_organizer_user)):
     repository = require_analytics_reporting_repository(current_user)
-    return await get_analytics_live_report(repository)
+    async with analytics_reporting_semaphore:
+        return await get_analytics_live_report(repository)
 
 
 @api_router.get("/admin/analytics/traffic")
