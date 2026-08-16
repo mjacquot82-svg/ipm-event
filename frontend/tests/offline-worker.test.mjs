@@ -98,6 +98,28 @@ test('asset content changes produce a new cache version for safe upgrades', asyn
   assert.notEqual(first.version, second.version);
 });
 
+test('Variant B bypasses Webpushr only in a Netlify Deploy Preview', async (t) => {
+  const directory = await makeExport('c');
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const indexPath = path.join(directory, 'index.html');
+  await writeFile(
+    indexPath,
+    `<script>(function(){var src='https://cdn.webpushr.com/app.min.js'})()</script>`
+      + `<script src="/_expo/static/js/web/entry-${'c'.repeat(32)}.js"></script>`,
+  );
+
+  await assert.rejects(
+    () => buildOfflineWorker(directory, { diagnosticVariant: 'B', deployContext: 'production' }),
+    /restricted to Netlify Deploy Previews/,
+  );
+  await buildOfflineWorker(directory, { diagnosticVariant: 'B', deployContext: 'deploy-preview' });
+  const generatedWorker = await readFile(path.join(directory, 'webpushr-sw.js'), 'utf8');
+  const generatedIndex = await readFile(indexPath, 'utf8');
+  assert.doesNotMatch(generatedWorker, /importScripts\(/);
+  assert.match(generatedWorker, /TEMPORARY NETLIFY DEPLOY PREVIEW VARIANT B/);
+  assert.doesNotMatch(generatedIndex, /cdn\.webpushr\.com/);
+});
+
 test('the one root worker preserves Webpushr and does not replace its push handlers', () => {
   assert.match(workerSource, /^importScripts\('https:\/\/cdn\.webpushr\.com\/sw-server\.min\.js'\);/);
   assert.doesNotMatch(workerSource, /addEventListener\(['"](?:push|notificationclick|notificationclose|message)['"]/);

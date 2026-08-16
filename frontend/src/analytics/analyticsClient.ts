@@ -22,6 +22,7 @@ export type AnalyticsValue = string | number | boolean | null;
 export type AnalyticsProperties = Record<string, AnalyticsValue>;
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const ANALYTICS_DISABLED = process.env.EXPO_PUBLIC_SW_DIAGNOSTIC_VARIANT === 'B';
 const HEARTBEAT_MS = 60_000;
 const EVENT_FLUSH_MS = 2_000;
 const analyticsStorage = new ResilientAnalyticsStorage(AsyncStorage, recordAnalyticsDiagnostic);
@@ -86,6 +87,10 @@ function lifecycleBody(clientEventId: string) {
 }
 
 async function createOrResumeSession(): Promise<boolean> {
+  if (ANALYTICS_DISABLED) {
+    recordAnalyticsDiagnostic('initializer_skipped_unconfigured');
+    return false;
+  }
   if (!API_BASE_URL) {
     recordAnalyticsDiagnostic('initializer_skipped_unconfigured');
     return false;

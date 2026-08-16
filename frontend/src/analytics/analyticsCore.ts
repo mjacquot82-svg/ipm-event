@@ -179,6 +179,7 @@ export function isAttendeeAnalyticsPath(pathname: string): boolean {
   return !(
     normalized === '/admin' || normalized.startsWith('/admin/') ||
     normalized === '/preview' || normalized.startsWith('/preview-') ||
+    normalized === '/offline-diagnostics' ||
     normalized === '/coming-soon'
   );
 }

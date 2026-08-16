@@ -14,6 +14,40 @@ const REQUIRED_EXPORTED_ASSETS = [
   { label: 'Home secondary image', pattern: /(?:^|\/)gemini4\.[a-f0-9]+\.png$/ },
   { label: 'attendee map image', pattern: /(?:^|\/)event-map\.[a-f0-9]+\.png$/ },
 ];
+const WEBPUSHR_WORKER_IMPORT = "importScripts('https://cdn.webpushr.com/sw-server.min.js');";
+const WEBPUSHR_PAGE_SCRIPT = /\s*<script>[^<]*cdn\.webpushr\.com\/app\.min\.js[^<]*<\/script>/;
+
+async function applyDiagnosticVariantB(exportDirectory, deployContext) {
+  if (deployContext !== 'deploy-preview') {
+    throw new Error('Service-worker diagnostic Variant B is restricted to Netlify Deploy Previews');
+  }
+
+  const workerPath = path.join(exportDirectory, 'webpushr-sw.js');
+  const workerSource = await readFile(workerPath, 'utf8');
+  if (!workerSource.includes(WEBPUSHR_WORKER_IMPORT)) {
+    throw new Error('Variant B could not find the expected Webpushr worker import');
+  }
+  await writeFile(
+    workerPath,
+    workerSource.replace(
+      WEBPUSHR_WORKER_IMPORT,
+      '// TEMPORARY NETLIFY DEPLOY PREVIEW VARIANT B: Webpushr import intentionally bypassed.'
+    )
+  );
+
+  const indexPath = path.join(exportDirectory, 'index.html');
+  const indexSource = await readFile(indexPath, 'utf8');
+  if (!WEBPUSHR_PAGE_SCRIPT.test(indexSource)) {
+    throw new Error('Variant B could not find the expected Webpushr page bootstrap');
+  }
+  await writeFile(
+    indexPath,
+    indexSource.replace(
+      WEBPUSHR_PAGE_SCRIPT,
+      '\n    <!-- TEMPORARY NETLIFY DEPLOY PREVIEW VARIANT B: Webpushr SDK disabled. -->'
+    )
+  );
+}
 
 async function walkFiles(directory, relative = '') {
   const entries = await readdir(path.join(directory, relative), { withFileTypes: true });
@@ -26,7 +60,14 @@ async function walkFiles(directory, relative = '') {
   return files;
 }
 
-export async function buildOfflineWorker(exportDirectory) {
+export async function buildOfflineWorker(
+  exportDirectory,
+  {
+    diagnosticVariant = process.env.EXPO_PUBLIC_SW_DIAGNOSTIC_VARIANT,
+    deployContext = process.env.CONTEXT,
+  } = {},
+) {
+  if (diagnosticVariant === 'B') await applyDiagnosticVariantB(exportDirectory, deployContext);
   const files = await walkFiles(exportDirectory);
   const selected = [...REQUIRED_ROOT_FILES];
 

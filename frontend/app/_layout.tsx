@@ -21,6 +21,8 @@ import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
 // Initialize Webpushr for web platform
 const initWebpushr = () => {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // Temporary Variant B: Deploy Preview diagnostic must not initialize push.
+    if (process.env.EXPO_PUBLIC_SW_DIAGNOSTIC_VARIANT === 'B') return;
     // @ts-ignore
     if (typeof window.webpushr !== 'undefined') return;
     
