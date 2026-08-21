@@ -1,8 +1,5 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-const DEFAULT_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
-const DEFAULT_EVENT_ID = 'ipm-2026';
-
 export type OrganizerRole = 'Owner' | 'Communications' | 'Schedule';
 export type BroadcastPriority = 'Normal' | 'Important' | 'Emergency';
 export type BroadcastStatus = 'sent';
@@ -198,11 +195,11 @@ export type CreateBroadcastPayload = {
 };
 
 function getApiBaseUrl() {
-  return process.env.EXPO_PUBLIC_BACKEND_URL || DEFAULT_API_BASE_URL;
+  return process.env.EXPO_PUBLIC_BACKEND_URL || '';
 }
 
 function getEventId(eventId?: string) {
-  return eventId?.trim() || process.env.EXPO_PUBLIC_EVENT_ID || DEFAULT_EVENT_ID;
+  return eventId?.trim() || process.env.EXPO_PUBLIC_EVENT_ID || '';
 }
 
 export class AdminRequestError extends Error {

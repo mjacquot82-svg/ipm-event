@@ -8,7 +8,6 @@ const DEFAULT_RETRY_DELAY_MS = 1500;
 const CACHE_KEY_PREFIX = 'ipm_supabase_cache:ipm-2026-production';
 const EXISTING_SHARED_CACHE_KEY_PREFIX = 'ipm_supabase_cache:v1';
 const LEGACY_CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
-const DEFAULT_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
 
 export type CachedApiSource = 'network' | 'cache';
 
@@ -98,7 +97,7 @@ export type AnnouncementsResponse = {
 };
 
 function getApiBaseUrl() {
-  return process.env.EXPO_PUBLIC_BACKEND_URL || DEFAULT_API_BASE_URL;
+  return process.env.EXPO_PUBLIC_BACKEND_URL || '';
 }
 
 function getCacheKey(cacheKey: string) {

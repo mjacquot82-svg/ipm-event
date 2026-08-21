@@ -1,10 +1,7 @@
 [build]
   base = "frontend"
   publish = "dist"
-  command = "npm install && EXPO_PUBLIC_BACKEND_URL=https://ipm-backend-eoiw.onrender.com npx expo export --platform web"
-
-[build.environment]
-  EXPO_PUBLIC_BACKEND_URL = "https://ipm-backend-eoiw.onrender.com"
+  command = "npm install && npm run build:web"
 
 [[redirects]]
   from = "/*"
