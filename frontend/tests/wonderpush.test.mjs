@@ -201,6 +201,7 @@ test('staging diagnostics expose subscription identity and worker paths without 
   Object.defineProperty(globalThis, 'performance', {
     configurable: true,
     value: {
+      now: () => Date.now(),
       getEntriesByType: () => [{
         name: 'https://api.wonderpush.com/v1/authentication/accessToken',
         duration: 1234.4,
@@ -228,10 +229,67 @@ test('staging diagnostics expose subscription identity and worker paths without 
     installationRequestObserved: true,
     installationRequestStatusClass: '5xx',
     installationRequestDurationMs: 1234,
+    responseStatusSupported: typeof PerformanceResourceTiming !== 'undefined'
+      && 'responseStatus' in PerformanceResourceTiming.prototype,
+    sessionRequestOutcome: null,
+    responseContainsToken: false,
+    responseContainsInstallationId: false,
+    sessionPersistenceSucceeded: false,
+    sessionRequestErrorCode: null,
     errors: [],
   });
   assert.doesNotMatch(JSON.stringify(diagnostics), /webKey|private-endpoint|must-not-leak/);
   Object.defineProperty(globalThis, 'performance', { configurable: true, value: originalPerformance });
+});
+
+test('session HTTP diagnostics distinguish safe outcomes without retaining response secrets', async () => {
+  const scenarios = [
+    { name: 'network', outcome: 'error', status: 0, statusClass: 'unavailable', error: 'NetworkError' },
+    { name: '4xx', outcome: 'load', status: 401, statusClass: '4xx', response: { error: { code: 'AUTH_FAILED' } }, error: 'AUTH_FAILED' },
+    { name: '5xx', outcome: 'load', status: 503, statusClass: '5xx', response: { error: { name: 'Unavailable' } }, error: 'Unavailable' },
+    { name: 'missing', outcome: 'load', status: 200, statusClass: '2xx', response: { ok: true } },
+    { name: 'persistence-failed', outcome: 'load', status: 200, statusClass: '2xx', response: { token: 'returned-token-secret', data: { installationId: 'returned-id-secret' } } },
+    { name: 'persisted', outcome: 'load', status: 200, statusClass: '2xx', response: { token: 'returned-token-secret', data: { installationId: 'returned-id-secret' } }, persisted: true },
+  ];
+
+  for (const scenario of scenarios) {
+    const browser = installBrowserMocks();
+    process.env.EXPO_PUBLIC_EVENT_ID = 'ipm-staging';
+    process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
+    class FakeXMLHttpRequest extends EventTarget {
+      status = scenario.status;
+      responseText = JSON.stringify(scenario.response || {});
+      open() {}
+      send() { queueMicrotask(() => this.dispatchEvent(new Event(scenario.outcome))); }
+    }
+    globalThis.XMLHttpRequest = FakeXMLHttpRequest;
+    const service = await import(`../src/services/wonderPushService.web.ts?http-${scenario.name}`);
+    const initialization = service.initializeWonderPush();
+    browser.makeSdkReady({
+      isSubscribedToNotifications: async () => true,
+      getInstallationId: async () => scenario.persisted ? 'existing-safe-installation' : null,
+    });
+    await initialization;
+
+    const request = new XMLHttpRequest();
+    request.open('POST', 'https://api.wonderpush.com/v1/authentication/accessToken');
+    request.send('webKey=must-not-be-captured&pushEndpoint=must-not-be-captured');
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const diagnostics = await service.getWonderPushDiagnostics();
+
+    assert.equal(diagnostics.sessionRequestOutcome, scenario.outcome);
+    assert.equal(diagnostics.responseStatusSupported, true);
+    assert.equal(diagnostics.installationRequestStatusClass, scenario.statusClass);
+    assert.equal(diagnostics.responseContainsToken, Boolean(scenario.response?.token));
+    assert.equal(diagnostics.responseContainsInstallationId, Boolean(scenario.response?.data?.installationId));
+    assert.equal(diagnostics.sessionPersistenceSucceeded, Boolean(scenario.persisted));
+    assert.equal(diagnostics.sessionRequestErrorCode, scenario.error || null);
+    assert.doesNotMatch(
+      JSON.stringify(diagnostics),
+      /returned-token-secret|returned-id-secret|must-not-be-captured|pushEndpoint|webKey/
+    );
+  }
+  delete globalThis.XMLHttpRequest;
 });
 
 test('worker uses WonderPush existing-worker integration and contains no Webpushr dependency', async () => {

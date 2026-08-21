@@ -36,10 +36,138 @@ export type WonderPushDiagnostics = {
   installationRequestObserved: boolean;
   installationRequestStatusClass: string | null;
   installationRequestDurationMs: number | null;
+  responseStatusSupported: boolean;
+  sessionRequestOutcome: 'load' | 'error' | 'timeout' | 'abort' | null;
+  responseContainsToken: boolean;
+  responseContainsInstallationId: boolean;
+  sessionPersistenceSucceeded: boolean;
+  sessionRequestErrorCode: string | null;
   errors: string[];
 };
 
 let initialization: Promise<void> | null = null;
+
+type SessionObservation = Pick<WonderPushDiagnostics,
+  | 'installationRequestObserved'
+  | 'installationRequestStatusClass'
+  | 'installationRequestDurationMs'
+  | 'responseStatusSupported'
+  | 'sessionRequestOutcome'
+  | 'responseContainsToken'
+  | 'responseContainsInstallationId'
+  | 'sessionPersistenceSucceeded'
+  | 'sessionRequestErrorCode'>;
+
+const sessionObservation: SessionObservation = {
+  installationRequestObserved: false,
+  installationRequestStatusClass: null,
+  installationRequestDurationMs: null,
+  responseStatusSupported: typeof PerformanceResourceTiming !== 'undefined'
+    && 'responseStatus' in PerformanceResourceTiming.prototype,
+  sessionRequestOutcome: null,
+  responseContainsToken: false,
+  responseContainsInstallationId: false,
+  sessionPersistenceSucceeded: false,
+  sessionRequestErrorCode: null,
+};
+
+function statusClass(status: number): string {
+  return status >= 200 && status < 300 ? '2xx'
+    : status >= 400 && status < 500 ? '4xx'
+      : status >= 500 && status < 600 ? '5xx' : 'unavailable';
+}
+
+function safeResponseError(value: unknown): string | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  const error = record.error && typeof record.error === 'object'
+    ? record.error as Record<string, unknown>
+    : record;
+  for (const candidate of [error.code, error.name]) {
+    if ((typeof candidate === 'string' || typeof candidate === 'number')
+      && /^[A-Za-z0-9_.-]{1,64}$/.test(String(candidate))) return String(candidate);
+  }
+  return null;
+}
+
+function checkSessionPersistence() {
+  const check = () => {
+    const sdk = window.WonderPush;
+    if (!sdk?.getInstallationId) return;
+    void Promise.resolve(sdk.getInstallationId()).then(
+      (installationId) => { sessionObservation.sessionPersistenceSucceeded = Boolean(installationId); },
+      () => undefined
+    );
+  };
+  check();
+  setTimeout(check, 250);
+  setTimeout(check, 1500);
+}
+
+function installSessionRequestObserver() {
+  if (process.env.EXPO_PUBLIC_EVENT_ID !== 'ipm-staging' || typeof XMLHttpRequest === 'undefined') return;
+  const prototype = XMLHttpRequest.prototype as XMLHttpRequest & { __ipmSessionObserver?: boolean };
+  if (prototype.__ipmSessionObserver) return;
+  prototype.__ipmSessionObserver = true;
+  const observed = new WeakSet<XMLHttpRequest>();
+  const originalOpen = prototype.open;
+  const originalSend = prototype.send;
+
+  prototype.open = function (method: string, url: string | URL) {
+    try {
+      const parsed = new URL(String(url), window.location.origin);
+      if (method.toUpperCase() === 'POST'
+        && parsed.origin === 'https://api.wonderpush.com'
+        && parsed.pathname === '/v1/authentication/accessToken') observed.add(this);
+    } catch {
+      // An invalid URL remains the SDK's responsibility.
+    }
+    return Reflect.apply(originalOpen, this, Array.from(arguments));
+  } as typeof originalOpen;
+
+  prototype.send = function () {
+    if (observed.has(this)) {
+      const started = performance.now();
+      sessionObservation.installationRequestObserved = true;
+      sessionObservation.sessionPersistenceSucceeded = false;
+      let finished = false;
+      const finish = (outcome: 'load' | 'error' | 'timeout' | 'abort') => {
+        if (finished) return;
+        finished = true;
+        sessionObservation.sessionRequestOutcome = outcome;
+        sessionObservation.responseStatusSupported = typeof this.status === 'number';
+        sessionObservation.installationRequestDurationMs = Math.round(performance.now() - started);
+        sessionObservation.installationRequestStatusClass = statusClass(this.status);
+        if (outcome !== 'load') {
+          sessionObservation.sessionRequestErrorCode = outcome === 'error'
+            ? 'NetworkError' : outcome === 'timeout' ? 'TimeoutError' : 'AbortError';
+          return;
+        }
+        try {
+          const response = JSON.parse(this.responseText) as Record<string, unknown>;
+          const data = response.data && typeof response.data === 'object'
+            ? response.data as Record<string, unknown> : null;
+          sessionObservation.responseContainsToken = typeof response.token === 'string' && response.token.length > 0;
+          sessionObservation.responseContainsInstallationId = typeof data?.installationId === 'string'
+            && data.installationId.length > 0;
+          sessionObservation.sessionRequestErrorCode = safeResponseError(response);
+          if (sessionObservation.responseContainsToken && sessionObservation.responseContainsInstallationId) {
+            checkSessionPersistence();
+          }
+        } catch (error) {
+          sessionObservation.sessionRequestErrorCode = error instanceof Error ? error.name : 'ParseError';
+        }
+      };
+      this.addEventListener('load', () => finish('load'));
+      this.addEventListener('error', () => finish('error'));
+      this.addEventListener('timeout', () => finish('timeout'));
+      this.addEventListener('abort', () => finish('abort'));
+    }
+    return Reflect.apply(originalSend, this, Array.from(arguments));
+  } as typeof originalSend;
+}
+
+installSessionRequestObserver();
 
 function withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -211,13 +339,19 @@ export async function getWonderPushDiagnostics(): Promise<WonderPushDiagnostics>
     workerScriptPath: null,
     controllerPath: pathOnly(navigator.serviceWorker?.controller?.scriptURL),
     hasPushSubscription: null,
-    installationRequestObserved: Boolean(installationRequest),
-    installationRequestStatusClass: responseStatus
+    installationRequestObserved: sessionObservation.installationRequestObserved || Boolean(installationRequest),
+    installationRequestStatusClass: sessionObservation.installationRequestStatusClass || (responseStatus
       ? `${Math.floor(responseStatus / 100)}xx`
-      : null,
-    installationRequestDurationMs: installationRequest
+      : null),
+    installationRequestDurationMs: sessionObservation.installationRequestDurationMs ?? (installationRequest
       ? Math.round(installationRequest.duration)
-      : null,
+      : null),
+    responseStatusSupported: sessionObservation.responseStatusSupported,
+    sessionRequestOutcome: sessionObservation.sessionRequestOutcome,
+    responseContainsToken: sessionObservation.responseContainsToken,
+    responseContainsInstallationId: sessionObservation.responseContainsInstallationId,
+    sessionPersistenceSucceeded: sessionObservation.sessionPersistenceSucceeded,
+    sessionRequestErrorCode: sessionObservation.sessionRequestErrorCode,
     errors: [],
   };
 

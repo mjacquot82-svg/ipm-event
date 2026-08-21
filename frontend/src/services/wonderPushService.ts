@@ -18,6 +18,12 @@ export type WonderPushDiagnostics = {
   installationRequestObserved: false;
   installationRequestStatusClass: null;
   installationRequestDurationMs: null;
+  responseStatusSupported: false;
+  sessionRequestOutcome: null;
+  responseContainsToken: false;
+  responseContainsInstallationId: false;
+  sessionPersistenceSucceeded: false;
+  sessionRequestErrorCode: null;
   errors: string[];
 };
 
@@ -53,6 +59,12 @@ export async function getWonderPushDiagnostics(): Promise<WonderPushDiagnostics>
     installationRequestObserved: false,
     installationRequestStatusClass: null,
     installationRequestDurationMs: null,
+    responseStatusSupported: false,
+    sessionRequestOutcome: null,
+    responseContainsToken: false,
+    responseContainsInstallationId: false,
+    sessionPersistenceSucceeded: false,
+    sessionRequestErrorCode: null,
     errors: [],
   };
 }

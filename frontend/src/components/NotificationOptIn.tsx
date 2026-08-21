@@ -70,6 +70,12 @@ export default function NotificationOptIn() {
           <Text style={styles.diagnosticText}>Installation request: {diagnostics.installationRequestObserved ? 'observed' : 'not observed'}</Text>
           <Text style={styles.diagnosticText}>Installation status: {diagnostics.installationRequestStatusClass || 'unavailable'}</Text>
           <Text style={styles.diagnosticText}>Installation elapsed: {diagnostics.installationRequestDurationMs === null ? 'unavailable' : `${diagnostics.installationRequestDurationMs} ms`}</Text>
+          <Text style={styles.diagnosticText}>Response status supported: {diagnostics.responseStatusSupported ? 'yes' : 'no'}</Text>
+          <Text style={styles.diagnosticText}>Session request outcome: {diagnostics.sessionRequestOutcome || 'unavailable'}</Text>
+          <Text style={styles.diagnosticText}>Response contains token: {String(diagnostics.responseContainsToken)}</Text>
+          <Text style={styles.diagnosticText}>Response contains installation ID: {String(diagnostics.responseContainsInstallationId)}</Text>
+          <Text style={styles.diagnosticText}>Session persistence succeeded: {String(diagnostics.sessionPersistenceSucceeded)}</Text>
+          <Text style={styles.diagnosticText}>Session error: {diagnostics.sessionRequestErrorCode || 'none'}</Text>
           <Text style={styles.diagnosticText}>Errors: {diagnostics.errors.join(', ') || 'none'}</Text>
         </View>
       ) : null}
