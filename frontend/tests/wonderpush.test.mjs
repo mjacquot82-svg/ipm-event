@@ -11,6 +11,7 @@ function installBrowserMocks({ loadLoader = true } = {}) {
   globalThis.window = {
     Notification: notification,
     PushManager: function PushManager() {},
+    location: { origin: 'https://staging.theipm.ca' },
   };
   Object.defineProperty(globalThis, 'navigator', {
     configurable: true,
@@ -176,6 +177,48 @@ test('missing public key fails clearly without blocking unsupported/native envir
   assert.equal(await nativeService.getWonderPushInstallationId(), null);
 });
 
+test('staging diagnostics expose subscription identity and worker paths without push secrets', async () => {
+  const browser = installBrowserMocks();
+  process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
+  const workerUrl = 'https://staging.theipm.ca/webpushr-sw.js?webKey=must-not-leak';
+  const registration = {
+    scope: 'https://staging.theipm.ca/brevo/',
+    active: { scriptURL: workerUrl },
+    waiting: null,
+    installing: null,
+    pushManager: {
+      getSubscription: async () => ({
+        endpoint: 'https://push.example/private-endpoint',
+        getKey: () => 'must-not-leak',
+      }),
+    },
+  };
+  Object.assign(navigator.serviceWorker, {
+    controller: { scriptURL: workerUrl },
+    getRegistrations: async () => [registration],
+  });
+  const service = await import('../src/services/wonderPushService.web.ts?diagnostics');
+  const initialization = service.initializeWonderPush();
+  browser.makeSdkReady({
+    isSubscribedToNotifications: async () => true,
+    getInstallationId: async () => 'installation-for-staging-test',
+  });
+  await initialization;
+
+  const diagnostics = await service.getWonderPushDiagnostics();
+  assert.deepEqual(diagnostics, {
+    permission: 'default',
+    sdkSubscribed: true,
+    installationId: 'installation-for-staging-test',
+    workerScopePath: '/brevo/',
+    workerScriptPath: '/webpushr-sw.js',
+    controllerPath: '/webpushr-sw.js',
+    hasPushSubscription: true,
+    errors: [],
+  });
+  assert.doesNotMatch(JSON.stringify(diagnostics), /webKey|private-endpoint|must-not-leak/);
+});
+
 test('worker uses WonderPush existing-worker integration and contains no Webpushr dependency', async () => {
   const worker = await readFile(new URL('../public/webpushr-sw.js', import.meta.url), 'utf8');
   assert.match(worker, /cdn\.by\.wonderpush\.com\/sdk\/1\.1\/wonderpush-loader\.min\.js/);
@@ -207,6 +250,8 @@ test('IPM owns the opt-in action and existing native/install paths remain isolat
   assert.match(component, /onPress=\{updateSubscription\}/);
   assert.match(component, /subscribeToNotifications/);
   assert.match(component, /unsubscribeFromNotifications/);
+  assert.match(component, /EXPO_PUBLIC_EVENT_ID === 'ipm-staging'/);
+  assert.match(component, /getWonderPushDiagnostics/);
   assert.match(layout, /Platform\.OS === 'web'/);
   assert.match(layout, /Platform\.OS !== 'web'/);
   assert.match(nativeNotifications, /expo-notifications/);

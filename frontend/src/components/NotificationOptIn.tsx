@@ -4,10 +4,12 @@ import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View }
 
 import {
   getNotificationState,
+  getWonderPushDiagnostics,
   NotificationState,
   subscribeToNotifications,
   unsubscribeFromNotifications,
 } from '../services/wonderPushService';
+import type { WonderPushDiagnostics } from '../services/wonderPushService';
 import { colors } from '../theme/colors';
 
 const STATE_COPY: Record<NotificationState, string> = {
@@ -23,6 +25,8 @@ const STATE_COPY: Record<NotificationState, string> = {
 export default function NotificationOptIn() {
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<WonderPushDiagnostics | null>(null);
+  const stagingDiagnostics = process.env.EXPO_PUBLIC_EVENT_ID === 'ipm-staging';
 
   const refresh = useCallback(async () => {
     setState(await getNotificationState());
@@ -47,13 +51,25 @@ export default function NotificationOptIn() {
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
 
   return (
-    <View style={styles.card} accessibilityLabel="IPM notification settings">
+    <View style={[styles.card, diagnostics && styles.cardWithDiagnostics]} accessibilityLabel="IPM notification settings">
       <View style={styles.icon}><Feather name="bell" size={22} color="#FFFFFF" /></View>
       <View style={styles.copy}>
         <Text style={styles.title}>IPM Notifications</Text>
         <Text style={styles.message}>{STATE_COPY[state]}</Text>
         {state === 'denied' ? <Text style={styles.hint}>Allow notifications for this site in browser settings to enable them.</Text> : null}
       </View>
+      {stagingDiagnostics && diagnostics ? (
+        <View style={styles.diagnostics} accessibilityLabel="WonderPush staging diagnostics">
+          <Text style={styles.diagnosticText}>Permission: {diagnostics.permission}</Text>
+          <Text style={styles.diagnosticText}>SDK subscribed: {String(diagnostics.sdkSubscribed)}</Text>
+          <Text style={styles.diagnosticText}>Installation ID: {diagnostics.installationId || 'none'}</Text>
+          <Text style={styles.diagnosticText}>Worker scope: {diagnostics.workerScopePath || 'none'}</Text>
+          <Text style={styles.diagnosticText}>Worker script: {diagnostics.workerScriptPath || 'none'}</Text>
+          <Text style={styles.diagnosticText}>Controller: {diagnostics.controllerPath || 'none'}</Text>
+          <Text style={styles.diagnosticText}>PushSubscription: {String(diagnostics.hasPushSubscription)}</Text>
+          <Text style={styles.diagnosticText}>Errors: {diagnostics.errors.join(', ') || 'none'}</Text>
+        </View>
+      ) : null}
       {state === 'loading' || working ? <ActivityIndicator color={colors.primary} /> : null}
       {canAct && !working ? (
         <TouchableOpacity
@@ -67,12 +83,23 @@ export default function NotificationOptIn() {
           </Text>
         </TouchableOpacity>
       ) : null}
+      {stagingDiagnostics && !working ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Show WonderPush staging diagnostics"
+          onPress={async () => setDiagnostics(await getWonderPushDiagnostics())}
+          style={styles.diagnosticButton}
+        >
+          <Text style={styles.diagnosticButtonText}>Diagnostics</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: { alignItems: 'center', backgroundColor: '#FFFFFF', borderColor: colors.border, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 12, padding: 14 },
+  cardWithDiagnostics: { flexWrap: 'wrap' },
   icon: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: 22, height: 44, justifyContent: 'center', width: 44 },
   copy: { flex: 1, minWidth: 0 },
   title: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
@@ -82,4 +109,8 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', textAlign: 'center' },
   disableButton: { backgroundColor: '#FFFFFF', borderColor: colors.primary, borderWidth: 1 },
   disableButtonText: { color: colors.primary },
+  diagnostics: { flexBasis: '100%', gap: 2 },
+  diagnosticText: { color: colors.textMuted, fontSize: 11, lineHeight: 15 },
+  diagnosticButton: { paddingHorizontal: 8, paddingVertical: 8 },
+  diagnosticButtonText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
 });

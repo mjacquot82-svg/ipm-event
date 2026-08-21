@@ -25,6 +25,17 @@ export type NotificationState =
   | 'unsupported'
   | 'error';
 
+export type WonderPushDiagnostics = {
+  permission: NotificationPermission | 'unsupported';
+  sdkSubscribed: boolean | null;
+  installationId: string | null;
+  workerScopePath: string | null;
+  workerScriptPath: string | null;
+  controllerPath: string | null;
+  hasPushSubscription: boolean | null;
+  errors: string[];
+};
+
 let initialization: Promise<void> | null = null;
 
 function withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
@@ -167,4 +178,63 @@ export async function getWonderPushInstallationId(): Promise<string | null> {
     if (!sdk.getInstallationId) return null;
     return sdk.getInstallationId();
   });
+}
+
+function pathOnly(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url, window.location.origin).pathname;
+  } catch {
+    return null;
+  }
+}
+
+function safeErrorCode(phase: string, error: unknown) {
+  return `${phase}:${error instanceof Error ? error.name : 'UnknownError'}`;
+}
+
+export async function getWonderPushDiagnostics(): Promise<WonderPushDiagnostics> {
+  const diagnostics: WonderPushDiagnostics = {
+    permission: isSupported() ? Notification.permission : 'unsupported',
+    sdkSubscribed: null,
+    installationId: null,
+    workerScopePath: null,
+    workerScriptPath: null,
+    controllerPath: pathOnly(navigator.serviceWorker?.controller?.scriptURL),
+    hasPushSubscription: null,
+    errors: [],
+  };
+
+  try {
+    diagnostics.sdkSubscribed = await withSdk(async (sdk) => {
+      if (!sdk.isSubscribedToNotifications) throw new Error('SubscriptionApiUnavailable');
+      return sdk.isSubscribedToNotifications();
+    });
+  } catch (error) {
+    diagnostics.errors.push(safeErrorCode('subscription-state', error));
+  }
+
+  try {
+    diagnostics.installationId = await getWonderPushInstallationId();
+  } catch (error) {
+    diagnostics.errors.push(safeErrorCode('installation-id', error));
+  }
+
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    const registration = registrations.find((candidate) => {
+      const worker = candidate.active || candidate.waiting || candidate.installing;
+      return pathOnly(worker?.scriptURL) === SERVICE_WORKER_PATH;
+    });
+    const worker = registration?.active || registration?.waiting || registration?.installing;
+    diagnostics.workerScopePath = pathOnly(registration?.scope);
+    diagnostics.workerScriptPath = pathOnly(worker?.scriptURL);
+    diagnostics.hasPushSubscription = registration
+      ? Boolean(await registration.pushManager.getSubscription())
+      : false;
+  } catch (error) {
+    diagnostics.errors.push(safeErrorCode('service-worker', error));
+  }
+
+  return diagnostics;
 }

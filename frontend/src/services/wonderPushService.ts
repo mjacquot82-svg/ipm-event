@@ -7,6 +7,17 @@ export type NotificationState =
   | 'unsupported'
   | 'error';
 
+export type WonderPushDiagnostics = {
+  permission: 'unsupported';
+  sdkSubscribed: null;
+  installationId: null;
+  workerScopePath: null;
+  workerScriptPath: null;
+  controllerPath: null;
+  hasPushSubscription: null;
+  errors: string[];
+};
+
 export async function initializeWonderPush(): Promise<void> {
   return undefined;
 }
@@ -25,4 +36,17 @@ export async function unsubscribeFromNotifications(): Promise<NotificationState>
 
 export async function getWonderPushInstallationId(): Promise<null> {
   return null;
+}
+
+export async function getWonderPushDiagnostics(): Promise<WonderPushDiagnostics> {
+  return {
+    permission: 'unsupported',
+    sdkSubscribed: null,
+    installationId: null,
+    workerScopePath: null,
+    workerScriptPath: null,
+    controllerPath: null,
+    hasPushSubscription: null,
+    errors: [],
+  };
 }
