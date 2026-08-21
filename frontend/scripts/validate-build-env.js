@@ -1,6 +1,7 @@
 const requiredEnvironment = [
   'EXPO_PUBLIC_BACKEND_URL',
   'EXPO_PUBLIC_EVENT_ID',
+  'EXPO_PUBLIC_WONDERPUSH_WEB_KEY',
 ];
 
 const missingEnvironment = requiredEnvironment.filter(

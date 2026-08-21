@@ -1,5 +1,5 @@
 // Expo Notifications is intentionally disabled on web. Browser push is owned
-// exclusively by Webpushr, which is initialized separately in app/_layout.tsx.
+// exclusively by the web-only WonderPush service.
 
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
   return null;

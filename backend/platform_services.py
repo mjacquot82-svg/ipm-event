@@ -8,6 +8,7 @@ the providers without changing frontend API contracts.
 
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
+import json
 import logging
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
@@ -18,100 +19,84 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-class WebpushrError(Exception):
+class WonderPushError(Exception):
     """Normalized provider error safe to expose through the admin API."""
 
 
-class WebpushrClient:
-    """Small server-side client for the Webpushr campaign API."""
+class WonderPushClient:
+    """Small server-side client for the WonderPush Management API."""
 
-    BASE_URL = "https://api.webpushr.com/v1"
-    TITLE_LIMIT = 100
-    MESSAGE_LIMIT = 255
-    TARGET_URL_LIMIT = 255
+    DELIVERIES_URL = "https://management-api.wonderpush.com/v1/deliveries"
 
-    def __init__(self, *, api_key: str, auth_token: str, timeout: float = 10.0):
-        self.api_key = api_key
-        self.auth_token = auth_token
+    def __init__(self, *, access_token: str, timeout: float = 10.0):
+        self.access_token = access_token
         self.timeout = timeout
-
-    @staticmethod
-    def shorten(value: str, limit: int) -> str:
-        normalized = " ".join(value.split())
-        if len(normalized) <= limit:
-            return normalized
-        return normalized[: limit - 1].rstrip() + "…"
 
     def notification_content(self, title: str, message: str, target_url: str) -> dict[str, str]:
         return {
-            "title": self.shorten(title, self.TITLE_LIMIT),
-            "message": self.shorten(message, self.MESSAGE_LIMIT),
-            "target_url": self.shorten(target_url, self.TARGET_URL_LIMIT),
+            "title": " ".join(title.split()),
+            "message": " ".join(message.split()),
+            "target_url": target_url,
         }
 
-    async def _send(
-        self,
-        endpoint: str,
-        payload: dict[str, Any],
-        *,
-        success_reference: Optional[str] = None,
-    ) -> str:
+    async def _send(self, *, content: dict[str, str], target: dict[str, str]) -> str:
+        notification = {
+            "alert": {
+                "title": content["title"],
+                "text": content["message"],
+                "targetUrl": content["target_url"],
+            },
+            "push": {
+                "custom": {
+                    "target_url": content["target_url"],
+                },
+            },
+        }
+        form = {
+            "accessToken": self.access_token,
+            "notification": json.dumps(notification, separators=(",", ":")),
+            "filterPlatforms": "Web",
+            **target,
+        }
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.post(
-                    f"{self.BASE_URL}{endpoint}",
-                    headers={
-                        "webpushrKey": self.api_key,
-                        "webpushrAuthToken": self.auth_token,
-                        "Content-Type": "application/json",
-                    },
-                    json=payload,
-                )
+                response = await client.post(self.DELIVERIES_URL, data=form)
         except httpx.TimeoutException as exc:
-            raise WebpushrError("Webpushr request timed out") from exc
+            raise WonderPushError("WonderPush request timed out") from exc
         except httpx.RequestError as exc:
-            raise WebpushrError("Webpushr could not be reached") from exc
+            raise WonderPushError("WonderPush could not be reached") from exc
 
         logger.info(
-            "Webpushr response endpoint=%s status_code=%s body=%s",
-            endpoint,
+            "WonderPush delivery response status_code=%s",
             response.status_code,
-            response.text,
         )
-        try:
-            result = response.json()
-        except ValueError as exc:
-            raise WebpushrError(f"Webpushr returned an invalid response ({response.status_code})") from exc
-        if not isinstance(result, dict):
-            raise WebpushrError(f"Webpushr returned an invalid response ({response.status_code})")
-        if response.status_code >= 400 or result.get("status") != "success":
-            description = result.get("description") or f"HTTP {response.status_code}"
-            raise WebpushrError(f"Webpushr rejected the notification: {description}")
-        campaign_id = result.get("ID")
-        if campaign_id is None:
-            if success_reference is not None:
-                return success_reference
-            raise WebpushrError("Webpushr response did not include a campaign ID")
-        return str(campaign_id)
+        if response.status_code != 202:
+            raise WonderPushError(f"WonderPush rejected the notification (HTTP {response.status_code})")
+
+        reference = response.headers.get("Location") or response.headers.get("X-Request-Id")
+        if not reference:
+            try:
+                result = response.json()
+            except ValueError:
+                result = None
+            if isinstance(result, dict):
+                reference = result.get("id") or result.get("deliveryId")
+        return str(reference or "wonderpush:accepted")
 
     async def send_everyone(self, *, title: str, message: str, target_url: str) -> str:
         content = self.notification_content(title, message, target_url)
-        return await self._send("/notification/send/all", content)
+        return await self._send(content=content, target={"targetSegmentIds": "@ALL"})
 
     async def send_test(
-        self, *, title: str, message: str, target_url: str, subscriber_ids: list[str]
+        self, *, title: str, message: str, target_url: str, installation_ids: list[str]
     ) -> str:
-        if not subscriber_ids:
-            raise WebpushrError("No Webpushr test subscriber IDs are configured")
+        if not installation_ids:
+            raise WonderPushError("No WonderPush test installation IDs are configured")
         content = self.notification_content(title, message, target_url)
-        campaign_ids = []
-        for subscriber_id in subscriber_ids:
-            campaign_ids.append(await self._send(
-                "/notification/send/sid",
-                {**content, "sid": subscriber_id},
-                success_reference=f"sid:{subscriber_id}",
-            ))
-        return ",".join(campaign_ids)
+        return await self._send(
+            content=content,
+            target={"targetInstallationIds": ",".join(installation_ids)},
+        )
 
 
 class EventService:
@@ -822,6 +807,7 @@ class SupabaseNotificationDeliveryService:
         target_url: str,
         notification_title: str,
         notification_message: str,
+        provider: str = "wonderpush",
     ) -> dict[str, Any]:
         resolved_event_id = await self._get_event_id(event_id)
         rows = await self.client.request(
@@ -831,7 +817,7 @@ class SupabaseNotificationDeliveryService:
                 "event_id": resolved_event_id,
                 "announcement_id": announcement_id,
                 "audience": audience,
-                "provider": "webpushr",
+                "provider": provider,
                 "status": "requested",
                 "requested_by": requested_by,
                 "target_url": target_url,

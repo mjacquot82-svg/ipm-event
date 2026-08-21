@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -77,8 +77,8 @@ try:
         SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
-        WebpushrClient,
-        WebpushrError,
+        WonderPushClient,
+        WonderPushError,
     )
 except ImportError:
     from backend.platform_services import (
@@ -89,8 +89,8 @@ except ImportError:
         SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
-        WebpushrClient,
-        WebpushrError,
+        WonderPushClient,
+        WonderPushError,
     )
 
 
@@ -122,9 +122,6 @@ EVENTS_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{EVENTS_SHEET_ID
 VENDORS_SHEET_ID = "12FhDHOZDUaI41oZGeIvSopFxlfFi7X8OxKNSVaBmBgg"
 VENDORS_SHEET_CSV_URL = f"https://docs.google.com/spreadsheets/d/{VENDORS_SHEET_ID}/export?format=csv"
 
-# Webpushr Service Worker content
-WEBPUSHR_SW_CONTENT = "importScripts('https://cdn.webpushr.com/sw-server.min.js');"
-
 # Cron job settings
 CHECK_INTERVAL_SECONDS = 300  # Check every 5 minutes
 cached_events_hash: str = ""
@@ -135,12 +132,11 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "development").strip().lower()
 CONTENT_SOURCE = os.environ.get("CONTENT_SOURCE", "google_sheets").strip().lower()
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-WEBPUSHR_API_KEY = os.environ.get("WEBPUSHR_API_KEY", "")
-WEBPUSHR_AUTH_TOKEN = os.environ.get("WEBPUSHR_AUTH_TOKEN", "")
-WEBPUSHR_TEST_SUBSCRIBER_IDS = [
-    subscriber_id.strip()
-    for subscriber_id in os.environ.get("WEBPUSHR_TEST_SUBSCRIBER_IDS", "").split(",")
-    if subscriber_id.strip()
+WONDERPUSH_ACCESS_TOKEN = os.environ.get("WONDERPUSH_ACCESS_TOKEN", "")
+WONDERPUSH_TEST_INSTALLATION_IDS = [
+    installation_id.strip()
+    for installation_id in os.environ.get("WONDERPUSH_TEST_INSTALLATION_IDS", "").split(",")
+    if installation_id.strip()
 ]
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
 ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
@@ -383,7 +379,7 @@ class NotificationDeliveryResponse(BaseModel):
     event_id: str
     announcement_id: str
     audience: Literal["test", "everyone"]
-    provider: Literal["webpushr"]
+    provider: Literal["webpushr", "wonderpush"]
     provider_campaign_id: Optional[str] = None
     status: Literal["requested", "sent", "failed"]
     requested_by: str
@@ -792,12 +788,9 @@ if CONTENT_SOURCE == "supabase":
         event_slug=event_service.get_public_event_id(),
     )
 
-webpushr_client = None
-if WEBPUSHR_API_KEY and WEBPUSHR_AUTH_TOKEN:
-    webpushr_client = WebpushrClient(
-        api_key=WEBPUSHR_API_KEY,
-        auth_token=WEBPUSHR_AUTH_TOKEN,
-    )
+wonderpush_client = None
+if WONDERPUSH_ACCESS_TOKEN:
+    wonderpush_client = WonderPushClient(access_token=WONDERPUSH_ACCESS_TOKEN)
 
 
 def normalize_username(username: str) -> str:
@@ -947,10 +940,10 @@ def require_notification_delivery_service():
     return notification_delivery_service
 
 
-def require_webpushr_client():
-    if webpushr_client is None:
-        raise HTTPException(status_code=503, detail="Webpushr is not configured")
-    return webpushr_client
+def require_wonderpush_client():
+    if wonderpush_client is None:
+        raise HTTPException(status_code=503, detail="WonderPush is not configured")
+    return wonderpush_client
 
 
 def require_schedule_manager_role(user: dict):
@@ -1192,19 +1185,6 @@ async def create_organizer_session(database, user: dict, response: Response) -> 
 @api_router.get("/")
 async def root():
     return {"message": "Hello World"}
-
-# Serve Webpushr service worker via API route
-@api_router.get("/webpushr-sw.js", response_class=PlainTextResponse)
-async def serve_webpushr_service_worker_api():
-    """Serve Webpushr service worker via API route"""
-    return PlainTextResponse(
-        content=WEBPUSHR_SW_CONTENT,
-        media_type="application/javascript",
-        headers={
-            "Service-Worker-Allowed": "/",
-            "Cache-Control": "no-cache"
-        }
-    )
 
 @api_router.get("/download-dist")
 async def download_dist():
@@ -1599,7 +1579,7 @@ async def notify_announcement(
     require_announcement_manager_role(current_user)
     announcements = require_announcement_service()
     deliveries = require_notification_delivery_service()
-    provider = require_webpushr_client()
+    provider = require_wonderpush_client()
     event_id = get_admin_event_id(current_user)
 
     announcement = await announcements.get(announcement_id, event_id, public=True)
@@ -1608,8 +1588,8 @@ async def notify_announcement(
             status_code=409,
             detail="Only published, unexpired announcements can be notified",
         )
-    if audience == "test" and not WEBPUSHR_TEST_SUBSCRIBER_IDS:
-        raise HTTPException(status_code=503, detail="No Webpushr test subscribers are configured")
+    if audience == "test" and not WONDERPUSH_TEST_INSTALLATION_IDS:
+        raise HTTPException(status_code=503, detail="No WonderPush test installations are configured")
 
     target_url = f"{PUBLIC_APP_URL}/announcements/{quote(announcement_id, safe='')}"
     content = provider.notification_content(
@@ -1624,6 +1604,7 @@ async def notify_announcement(
             target_url=content["target_url"],
             notification_title=content["title"],
             notification_message=content["message"],
+            provider="wonderpush",
         )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 409 and audience == "everyone":
@@ -1636,11 +1617,11 @@ async def notify_announcement(
     try:
         if audience == "test":
             campaign_id = await provider.send_test(
-                **content, subscriber_ids=WEBPUSHR_TEST_SUBSCRIBER_IDS
+                **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS
             )
         else:
             campaign_id = await provider.send_everyone(**content)
-    except WebpushrError as exc:
+    except WonderPushError as exc:
         await deliveries.mark_failed(delivery["id"], str(exc))
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
@@ -2254,19 +2235,6 @@ async def download_dist_direct():
             media_type="application/zip"
         )
     raise HTTPException(status_code=404, detail="dist.zip not found")
-
-# Serve Webpushr service worker at root level (not under /api)
-@app.get("/webpushr-sw.js", response_class=PlainTextResponse)
-async def serve_webpushr_service_worker():
-    """Serve Webpushr service worker from root"""
-    return PlainTextResponse(
-        content=WEBPUSHR_SW_CONTENT,
-        media_type="application/javascript",
-        headers={
-            "Service-Worker-Allowed": "/",
-            "Cache-Control": "no-cache"
-        }
-    )
 
 app.add_middleware(
     CORSMiddleware,

@@ -7,7 +7,7 @@ import pytest
 from fastapi import HTTPException
 
 from backend import server
-from backend.platform_services import SupabaseAnnouncementService, WebpushrClient, WebpushrError
+from backend.platform_services import SupabaseAnnouncementService, WonderPushClient, WonderPushError
 
 
 class FakeClient:
@@ -216,7 +216,7 @@ class FakeDeliveryService:
         row = {
             "id": f"delivery-{len(self.rows) + 1}",
             **values,
-            "provider": "webpushr",
+            "provider": values.get("provider", "wonderpush"),
             "provider_campaign_id": None,
             "status": "requested",
             "requested_at": datetime.now(timezone.utc),
@@ -239,25 +239,25 @@ class FakeDeliveryService:
         return row
 
 
-class FakeWebpushr:
+class FakeWonderPush:
     def __init__(self, fail=False):
         self.fail = fail
-        self.test_subscribers = None
+        self.test_installations = None
 
     def notification_content(self, title, message, target_url):
-        return WebpushrClient(api_key="key", auth_token="token").notification_content(
+        return WonderPushClient(access_token="token").notification_content(
             title, message, target_url
         )
 
-    async def send_test(self, *, title, message, target_url, subscriber_ids):
-        self.test_subscribers = list(subscriber_ids)
+    async def send_test(self, *, title, message, target_url, installation_ids):
+        self.test_installations = list(installation_ids)
         if self.fail:
-            raise WebpushrError("provider failed")
+            raise WonderPushError("provider failed")
         return "test-campaign"
 
     async def send_everyone(self, **kwargs):
         if self.fail:
-            raise WebpushrError("provider failed")
+            raise WonderPushError("provider failed")
         return "everyone-campaign"
 
 
@@ -272,13 +272,13 @@ def announcement(status="published", *, expires_at=None):
 
 
 def configure_notification_fakes(monkeypatch, item, *, provider=None, deliveries=None):
-    provider = provider or FakeWebpushr()
+    provider = provider or FakeWonderPush()
     deliveries = deliveries or FakeDeliveryService()
     monkeypatch.setattr(server, "announcement_service", FakeAnnouncementService({("event-a", "announcement-1"): item}))
     monkeypatch.setattr(server, "notification_delivery_service", deliveries)
-    monkeypatch.setattr(server, "webpushr_client", provider)
-    monkeypatch.setattr(server, "WEBPUSHR_TEST_SUBSCRIBER_IDS", ["test-1", "test-2"])
-    monkeypatch.setattr(server, "PUBLIC_APP_URL", "https://theipm.ca")
+    monkeypatch.setattr(server, "wonderpush_client", provider)
+    monkeypatch.setattr(server, "WONDERPUSH_TEST_INSTALLATION_IDS", ["test-1", "test-2"])
+    monkeypatch.setattr(server, "PUBLIC_APP_URL", "https://staging.theipm.ca")
     return provider, deliveries
 
 
@@ -321,9 +321,11 @@ def test_test_send_uses_only_configured_subscribers(monkeypatch):
     result = asyncio.run(server.notify_announcement("announcement-1", "test", {
         "username": "comms", "role": "Communications", "event_id": "event-a"
     }))
-    assert provider.test_subscribers == ["test-1", "test-2"]
+    assert provider.test_installations == ["test-1", "test-2"]
     assert result.audience == "test"
     assert deliveries.rows[0]["provider_campaign_id"] == "test-campaign"
+    assert deliveries.rows[0]["provider"] == "wonderpush"
+    assert deliveries.rows[0]["target_url"] == "https://staging.theipm.ca/announcements/announcement-1"
 
 
 def test_everyone_send_cannot_duplicate_after_success(monkeypatch):
@@ -337,7 +339,7 @@ def test_everyone_send_cannot_duplicate_after_success(monkeypatch):
 
 
 def test_provider_failure_is_persisted(monkeypatch):
-    _, deliveries = configure_notification_fakes(monkeypatch, announcement(), provider=FakeWebpushr(fail=True))
+    _, deliveries = configure_notification_fakes(monkeypatch, announcement(), provider=FakeWonderPush(fail=True))
     with pytest.raises(HTTPException) as error:
         asyncio.run(server.notify_announcement("announcement-1", "everyone", {
             "username": "owner", "role": "Owner", "event_id": "event-a"
@@ -347,16 +349,9 @@ def test_provider_failure_is_persisted(monkeypatch):
     assert deliveries.rows[0]["error_message"] == "provider failed"
 
 
-def test_webpushr_content_is_deterministically_shortened():
-    client = WebpushrClient(api_key="key", auth_token="token")
-    content = client.notification_content("T" * 120, "M" * 300, "https://example.test/" + "x" * 300)
-    assert len(content["title"]) == 100 and content["title"].endswith("…")
-    assert len(content["message"]) == 255 and content["message"].endswith("…")
-    assert len(content["target_url"]) == 255 and content["target_url"].endswith("…")
-    assert content == client.notification_content("T" * 120, "M" * 300, "https://example.test/" + "x" * 300)
+def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkeypatch):
+    captured = {}
 
-
-def test_webpushr_subscriber_success_does_not_require_campaign_id(monkeypatch):
     class FakeHttpClient:
         async def __aenter__(self):
             return self
@@ -364,29 +359,36 @@ def test_webpushr_subscriber_success_does_not_require_campaign_id(monkeypatch):
         async def __aexit__(self, *args):
             return None
 
-        async def post(self, *args, **kwargs):
-            return httpx.Response(
-                200,
-                json={
-                    "status": "success",
-                    "description": "Notification sent successfully!",
-                },
-            )
+        async def post(self, url, **kwargs):
+            captured.update(url=url, **kwargs)
+            return httpx.Response(202, headers={"Location": "/v1/deliveries/delivery-123"})
 
     monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
-    client = WebpushrClient(api_key="key", auth_token="token")
+    client = WonderPushClient(access_token="not-a-credential")
 
     result = asyncio.run(client.send_test(
         title="Title",
         message="Message",
-        target_url="https://example.test",
-        subscriber_ids=["123", "456"],
+        target_url="https://staging.theipm.ca/announcements/announcement-1",
+        installation_ids=["123", "456"],
     ))
 
-    assert result == "sid:123,sid:456"
+    assert result == "/v1/deliveries/delivery-123"
+    assert captured["url"] == "https://management-api.wonderpush.com/v1/deliveries"
+    assert captured["data"]["accessToken"] == "not-a-credential"
+    assert captured["data"]["targetInstallationIds"] == "123,456"
+    assert captured["data"]["filterPlatforms"] == "Web"
+    notification = __import__("json").loads(captured["data"]["notification"])
+    assert notification["alert"] == {
+        "title": "Title", "text": "Message",
+        "targetUrl": "https://staging.theipm.ca/announcements/announcement-1",
+    }
+    assert notification["push"]["custom"]["target_url"].endswith("/announcements/announcement-1")
 
 
-def test_webpushr_everyone_success_still_requires_campaign_id(monkeypatch):
+def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
+    captured = {}
+
     class FakeHttpClient:
         async def __aenter__(self):
             return self
@@ -394,18 +396,31 @@ def test_webpushr_everyone_success_still_requires_campaign_id(monkeypatch):
         async def __aexit__(self, *args):
             return None
 
-        async def post(self, *args, **kwargs):
-            return httpx.Response(
-                200,
-                json={"status": "success", "description": "Campaign created successfully!"},
-            )
+        async def post(self, url, **kwargs):
+            captured.update(url=url, **kwargs)
+            return httpx.Response(202, text="")
 
     monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
-    client = WebpushrClient(api_key="key", auth_token="token")
+    client = WonderPushClient(access_token="not-a-credential")
+    result = asyncio.run(client.send_everyone(
+        title="Title", message="Message", target_url="https://staging.theipm.ca",
+    ))
+    assert result == "wonderpush:accepted"
+    assert captured["data"]["targetSegmentIds"] == "@ALL"
+    assert "targetInstallationIds" not in captured["data"]
 
-    with pytest.raises(WebpushrError, match="did not include a campaign ID"):
+
+def test_wonderpush_errors_are_normalized_without_exposing_provider_body(monkeypatch):
+    class FakeHttpClient:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): return None
+        async def post(self, *args, **kwargs):
+            return httpx.Response(401, text="secret provider diagnostic")
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
+    client = WonderPushClient(access_token="not-a-credential")
+    with pytest.raises(WonderPushError, match=r"WonderPush rejected.*HTTP 401") as error:
         asyncio.run(client.send_everyone(
-            title="Title",
-            message="Message",
-            target_url="https://example.test",
+            title="Title", message="Message", target_url="https://staging.theipm.ca",
         ))
+    assert "secret provider diagnostic" not in str(error.value)

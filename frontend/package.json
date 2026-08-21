@@ -12,6 +12,7 @@
     "lint": "expo lint",
     "test:analytics": "node --test tests/analytics-core.test.mjs tests/analytics-dashboard.test.mjs",
     "test:install": "node --test tests/install-environment.test.mjs tests/install-flow-component.test.mjs",
+    "test:notifications": "node --test tests/wonderpush.test.mjs",
     "test:pwa": "node --test tests/pwa-icons.test.mjs"
   },
   "dependencies": {

@@ -79,7 +79,7 @@ export type NotificationDelivery = {
   event_id: string;
   announcement_id: string;
   audience: 'test' | 'everyone';
-  provider: 'webpushr';
+  provider: 'webpushr' | 'wonderpush';
   provider_campaign_id: string | null;
   status: 'requested' | 'sent' | 'failed';
   requested_by: string;

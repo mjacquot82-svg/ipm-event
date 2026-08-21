@@ -116,7 +116,7 @@ const IDLE_NOTIFICATION_STATE: NotificationActionState = {
   message: null,
 };
 
-export function shortenWebpushrText(value: string, limit: number) {
+export function shortenNotificationText(value: string, limit: number) {
   const normalized = value.trim().split(/\s+/u).join(' ');
   const characters = Array.from(normalized);
   if (characters.length <= limit) return normalized;
@@ -1640,8 +1640,8 @@ function AnnouncementEditor({
   ));
   const notificationDisabled = saving || isSending || isExpired || hasUnsavedChanges;
   const everyoneSentThisSession = notificationAction.audience === 'everyone' && notificationAction.status === 'sent';
-  const notificationTitle = shortenWebpushrText(form.title, 100);
-  const notificationMessage = shortenWebpushrText(form.message, 255);
+  const notificationTitle = shortenNotificationText(form.title, 100);
+  const notificationMessage = shortenNotificationText(form.message, 255);
 
   useEffect(() => {
     if (
@@ -1717,7 +1717,7 @@ function AnnouncementEditor({
       <Modal visible={confirmEveryone} transparent animationType="fade" onRequestClose={() => { if (!isSending) setConfirmEveryone(false); }}>
         <View style={styles.modalBackdrop}>
           <View style={styles.confirmDialog} accessibilityRole="alert">
-            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Notify everyone?</Text><Text style={styles.confirmSubtitle}>This action sends a Webpushr notification immediately.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Notify everyone?</Text><Text style={styles.confirmSubtitle}>This action sends a WonderPush notification immediately.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
             <View style={styles.confirmDetails}>
               <ConfirmationRow label="Announcement title" value={form.title} />
               <ConfirmationRow label="Notification title" value={notificationTitle} />

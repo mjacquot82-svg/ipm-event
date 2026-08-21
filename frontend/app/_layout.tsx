@@ -17,39 +17,7 @@ import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
 import SplashScreen from '../src/components/SplashScreen';
 import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext';
 import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
-
-// Initialize Webpushr for web platform
-const initWebpushr = () => {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    // @ts-ignore
-    if (typeof window.webpushr !== 'undefined') return;
-    
-    // @ts-ignore
-    window.webpushr = window.webpushr || function() {
-      // @ts-ignore
-      (window.webpushr.q = window.webpushr.q || []).push(arguments);
-    };
-    
-    const script = document.createElement('script');
-    script.id = 'webpushr-jssdk';
-    script.async = true;
-    script.src = 'https://cdn.webpushr.com/app.min.js';
-    
-    const firstScript = document.getElementsByTagName('script')[0];
-    if (firstScript && firstScript.parentNode) {
-      firstScript.parentNode.insertBefore(script, firstScript);
-    } else {
-      document.head.appendChild(script);
-    }
-    
-    script.onload = () => {
-      // @ts-ignore
-      window.webpushr('setup', {
-        'key': 'BHu0qiKGpRuMKicoL7MFSj-Oe58Dio-M9vYxksU4IIoY3hHXYU6TE9yigTRSu2Ws0AbuWnOwFglijaBsajGbPKk'
-      });
-    };
-  }
-};
+import { initializeWonderPush } from '../src/services/wonderPushService';
 
 export default function RootLayout() {
   const [isInitializing, setIsInitializing] = useState(true);
@@ -60,7 +28,11 @@ export default function RootLayout() {
   }, [pathname]);
 
   useEffect(() => {
-    initWebpushr();
+    if (Platform.OS === 'web') {
+      void initializeWonderPush().catch((error) => {
+        console.warn('WonderPush initialization unavailable:', error);
+      });
+    }
 
     let cleanupNotifications: () => void = () => undefined;
     if (Platform.OS !== 'web') {
