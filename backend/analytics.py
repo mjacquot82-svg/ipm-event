@@ -341,6 +341,10 @@ class MongoAnalyticsRepository:
             name="analytics_sessions_active",
         )
         await self.db.analytics_sessions.create_index(
+            [("eventScope", ASCENDING), ("status", ASCENDING), ("lastActivityAt", DESCENDING)],
+            name="analytics_sessions_status_activity",
+        )
+        await self.db.analytics_sessions.create_index(
             [("eventScope", ASCENDING), ("startedAt", DESCENDING)],
             name="analytics_sessions_reporting",
         )

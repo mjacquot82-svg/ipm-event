@@ -217,10 +217,12 @@ export default function HomeScreen() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementDataSource, setAnnouncementDataSource] = useState<CachedApiSource>('network');
   const [announcementLastUpdate, setAnnouncementLastUpdate] = useState<string | null>(null);
+  const hasScheduleDataRef = useRef(false);
   const { hydrated: announcementReadStateHydrated, lastReadAnnouncementId } = useAnnouncementReadState();
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
+    hasScheduleDataRef.current = (result.data.events || []).length > 0;
     if (result.source === 'network') {
       setDataSource('network');
     }
@@ -244,7 +246,7 @@ export default function HomeScreen() {
       applyScheduleResult(result);
     } catch (err) {
       console.error('Error loading home schedule data:', err);
-      setError('Unable to load schedule updates.');
+      if (!hasScheduleDataRef.current) setError('Unable to load schedule updates.');
     } finally {
       setLoading(false);
       setRefreshing(false);

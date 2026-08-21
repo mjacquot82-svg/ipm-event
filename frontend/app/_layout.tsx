@@ -21,6 +21,8 @@ import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
 // Initialize Webpushr for web platform
 const initWebpushr = () => {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // Temporary Variant B: Deploy Preview diagnostic must not initialize push.
+    if (process.env.EXPO_PUBLIC_SW_DIAGNOSTIC_VARIANT === 'B') return;
     // @ts-ignore
     if (typeof window.webpushr !== 'undefined') return;
     
@@ -51,6 +53,67 @@ const initWebpushr = () => {
   }
 };
 
+// Install the same root worker Webpushr uses so the offline shell is available
+// before an attendee chooses whether to subscribe to notifications.
+const initOfflineWorker = () => {
+  if (
+    Platform.OS === 'web' &&
+    typeof navigator !== 'undefined' &&
+    'serviceWorker' in navigator
+  ) {
+    const registrationUrl = '/webpushr-sw.js';
+    const requestedScope = '/';
+    const isDeployPreview = typeof window !== 'undefined'
+      && /^deploy-preview-\d+--/.test(window.location.hostname);
+    const isWebpushrInitialized = () => {
+      if (typeof window === 'undefined') return false;
+      // Webpushr's bootstrap queue has a `q` property; the loaded SDK replaces it.
+      const webpushr = (window as typeof window & { webpushr?: { q?: unknown[] } }).webpushr;
+      return typeof webpushr === 'function' && !('q' in webpushr);
+    };
+    const diagnostic = isDeployPreview ? {
+      attempted: true,
+      attemptTimestamp: new Date().toISOString(),
+      registrationUrl,
+      requestedScope,
+      outcome: 'pending',
+      errorName: 'absent',
+      errorMessage: 'absent',
+      webpushrInitializedAtAttempt: isWebpushrInitialized(),
+      webpushrInitializedAtCompletion: false,
+    } : undefined;
+
+    if (diagnostic) {
+      // @ts-ignore Temporary Deploy Preview diagnostic read by /offline-diagnostics.
+      window.__IPM_SW_REGISTRATION_DIAGNOSTIC__ = diagnostic;
+    }
+
+    try {
+      navigator.serviceWorker.register('/webpushr-sw.js', { scope: '/' }).then(() => {
+        if (!diagnostic) return;
+        diagnostic.outcome = 'success';
+        diagnostic.webpushrInitializedAtCompletion = isWebpushrInitialized();
+      }).catch((error) => {
+        if (diagnostic) {
+          diagnostic.outcome = 'failure';
+          diagnostic.errorName = error instanceof Error ? error.name : typeof error;
+          diagnostic.errorMessage = error instanceof Error ? error.message : String(error);
+          diagnostic.webpushrInitializedAtCompletion = isWebpushrInitialized();
+        }
+        console.warn('Offline worker registration failed:', error);
+      });
+    } catch (error) {
+      if (diagnostic) {
+        diagnostic.outcome = 'failure (synchronous)';
+        diagnostic.errorName = error instanceof Error ? error.name : typeof error;
+        diagnostic.errorMessage = error instanceof Error ? error.message : String(error);
+        diagnostic.webpushrInitializedAtCompletion = isWebpushrInitialized();
+      }
+      console.warn('Offline worker registration failed:', error);
+    }
+  }
+};
+
 export default function RootLayout() {
   const [isInitializing, setIsInitializing] = useState(true);
   const pathname = usePathname();
@@ -60,6 +123,7 @@ export default function RootLayout() {
   }, [pathname]);
 
   useEffect(() => {
+    initOfflineWorker();
     initWebpushr();
 
     let cleanupNotifications: () => void = () => undefined;

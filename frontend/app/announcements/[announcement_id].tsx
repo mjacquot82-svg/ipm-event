@@ -34,7 +34,14 @@ export default function AnnouncementDetailScreen() {
       return;
     }
     try {
-      const result = await getAnnouncementById(announcementId);
+      const result = await getAnnouncementById(announcementId, {
+        onBackgroundRefresh: (freshAnnouncement) => {
+          setAnnouncement(freshAnnouncement);
+          setNotFound(freshAnnouncement === null);
+          setError(false);
+        },
+        onBackgroundRefreshError: () => setError(false),
+      });
       setAnnouncement(result);
       setNotFound(result === null);
       if (result) {

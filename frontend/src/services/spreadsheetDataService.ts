@@ -1,10 +1,14 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  ContentHttpError,
+  ContentRequestCoalescer,
+  ContentRetryOptions,
+  resolveCacheFirst,
+  retryContentRequest,
+} from './contentRecoveryCore';
 
-const DEFAULT_TIMEOUT_MS = 30000;
-const DEFAULT_MAX_ATTEMPTS = 3;
-const DEFAULT_RETRY_DELAY_MS = 1500;
 const CACHE_KEY_PREFIX = 'ipm_supabase_cache:ipm-2026-production';
 const EXISTING_SHARED_CACHE_KEY_PREFIX = 'ipm_supabase_cache:v1';
 const LEGACY_CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
@@ -28,9 +32,7 @@ type CacheEntry<T> = {
 type FetchWithCacheOptions<T> = {
   cacheKey: string;
   url: string;
-  timeoutMs?: number;
-  maxAttempts?: number;
-  retryDelayMs?: number;
+  retryOptions?: ContentRetryOptions;
   preferCache?: boolean;
   isCacheableResponse: (data: unknown) => data is T;
   onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
@@ -40,6 +42,11 @@ type FetchWithCacheOptions<T> = {
 export type SupabaseFetchOptions<T> = {
   preferCache?: boolean;
   onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
+  onBackgroundRefreshError?: (error: unknown) => void;
+};
+
+export type AnnouncementFetchOptions = {
+  onBackgroundRefresh?: (announcement: Announcement | null) => void;
   onBackgroundRefreshError?: (error: unknown) => void;
 };
 
@@ -178,24 +185,15 @@ async function fetchWithTimeout(url: string, timeoutMs: number) {
   }
 }
 
-function delay(milliseconds: number) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-
 async function fetchWithRetry<T>(
   url: string,
-  timeoutMs: number,
-  maxAttempts: number,
-  retryDelayMs: number,
-  isCacheableResponse: (data: unknown) => data is T
+  isCacheableResponse: (data: unknown) => data is T,
+  retryOptions?: ContentRetryOptions,
 ): Promise<CachedApiResult<T>> {
-  let lastError: unknown;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    try {
+  return retryContentRequest(async (timeoutMs) => {
       const response = await fetchWithTimeout(url, timeoutMs);
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        throw new ContentHttpError(response.status);
       }
 
       const data: unknown = await response.json();
@@ -209,23 +207,15 @@ async function fetchWithRetry<T>(
         lastSuccessfulUpdate: new Date().toISOString(),
         cacheAge: 0,
       };
-    } catch (error) {
-      lastError = error;
-      if (attempt < maxAttempts) {
-        await delay(retryDelayMs);
-      }
-    }
-  }
-
-  throw lastError;
+    }, retryOptions);
 }
+
+const contentRequests = new ContentRequestCoalescer();
 
 export async function fetchCachedApiData<T>({
   cacheKey,
   url,
-  timeoutMs = DEFAULT_TIMEOUT_MS,
-  maxAttempts = DEFAULT_MAX_ATTEMPTS,
-  retryDelayMs = DEFAULT_RETRY_DELAY_MS,
+  retryOptions,
   preferCache = true,
   isCacheableResponse,
   onBackgroundRefresh,
@@ -234,13 +224,11 @@ export async function fetchCachedApiData<T>({
   await removeLegacyCache(cacheKey);
   const cachedData = preferCache ? await readCache<T>(cacheKey) : null;
 
-  const refresh = async () => {
+  const refresh = () => contentRequests.run(`content:${cacheKey}`, async () => {
     const result = await fetchWithRetry<T>(
       url,
-      timeoutMs,
-      maxAttempts,
-      retryDelayMs,
-      isCacheableResponse
+      isCacheableResponse,
+      retryOptions,
     );
     try {
       await writeCache(cacheKey, result.data, result.lastSuccessfulUpdate);
@@ -248,19 +236,15 @@ export async function fetchCachedApiData<T>({
       console.error('Failed to write cached API data:', error);
     }
     return result;
-  };
+  });
 
-  if (cachedData) {
-    void refresh()
-      .then((result) => onBackgroundRefresh?.(result))
-      .catch((error) => {
+  return resolveCacheFirst(cachedData, refresh, {
+    onRefresh: onBackgroundRefresh,
+    onRefreshError: (error) => {
         console.warn('Background API refresh failed:', error);
         onBackgroundRefreshError?.(error);
-      });
-    return cachedData;
-  }
-
-  return refresh();
+      },
+  });
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -277,6 +261,24 @@ function isSupabaseVendorsResponse(data: unknown): data is VendorsResponse {
 
 function isAnnouncementsResponse(data: unknown): data is AnnouncementsResponse {
   return !!data && typeof data === 'object' && Array.isArray((data as AnnouncementsResponse).announcements);
+}
+
+function isPublicAnnouncement(data: unknown): data is Announcement {
+  if (!data || typeof data !== 'object') return false;
+  const announcement = data as Announcement;
+  return typeof announcement.id === 'string'
+    && typeof announcement.title === 'string'
+    && typeof announcement.message === 'string'
+    && announcement.status === 'published'
+    && (!announcement.expires_at || new Date(announcement.expires_at).getTime() > Date.now());
+}
+
+async function getCachedPublicAnnouncement(id: string) {
+  const cached = await readCache<AnnouncementsResponse>('announcements');
+  if (!cached || !isAnnouncementsResponse(cached.data)) return null;
+  return cached.data.announcements.find(
+    (announcement) => announcement.id === id && isPublicAnnouncement(announcement)
+  ) || null;
 }
 
 export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> = {}) {
@@ -306,13 +308,29 @@ export function getAnnouncementsData(options: SupabaseFetchOptions<Announcements
   });
 }
 
-export async function getAnnouncementById(id: string): Promise<Announcement | null> {
-  const response = await fetch(
-    `${getApiBaseUrl()}/api/announcements/${encodeURIComponent(id)}`
+export async function getAnnouncementById(
+  id: string,
+  options: AnnouncementFetchOptions = {},
+): Promise<Announcement | null> {
+  const cached = await getCachedPublicAnnouncement(id);
+  const refresh = () => contentRequests.run(`announcement-detail:${id}`, () =>
+    retryContentRequest(async (timeoutMs) => {
+      const response = await fetchWithTimeout(
+        `${getApiBaseUrl()}/api/announcements/${encodeURIComponent(id)}`,
+        timeoutMs,
+      );
+      if (response.status === 404) return null;
+      if (!response.ok) throw new ContentHttpError(response.status);
+      const announcement: unknown = await response.json();
+      if (!isPublicAnnouncement(announcement) || announcement.id !== id) {
+        throw new Error('Announcement response is not public announcement data');
+      }
+      return announcement;
+    })
   );
-  if (response.status === 404) return null;
-  if (!response.ok) {
-    throw new Error(`Announcement request failed with status ${response.status}`);
-  }
-  return response.json() as Promise<Announcement>;
+
+  return resolveCacheFirst(cached, refresh, {
+    onRefresh: options.onBackgroundRefresh,
+    onRefreshError: options.onBackgroundRefreshError,
+  });
 }

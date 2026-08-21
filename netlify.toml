@@ -1,10 +1,14 @@
 [build]
   base = "frontend"
   publish = "dist"
-  command = "npm install && EXPO_PUBLIC_BACKEND_URL=https://ipm-backend-eoiw.onrender.com npx expo export --platform web"
+  command = "npm install && npm run build:web"
 
 [build.environment]
   EXPO_PUBLIC_BACKEND_URL = "https://ipm-backend-eoiw.onrender.com"
+
+[context.deploy-preview.environment]
+  EXPO_PUBLIC_BACKEND_URL = "https://super-duper-potato-pj564j5467gw279vx-8000.app.github.dev"
+  EXPO_PUBLIC_SW_DIAGNOSTIC_VARIANT = "B"
 
 [[redirects]]
   from = "/*"
