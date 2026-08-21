@@ -20,8 +20,10 @@ import {
   getCurrentOrganizer,
   loginOrganizer,
 } from '../../src/services/adminAuthService';
+import { getOrganizerEventConfiguration } from '../../src/services/organizerEventConfiguration';
 
 export default function AdminLoginScreen() {
+  const organizerEventConfiguration = getOrganizerEventConfiguration();
   const router = useRouter();
   const [checkingSession, setCheckingSession] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -29,7 +31,7 @@ export default function AdminLoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [eventId, setEventId] = useState('ipm-2026');
+  const [eventId, setEventId] = useState(organizerEventConfiguration.eventId);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -58,7 +60,7 @@ export default function AdminLoginScreen() {
   }, []);
 
   const submit = async () => {
-    if (submitting) {
+    if (submitting || organizerEventConfiguration.error) {
       return;
     }
 
@@ -158,7 +160,7 @@ export default function AdminLoginScreen() {
               <TextInput
                 value={eventId}
                 onChangeText={setEventId}
-                placeholder="ipm-2026"
+                placeholder={organizerEventConfiguration.eventId || 'Event ID unavailable'}
                 placeholderTextColor={colors.textMuted}
                 style={styles.input}
                 autoCapitalize="none"
@@ -166,17 +168,17 @@ export default function AdminLoginScreen() {
               />
             </View>
 
-            {error && (
+            {(organizerEventConfiguration.error || error) && (
               <View style={styles.errorBox}>
                 <Feather name="alert-circle" size={16} color={colors.error} />
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={styles.errorText}>{organizerEventConfiguration.error || error}</Text>
               </View>
             )}
 
             <Pressable
-              style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+              style={[styles.submitButton, (submitting || organizerEventConfiguration.error) && styles.submitButtonDisabled]}
               onPress={submit}
-              disabled={submitting}
+              disabled={submitting || Boolean(organizerEventConfiguration.error)}
             >
               {submitting ? (
                 <ActivityIndicator color="#FFFFFF" />
