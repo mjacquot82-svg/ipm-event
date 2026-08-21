@@ -5,7 +5,16 @@ import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REQUIRED_ROOT_FILES = ['index.html', 'manifest.json', 'v2-icon.png', 'favicon.ico'];
+const REQUIRED_ROOT_FILES = [
+  'index.html',
+  'manifest.json',
+  'v2-icon.png',
+  'ipm-icon-any-192.png',
+  'ipm-icon-any-512.png',
+  'ipm-icon-maskable-192.png',
+  'ipm-icon-maskable-512.png',
+  'favicon.ico',
+];
 const REQUIRED_EXPORTED_ASSETS = [
   { label: 'Expo JavaScript bundle', pattern: /(?:^|\/)entry-[a-f0-9]+\.js$/ },
   { label: 'Feather icon font', pattern: /(?:^|\/)Feather\.[a-f0-9]+\.ttf$/ },

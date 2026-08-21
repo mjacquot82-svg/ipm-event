@@ -9,6 +9,14 @@ import { buildOfflineWorker } from '../scripts/build-offline-worker.mjs';
 
 const workerSource = await readFile(new URL('../public/webpushr-sw.js', import.meta.url), 'utf8');
 const layoutSource = await readFile(new URL('../app/_layout.tsx', import.meta.url), 'utf8');
+const publicDirectory = new URL('../public/', import.meta.url);
+
+function pngDimensions(contents) {
+  const signature = contents.subarray(0, 8).toString('hex');
+  assert.equal(signature, '89504e470d0a1a0a');
+  assert.equal(contents.subarray(12, 16).toString('ascii'), 'IHDR');
+  return `${contents.readUInt32BE(16)}x${contents.readUInt32BE(20)}`;
+}
 
 async function makeExport(suffix = 'a') {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'ipm-worker-test-'));
@@ -16,6 +24,10 @@ async function makeExport(suffix = 'a') {
     'index.html': `<script src="/_expo/static/js/web/entry-${suffix.repeat(32)}.js"></script>`,
     'manifest.json': '{}',
     'v2-icon.png': 'icon',
+    'ipm-icon-any-192.png': 'icon-any-192',
+    'ipm-icon-any-512.png': 'icon-any-512',
+    'ipm-icon-maskable-192.png': 'icon-maskable-192',
+    'ipm-icon-maskable-512.png': 'icon-maskable-512',
     'favicon.ico': 'favicon',
     [`_expo/static/js/web/entry-${suffix.repeat(32)}.js`]: `bundle-${suffix}`,
     [`assets/fonts/Feather.${suffix.repeat(32)}.ttf`]: 'feather',
@@ -79,14 +91,34 @@ test('build injects a deterministic critical manifest and excludes Queen portrai
   const directory = await makeExport('a');
   t.after(() => rm(directory, { recursive: true, force: true }));
   const first = await buildOfflineWorker(directory);
-  assert.equal(first.precacheAssets.length, 10);
-  for (const expected of ['index.html', 'manifest.json', 'v2-icon.png', 'favicon.ico', 'entry-', 'Feather.', 'MaterialCommunityIcons.', 'field.', 'gemini4.', 'event-map.']) {
+  assert.equal(first.precacheAssets.length, 14);
+  for (const expected of ['index.html', 'manifest.json', 'v2-icon.png', 'ipm-icon-any-192.png', 'ipm-icon-any-512.png', 'ipm-icon-maskable-192.png', 'ipm-icon-maskable-512.png', 'favicon.ico', 'entry-', 'Feather.', 'MaterialCommunityIcons.', 'field.', 'gemini4.', 'event-map.']) {
     assert.ok(first.precacheAssets.some((asset) => asset.includes(expected)), expected);
   }
   assert.ok(first.precacheAssets.every((asset) => !asset.includes('queen-of-the-furrow')));
   const generated = await readFile(path.join(directory, 'webpushr-sw.js'), 'utf8');
   assert.match(generated, new RegExp(`self\\.__IPM_OFFLINE_CONFIG__=.*${first.version}`));
   assert.match(generated, /importScripts\('https:\/\/cdn\.webpushr\.com\/sw-server\.min\.js'\)/);
+});
+
+test('manifest declares distinct, correctly sized any and maskable install icons', async () => {
+  const manifest = JSON.parse(await readFile(new URL('manifest.json', publicDirectory), 'utf8'));
+  const expected = new Map([
+    ['/ipm-icon-any-192.png', { sizes: '192x192', purpose: 'any' }],
+    ['/ipm-icon-any-512.png', { sizes: '512x512', purpose: 'any' }],
+    ['/ipm-icon-maskable-192.png', { sizes: '192x192', purpose: 'maskable' }],
+    ['/ipm-icon-maskable-512.png', { sizes: '512x512', purpose: 'maskable' }],
+  ]);
+
+  assert.equal(manifest.icons.length, expected.size);
+  for (const icon of manifest.icons) {
+    const declaration = expected.get(icon.src);
+    assert.ok(declaration, `unexpected manifest icon: ${icon.src}`);
+    assert.deepEqual({ sizes: icon.sizes, purpose: icon.purpose }, declaration);
+    assert.equal(icon.type, 'image/png');
+    const contents = await readFile(new URL(icon.src.slice(1), publicDirectory));
+    assert.equal(pngDimensions(contents), icon.sizes, icon.src);
+  }
 });
 
 test('asset content changes produce a new cache version for safe upgrades', async (t) => {
