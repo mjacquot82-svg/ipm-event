@@ -46,8 +46,8 @@ function installBrowserMocks({ loadLoader = true } = {}) {
 
 function installTimerMocks(t) {
   const timers = [];
-  t.mock.method(globalThis, 'setTimeout', (callback) => {
-    const timer = { callback, active: true };
+  t.mock.method(globalThis, 'setTimeout', (callback, delay) => {
+    const timer = { callback, delay, active: true };
     timers.push(timer);
     return timer;
   });
@@ -60,6 +60,9 @@ function installTimerMocks(t) {
       assert.ok(timer, 'expected an active timeout');
       timer.active = false;
       timer.callback();
+    },
+    activeDelays() {
+      return timers.filter((timer) => timer.active).map((timer) => timer.delay);
     },
   };
 }
@@ -100,7 +103,6 @@ test('subscription states cover default, granted, denied, subscribe and unsubscr
     isSubscribedToNotifications: async () => subscribed,
     subscribeToNotifications: async () => { browser.notification.permission = 'granted'; subscribed = true; },
     unsubscribeFromNotifications: async () => { subscribed = false; },
-    getInstallationId: async () => 'installation-1',
   };
   const initialization = service.initializeWonderPush();
   browser.makeSdkReady(methods);
@@ -110,7 +112,6 @@ test('subscription states cover default, granted, denied, subscribe and unsubscr
   browser.notification.permission = 'granted';
   assert.equal(await service.getNotificationState(), 'unsubscribed');
   assert.equal(await service.subscribeToNotifications(), 'subscribed');
-  assert.equal(await service.getWonderPushInstallationId(), 'installation-1');
   assert.equal(await service.unsubscribeFromNotifications(), 'unsubscribed');
   browser.notification.permission = 'denied';
   assert.equal(await service.getNotificationState(), 'denied');
@@ -125,6 +126,7 @@ test('readiness timeout returns an error state, resets initialization and permit
 
   const firstState = service.getNotificationState();
   await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(timers.activeDelays(), [15_000]);
   timers.runNext();
   assert.equal(await firstState, 'error');
 
@@ -143,6 +145,7 @@ test('loader download, subscribe and unsubscribe operations are bounded', async 
 
   const loaderFailure = service.initializeWonderPush();
   await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(timers.activeDelays(), [10_000]);
   timers.runNext();
   await assert.rejects(loaderFailure, /loader timed out/);
 
@@ -157,13 +160,32 @@ test('loader download, subscribe and unsubscribe operations are bounded', async 
 
   const subscribe = service.subscribeToNotifications();
   await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(timers.activeDelays(), [45_000]);
   timers.runNext();
   assert.equal(await subscribe, 'error');
 
   const unsubscribe = service.unsubscribeFromNotifications();
   await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(timers.activeDelays(), [20_000]);
   timers.runNext();
   assert.equal(await unsubscribe, 'error');
+});
+
+test('routine subscription status checks use a short bounded deadline', async (t) => {
+  const browser = installBrowserMocks();
+  process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
+  const service = await import('../src/services/wonderPushService.web.ts?status-timeout');
+  const timers = installTimerMocks(t);
+
+  const initialization = service.initializeWonderPush();
+  browser.makeSdkReady({ isSubscribedToNotifications: () => new Promise(() => {}) });
+  await initialization;
+
+  const status = service.getNotificationState();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(timers.activeDelays(), [10_000]);
+  timers.runNext();
+  assert.equal(await status, 'error');
 });
 
 test('missing public key fails clearly without blocking unsupported/native environments', async () => {
@@ -174,122 +196,6 @@ test('missing public key fails clearly without blocking unsupported/native envir
 
   const nativeService = await import('../src/services/wonderPushService.ts');
   assert.equal(await nativeService.getNotificationState(), 'unsupported');
-  assert.equal(await nativeService.getWonderPushInstallationId(), null);
-});
-
-test('staging diagnostics expose subscription identity and worker paths without push secrets', async () => {
-  const browser = installBrowserMocks();
-  process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
-  const workerUrl = 'https://staging.theipm.ca/webpushr-sw.js?webKey=must-not-leak';
-  const registration = {
-    scope: 'https://staging.theipm.ca/brevo/',
-    active: { scriptURL: workerUrl },
-    waiting: null,
-    installing: null,
-    pushManager: {
-      getSubscription: async () => ({
-        endpoint: 'https://push.example/private-endpoint',
-        getKey: () => 'must-not-leak',
-      }),
-    },
-  };
-  Object.assign(navigator.serviceWorker, {
-    controller: { scriptURL: workerUrl },
-    getRegistrations: async () => [registration],
-  });
-  const originalPerformance = globalThis.performance;
-  Object.defineProperty(globalThis, 'performance', {
-    configurable: true,
-    value: {
-      now: () => Date.now(),
-      getEntriesByType: () => [{
-        name: 'https://api.wonderpush.com/v1/authentication/accessToken',
-        duration: 1234.4,
-        responseStatus: 503,
-      }],
-    },
-  });
-  const service = await import('../src/services/wonderPushService.web.ts?diagnostics');
-  const initialization = service.initializeWonderPush();
-  browser.makeSdkReady({
-    isSubscribedToNotifications: async () => true,
-    getInstallationId: async () => 'installation-for-staging-test',
-  });
-  await initialization;
-
-  const diagnostics = await service.getWonderPushDiagnostics();
-  assert.deepEqual(diagnostics, {
-    permission: 'default',
-    sdkSubscribed: true,
-    installationId: 'installation-for-staging-test',
-    workerScopePath: '/brevo/',
-    workerScriptPath: '/webpushr-sw.js',
-    controllerPath: '/webpushr-sw.js',
-    hasPushSubscription: true,
-    installationRequestObserved: true,
-    installationRequestStatusClass: '5xx',
-    installationRequestDurationMs: 1234,
-    responseStatusSupported: typeof PerformanceResourceTiming !== 'undefined'
-      && 'responseStatus' in PerformanceResourceTiming.prototype,
-    sessionRequestOutcome: null,
-    responseContainsToken: false,
-    responseContainsInstallationId: false,
-    sessionPersistenceSucceeded: false,
-    sessionRequestErrorCode: null,
-    errors: [],
-  });
-  assert.doesNotMatch(JSON.stringify(diagnostics), /webKey|private-endpoint|must-not-leak/);
-  Object.defineProperty(globalThis, 'performance', { configurable: true, value: originalPerformance });
-});
-
-test('session HTTP diagnostics distinguish safe outcomes without retaining response secrets', async () => {
-  const scenarios = [
-    { name: 'network', outcome: 'error', status: 0, statusClass: 'unavailable', error: 'NetworkError' },
-    { name: '4xx', outcome: 'load', status: 401, statusClass: '4xx', response: { error: { code: 'AUTH_FAILED' } }, error: 'AUTH_FAILED' },
-    { name: '5xx', outcome: 'load', status: 503, statusClass: '5xx', response: { error: { name: 'Unavailable' } }, error: 'Unavailable' },
-    { name: 'missing', outcome: 'load', status: 200, statusClass: '2xx', response: { ok: true } },
-    { name: 'persistence-failed', outcome: 'load', status: 200, statusClass: '2xx', response: { token: 'returned-token-secret', data: { installationId: 'returned-id-secret' } } },
-    { name: 'persisted', outcome: 'load', status: 200, statusClass: '2xx', response: { token: 'returned-token-secret', data: { installationId: 'returned-id-secret' } }, persisted: true },
-  ];
-
-  for (const scenario of scenarios) {
-    const browser = installBrowserMocks();
-    process.env.EXPO_PUBLIC_EVENT_ID = 'ipm-staging';
-    process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
-    class FakeXMLHttpRequest extends EventTarget {
-      status = scenario.status;
-      responseText = JSON.stringify(scenario.response || {});
-      open() {}
-      send() { queueMicrotask(() => this.dispatchEvent(new Event(scenario.outcome))); }
-    }
-    globalThis.XMLHttpRequest = FakeXMLHttpRequest;
-    const service = await import(`../src/services/wonderPushService.web.ts?http-${scenario.name}`);
-    const initialization = service.initializeWonderPush();
-    browser.makeSdkReady({
-      isSubscribedToNotifications: async () => true,
-      getInstallationId: async () => scenario.persisted ? 'existing-safe-installation' : null,
-    });
-    await initialization;
-
-    const request = new XMLHttpRequest();
-    request.open('POST', 'https://api.wonderpush.com/v1/authentication/accessToken');
-    request.send('webKey=must-not-be-captured&pushEndpoint=must-not-be-captured');
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    const diagnostics = await service.getWonderPushDiagnostics();
-
-    assert.equal(diagnostics.sessionRequestOutcome, scenario.outcome);
-    assert.equal(diagnostics.responseStatusSupported, true);
-    assert.equal(diagnostics.installationRequestStatusClass, scenario.statusClass);
-    assert.equal(diagnostics.responseContainsToken, Boolean(scenario.response?.token));
-    assert.equal(diagnostics.responseContainsInstallationId, Boolean(scenario.response?.data?.installationId));
-    assert.equal(diagnostics.sessionPersistenceSucceeded, Boolean(scenario.persisted));
-    assert.equal(diagnostics.sessionRequestErrorCode, scenario.error || null);
-    assert.doesNotMatch(
-      JSON.stringify(diagnostics),
-      /returned-token-secret|returned-id-secret|must-not-be-captured|pushEndpoint|webKey/
-    );
-  }
-  delete globalThis.XMLHttpRequest;
 });
 
 test('worker uses WonderPush existing-worker integration and contains no Webpushr dependency', async () => {
@@ -323,8 +229,7 @@ test('IPM owns the opt-in action and existing native/install paths remain isolat
   assert.match(component, /onPress=\{updateSubscription\}/);
   assert.match(component, /subscribeToNotifications/);
   assert.match(component, /unsubscribeFromNotifications/);
-  assert.match(component, /EXPO_PUBLIC_EVENT_ID === 'ipm-staging'/);
-  assert.match(component, /getWonderPushDiagnostics/);
+  assert.doesNotMatch(component, /diagnostic|getWonderPushInstallationId/i);
   assert.match(layout, /Platform\.OS === 'web'/);
   assert.match(layout, /Platform\.OS !== 'web'/);
   assert.match(nativeNotifications, /expo-notifications/);

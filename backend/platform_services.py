@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 import json
 import logging
 from typing import Any, Optional
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -33,18 +34,27 @@ class WonderPushClient:
         self.timeout = timeout
 
     def notification_content(self, title: str, message: str, target_url: str) -> dict[str, str]:
+        clean_title = " ".join(title.split())
+        branded_title = clean_title if clean_title.casefold().startswith("ipm") else f"IPM — {clean_title}"
         return {
-            "title": " ".join(title.split()),
+            "title": branded_title,
             "message": " ".join(message.split()),
             "target_url": target_url,
         }
 
     async def _send(self, *, content: dict[str, str], target: dict[str, str]) -> str:
+        notification_target = urlsplit(content["target_url"])
         notification = {
             "alert": {
                 "title": content["title"],
                 "text": content["message"],
                 "targetUrl": content["target_url"],
+                "web": {
+                    "icon": (
+                        f"{notification_target.scheme}://{notification_target.netloc}"
+                        "/ipm-icon-any-192.png"
+                    ),
+                },
             },
             "push": {
                 "custom": {

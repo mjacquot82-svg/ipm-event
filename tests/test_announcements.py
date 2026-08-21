@@ -380,8 +380,9 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
     assert captured["data"]["filterPlatforms"] == "Web"
     notification = __import__("json").loads(captured["data"]["notification"])
     assert notification["alert"] == {
-        "title": "Title", "text": "Message",
+        "title": "IPM — Title", "text": "Message",
         "targetUrl": "https://staging.theipm.ca/announcements/announcement-1",
+        "web": {"icon": "https://staging.theipm.ca/ipm-icon-any-192.png"},
     }
     assert notification["push"]["custom"]["target_url"].endswith("/announcements/announcement-1")
 
