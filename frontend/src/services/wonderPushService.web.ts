@@ -33,6 +33,9 @@ export type WonderPushDiagnostics = {
   workerScriptPath: string | null;
   controllerPath: string | null;
   hasPushSubscription: boolean | null;
+  installationRequestObserved: boolean;
+  installationRequestStatusClass: string | null;
+  installationRequestDurationMs: number | null;
   errors: string[];
 };
 
@@ -194,6 +197,12 @@ function safeErrorCode(phase: string, error: unknown) {
 }
 
 export async function getWonderPushDiagnostics(): Promise<WonderPushDiagnostics> {
+  const installationRequest = typeof performance !== 'undefined'
+    ? performance.getEntriesByType('resource')
+      .filter((entry) => entry.name.startsWith('https://api.wonderpush.com/v1/authentication/accessToken'))
+      .at(-1) as (PerformanceResourceTiming & { responseStatus?: number }) | undefined
+    : undefined;
+  const responseStatus = installationRequest?.responseStatus;
   const diagnostics: WonderPushDiagnostics = {
     permission: isSupported() ? Notification.permission : 'unsupported',
     sdkSubscribed: null,
@@ -202,6 +211,13 @@ export async function getWonderPushDiagnostics(): Promise<WonderPushDiagnostics>
     workerScriptPath: null,
     controllerPath: pathOnly(navigator.serviceWorker?.controller?.scriptURL),
     hasPushSubscription: null,
+    installationRequestObserved: Boolean(installationRequest),
+    installationRequestStatusClass: responseStatus
+      ? `${Math.floor(responseStatus / 100)}xx`
+      : null,
+    installationRequestDurationMs: installationRequest
+      ? Math.round(installationRequest.duration)
+      : null,
     errors: [],
   };
 

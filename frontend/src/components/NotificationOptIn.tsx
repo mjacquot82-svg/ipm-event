@@ -67,6 +67,9 @@ export default function NotificationOptIn() {
           <Text style={styles.diagnosticText}>Worker script: {diagnostics.workerScriptPath || 'none'}</Text>
           <Text style={styles.diagnosticText}>Controller: {diagnostics.controllerPath || 'none'}</Text>
           <Text style={styles.diagnosticText}>PushSubscription: {String(diagnostics.hasPushSubscription)}</Text>
+          <Text style={styles.diagnosticText}>Installation request: {diagnostics.installationRequestObserved ? 'observed' : 'not observed'}</Text>
+          <Text style={styles.diagnosticText}>Installation status: {diagnostics.installationRequestStatusClass || 'unavailable'}</Text>
+          <Text style={styles.diagnosticText}>Installation elapsed: {diagnostics.installationRequestDurationMs === null ? 'unavailable' : `${diagnostics.installationRequestDurationMs} ms`}</Text>
           <Text style={styles.diagnosticText}>Errors: {diagnostics.errors.join(', ') || 'none'}</Text>
         </View>
       ) : null}

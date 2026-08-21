@@ -15,6 +15,9 @@ export type WonderPushDiagnostics = {
   workerScriptPath: null;
   controllerPath: null;
   hasPushSubscription: null;
+  installationRequestObserved: false;
+  installationRequestStatusClass: null;
+  installationRequestDurationMs: null;
   errors: string[];
 };
 
@@ -47,6 +50,9 @@ export async function getWonderPushDiagnostics(): Promise<WonderPushDiagnostics>
     workerScriptPath: null,
     controllerPath: null,
     hasPushSubscription: null,
+    installationRequestObserved: false,
+    installationRequestStatusClass: null,
+    installationRequestDurationMs: null,
     errors: [],
   };
 }

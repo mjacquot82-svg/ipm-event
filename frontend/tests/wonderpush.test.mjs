@@ -197,6 +197,17 @@ test('staging diagnostics expose subscription identity and worker paths without 
     controller: { scriptURL: workerUrl },
     getRegistrations: async () => [registration],
   });
+  const originalPerformance = globalThis.performance;
+  Object.defineProperty(globalThis, 'performance', {
+    configurable: true,
+    value: {
+      getEntriesByType: () => [{
+        name: 'https://api.wonderpush.com/v1/authentication/accessToken',
+        duration: 1234.4,
+        responseStatus: 503,
+      }],
+    },
+  });
   const service = await import('../src/services/wonderPushService.web.ts?diagnostics');
   const initialization = service.initializeWonderPush();
   browser.makeSdkReady({
@@ -214,9 +225,13 @@ test('staging diagnostics expose subscription identity and worker paths without 
     workerScriptPath: '/webpushr-sw.js',
     controllerPath: '/webpushr-sw.js',
     hasPushSubscription: true,
+    installationRequestObserved: true,
+    installationRequestStatusClass: '5xx',
+    installationRequestDurationMs: 1234,
     errors: [],
   });
   assert.doesNotMatch(JSON.stringify(diagnostics), /webKey|private-endpoint|must-not-leak/);
+  Object.defineProperty(globalThis, 'performance', { configurable: true, value: originalPerformance });
 });
 
 test('worker uses WonderPush existing-worker integration and contains no Webpushr dependency', async () => {
