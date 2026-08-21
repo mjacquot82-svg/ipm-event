@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
-function installBrowserMocks() {
+function installBrowserMocks({ loadLoader = true } = {}) {
   let appendedScripts = 0;
   const scripts = new Map();
   const notification = { permission: 'default' };
@@ -21,13 +21,46 @@ function installBrowserMocks() {
       appendChild(script) {
         appendedScripts += 1;
         scripts.set(script.id, script);
-        script.onload();
+        if (loadLoader) script.onload();
       },
     },
     createElement() { return { dataset: {} }; },
     getElementById(id) { return scripts.get(id) || null; },
   };
-  return { notification, appendedScripts: () => appendedScripts };
+  return {
+    notification,
+    appendedScripts: () => appendedScripts,
+    loaderScript: () => scripts.get('wonderpush-jssdk-loader'),
+    makeSdkReady(methods = {}) {
+      const queued = [...window.WonderPush];
+      Object.assign(window.WonderPush, methods, {
+        push(command) { if (typeof command === 'function') command(); },
+      });
+      for (const command of queued) {
+        if (typeof command === 'function') command();
+      }
+    },
+  };
+}
+
+function installTimerMocks(t) {
+  const timers = [];
+  t.mock.method(globalThis, 'setTimeout', (callback) => {
+    const timer = { callback, active: true };
+    timers.push(timer);
+    return timer;
+  });
+  t.mock.method(globalThis, 'clearTimeout', (timer) => {
+    if (timer) timer.active = false;
+  });
+  return {
+    runNext() {
+      const timer = timers.find((candidate) => candidate.active);
+      assert.ok(timer, 'expected an active timeout');
+      timer.active = false;
+      timer.callback();
+    },
+  };
 }
 
 test('WonderPush web SDK initializes once with the existing root worker', async () => {
@@ -35,29 +68,42 @@ test('WonderPush web SDK initializes once with the existing root worker', async 
   process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
   const service = await import('../src/services/wonderPushService.web.ts?init-once');
 
-  await Promise.all([service.initializeWonderPush(), service.initializeWonderPush()]);
+  let initialized = false;
+  const first = service.initializeWonderPush().then(() => { initialized = true; });
+  const second = service.initializeWonderPush();
+
+  await new Promise((resolve) => setImmediate(resolve));
 
   assert.equal(browser.appendedScripts(), 1);
+  assert.equal(browser.loaderScript().id, 'wonderpush-jssdk-loader');
+  assert.notEqual(browser.loaderScript().id, 'wonderpush-jssdk');
+  assert.equal(browser.loaderScript().dataset.loaded, 'true');
+  assert.equal(initialized, false, 'loader onload must not mark the full SDK ready');
   assert.deepEqual(window.WonderPush[0], ['init', {
     webKey: 'staging-public-key',
     serviceWorkerUrl: '/webpushr-sw.js?webKey=staging-public-key',
   }]);
+
+  browser.makeSdkReady();
+  await Promise.all([first, second]);
+  assert.equal(initialized, true);
 });
 
 test('subscription states cover default, granted, denied, subscribe and unsubscribe', async () => {
   const browser = installBrowserMocks();
   process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
   const service = await import('../src/services/wonderPushService.web.ts?states');
-  await service.initializeWonderPush();
 
   let subscribed = false;
-  Object.assign(window.WonderPush, {
-    push(callback) { if (typeof callback === 'function') callback(); },
+  const methods = {
     isSubscribedToNotifications: async () => subscribed,
     subscribeToNotifications: async () => { browser.notification.permission = 'granted'; subscribed = true; },
     unsubscribeFromNotifications: async () => { subscribed = false; },
     getInstallationId: async () => 'installation-1',
-  });
+  };
+  const initialization = service.initializeWonderPush();
+  browser.makeSdkReady(methods);
+  await initialization;
 
   assert.equal(await service.getNotificationState(), 'default');
   browser.notification.permission = 'granted';
@@ -67,6 +113,56 @@ test('subscription states cover default, granted, denied, subscribe and unsubscr
   assert.equal(await service.unsubscribeFromNotifications(), 'unsubscribed');
   browser.notification.permission = 'denied';
   assert.equal(await service.getNotificationState(), 'denied');
+});
+
+test('readiness timeout returns an error state, resets initialization and permits retry', async (t) => {
+  const browser = installBrowserMocks();
+  process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
+  const service = await import('../src/services/wonderPushService.web.ts?readiness-timeout');
+
+  const timers = installTimerMocks(t);
+
+  const firstState = service.getNotificationState();
+  await new Promise((resolve) => setImmediate(resolve));
+  timers.runNext();
+  assert.equal(await firstState, 'error');
+
+  const retry = service.initializeWonderPush();
+  browser.makeSdkReady({ isSubscribedToNotifications: async () => false });
+  await retry;
+  assert.equal(await service.getNotificationState(), 'default');
+});
+
+test('loader download, subscribe and unsubscribe operations are bounded', async (t) => {
+  const browser = installBrowserMocks({ loadLoader: false });
+  process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
+  const service = await import('../src/services/wonderPushService.web.ts?bounded-operations');
+
+  const timers = installTimerMocks(t);
+
+  const loaderFailure = service.initializeWonderPush();
+  await new Promise((resolve) => setImmediate(resolve));
+  timers.runNext();
+  await assert.rejects(loaderFailure, /loader timed out/);
+
+  browser.loaderScript().onload();
+  const retry = service.initializeWonderPush();
+  browser.makeSdkReady({
+    isSubscribedToNotifications: async () => false,
+    subscribeToNotifications: () => new Promise(() => {}),
+    unsubscribeFromNotifications: () => new Promise(() => {}),
+  });
+  await retry;
+
+  const subscribe = service.subscribeToNotifications();
+  await new Promise((resolve) => setImmediate(resolve));
+  timers.runNext();
+  assert.equal(await subscribe, 'error');
+
+  const unsubscribe = service.unsubscribeFromNotifications();
+  await new Promise((resolve) => setImmediate(resolve));
+  timers.runNext();
+  assert.equal(await unsubscribe, 'error');
 });
 
 test('missing public key fails clearly without blocking unsupported/native environments', async () => {

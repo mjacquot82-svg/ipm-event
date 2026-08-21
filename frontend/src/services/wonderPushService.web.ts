@@ -1,6 +1,7 @@
 const SDK_URL = 'https://cdn.by.wonderpush.com/sdk/1.1/wonderpush-loader.min.js';
-const SDK_SCRIPT_ID = 'wonderpush-jssdk';
+const SDK_SCRIPT_ID = 'wonderpush-jssdk-loader';
 const SERVICE_WORKER_PATH = '/webpushr-sw.js';
+const SDK_TIMEOUT_MS = 9000;
 
 type WonderPushQueue = unknown[] & {
   isSubscribedToNotifications?: () => Promise<boolean>;
@@ -26,6 +27,22 @@ export type NotificationState =
 
 let initialization: Promise<void> | null = null;
 
+function withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), SDK_TIMEOUT_MS);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
 function isSupported() {
   return typeof window !== 'undefined'
     && 'Notification' in window
@@ -44,16 +61,14 @@ export function getWonderPushWorkerUrl(webKey = getWebKey()) {
 export function initializeWonderPush(): Promise<void> {
   if (initialization) return initialization;
 
-  initialization = new Promise((resolve, reject) => {
+  initialization = (async () => {
     if (!isSupported()) {
-      reject(new Error('Push notifications are not supported in this browser.'));
-      return;
+      throw new Error('Push notifications are not supported in this browser.');
     }
 
     const webKey = getWebKey();
     if (!webKey) {
-      reject(new Error('EXPO_PUBLIC_WONDERPUSH_WEB_KEY is not configured.'));
-      return;
+      throw new Error('EXPO_PUBLIC_WONDERPUSH_WEB_KEY is not configured.');
     }
 
     window.WonderPush = window.WonderPush || [];
@@ -62,22 +77,34 @@ export function initializeWonderPush(): Promise<void> {
       serviceWorkerUrl: getWonderPushWorkerUrl(webKey),
     }]);
 
+    const ready = new Promise<void>((resolve) => {
+      window.WonderPush?.push(resolve);
+    });
+
     const existingScript = document.getElementById(SDK_SCRIPT_ID) as HTMLScriptElement | null;
-    if (existingScript?.dataset.loaded === 'true') {
-      resolve();
-      return;
+    if (existingScript?.dataset.loaded !== 'true') {
+      const loader = new Promise<void>((resolve, reject) => {
+        const script = existingScript || document.createElement('script');
+        script.id = SDK_SCRIPT_ID;
+        script.async = true;
+        script.src = SDK_URL;
+        script.onload = () => {
+          script.dataset.loaded = 'true';
+          resolve();
+        };
+        script.onerror = () => {
+          script.remove?.();
+          reject(new Error('WonderPush Website SDK failed to load.'));
+        };
+        if (!existingScript) document.head.appendChild(script);
+      });
+      await withTimeout(loader, 'WonderPush Website SDK loader timed out.');
     }
 
-    const script = existingScript || document.createElement('script');
-    script.id = SDK_SCRIPT_ID;
-    script.async = true;
-    script.src = SDK_URL;
-    script.onload = () => {
-      script.dataset.loaded = 'true';
-      resolve();
-    };
-    script.onerror = () => reject(new Error('WonderPush Website SDK failed to load.'));
-    if (!existingScript) document.head.appendChild(script);
+    await withTimeout(ready, 'WonderPush Website SDK readiness timed out.');
+  })().catch((error) => {
+    initialization = null;
+    throw error;
   });
 
   return initialization;
@@ -85,16 +112,12 @@ export function initializeWonderPush(): Promise<void> {
 
 async function withSdk<T>(operation: (sdk: WonderPushQueue) => Promise<T>): Promise<T> {
   await initializeWonderPush();
-  return new Promise<T>((resolve, reject) => {
-    const queue = window.WonderPush;
-    if (!queue) {
-      reject(new Error('WonderPush Website SDK is unavailable.'));
-      return;
-    }
-    queue.push(() => {
-      void operation(queue).then(resolve, reject);
-    });
-  });
+  const sdk = window.WonderPush;
+  if (!sdk) throw new Error('WonderPush Website SDK is unavailable.');
+  return withTimeout(
+    operation(sdk),
+    'WonderPush Website SDK operation timed out.'
+  );
 }
 
 export async function getNotificationState(): Promise<NotificationState> {
