@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { detectInstallEnvironment, getInstallGuidance, INSTALL_DISMISS_COOLDOWN_MS, isInstallGuidanceEligible } from '../src/utils/installEnvironment.ts';
+import { detectInstallEnvironment, detectStandaloneSignals, getInstallGuidance, INSTALL_DISMISS_COOLDOWN_MS, isInstallGuidanceEligible, shouldShowInstallGateway } from '../src/utils/installEnvironment.ts';
 
 const detect = (userAgent, options = {}) => detectInstallEnvironment({ userAgent, ...options });
 const iphoneSafari = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1';
@@ -24,4 +24,54 @@ test('desktop Chrome fallback uses current Cast save and share wording', () => {
 test('desktop Edge gets Edge-specific Apps instructions', () => { const g = getInstallGuidance(detect('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36 Edg/128.0')); assert.equal(g.heading, 'Install the IPM App in Edge'); assert.match(g.steps[1].title, /More tools/); assert.match(g.steps[1].hint, /Install this site as an app/); });
 test('standalone mode bypasses guidance', () => { const e = detect(androidChrome, { standalone: true, nativePromptAvailable: true }); assert.equal(e.installState, 'installed'); assert.equal(getInstallGuidance(e).heading, ''); });
 test('unknown environment remains optional and non-blocking', () => { const e = detect(''); assert.equal(e.installState, 'unsupported_or_unknown'); assert.match(getInstallGuidance(e).intro, /use the app now/i); });
-test('decline is respected during cooldown and eligible later', () => { const now = 10 * INSTALL_DISMISS_COOLDOWN_MS; assert.equal(isInstallGuidanceEligible(String(now - 1000), now), false); assert.equal(isInstallGuidanceEligible(String(now - INSTALL_DISMISS_COOLDOWN_MS), now), true); assert.equal(isInstallGuidanceEligible(String(now - 1000), now, true), true); });
+test('decline is respected during cooldown and eligible later', () => { const now = 10 * INSTALL_DISMISS_COOLDOWN_MS; assert.equal(isInstallGuidanceEligible(String(now - 1000), now), false); assert.equal(isInstallGuidanceEligible(String(now - INSTALL_DISMISS_COOLDOWN_MS), now), true); });
+
+test('full-screen dismissal cooldown is 30 days', () => {
+  assert.equal(INSTALL_DISMISS_COOLDOWN_MS, 30 * 24 * 60 * 60 * 1000);
+});
+
+test('all supported standalone signals bypass browser gating', () => {
+  assert.equal(detectStandaloneSignals({ displayModeStandalone: true }), true);
+  assert.equal(detectStandaloneSignals({ navigatorStandalone: true }), true);
+  assert.equal(detectStandaloneSignals({ referrer: 'android-app://com.google.android.webapk' }), true);
+  assert.equal(detectStandaloneSignals(), false);
+});
+
+const chromeEnvironment = detect(androidChrome, { nativePromptAvailable: true });
+const gateway = (overrides = {}) => shouldShowInstallGateway({
+  environment: chromeEnvironment,
+  initialPath: '/',
+  installedHint: false,
+  returningVisitor: false,
+  dismissedAt: null,
+  now: Date.now(),
+  storageReadable: true,
+  ...overrides,
+});
+
+test('first ordinary browser visit remains eligible', () => {
+  assert.equal(gateway(), true);
+});
+
+test('direct announcement, admin, preview and other non-home entries bypass the gateway', () => {
+  for (const initialPath of ['/announcements/abc', '/admin', '/admin/login', '/preview-2026', '/schedule']) {
+    assert.equal(gateway({ initialPath }), false);
+  }
+});
+
+test('returning visitors, installed hints and storage failures fail open', () => {
+  assert.equal(gateway({ returningVisitor: true }), false);
+  assert.equal(gateway({ installedHint: true }), false);
+  assert.equal(gateway({ storageReadable: false }), false);
+});
+
+test('unknown browsers and standalone environments never receive the gateway', () => {
+  assert.equal(gateway({ environment: detect('') }), false);
+  assert.equal(gateway({ environment: detect(androidChrome, { standalone: true }) }), false);
+});
+
+test('dismissal remains effective despite a newly available native prompt', () => {
+  const now = Date.now();
+  assert.equal(gateway({ dismissedAt: String(now - 1000), now }), false);
+  assert.equal(gateway({ dismissedAt: String(now - INSTALL_DISMISS_COOLDOWN_MS), now }), true);
+});

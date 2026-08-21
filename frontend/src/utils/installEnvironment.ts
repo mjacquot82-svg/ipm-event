@@ -20,13 +20,52 @@ export type InstallGuidance = {
 export type InstallStepCue = 'more_vertical' | 'menu' | 'share' | 'add_home' | 'install' | 'safari' | 'address_bar';
 export type InstallStep = { cue: InstallStepCue; title: string; hint: string };
 
-export const INSTALL_DISMISS_COOLDOWN_MS = 5 * 24 * 60 * 60 * 1000;
+export const INSTALL_DISMISS_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
 
-export function isInstallGuidanceEligible(dismissedAt: string | null, now: number, promptIsNewer = false): boolean {
+export type InstallGatewayDecisionInput = {
+  environment: InstallEnvironment;
+  initialPath: string;
+  installedHint: boolean;
+  returningVisitor: boolean;
+  dismissedAt: string | null;
+  now: number;
+  storageReadable: boolean;
+};
+
+export function isOrdinaryInstallEntryPath(pathname: string): boolean {
+  return pathname === '' || pathname === '/';
+}
+
+export function detectStandaloneSignals({
+  displayModeStandalone = false,
+  navigatorStandalone = false,
+  referrer = '',
+} = {}): boolean {
+  return displayModeStandalone || navigatorStandalone || referrer.startsWith('android-app://');
+}
+
+export function shouldShowInstallGateway({
+  environment,
+  initialPath,
+  installedHint,
+  returningVisitor,
+  dismissedAt,
+  now,
+  storageReadable,
+}: InstallGatewayDecisionInput): boolean {
+  if (!storageReadable) return false;
+  if (environment.installState === 'installed' || installedHint) return false;
+  if (!isOrdinaryInstallEntryPath(initialPath)) return false;
+  if (environment.installState === 'unsupported_or_unknown') return false;
+  if (returningVisitor) return false;
+  return isInstallGuidanceEligible(dismissedAt, now);
+}
+
+export function isInstallGuidanceEligible(dismissedAt: string | null, now: number): boolean {
   if (dismissedAt === null) return true;
   const dismissedTime = Number(dismissedAt);
   if (!Number.isFinite(dismissedTime) || dismissedTime <= 0) return true;
-  return now - dismissedTime >= INSTALL_DISMISS_COOLDOWN_MS || promptIsNewer;
+  return now - dismissedTime >= INSTALL_DISMISS_COOLDOWN_MS;
 }
 
 export function detectInstallEnvironment({

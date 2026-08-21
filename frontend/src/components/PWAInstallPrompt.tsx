@@ -6,10 +6,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import colors from '../theme/colors';
-import { detectInstallEnvironment, getInstallGuidance, InstallEnvironment, InstallStepCue, isInstallGuidanceEligible } from '../utils/installEnvironment';
+import { detectInstallEnvironment, detectStandaloneSignals, getInstallGuidance, InstallEnvironment, InstallStepCue, shouldShowInstallGateway } from '../utils/installEnvironment';
 
 const DISMISS_KEY = 'pwa_install_dismissed_at';
 const INSTALLED_KEY = 'pwa_install_installed';
+const ENTRY_COMPLETED_KEY = 'pwa_install_entry_completed';
 
 type InstallOutcome = 'accepted' | 'dismissed';
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: InstallOutcome }> };
@@ -21,7 +22,11 @@ declare global {
 
 export function isStandalonePWA() {
   if (typeof window === 'undefined') return false;
-  return window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true || document.referrer.startsWith('android-app://');
+  return detectStandaloneSignals({
+    displayModeStandalone: Boolean(window.matchMedia?.('(display-mode: standalone)').matches),
+    navigatorStandalone: window.navigator.standalone === true,
+    referrer: document.referrer,
+  });
 }
 
 function currentEnvironment(): InstallEnvironment {
@@ -37,32 +42,63 @@ export default function PWAInstallPrompt({ onDismiss }: { onDismiss?: () => void
   const [environment, setEnvironment] = useState<InstallEnvironment>(() => ({ platform: 'unknown', browser: 'other', installState: 'unsupported_or_unknown', deviceFamily: null }));
   const [installing, setInstalling] = useState(false);
   const shownRef = useRef(false);
+  const dismissedThisSessionRef = useRef(false);
+  const entryCompletedThisSessionRef = useRef(false);
+  const initialPathRef = useRef(
+    typeof window === 'undefined' ? '/' : window.location.pathname
+  );
 
   const recordShown = useCallback((next: InstallEnvironment) => {
     if (shownRef.current) return;
     shownRef.current = true;
   }, []);
 
-  const evaluate = useCallback(async (promptJustArrived = false) => {
+  const rememberEntryCompleted = useCallback(async () => {
+    entryCompletedThisSessionRef.current = true;
+    try { await AsyncStorage.setItem(ENTRY_COMPLETED_KEY, 'true'); }
+    catch (error) { console.warn('Unable to save PWA entry preference:', error); }
+  }, []);
+
+  const evaluate = useCallback(async () => {
     if (Platform.OS !== 'web') return;
     const next = currentEnvironment();
     setEnvironment(next);
     if (next.installState === 'installed') {
       setVisible(false);
       void AsyncStorage.setItem(INSTALLED_KEY, 'true');
+      void rememberEntryCompleted();
+      return;
+    }
+    if (dismissedThisSessionRef.current || entryCompletedThisSessionRef.current) {
+      setVisible(false);
       return;
     }
     try {
-      const [installed, dismissedAt] = await Promise.all([AsyncStorage.getItem(INSTALLED_KEY), AsyncStorage.getItem(DISMISS_KEY)]);
-      if (installed === 'true') return;
-      const promptIsNewer = next.installState === 'install_prompt_available' && (window.deferredPWAPromptCapturedAt || 0) > Number(dismissedAt || 0);
-      if (!isInstallGuidanceEligible(dismissedAt, Date.now(), promptIsNewer || promptJustArrived)) return;
+      const [installed, dismissedAt, entryCompleted] = await Promise.all([
+        AsyncStorage.getItem(INSTALLED_KEY),
+        AsyncStorage.getItem(DISMISS_KEY),
+        AsyncStorage.getItem(ENTRY_COMPLETED_KEY),
+      ]);
+      const visibleForEntry = shouldShowInstallGateway({
+        environment: next,
+        initialPath: initialPathRef.current,
+        installedHint: installed === 'true',
+        returningVisitor: entryCompleted === 'true',
+        dismissedAt,
+        now: Date.now(),
+        storageReadable: true,
+      });
+      setVisible(visibleForEntry);
+      if (!visibleForEntry) void rememberEntryCompleted();
+      if (!visibleForEntry) return;
     } catch (error) {
       console.warn('Unable to load PWA install preference:', error);
+      setVisible(false);
+      return;
     }
     setVisible(true);
     recordShown(next);
-  }, [recordShown]);
+  }, [recordShown, rememberEntryCompleted]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -70,12 +106,13 @@ export default function PWAInstallPrompt({ onDismiss }: { onDismiss?: () => void
       event.preventDefault();
       window.deferredPWAPrompt = event as BeforeInstallPromptEvent;
       window.deferredPWAPromptCapturedAt = Date.now();
-      void evaluate(true);
+      void evaluate();
     };
     const handleInstalled = () => {
       window.deferredPWAPrompt = null;
       setVisible(false);
       void AsyncStorage.setItem(INSTALLED_KEY, 'true');
+      void rememberEntryCompleted();
     };
     window.addEventListener('beforeinstallprompt', handlePromptReady);
     window.addEventListener('appinstalled', handleInstalled);
@@ -84,12 +121,19 @@ export default function PWAInstallPrompt({ onDismiss }: { onDismiss?: () => void
       window.removeEventListener('beforeinstallprompt', handlePromptReady);
       window.removeEventListener('appinstalled', handleInstalled);
     };
-  }, [evaluate]);
+  }, [evaluate, rememberEntryCompleted]);
 
   const dismiss = useCallback(async () => {
+    dismissedThisSessionRef.current = true;
     setVisible(false);
     onDismiss?.();
-    try { await AsyncStorage.setItem(DISMISS_KEY, String(Date.now())); }
+    try {
+      await Promise.all([
+        AsyncStorage.setItem(DISMISS_KEY, String(Date.now())),
+        AsyncStorage.setItem(ENTRY_COMPLETED_KEY, 'true'),
+      ]);
+      entryCompletedThisSessionRef.current = true;
+    }
     catch (error) { console.warn('Unable to save PWA install dismissal:', error); }
   }, [onDismiss]);
 
@@ -102,13 +146,16 @@ export default function PWAInstallPrompt({ onDismiss }: { onDismiss?: () => void
       const { outcome } = await prompt.userChoice;
       window.deferredPWAPrompt = null;
       if (outcome === 'dismissed') await dismiss();
-      else setVisible(false);
+      else {
+        setVisible(false);
+        void rememberEntryCompleted();
+      }
     } catch (error) {
       console.warn('Unable to open the browser install prompt:', error);
       window.deferredPWAPrompt = null;
       await evaluate();
     } finally { setInstalling(false); }
-  }, [dismiss, evaluate]);
+  }, [dismiss, evaluate, rememberEntryCompleted]);
 
   if (Platform.OS !== 'web' || !visible || environment.installState === 'installed') return null;
   const guidance = getInstallGuidance(environment);
