@@ -35,28 +35,28 @@
     {
       "external_id": "2026-09-22-foodland-b9",
       "date": "2026-09-22",
-      "start_time": "10:50 AM",
-      "end_time": "11:20 AM",
+      "start_time": "10:45 AM",
+      "end_time": "11:15 AM",
       "title": "Davis Hill Nursery",
-      "description": null,
+      "description": "(1050-1120)",
       "category": "MNP Lifestyles Tent Events",
       "location_name": "Foodland - Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
-      "source_context": "B9:B10; explicit `1050-1120`"
+      "source_context": "Overall Schedule B9:B10; merged bounds; `(1050-1120)`"
     },
     {
       "external_id": "2026-09-22-foodland-b11",
       "date": "2026-09-22",
-      "start_time": "11:25 AM",
+      "start_time": "11:15 AM",
       "end_time": "11:45 AM",
       "title": "Sleepers Bed Gallery",
-      "description": null,
+      "description": "(1125-1145)",
       "category": "MNP Lifestyles Tent Events",
       "location_name": "Foodland - Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
-      "source_context": "B11:B12; explicit `1125-1145`"
+      "source_context": "Overall Schedule B11:B12; merged bounds; `(1125-1145)`"
     },
     {
       "external_id": "2026-09-22-foodland-b14",
@@ -126,15 +126,15 @@
     {
       "external_id": "2026-09-22-foodland-b25",
       "date": "2026-09-22",
-      "start_time": "3:10 PM",
+      "start_time": "2:45 PM",
       "end_time": "3:15 PM",
-      "title": "Makeover",
-      "description": null,
+      "title": "West Shore",
+      "description": "1510-Makeover",
       "category": "MNP Lifestyles Tent Events",
       "location_name": "Foodland - Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
-      "source_context": "B25:B26; `1510-Makeover`"
+      "source_context": "Overall Schedule B25:B26; merged bounds; `1510-Makeover`"
     },
     {
       "external_id": "2026-09-22-foodland-b28",
@@ -529,15 +529,15 @@
     {
       "external_id": "2026-09-23-foodland-e32",
       "date": "2026-09-23",
-      "start_time": "4:55 PM",
+      "start_time": "4:30 PM",
       "end_time": "5:00 PM",
-      "title": "Makeover",
-      "description": null,
+      "title": "Mary Kay / Cheryl McNair",
+      "description": "1655-Makeover",
       "category": "MNP Lifestyles Tent Events",
       "location_name": "Foodland - Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
-      "source_context": "E32:E33; `1655-Makeover`"
+      "source_context": "Overall Schedule E32:E33; merged bounds; `1655-Makeover`"
     },
     {
       "external_id": "2026-09-23-harleys-f7",
@@ -763,15 +763,15 @@
     {
       "external_id": "2026-09-24-foodland-h11",
       "date": "2026-09-24",
-      "start_time": "11:40 AM",
+      "start_time": "11:15 AM",
       "end_time": "11:45 AM",
-      "title": "Makeover",
-      "description": null,
+      "title": "Elgin Jewelers",
+      "description": "1140-Makeover",
       "category": "MNP Lifestyles Tent Events",
       "location_name": "Foodland - Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
-      "source_context": "H11:H12; `1140-Makeover`"
+      "source_context": "Overall Schedule H11:H12; merged bounds; `1140-Makeover`"
     },
     {
       "external_id": "2026-09-24-foodland-h14",
@@ -1153,15 +1153,15 @@
     {
       "external_id": "2026-09-25-foodland-k18",
       "date": "2026-09-25",
-      "start_time": "1:25 PM",
+      "start_time": "1:00 PM",
       "end_time": "1:30 PM",
-      "title": "Makeover",
-      "description": null,
+      "title": "His Style",
+      "description": "1325-Makeover",
       "category": "MNP Lifestyles Tent Events",
       "location_name": "Foodland - Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
-      "source_context": "K18:K19; explicit `1325-Makeover`"
+      "source_context": "Overall Schedule K18:K19; merged bounds; `1325-Makeover`"
     },
     {
       "external_id": "2026-09-25-foodland-k21",
