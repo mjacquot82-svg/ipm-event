@@ -32,6 +32,7 @@ import {
   ScheduleResponse,
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
+import { formatScheduleDate, getScheduleWeekday } from '../../src/utils/scheduleDate';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
@@ -162,20 +163,16 @@ export default function ScheduleScreen() {
   // Format date for display
   function formatDisplayDate(dateStr: string): string {
     if (!dateStr) return 'Unknown Date';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString('en-US', {
+    return formatScheduleDate(dateStr, {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
-    });
+    }) || dateStr;
   }
 
   const getDateDayName = useCallback((dateStr: string): string => {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('en-US', { weekday: 'long' });
+    return getScheduleWeekday(dateStr) || '';
   }, []);
 
   const normalizeDayName = useCallback((day: string): string => {

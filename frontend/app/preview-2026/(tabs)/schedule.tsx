@@ -22,6 +22,7 @@ import {
   ScheduleEvent,
   getScheduleData,
 } from '../../../src/services/spreadsheetDataService';
+import { formatScheduleDate } from '../../../src/utils/scheduleDate';
 
 export default function ScheduleScreen() {
   const router = useRouter();
@@ -145,13 +146,11 @@ export default function ScheduleScreen() {
   // Format date for display
   function formatDisplayDate(dateStr: string): string {
     if (!dateStr) return 'Unknown Date';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString('en-US', {
+    return formatScheduleDate(dateStr, {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
-    });
+    }) || dateStr;
   }
 
   const filterOptions = [
