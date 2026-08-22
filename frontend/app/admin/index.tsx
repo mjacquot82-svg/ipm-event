@@ -84,7 +84,7 @@ const PLATFORM_FIELDS = [
   { key: 'title', label: 'Event Title', required: true },
   { key: 'start_date', label: 'Date', required: true },
   { key: 'start_time', label: 'Start Time', required: true },
-  { key: 'end_time', label: 'End Time', required: true },
+  { key: 'end_time', label: 'End Time', required: false },
   { key: 'location_name', label: 'Location', required: false },
   { key: 'category', label: 'Category', required: false },
   { key: 'days_active', label: 'Days Active', required: false },
@@ -852,7 +852,6 @@ function prepareScheduleImport(rows: Record<string, string>[], mapping: ImportMa
     if (!payload.title.trim()) errors.push('Event Title is required');
     if (!payload.start_date.trim()) errors.push('Date is required');
     if (!payload.start_time.trim()) errors.push('Start Time is required');
-    if (!payload.end_time.trim()) errors.push('End Time is required');
 
     if (errors.length) {
       problems.push({ row_number: index + 2, errors, values: row });
@@ -1175,7 +1174,7 @@ function ScheduleEditor({
         <FormTextField label="Event title" value={form.title} required placeholder="Event title" editable={!isReadOnly} onChangeText={(value) => updateField('title', value)} />
         <FormTextField label="Date" value={form.start_date} required placeholder="Date" editable={!isReadOnly} onChangeText={(value) => updateField('start_date', value)} />
         <FormTextField label="Start time" value={form.start_time} required placeholder="Start time" editable={!isReadOnly} onChangeText={(value) => updateField('start_time', value)} />
-        <FormTextField label="End time" value={form.end_time} required placeholder="End time" editable={!isReadOnly} onChangeText={(value) => updateField('end_time', value)} />
+        <FormTextField label="End time" value={form.end_time} placeholder="End time (optional)" editable={!isReadOnly} onChangeText={(value) => updateField('end_time', value)} />
         <FormTextField label="Location" value={form.location_name || ''} placeholder="Location" editable={!isReadOnly} onChangeText={(value) => updateField('location_name', value)} />
         <FormTextField label="Category" value={form.category || ''} placeholder="Category" editable={!isReadOnly} onChangeText={(value) => updateField('category', value)} />
         <FormTextField label="Day" value={form.days_active || ''} placeholder="Day" editable={!isReadOnly} onChangeText={(value) => updateField('days_active', value)} />
