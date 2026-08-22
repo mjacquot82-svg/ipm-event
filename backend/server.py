@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -67,9 +67,9 @@ import re
 import time
 from urllib.parse import quote
 try:
-    from backend.calendar_export import CalendarExportError, generate_calendar
+    from backend.calendar_export import CalendarExportError, generate_calendar, generate_google_calendar_url
 except ImportError:
-    from calendar_export import CalendarExportError, generate_calendar
+    from calendar_export import CalendarExportError, generate_calendar, generate_google_calendar_url
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 try:
@@ -1854,6 +1854,21 @@ async def export_schedule_event_calendar(schedule_id: uuid.UUID):
     """Export one canonical Schedule event as an iCalendar file."""
     rows = await get_calendar_export_rows([schedule_id])
     return calendar_response(rows, "ipm-schedule-event.ics")
+
+
+@api_router.get("/schedule/{schedule_id}/calendar/google")
+async def open_schedule_event_in_google_calendar(schedule_id: uuid.UUID):
+    """Redirect to a Google event template built from one canonical Schedule row."""
+    rows = await get_calendar_export_rows([schedule_id])
+    try:
+        destination = generate_google_calendar_url(rows[0])
+    except CalendarExportError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return RedirectResponse(
+        destination,
+        status_code=307,
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @api_router.post("/schedule/calendar")

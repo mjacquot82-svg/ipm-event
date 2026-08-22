@@ -70,6 +70,10 @@ export async function exportScheduleEvent(scheduleId: string): Promise<CalendarE
   return deliverCalendarResponse(response, 'ipm-schedule-event.ics');
 }
 
+export function getGoogleCalendarUrl(scheduleId: string): string {
+  return `${getApiBaseUrl()}/api/schedule/${encodeURIComponent(scheduleId)}/calendar/google`;
+}
+
 export async function exportScheduleItinerary(scheduleIds: string[]): Promise<CalendarExportResult> {
   if (scheduleIds.length === 0) {
     throw new Error('Star at least one event before creating a calendar file.');

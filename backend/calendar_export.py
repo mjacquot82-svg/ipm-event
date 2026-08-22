@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any, Iterable
+from urllib.parse import urlencode
 
 CALENDAR_TIMEZONE = "America/Toronto"
 PRODUCT_ID = "-//IPM 2026//Attendee Schedule//EN"
+GOOGLE_CALENDAR_TEMPLATE_URL = "https://calendar.google.com/calendar/r/eventedit"
 
 
 class CalendarExportError(ValueError):
@@ -39,6 +41,26 @@ def _parse_timestamp(value: Any, field: str) -> datetime:
 
 def _utc_value(value: Any, field: str) -> str:
     return _parse_timestamp(value, field).strftime("%Y%m%dT%H%M%SZ")
+
+
+def generate_google_calendar_url(row: dict[str, Any]) -> str:
+    """Build a Google event template from one canonical Schedule row."""
+    title = str(row.get("title") or "").strip()
+    if not title:
+        raise CalendarExportError("Canonical Schedule title is missing")
+    if not row.get("ends_at"):
+        raise CalendarExportError("Google Calendar requires an authoritative end time")
+
+    parameters = {
+        "action": "TEMPLATE",
+        "dates": f"{_utc_value(row.get('starts_at'), 'starts_at')}/{_utc_value(row['ends_at'], 'ends_at')}",
+        "stz": CALENDAR_TIMEZONE,
+        "etz": CALENDAR_TIMEZONE,
+        "text": title,
+        "details": str(row.get("description") or ""),
+        "location": str(row.get("location_name") or ""),
+    }
+    return f"{GOOGLE_CALENDAR_TEMPLATE_URL}?{urlencode(parameters)}"
 
 
 def _fold_line(line: str) -> list[str]:

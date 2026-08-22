@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   exportScheduleEvent,
   exportScheduleItinerary,
+  getGoogleCalendarUrl,
 } from '../src/services/calendarService.ts';
 import { formatScheduleTimeRange } from '../src/utils/scheduleTime.ts';
 
@@ -125,6 +126,16 @@ test('bulk export submits exactly the starred UUIDs', async () => {
   assert.equal(await exportScheduleItinerary(['one', 'two']), 'shared');
   assert.deepEqual(JSON.parse(request.options.body), { schedule_ids: ['one', 'two'] });
   assert.match(request.url, /\/api\/schedule\/calendar$/);
+});
+
+test('Google Calendar URL targets the canonical backend endpoint without downloading', () => {
+  let downloaded = false;
+  URL.createObjectURL = () => { downloaded = true; return 'blob:test'; };
+  assert.equal(
+    getGoogleCalendarUrl('schedule/id'),
+    'https://ipm-backend-eoiw.onrender.com/api/schedule/schedule%2Fid/calendar/google',
+  );
+  assert.equal(downloaded, false);
 });
 
 test('export errors are surfaced and an empty itinerary is rejected', async () => {

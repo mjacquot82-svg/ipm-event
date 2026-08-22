@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
 import asyncio
 import uuid
+from urllib.parse import parse_qs, urlparse
 
 import httpx
 import pytest
 from icalendar import Calendar
 
-from backend.calendar_export import generate_calendar
+from backend.calendar_export import CalendarExportError, generate_calendar, generate_google_calendar_url
 from backend import server
 
 
@@ -78,6 +79,33 @@ def test_multi_event_ics_parses_and_start_only_event_omits_end_and_duration():
     assert str(parade["LOCATION"]) == "Parade route coming soon"
 
 
+def test_google_calendar_url_uses_canonical_utc_range_and_content():
+    url = generate_google_calendar_url(canonical_rows()[0])
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query)
+    assert parsed.netloc == "calendar.google.com"
+    assert query["action"] == ["TEMPLATE"]
+    assert query["dates"] == ["20260115T150000Z/20260115T163000Z"]  # EST -> UTC
+    assert query["stz"] == ["America/Toronto"]
+    assert query["etz"] == ["America/Toronto"]
+    assert query["text"] == ["Café, Music; and Farming \\ Showcase"]
+    assert query["details"] == [canonical_rows()[0]["description"]]
+    assert query["location"] == ["Hall, A; East"]
+
+    edt_row = {
+        **canonical_rows()[0],
+        "starts_at": "2026-09-22T10:15:00-04:00",
+        "ends_at": "2026-09-22T10:45:00-04:00",
+    }
+    edt_query = parse_qs(urlparse(generate_google_calendar_url(edt_row)).query)
+    assert edt_query["dates"] == ["20260922T141500Z/20260922T144500Z"]  # EDT -> UTC
+
+
+def test_google_calendar_url_refuses_start_only_event():
+    with pytest.raises(CalendarExportError, match="authoritative end time"):
+        generate_google_calendar_url(canonical_rows()[1])
+
+
 class FakeCalendarScheduleService:
     def __init__(self):
         self.rows = {row["id"]: row for row in canonical_rows()}
@@ -110,6 +138,27 @@ def test_single_endpoint_returns_no_store_calendar(calendar_service):
     assert response.headers["content-type"].startswith("text/calendar")
     assert response.headers["content-disposition"].endswith('"ipm-schedule-event.ics"')
     assert len([item for item in Calendar.from_ical(response.content).walk() if item.name == "VEVENT"]) == 1
+
+
+def test_google_endpoint_redirects_to_canonical_template_without_caching(calendar_service):
+    response = api_request("GET", f"/api/schedule/{NORMAL_ID}/calendar/google", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["cache-control"] == "no-store"
+    query = parse_qs(urlparse(response.headers["location"]).query)
+    assert query["dates"] == ["20260115T150000Z/20260115T163000Z"]
+    assert query["text"] == ["Café, Music; and Farming \\ Showcase"]
+
+
+def test_google_endpoint_refuses_start_only_event(calendar_service):
+    response = api_request("GET", f"/api/schedule/{PARADE_ID}/calendar/google", follow_redirects=False)
+    assert response.status_code == 422
+    assert "authoritative end time" in response.json()["detail"]
+
+
+@pytest.mark.parametrize("schedule_id", [str(uuid.uuid4()), CROSS_EVENT_ID])
+def test_google_endpoint_rejects_unknown_and_cross_event_ids(calendar_service, schedule_id):
+    response = api_request("GET", f"/api/schedule/{schedule_id}/calendar/google", follow_redirects=False)
+    assert response.status_code == 404
 
 
 def test_bulk_endpoint_returns_one_multi_event_calendar(calendar_service):

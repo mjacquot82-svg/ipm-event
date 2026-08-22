@@ -6,10 +6,32 @@ const schedule = await readFile(new URL('../app/(tabs)/schedule.tsx', import.met
 const itinerary = await readFile(new URL('../app/(tabs)/itinerary.tsx', import.meta.url), 'utf8');
 
 test('Schedule details expose an accessible explicit calendar action', () => {
-  assert.match(schedule, /'Add to Calendar'/);
+  assert.match(schedule, />\s*Add to Calendar\s*</);
   assert.match(schedule, /accessibilityLabel=\{`Add \$\{selectedEvent\.title\} to calendar`\}/);
   assert.match(schedule, /exportScheduleEvent\(eventId\)/);
   assert.match(schedule, /'Remove from Itinerary' : 'Add to Itinerary'/);
+});
+
+test('single-event Add to Calendar opens a dismissible provider chooser', () => {
+  assert.match(schedule, /setShowCalendarChooser\(true\)/);
+  assert.match(schedule, /visible=\{showCalendarChooser && Boolean\(selectedEvent\)\}/);
+  assert.match(schedule, />Google Calendar</);
+  assert.match(schedule, /Fastest for Google Calendar users/);
+  assert.match(schedule, />Other Calendar</);
+  assert.match(schedule, /Apple Calendar, Outlook, and other calendar apps/);
+  assert.match(schedule, /accessibilityLabel="Dismiss calendar choices"/);
+});
+
+test('Google choice uses the canonical backend link without exporting or changing favorites', () => {
+  const googleHandler = schedule.match(/const handleGoogleCalendar[\s\S]*?^  \};/m)?.[0] || '';
+  assert.match(googleHandler, /Linking\.openURL\(getGoogleCalendarUrl\(eventId\)\)/);
+  assert.doesNotMatch(googleHandler, /exportScheduleEvent|toggleFavorite/);
+});
+
+test('start-only events omit Google choice and retain Other Calendar', () => {
+  assert.match(schedule, /selectedEvent\?\.end_time \? \(/);
+  assert.match(schedule, /This event has no confirmed end time/);
+  assert.match(schedule, /handleCalendarExport\(selectedEvent\.id\)/);
 });
 
 test('starring remains independent and never calls calendar export', () => {

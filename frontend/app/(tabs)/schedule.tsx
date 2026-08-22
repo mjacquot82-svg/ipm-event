@@ -13,6 +13,7 @@ import {
   Modal,
   TextInput,
   useWindowDimensions,
+  Linking,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -36,7 +37,7 @@ import {
 } from '../../src/services/spreadsheetDataService';
 import { formatScheduleDate, getScheduleWeekday } from '../../src/utils/scheduleDate';
 import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
-import { exportScheduleEvent } from '../../src/services/calendarService';
+import { exportScheduleEvent, getGoogleCalendarUrl } from '../../src/services/calendarService';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
@@ -64,6 +65,7 @@ export default function ScheduleScreen() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [calendarExporting, setCalendarExporting] = useState(false);
   const [calendarMessage, setCalendarMessage] = useState<string | null>(null);
+  const [showCalendarChooser, setShowCalendarChooser] = useState(false);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
 
@@ -150,6 +152,7 @@ export default function ScheduleScreen() {
   };
 
   const handleCalendarExport = async (eventId: string) => {
+    setShowCalendarChooser(false);
     setCalendarExporting(true);
     setCalendarMessage(null);
     try {
@@ -161,6 +164,16 @@ export default function ScheduleScreen() {
       setCalendarMessage(error instanceof Error ? error.message : 'Calendar export failed. Please try again.');
     } finally {
       setCalendarExporting(false);
+    }
+  };
+
+  const handleGoogleCalendar = async (eventId: string) => {
+    setShowCalendarChooser(false);
+    setCalendarMessage(null);
+    try {
+      await Linking.openURL(getGoogleCalendarUrl(eventId));
+    } catch {
+      setCalendarMessage('Google Calendar could not be opened. Please choose Other Calendar.');
     }
   };
 
@@ -784,9 +797,73 @@ export default function ScheduleScreen() {
         </View>
       </Modal>
 
+      {/* Single-event calendar provider chooser. */}
+      <Modal
+        visible={showCalendarChooser && Boolean(selectedEvent)}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowCalendarChooser(false)}
+      >
+        <View style={styles.calendarChooserOverlay}>
+          <TouchableOpacity
+            style={styles.calendarChooserDismissArea}
+            onPress={() => setShowCalendarChooser(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss calendar choices"
+          />
+          <View style={styles.calendarChooserSheet} accessibilityViewIsModal={true}>
+            <View style={styles.calendarChooserHeader}>
+              <Text style={styles.calendarChooserTitle}>Add to Calendar</Text>
+              <TouchableOpacity
+                style={styles.calendarChooserCloseButton}
+                onPress={() => setShowCalendarChooser(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Close calendar choices"
+              >
+                <Feather name="x" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            {selectedEvent?.end_time ? (
+              <TouchableOpacity
+                style={styles.calendarChoice}
+                onPress={() => void handleGoogleCalendar(selectedEvent.id)}
+                accessibilityRole="button"
+                accessibilityLabel={`Open ${selectedEvent.title} in Google Calendar`}
+              >
+                <Feather name="calendar" size={22} color={colors.primary} />
+                <View style={styles.calendarChoiceText}>
+                  <Text style={styles.calendarChoiceTitle}>Google Calendar</Text>
+                  <Text style={styles.calendarChoiceDescription}>Fastest for Google Calendar users</Text>
+                </View>
+                <Feather name="external-link" size={18} color={colors.textMuted} />
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.calendarChoiceNotice}>
+                This event has no confirmed end time, so use Other Calendar to preserve its exact schedule.
+              </Text>
+            )}
+            <TouchableOpacity
+              style={styles.calendarChoice}
+              onPress={() => selectedEvent && void handleCalendarExport(selectedEvent.id)}
+              disabled={calendarExporting}
+              accessibilityRole="button"
+              accessibilityLabel={`Create a calendar file for ${selectedEvent?.title || 'this event'}`}
+              accessibilityState={{ disabled: calendarExporting, busy: calendarExporting }}
+            >
+              <Feather name="download" size={22} color={colors.primary} />
+              <View style={styles.calendarChoiceText}>
+                <Text style={styles.calendarChoiceTitle}>Other Calendar</Text>
+                <Text style={styles.calendarChoiceDescription}>Apple Calendar, Outlook, and other calendar apps</Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Event Details Modal */}
       <Modal
-        visible={showEventModal}
+        visible={showEventModal && !showCalendarChooser}
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowEventModal(false)}
@@ -918,7 +995,10 @@ export default function ScheduleScreen() {
                 <View style={styles.modalFooter}>
                   <TouchableOpacity
                     style={styles.addToCalendarButton}
-                    onPress={() => void handleCalendarExport(selectedEvent.id)}
+                    onPress={() => {
+                      setCalendarMessage(null);
+                      setShowCalendarChooser(true);
+                    }}
                     disabled={calendarExporting}
                     accessibilityRole="button"
                     accessibilityLabel={`Add ${selectedEvent.title} to calendar`}
@@ -926,7 +1006,7 @@ export default function ScheduleScreen() {
                   >
                     <Feather name="calendar" size={20} color={colors.primary} />
                     <Text style={styles.addToCalendarText}>
-                      {calendarExporting ? 'Creating Calendar File…' : 'Add to Calendar'}
+                      Add to Calendar
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -1478,6 +1558,74 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
+  },
+  calendarChooserOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  calendarChooserDismissArea: {
+    flex: 1,
+  },
+  calendarChooserSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 34,
+    gap: 10,
+  },
+  calendarChooserHeader: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  calendarChooserTitle: {
+    color: colors.textPrimary,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  calendarChooserCloseButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarChoice: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  calendarChoiceText: {
+    flex: 1,
+  },
+  calendarChoiceTitle: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  calendarChoiceDescription: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  calendarChoiceNotice: {
+    color: colors.textSecondary,
+    backgroundColor: colors.surfaceHighlight,
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 13,
+    lineHeight: 18,
   },
   addToItineraryButton: {
     backgroundColor: colors.primary,
