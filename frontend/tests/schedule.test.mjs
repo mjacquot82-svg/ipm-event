@@ -13,6 +13,32 @@ test('attendee schedule derives real category filters and combines them with day
   assert.match(scheduleSource, /normalizedSearch/);
 });
 
+test('desktop retains category pills while mobile uses the compact category selector', () => {
+  assert.match(scheduleSource, /viewportWidth >= ATTENDEE_DESKTOP_BREAKPOINT/);
+  assert.match(scheduleSource, /categoryOptions\.length > 0 && isDesktop/);
+  assert.match(scheduleSource, /categoryOptions\.length > 0 && !isDesktop/);
+  assert.match(scheduleSource, />\s*Categories\s*</);
+  assert.match(scheduleSource, /selectedCategory \? '1 category selected' : 'All categories'/);
+});
+
+test('mobile category selector exposes every full category option and supports clear and dismissal', () => {
+  assert.match(scheduleSource, /\[null, \.\.\.categoryOptions\]\.map/);
+  assert.match(scheduleSource, /const label = category \|\| 'All categories'/);
+  assert.match(scheduleSource, /onPress=\{\(\) => selectCategory\(category\)\}/);
+  assert.match(scheduleSource, /onRequestClose=\{\(\) => setShowCategorySelector\(false\)\}/);
+  assert.match(scheduleSource, /accessibilityLabel="Close category selector"/);
+  assert.match(scheduleSource, /accessibilityState=\{\{ selected: isActive \}\}/);
+});
+
+test('mobile keeps day controls and category composes with day, search, and Starred', () => {
+  assert.match(scheduleSource, /dayOptions\.map\(\(day\)/);
+  assert.match(scheduleSource, /setSelectedDay\(isActive \? null : day\)/);
+  assert.match(scheduleSource, /selectedCategory && event\.category !== selectedCategory/);
+  assert.match(scheduleSource, /selectedDay && !getEventDayLabels\(event\)\.includes\(selectedDay\)/);
+  assert.match(scheduleSource, /normalizedSearch/);
+  assert.match(scheduleSource, /showFavoritesOnly && !favorites\.includes\(event\.id\)/);
+});
+
 test('blank schedule descriptions remain optional in cards, details, and itinerary', () => {
   assert.match(scheduleSource, /event\.description \? \(/);
   assert.match(scheduleSource, /selectedEvent\.description && \(/);

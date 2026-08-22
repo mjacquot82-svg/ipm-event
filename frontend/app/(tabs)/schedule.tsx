@@ -12,12 +12,14 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
+  useWindowDimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
 import {
   ATTENDEE_HORIZONTAL_MARGIN,
+  ATTENDEE_DESKTOP_BREAKPOINT,
   attendeePageContent,
   useAttendeeLayout,
 } from '../../src/theme/attendeePageLayout';
@@ -39,6 +41,8 @@ import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCor
 
 export default function ScheduleScreen() {
   const { frameStyle, sectionStyle } = useAttendeeLayout();
+  const { width: viewportWidth } = useWindowDimensions();
+  const isDesktop = viewportWidth >= ATTENDEE_DESKTOP_BREAKPOINT;
   const router = useRouter();
   const { source } = useLocalSearchParams<{ source?: string }>();
   usePageAnalytics('schedule', source || 'other', 'schedule_viewed');
@@ -49,6 +53,7 @@ export default function ScheduleScreen() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -329,6 +334,15 @@ export default function ScheduleScreen() {
     setSearchQuery('');
   };
 
+  const selectCategory = (category: string | null) => {
+    setSelectedCategory(category);
+    setShowCategorySelector(false);
+    void queueAnalyticsEvent('schedule_filter_used', {
+      filter_type: 'category',
+      filter_value: category || 'all',
+    });
+  };
+
   // Loading state
   if (loading && events.length === 0) {
     return (
@@ -462,7 +476,7 @@ export default function ScheduleScreen() {
             );
           })}
         </ScrollView>
-        {categoryOptions.length > 0 && (
+        {categoryOptions.length > 0 && isDesktop && (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -474,10 +488,10 @@ export default function ScheduleScreen() {
                 <TouchableOpacity
                   key={category}
                   style={[styles.filterPill, isActive && styles.filterPillActive]}
-                  onPress={() => {
-                    setSelectedCategory(isActive ? null : category);
-                    void queueAnalyticsEvent('schedule_filter_used', { filter_type: 'category', filter_value: isActive ? 'all' : category });
-                  }}
+                  onPress={() => selectCategory(isActive ? null : category)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filter by ${category}`}
+                  accessibilityState={{ selected: isActive }}
                 >
                   <Feather
                     name="tag"
@@ -491,6 +505,27 @@ export default function ScheduleScreen() {
               );
             })}
           </ScrollView>
+        )}
+        {categoryOptions.length > 0 && !isDesktop && (
+          <TouchableOpacity
+            style={[styles.categorySelectorButton, selectedCategory && styles.categorySelectorButtonActive]}
+            onPress={() => setShowCategorySelector(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`Categories, ${selectedCategory ? '1 category selected' : 'All categories'}`}
+            accessibilityHint="Opens the category filter options"
+            accessibilityState={{ expanded: showCategorySelector }}
+          >
+            <Feather name="tag" size={18} color={selectedCategory ? '#FFFFFF' : colors.primary} />
+            <View style={styles.categorySelectorTextContainer}>
+              <Text style={[styles.categorySelectorLabel, selectedCategory && styles.categorySelectorTextActive]}>
+                Categories
+              </Text>
+              <Text style={[styles.categorySelectorStatus, selectedCategory && styles.categorySelectorTextActive]}>
+                {selectedCategory ? '1 category selected' : 'All categories'}
+              </Text>
+            </View>
+            <Feather name="chevron-down" size={20} color={selectedCategory ? '#FFFFFF' : colors.textSecondary} />
+          </TouchableOpacity>
         )}
         {dayOptions.length > 0 && (
           <ScrollView
@@ -674,6 +709,60 @@ export default function ScheduleScreen() {
           );
         }}
       />
+
+      {/* Compact category selector for mobile widths. */}
+      <Modal
+        visible={!isDesktop && showCategorySelector}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCategorySelector(false)}
+      >
+        <View style={styles.categoryModalOverlay}>
+          <TouchableOpacity
+            style={styles.categoryModalDismissArea}
+            onPress={() => setShowCategorySelector(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss category selector"
+          />
+          <View style={styles.categorySheet} accessibilityRole="menu">
+            <View style={styles.categorySheetHeader}>
+              <View>
+                <Text style={styles.categorySheetTitle}>Categories</Text>
+                <Text style={styles.categorySheetSubtitle}>Choose one category</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.categorySheetCloseButton}
+                onPress={() => setShowCategorySelector(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Close category selector"
+              >
+                <Feather name="x" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {[null, ...categoryOptions].map((category) => {
+                const isActive = selectedCategory === category;
+                const label = category || 'All categories';
+                return (
+                  <TouchableOpacity
+                    key={label}
+                    style={[styles.categoryOption, isActive && styles.categoryOptionActive]}
+                    onPress={() => selectCategory(category)}
+                    accessibilityRole="menuitem"
+                    accessibilityLabel={label}
+                    accessibilityState={{ selected: isActive }}
+                  >
+                    <Text style={[styles.categoryOptionText, isActive && styles.categoryOptionTextActive]}>
+                      {label}
+                    </Text>
+                    {isActive && <Feather name="check" size={20} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Event Details Modal */}
       <Modal
@@ -921,6 +1010,100 @@ const styles = StyleSheet.create({
   filterPillActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+  },
+  categorySelectorButton: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+  },
+  categorySelectorButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  categorySelectorTextContainer: {
+    flex: 1,
+  },
+  categorySelectorLabel: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  categorySelectorStatus: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  categorySelectorTextActive: {
+    color: '#FFFFFF',
+  },
+  categoryModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  categoryModalDismissArea: {
+    flex: 1,
+  },
+  categorySheet: {
+    maxHeight: '78%',
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 28,
+  },
+  categorySheetHeader: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  categorySheetTitle: {
+    color: colors.textPrimary,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  categorySheetSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  categorySheetCloseButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryOption: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  categoryOptionActive: {
+    backgroundColor: colors.surfaceHighlight,
+  },
+  categoryOptionText: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  categoryOptionTextActive: {
+    color: colors.primary,
+    fontWeight: '700',
   },
   filterText: {
     fontSize: 13,
