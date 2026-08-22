@@ -45,6 +45,18 @@ test('blank schedule descriptions remain optional in cards, details, and itinera
   assert.match(itinerarySource, /item\.description \? \(/);
 });
 
+test('start-time-only events render without a trailing separator', () => {
+  assert.match(scheduleSource, /\[event\.start_time, event\.end_time\]\.filter\(Boolean\)\.join\(' - '\)/);
+  assert.match(scheduleSource, /\[selectedEvent\.start_time, selectedEvent\.end_time\]\.filter\(Boolean\)\.join\(' - '\)/);
+  assert.doesNotMatch(scheduleSource, /\{event\.start_time\} - \{event\.end_time\}/);
+  assert.doesNotMatch(scheduleSource, /\{selectedEvent\.start_time\} - \{selectedEvent\.end_time\}/);
+});
+
+test('mobile category selector derives options and therefore includes Parade Week', () => {
+  assert.match(scheduleSource, /new Set\(events\.map\(\(event\) => event\.category\)\.filter\(Boolean\)\)/);
+  assert.match(scheduleSource, /\[null, \.\.\.categoryOptions\]\.map/);
+});
+
 test('attendee schedule and itinerary use Ontario-safe date-only formatting', () => {
   assert.match(scheduleSource, /formatScheduleDate\(dateStr/);
   assert.match(scheduleSource, /getScheduleWeekday\(dateStr\)/);

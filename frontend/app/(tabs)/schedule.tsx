@@ -656,7 +656,7 @@ export default function ScheduleScreen() {
                             color={colors.textMuted}
                           />
                           <Text style={styles.eventTime}>
-                            {event.start_time} - {event.end_time}
+                            {[event.start_time, event.end_time].filter(Boolean).join(' - ')}
                           </Text>
                         </View>
                         <TouchableOpacity
@@ -811,7 +811,7 @@ export default function ScheduleScreen() {
                       <View style={styles.detailTextContainer}>
                         <Text style={styles.detailLabel}>Time</Text>
                         <Text style={styles.detailValue}>
-                          {selectedEvent.start_time} - {selectedEvent.end_time}
+                          {[selectedEvent.start_time, selectedEvent.end_time].filter(Boolean).join(' - ')}
                         </Text>
                       </View>
                     </View>

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "source": "ipm_parade_week_2026_poster",
+  "source_image": "data/parade.jpg",
+  "source_image_sha256": "e407b63d4602650e76b856b373bf3c0a622fc1939f52a5b9f1dadd90b07b6f86",
+  "timezone": "America/Toronto",
+  "events": [
+    {
+      "external_id": "2026-09-22-bruce-power-opening-day-parade",
+      "date": "2026-09-22",
+      "start_time": "10:00 AM",
+      "end_time": null,
+      "title": "Bruce Power Opening Day Parade",
+      "description": "Celebrate the people who lead and support our rural communities. Featuring dignitaries, agricultural leaders, sponsors, exhibitors, farm families, and honoured guests, this parade highlights the pride and spirit that keep Ontario and Bruce County strong.",
+      "category": "Parade Week",
+      "location_name": "Parade route coming soon",
+      "days_active": "Tuesday"
+    },
+    {
+      "external_id": "2026-09-23-trucks-and-tractors-parade",
+      "date": "2026-09-23",
+      "start_time": "11:00 AM",
+      "end_time": null,
+      "title": "Trucks and Tractors Parade",
+      "description": "Celebrate farming heritage with a rolling showcase of antique trucks, classic pickups, cattle liners, restored tractors, and modern farm equipment. From polished chrome to roaring engines, it’s a must-see parade for families, machinery fans, and lovers of country culture.",
+      "category": "Parade Week",
+      "location_name": "Parade route coming soon",
+      "days_active": "Wednesday"
+    },
+    {
+      "external_id": "2026-09-24-childrens-parade",
+      "date": "2026-09-24",
+      "start_time": "11:00 AM",
+      "end_time": null,
+      "title": "Children’s Parade",
+      "description": "A joyful celebration of youth, creativity, and community spirit. Filled with school groups, dance clubs, decorated bicycles, costumes, music, and colourful floats, this parade is a fun and memorable event for children and families alike.",
+      "category": "Parade Week",
+      "location_name": "Parade route coming soon",
+      "days_active": "Thursday"
+    },
+    {
+      "external_id": "2026-09-25-combines-parade",
+      "date": "2026-09-25",
+      "start_time": "11:00 AM",
+      "end_time": null,
+      "title": "Combines Parade",
+      "description": "Experience the giants of the harvest in a parade featuring antique combines, restored classics, and modern harvesting machines. These impressive machines honour the hard work of Ontario farmers and showcase the incredible evolution of agricultural innovation.",
+      "category": "Parade Week",
+      "location_name": "Parade route coming soon",
+      "days_active": "Friday"
+    },
+    {
+      "external_id": "2026-09-26-bruce-county-farming-through-the-ages",
+      "date": "2026-09-26",
+      "start_time": "11:00 AM",
+      "end_time": null,
+      "title": "Bruce County Farming Through the Ages",
+      "description": "Take a journey through time as Bruce County’s agricultural history comes to life. With horse-drawn equipment, vintage tractors, historical displays, and modern machinery, this parade honours the people and traditions that shaped farming in our region.",
+      "category": "Parade Week",
+      "location_name": "Parade route coming soon",
+      "days_active": "Saturday"
+    }
+  ]
+}
