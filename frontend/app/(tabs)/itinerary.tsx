@@ -27,6 +27,7 @@ import {
   ScheduleResponse,
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
+import { formatScheduleDate } from '../../src/utils/scheduleDate';
 
 export default function ItineraryScreen() {
   usePageAnalytics('itinerary', 'home_quick_action');
@@ -90,14 +91,11 @@ export default function ItineraryScreen() {
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'Unknown date';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-
-    return date.toLocaleDateString('en-US', {
+    return formatScheduleDate(dateStr, {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
-    });
+    }) || dateStr;
   };
 
   if (loading) {
