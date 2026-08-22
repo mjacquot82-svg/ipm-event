@@ -19,6 +19,7 @@ STAGING_EVENT_SLUG = "ipm-staging"
 STAGING_EVENT_NAME = "IPM Staging"
 PRODUCTION_PROJECT_REF = "hppboivlpqkfhhzfftuu"
 PRODUCTION_EVENT_SLUG = "ipm-2026"
+PRODUCTION_PROJECT_NAME = "JDS Event Platform"
 SOURCE = "ipm_parade_week_2026_poster"
 EXPECTED_TOTAL = 5
 EXPECTED_PREEXISTING_TOTAL = 146
@@ -167,7 +168,7 @@ class SupabaseRest:
                 payload = response.read()
         except error.HTTPError as exc:
             detail = exc.read().decode(errors="replace")
-            raise ImportSafetyError(f"Staging Supabase request failed ({exc.code}): {detail[:300]}") from exc
+            raise ImportSafetyError(f"Supabase request failed ({exc.code}): {detail[:300]}") from exc
         return json.loads(payload) if payload else None
 
 
@@ -179,42 +180,53 @@ def service_key_from_stdin() -> str:
             value = item.get("api_key") or item.get("key")
             if value:
                 return value
-    raise ImportSafetyError("No staging service-role API key was provided")
+    raise ImportSafetyError("No service-role API key was provided")
 
 
-def target_guard(project_ref: str, event_slug: str) -> None:
-    if project_ref == PRODUCTION_PROJECT_REF or event_slug == PRODUCTION_EVENT_SLUG:
-        raise ImportSafetyError("Production/ipm-2026 is explicitly forbidden")
-    if (project_ref, event_slug) != (STAGING_PROJECT_REF, STAGING_EVENT_SLUG):
-        raise ImportSafetyError("Only the isolated IPM Staging project/event pair is approved")
+def target_guard(target: str, project_ref: str, event_slug: str) -> str:
+    approved = {
+        "staging": (STAGING_PROJECT_REF, STAGING_EVENT_SLUG, STAGING_EVENT_NAME),
+        "production": (PRODUCTION_PROJECT_REF, PRODUCTION_EVENT_SLUG, PRODUCTION_PROJECT_NAME),
+    }
+    if target not in approved:
+        raise ImportSafetyError("Target must be explicitly staging or production")
+    expected_project, expected_event, target_name = approved[target]
+    if (project_ref, event_slug) != (expected_project, expected_event):
+        raise ImportSafetyError(f"{target.title()} target does not match its approved project/event pair")
+    other_target = "production" if target == "staging" else "staging"
+    other_project, other_event, _ = approved[other_target]
+    if project_ref == other_project or event_slug == other_event:
+        raise ImportSafetyError(f"{target.title()} mode explicitly refuses {other_target}")
+    return target_name
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--target", choices=("staging", "production"), required=True)
     parser.add_argument("--api-keys-json-stdin", action="store_true")
     parser.add_argument("--backup", type=Path, required=True)
     parser.add_argument("--project-ref", required=True)
     parser.add_argument("--event-slug", required=True)
     args = parser.parse_args()
-    target_guard(args.project_ref, args.event_slug)
+    target_name = target_guard(args.target, args.project_ref, args.event_slug)
     if not args.api_keys_json_stdin:
         raise ImportSafetyError("Use --api-keys-json-stdin; credentials must not be command-line arguments")
     manifest = load_manifest()
     client = SupabaseRest(args.project_ref, service_key_from_stdin())
     events = client.call("GET", "/events", params={"select": "id,slug,name,timezone", "slug": f"eq.{args.event_slug}"})
-    if len(events) != 1 or events[0].get("slug") != STAGING_EVENT_SLUG or events[0].get("name") != STAGING_EVENT_NAME:
-        raise ImportSafetyError("Target is not exactly the IPM Staging event")
+    if len(events) != 1 or events[0].get("slug") != args.event_slug:
+        raise ImportSafetyError(f"Target is not exactly the approved {args.target} event")
     if events[0].get("timezone") != "America/Toronto":
-        raise ImportSafetyError("IPM Staging timezone is not America/Toronto")
+        raise ImportSafetyError(f"{args.target.title()} event timezone is not America/Toronto")
     event_id = events[0]["id"]
     existing = client.call("GET", "/schedule_items", params={"select": "*", "event_id": f"eq.{event_id}"})
     args.backup.write_text(json.dumps(existing, indent=2), encoding="utf-8")
     wanted = desired_rows(manifest, event_id)
     result = classify(existing, wanted)
     summary = {key.lower(): len(value) for key, value in result.items()}
-    print(json.dumps({"mode": "apply" if args.apply else "dry-run", "project_ref": args.project_ref,
-                      "project": STAGING_EVENT_NAME, "event_slug": args.event_slug,
+    print(json.dumps({"mode": "apply" if args.apply else "dry-run", "target": args.target,
+                      "project_ref": args.project_ref, "project": target_name, "event_slug": args.event_slug,
                       "backup": str(args.backup), "existing_count": len(existing),
                       "existing_fingerprint": fingerprint(existing), **summary}, indent=2))
     if result["CONFLICT"] or result["UPDATE"]:

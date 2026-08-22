@@ -56,12 +56,19 @@ class ParadeWeekScheduleImportTests(unittest.TestCase):
         self.assertFalse(second["INSERT"] or second["UPDATE"] or second["CONFLICT"])
         self.assertEqual(146, len([r for r in existing if r["source"] != SOURCE]))
 
-    def test_staging_guard_refuses_production_and_unknown_targets(self):
-        with self.assertRaisesRegex(ImportSafetyError, "Production"):
-            target_guard(PRODUCTION_PROJECT_REF, PRODUCTION_EVENT_SLUG)
-        with self.assertRaisesRegex(ImportSafetyError, "isolated IPM Staging"):
-            target_guard("unknown", "ipm-staging")
-        target_guard("hooiqjcbcbwzjjvnwyxf", "ipm-staging")
+    def test_target_guard_requires_exact_environment_pair_and_refuses_cross_targeting(self):
+        self.assertEqual(
+            "IPM Staging",
+            target_guard("staging", "hooiqjcbcbwzjjvnwyxf", "ipm-staging"),
+        )
+        self.assertEqual(
+            "JDS Event Platform",
+            target_guard("production", PRODUCTION_PROJECT_REF, PRODUCTION_EVENT_SLUG),
+        )
+        with self.assertRaisesRegex(ImportSafetyError, "approved project/event pair"):
+            target_guard("production", "hooiqjcbcbwzjjvnwyxf", "ipm-staging")
+        with self.assertRaisesRegex(ImportSafetyError, "approved project/event pair"):
+            target_guard("staging", PRODUCTION_PROJECT_REF, PRODUCTION_EVENT_SLUG)
 
     def test_poster_checksum_is_enforced(self):
         with tempfile.TemporaryDirectory() as directory:
