@@ -20,6 +20,14 @@ EVENT_SLUG = "ipm-staging"
 SOURCE = "mnp_lifestyles_2026_workbook"
 EXPECTED_COUNTS = {"Tuesday": 28, "Wednesday": 27, "Thursday": 27, "Friday": 23, "Saturday": 2}
 EXPECTED_TOTAL = 107
+APPROVED_ANNOTATIONS = {
+    "2026-09-22-foodland-b9": "(1050-1120)",
+    "2026-09-22-foodland-b11": "(1125-1145)",
+    "2026-09-22-foodland-b25": "1510-Makeover",
+    "2026-09-23-foodland-e32": "1655-Makeover",
+    "2026-09-24-foodland-h11": "1140-Makeover",
+    "2026-09-25-foodland-k18": "1325-Makeover",
+}
 MANIFEST_PATH = Path(__file__).parent / "import_manifests" / "mnp_lifestyles_2026.json"
 WORKBOOK_PATH = Path(__file__).parents[1] / "data" / "MMP Lifestyle Tent.xlsx"
 COMPARE_FIELDS = (
@@ -53,8 +61,9 @@ def load_manifest(path: Path = MANIFEST_PATH, workbook_path: Path = WORKBOOK_PAT
             raise ImportSafetyError("Every row must use the approved category")
         if row.get("timezone") != "America/Toronto":
             raise ImportSafetyError("Every row must use America/Toronto")
-        if row.get("description") not in (None, ""):
-            raise ImportSafetyError("An unapproved description is present")
+        expected_description = APPROVED_ANNOTATIONS.get(row["external_id"])
+        if row.get("description") != expected_description:
+            raise ImportSafetyError("An unapproved or missing embedded annotation is present")
     return manifest
 
 

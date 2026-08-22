@@ -4,6 +4,7 @@ import tempfile
 import unittest
 
 from backend.import_mnp_lifestyles_schedule import (
+    APPROVED_ANNOTATIONS,
     EXPECTED_COUNTS,
     SOURCE,
     classify,
@@ -20,16 +21,23 @@ class MnpScheduleImportTests(unittest.TestCase):
         for row in manifest["events"]:
             counts[row["days_active"]] = counts.get(row["days_active"], 0) + 1
             self.assertEqual("MNP Lifestyles Tent Events", row["category"])
-            self.assertIsNone(row["description"])
+            self.assertEqual(APPROVED_ANNOTATIONS.get(row["external_id"]), row["description"])
             self.assertEqual("America/Toronto", row["timezone"])
         self.assertEqual(EXPECTED_COUNTS, counts)
 
     def test_human_decisions_are_encoded_exactly(self):
         events = {row["external_id"]: row for row in load_manifest()["events"]}
-        self.assertEqual("3:15 PM", events["2026-09-22-foodland-b25"]["end_time"])
-        self.assertEqual("5:00 PM", events["2026-09-23-foodland-e32"]["end_time"])
-        self.assertEqual("11:45 AM", events["2026-09-24-foodland-h11"]["end_time"])
-        self.assertEqual(("1:25 PM", "1:30 PM"), (events["2026-09-25-foodland-k18"]["start_time"], events["2026-09-25-foodland-k18"]["end_time"]))
+        expected = {
+            "2026-09-22-foodland-b9": ("Davis Hill Nursery", "10:45 AM", "11:15 AM", "(1050-1120)"),
+            "2026-09-22-foodland-b11": ("Sleepers Bed Gallery", "11:15 AM", "11:45 AM", "(1125-1145)"),
+            "2026-09-22-foodland-b25": ("West Shore", "2:45 PM", "3:15 PM", "1510-Makeover"),
+            "2026-09-23-foodland-e32": ("Mary Kay / Cheryl McNair", "4:30 PM", "5:00 PM", "1655-Makeover"),
+            "2026-09-24-foodland-h11": ("Elgin Jewelers", "11:15 AM", "11:45 AM", "1140-Makeover"),
+            "2026-09-25-foodland-k18": ("His Style", "1:00 PM", "1:30 PM", "1325-Makeover"),
+        }
+        for identity, values in expected.items():
+            row = events[identity]
+            self.assertEqual(values, (row["title"], row["start_time"], row["end_time"], row["description"]))
         self.assertEqual("4:00 PM", events["2026-09-22-quality-homes-d30"]["start_time"])
         saturday = [row for row in events.values() if row["date"] == "2026-09-26"]
         self.assertTrue(all(row["title"] == "GINA LIVY" and row["location_name"] == "Foodland - Stage" for row in saturday))
