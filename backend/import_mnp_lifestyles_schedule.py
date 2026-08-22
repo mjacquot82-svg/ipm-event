@@ -28,7 +28,7 @@ APPROVED_DESCRIPTIONS = {
     "2026-09-22-foodland-b11": "(1125-1145)",
     "2026-09-22-foodland-b14": "Greenock Collective",
     "2026-09-22-foodland-b18": "Liesemer Home Hardware",
-    "2026-09-22-foodland-b21": "Photography Bietz",
+    "2026-09-22-foodland-b21": "Fashion",
     "2026-09-22-foodland-b23": "Hayley Wilhem",
     "2026-09-22-foodland-b25": "1510-Makeover",
     "2026-09-22-foodland-b28": "The Space Between\nAlicia Gibbons",
