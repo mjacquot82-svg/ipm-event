@@ -46,8 +46,8 @@ test('blank schedule descriptions remain optional in cards, details, and itinera
 });
 
 test('start-time-only events render without a trailing separator', () => {
-  assert.match(scheduleSource, /\[event\.start_time, event\.end_time\]\.filter\(Boolean\)\.join\(' - '\)/);
-  assert.match(scheduleSource, /\[selectedEvent\.start_time, selectedEvent\.end_time\]\.filter\(Boolean\)\.join\(' - '\)/);
+  assert.match(scheduleSource, /formatScheduleTimeRange\(event\.start_time, event\.end_time\)/);
+  assert.match(scheduleSource, /formatScheduleTimeRange\(selectedEvent\.start_time, selectedEvent\.end_time\)/);
   assert.doesNotMatch(scheduleSource, /\{event\.start_time\} - \{event\.end_time\}/);
   assert.doesNotMatch(scheduleSource, /\{selectedEvent\.start_time\} - \{selectedEvent\.end_time\}/);
 });

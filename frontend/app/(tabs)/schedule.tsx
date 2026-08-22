@@ -35,6 +35,8 @@ import {
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
 import { formatScheduleDate, getScheduleWeekday } from '../../src/utils/scheduleDate';
+import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
+import { exportScheduleEvent } from '../../src/services/calendarService';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
@@ -60,6 +62,8 @@ export default function ScheduleScreen() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [calendarExporting, setCalendarExporting] = useState(false);
+  const [calendarMessage, setCalendarMessage] = useState<string | null>(null);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
 
@@ -143,6 +147,21 @@ export default function ScheduleScreen() {
     });
     // Sync with backend for notifications
     syncStarredEventsWithBackend(result.favorites);
+  };
+
+  const handleCalendarExport = async (eventId: string) => {
+    setCalendarExporting(true);
+    setCalendarMessage(null);
+    try {
+      const result = await exportScheduleEvent(eventId);
+      if (result !== 'cancelled') {
+        setCalendarMessage('Calendar file created. Complete the import in your calendar app.');
+      }
+    } catch (error) {
+      setCalendarMessage(error instanceof Error ? error.message : 'Calendar export failed. Please try again.');
+    } finally {
+      setCalendarExporting(false);
+    }
   };
 
   const onRefresh = useCallback(() => {
@@ -635,6 +654,7 @@ export default function ScheduleScreen() {
                       void queueAnalyticsEvent('schedule_event_opened', {
                         schedule_item_id: event.id, category: event.category || 'uncategorized', source: 'schedule',
                       });
+                      setCalendarMessage(null);
                       setSelectedEvent(event);
                       setShowEventModal(true);
                     }}
@@ -656,7 +676,7 @@ export default function ScheduleScreen() {
                             color={colors.textMuted}
                           />
                           <Text style={styles.eventTime}>
-                            {[event.start_time, event.end_time].filter(Boolean).join(' - ')}
+                            {formatScheduleTimeRange(event.start_time, event.end_time)}
                           </Text>
                         </View>
                         <TouchableOpacity
@@ -811,7 +831,7 @@ export default function ScheduleScreen() {
                       <View style={styles.detailTextContainer}>
                         <Text style={styles.detailLabel}>Time</Text>
                         <Text style={styles.detailValue}>
-                          {[selectedEvent.start_time, selectedEvent.end_time].filter(Boolean).join(' - ')}
+                          {formatScheduleTimeRange(selectedEvent.start_time, selectedEvent.end_time)}
                         </Text>
                       </View>
                     </View>
@@ -897,6 +917,19 @@ export default function ScheduleScreen() {
                 {/* Add to Itinerary Button */}
                 <View style={styles.modalFooter}>
                   <TouchableOpacity
+                    style={styles.addToCalendarButton}
+                    onPress={() => void handleCalendarExport(selectedEvent.id)}
+                    disabled={calendarExporting}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Add ${selectedEvent.title} to calendar`}
+                    accessibilityState={{ disabled: calendarExporting, busy: calendarExporting }}
+                  >
+                    <Feather name="calendar" size={20} color={colors.primary} />
+                    <Text style={styles.addToCalendarText}>
+                      {calendarExporting ? 'Creating Calendar File…' : 'Add to Calendar'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     style={[
                       styles.addToItineraryButton,
                       favorites.includes(selectedEvent.id) && styles.removeFromItineraryButton
@@ -911,9 +944,14 @@ export default function ScheduleScreen() {
                       color="#FFFFFF"
                     />
                     <Text style={styles.addToItineraryText}>
-                      {favorites.includes(selectedEvent.id) ? 'Added to Itinerary' : 'Add to Itinerary'}
+                      {favorites.includes(selectedEvent.id) ? 'Remove from Itinerary' : 'Add to Itinerary'}
                     </Text>
                   </TouchableOpacity>
+                  {calendarMessage ? (
+                    <Text style={styles.calendarMessage} accessibilityLiveRegion="polite">
+                      {calendarMessage}
+                    </Text>
+                  ) : null}
                 </View>
               </>
             )}
@@ -1417,6 +1455,29 @@ const styles = StyleSheet.create({
     paddingBottom: 34,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    gap: 10,
+  },
+  addToCalendarButton: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    borderRadius: 16,
+    gap: 8,
+  },
+  addToCalendarText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  calendarMessage: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   addToItineraryButton: {
     backgroundColor: colors.primary,

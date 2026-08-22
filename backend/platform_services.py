@@ -408,6 +408,28 @@ class SupabaseScheduleService:
             return None
         return self._row_to_schedule_event(rows[0])
 
+    async def get_calendar_rows(
+        self,
+        schedule_item_ids: list[str],
+        event_id: Optional[str] = None,
+    ) -> list[dict[str, Any]]:
+        """Return canonical rows only when every UUID belongs to the current event."""
+        platform_event_id = await self._get_event_id(event_id)
+        rows = await self.client.request(
+            "GET",
+            "/schedule_items",
+            params={
+                "select": "id,title,description,starts_at,ends_at,location_name,updated_at,event_id",
+                "event_id": f"eq.{platform_event_id}",
+                "id": f"in.({','.join(schedule_item_ids)})",
+                "status": "neq.archived",
+                "order": "starts_at.asc,id.asc",
+            },
+        )
+        if len(rows) != len(schedule_item_ids):
+            return []
+        return rows
+
     async def replace_schedule(self, rows: Any, event_id: Optional[str] = None) -> Any:
         event_id = await self._get_event_id(event_id)
         await self.client.request(

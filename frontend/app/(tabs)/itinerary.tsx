@@ -6,6 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -28,6 +29,8 @@ import {
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
 import { formatScheduleDate } from '../../src/utils/scheduleDate';
+import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
+import { exportScheduleItinerary } from '../../src/services/calendarService';
 
 export default function ItineraryScreen() {
   usePageAnalytics('itinerary', 'home_quick_action');
@@ -39,6 +42,9 @@ export default function ItineraryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
+  const [showCalendarConfirmation, setShowCalendarConfirmation] = useState(false);
+  const [calendarExporting, setCalendarExporting] = useState(false);
+  const [calendarMessage, setCalendarMessage] = useState<string | null>(null);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
@@ -89,6 +95,22 @@ export default function ItineraryScreen() {
     void queueAnalyticsEvent('favorite_changed', { schedule_item_id: eventId, action: 'removed' });
   };
 
+  const handleItineraryCalendarExport = async () => {
+    setShowCalendarConfirmation(false);
+    setCalendarExporting(true);
+    setCalendarMessage(null);
+    try {
+      const result = await exportScheduleItinerary(starredEvents.map((event) => event.id));
+      if (result !== 'cancelled') {
+        setCalendarMessage('Calendar file created. Complete the import in your calendar app.');
+      }
+    } catch (exportError) {
+      setCalendarMessage(exportError instanceof Error ? exportError.message : 'Calendar export failed. Please try again.');
+    } finally {
+      setCalendarExporting(false);
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'Unknown date';
     return formatScheduleDate(dateStr, {
@@ -134,6 +156,26 @@ export default function ItineraryScreen() {
         <Text style={styles.subtitle}>
           {starredEvents.length} starred event{starredEvents.length === 1 ? '' : 's'}
         </Text>
+        {starredEvents.length > 0 ? (
+          <TouchableOpacity
+            style={styles.calendarButton}
+            onPress={() => setShowCalendarConfirmation(true)}
+            disabled={calendarExporting}
+            accessibilityRole="button"
+            accessibilityLabel={`Add ${starredEvents.length} starred events to calendar`}
+            accessibilityState={{ disabled: calendarExporting, busy: calendarExporting }}
+          >
+            <Feather name="calendar" size={18} color="#FFFFFF" />
+            <Text style={styles.calendarButtonText}>
+              {calendarExporting ? 'Creating Calendar File…' : 'Add My Itinerary to Calendar'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+        {calendarMessage ? (
+          <Text style={styles.calendarMessage} accessibilityLiveRegion="polite">
+            {calendarMessage}
+          </Text>
+        ) : null}
       </View>
 
       {dataSource === 'cache' && (
@@ -155,7 +197,7 @@ export default function ItineraryScreen() {
               <View style={styles.cardText}>
                 <Text style={styles.eventTitle}>{item.title}</Text>
                 <Text style={styles.eventTime}>
-                  {formatDate(item.start_date)} | {item.start_time} - {item.end_time}
+                  {formatDate(item.start_date)} | {formatScheduleTimeRange(item.start_time, item.end_time)}
                 </Text>
               </View>
 
@@ -196,6 +238,41 @@ export default function ItineraryScreen() {
           </View>
         }
       />
+      <Modal
+        visible={showCalendarConfirmation}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCalendarConfirmation(false)}
+      >
+        <View style={styles.modalOverlay} accessibilityViewIsModal>
+          <View style={styles.confirmationCard}>
+            <Text style={styles.confirmationTitle}>
+              Export {starredEvents.length} starred event{starredEvents.length === 1 ? '' : 's'} to your calendar?
+            </Text>
+            <Text style={styles.confirmationText}>
+              This creates a snapshot. Changes to your IPM itinerary won&apos;t automatically update your calendar.
+            </Text>
+            <View style={styles.confirmationActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowCalendarConfirmation(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel calendar export"
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.exportButton}
+                onPress={() => void handleItineraryCalendarExport()}
+                accessibilityRole="button"
+                accessibilityLabel="Create itinerary calendar file"
+              >
+                <Text style={styles.exportButtonText}>Create Calendar File</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -241,6 +318,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     marginTop: 4,
+  },
+  calendarButton: {
+    minHeight: 48,
+    marginTop: 14,
+    backgroundColor: '#8B1538',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  calendarButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  calendarMessage: {
+    marginTop: 10,
+    color: '#4B5563',
+    fontSize: 13,
+    lineHeight: 18,
   },
   list: {
     paddingHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
@@ -319,5 +419,60 @@ const styles = StyleSheet.create({
   browseButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  confirmationCard: {
+    width: '100%',
+    maxWidth: 480,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 22,
+  },
+  confirmationTitle: {
+    color: '#111827',
+    fontSize: 19,
+    fontWeight: '700',
+    lineHeight: 26,
+  },
+  confirmationText: {
+    color: '#4B5563',
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 10,
+  },
+  confirmationActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 20,
+  },
+  cancelButton: {
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  cancelButtonText: {
+    color: '#374151',
+    fontWeight: '600',
+  },
+  exportButton: {
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#8B1538',
+  },
+  exportButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });

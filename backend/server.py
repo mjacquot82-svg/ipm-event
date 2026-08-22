@@ -66,6 +66,10 @@ import hmac
 import re
 import time
 from urllib.parse import quote
+try:
+    from backend.calendar_export import CalendarExportError, generate_calendar
+except ImportError:
+    from calendar_export import CalendarExportError, generate_calendar
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 try:
@@ -237,6 +241,10 @@ class ScheduleEventPayload(BaseModel):
 class ScheduleImportRow(BaseModel):
     row_number: int
     data: ScheduleEventPayload
+
+
+class CalendarBulkExportRequest(BaseModel):
+    schedule_ids: List[uuid.UUID]
 
 class ScheduleImportProblem(BaseModel):
     row_number: int
@@ -1798,6 +1806,61 @@ async def get_schedule():
     except Exception as e:
         logger.error(f"Error processing schedule: {e}")
         raise HTTPException(status_code=500, detail="Error processing schedule data")
+
+
+CALENDAR_BULK_EXPORT_LIMIT = 200
+
+
+async def get_calendar_export_rows(schedule_ids: List[uuid.UUID]) -> list[dict]:
+    normalized_ids = [str(schedule_id) for schedule_id in schedule_ids]
+    if not normalized_ids:
+        raise HTTPException(status_code=400, detail="At least one Schedule event is required")
+    if len(normalized_ids) > CALENDAR_BULK_EXPORT_LIMIT:
+        raise HTTPException(status_code=413, detail="Too many Schedule events requested")
+    if len(set(normalized_ids)) != len(normalized_ids):
+        raise HTTPException(status_code=400, detail="Duplicate Schedule event IDs are not allowed")
+    getter = getattr(schedule_service, "get_calendar_rows", None)
+    if not getter:
+        raise HTTPException(status_code=503, detail="Calendar export is unavailable")
+    try:
+        rows = await getter(normalized_ids)
+    except httpx.HTTPError as exc:
+        logger.error("Calendar export Schedule lookup failed: %s", exc)
+        raise HTTPException(status_code=502, detail="Unable to create calendar export") from exc
+    if len(rows) != len(normalized_ids):
+        raise HTTPException(status_code=404, detail="One or more Schedule events were not found")
+    return rows
+
+
+def calendar_response(rows: list[dict], filename: str) -> Response:
+    try:
+        content = generate_calendar(rows, event_service.get_public_event_id())
+    except CalendarExportError as exc:
+        logger.error("Canonical Schedule row could not be exported: %s", exc)
+        raise HTTPException(status_code=500, detail="Unable to create calendar export") from exc
+    return Response(
+        content=content,
+        media_type="text/calendar",
+        headers={
+            "Cache-Control": "no-store",
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@api_router.get("/schedule/{schedule_id}/calendar")
+async def export_schedule_event_calendar(schedule_id: uuid.UUID):
+    """Export one canonical Schedule event as an iCalendar file."""
+    rows = await get_calendar_export_rows([schedule_id])
+    return calendar_response(rows, "ipm-schedule-event.ics")
+
+
+@api_router.post("/schedule/calendar")
+async def export_schedule_itinerary_calendar(data: CalendarBulkExportRequest):
+    """Export a bounded attendee-selected Schedule snapshot as one calendar file."""
+    rows = await get_calendar_export_rows(data.schedule_ids)
+    return calendar_response(rows, "ipm-my-itinerary.ics")
 
 @api_router.get("/vendors", response_model=VendorsResponse)
 async def get_vendors():
