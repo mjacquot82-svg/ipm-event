@@ -26,7 +26,7 @@ EXPECTED_MNP_TOTAL = 107
 CKNX = "CKNX Centennial Pavilion (GFO Stage) Lounge"
 ONTARIO = "Ontario Mutuals Main Stage - In the Britespan Building"
 BRUCE_RV = "The Bruce RV Park - Nightly Entertainment"
-BRUCE_LOCATION = "The Bruce RV Park"
+BRUCE_LOCATION = CKNX
 ADMISSION_NOTE = (
     "Additional admission required. General IPM admission does not include entry "
     "to The Bruce RV Park entertainment."
@@ -68,8 +68,8 @@ def load_manifest(path: Path = MANIFEST_PATH, pdf_path: Path = PDF_PATH) -> dict
         if row.get("category") == ONTARIO and row.get("location_name") != ONTARIO:
             raise ImportSafetyError("Ontario category/location wording differs")
         is_bruce = row.get("category") == BRUCE_RV
-        if is_bruce != (row.get("location_name") == BRUCE_LOCATION):
-            raise ImportSafetyError("Bruce RV category/location pairing differs")
+        if is_bruce and row.get("location_name") != BRUCE_LOCATION:
+            raise ImportSafetyError("Bruce RV physical location differs")
         if is_bruce != (row.get("description") == ADMISSION_NOTE):
             raise ImportSafetyError("Admission note must appear on only all six Bruce RV events")
         if "The RV Park" in json.dumps(row):

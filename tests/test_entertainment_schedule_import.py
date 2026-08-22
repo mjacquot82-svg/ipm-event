@@ -36,6 +36,7 @@ class EntertainmentScheduleImportTests(unittest.TestCase):
         bruce = [row for row in rows if row["category"] == BRUCE_RV]
         other = [row for row in rows if row["category"] != BRUCE_RV]
         self.assertEqual(6, len(bruce))
+        self.assertTrue(all(row["category"] == BRUCE_RV for row in bruce))
         self.assertTrue(all(row["location_name"] == BRUCE_LOCATION for row in bruce))
         self.assertTrue(all(row["description"] == ADMISSION_NOTE for row in bruce))
         self.assertTrue(all(row["description"] != ADMISSION_NOTE for row in other))

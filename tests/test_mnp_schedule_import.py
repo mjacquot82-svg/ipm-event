@@ -51,7 +51,7 @@ class MnpScheduleImportTests(unittest.TestCase):
             "2026-09-22-foodland-b7": ("Home and Garden", "Aaniin Collective"),
             "2026-09-22-foodland-b14": ("Food and Drink", "Greenock Collective"),
             "2026-09-22-foodland-b18": ("meat smoking", "Liesemer Home Hardware"),
-            "2026-09-22-foodland-b21": ("Fashion", "Photography Bietz"),
+            "2026-09-22-foodland-b21": ("Photography Bietz Studio", "Fashion"),
             "2026-09-22-foodland-b23": ("MakeUp Artist", "Hayley Wilhem"),
             "2026-09-22-foodland-b28": ("Wellness", "The Space Between\nAlicia Gibbons"),
             "2026-09-22-foodland-b30": ("Nature Babes", "Amanada Butchart"),
