@@ -4,6 +4,7 @@ import tempfile
 import unittest
 
 from backend.import_mnp_lifestyles_schedule import (
+    APPROVED_TARGETS,
     APPROVED_ANNOTATIONS,
     EXPECTED_COUNTS,
     SOURCE,
@@ -16,6 +17,7 @@ from backend.import_mnp_lifestyles_schedule import (
 class MnpScheduleImportTests(unittest.TestCase):
     def test_reviewed_manifest_has_exact_counts_and_fields(self):
         manifest = load_manifest()
+        self.assertEqual(set(APPROVED_TARGETS.values()), set(manifest["approved_event_slugs"]))
         self.assertEqual(107, len(manifest["events"]))
         counts = {}
         for row in manifest["events"]:
