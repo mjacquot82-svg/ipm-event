@@ -34,25 +34,28 @@ async function deliverCalendarResponse(response: Response, fallbackFilename: str
   const file = new File(
     [await response.blob()],
     filenameFromResponse(response, fallbackFilename),
-    { type: 'text/calendar;charset=utf-8' },
+    { type: 'text/calendar' },
   );
   const shareNavigator = typeof navigator !== 'undefined' ? navigator : undefined;
+  const shareData: ShareData = { files: [file] };
   if (
     shareNavigator?.share &&
-    shareNavigator.canShare?.({ files: [file] })
+    shareNavigator.canShare?.(shareData)
   ) {
     try {
-      await shareNavigator.share({
-        files: [file],
-        title: 'IPM 2026 Schedule',
-        text: 'Add these IPM Schedule details to your calendar.',
-      });
+      await shareNavigator.share(shareData);
       return 'shared';
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'name' in error &&
+        error.name === 'AbortError'
+      ) {
         return 'cancelled';
       }
-      throw new Error('The calendar share could not be completed. Please try again.');
+      downloadCalendarFile(file);
+      return 'downloaded';
     }
   }
   downloadCalendarFile(file);

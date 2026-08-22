@@ -40,13 +40,22 @@ test.afterEach(restoreGlobals);
 
 test('supported Web Share sends the generated calendar file', async () => {
   let shared;
+  let checked;
+  let downloaded = false;
   setNavigator({
-    canShare: ({ files }) => files.length === 1 && files[0].type.startsWith('text/calendar'),
+    canShare: (data) => {
+      checked = data;
+      return data.files.length === 1 && data.files[0].type === 'text/calendar';
+    },
     share: async (data) => { shared = data; },
   });
   globalThis.fetch = async () => calendarResponse();
+  URL.createObjectURL = () => { downloaded = true; return 'blob:test'; };
   assert.equal(await exportScheduleEvent('schedule-1'), 'shared');
   assert.equal(shared.files[0].name, 'test.ics');
+  assert.equal(shared.files[0].type, 'text/calendar');
+  assert.equal(shared, checked);
+  assert.equal(downloaded, false);
 });
 
 test('cancelled share sheet is not reported as success and does not download', async () => {
@@ -60,6 +69,37 @@ test('cancelled share sheet is not reported as success and does not download', a
   assert.equal(await exportScheduleEvent('schedule-1'), 'cancelled');
   assert.equal(downloaded, false);
 });
+
+test('plain AbortError is treated as cancellation and does not download', async () => {
+  let downloaded = false;
+  setNavigator({
+    canShare: () => true,
+    share: async () => { throw { name: 'AbortError' }; },
+  });
+  globalThis.fetch = async () => calendarResponse();
+  URL.createObjectURL = () => { downloaded = true; return 'blob:test'; };
+  assert.equal(await exportScheduleEvent('schedule-1'), 'cancelled');
+  assert.equal(downloaded, false);
+});
+
+for (const errorName of ['DataError', 'NotAllowedError', 'TypeError', 'InvalidStateError']) {
+  test(`${errorName} from Web Share uses the safe download fallback`, async () => {
+    let clicked = false;
+    setNavigator({
+      canShare: () => true,
+      share: async () => { throw new DOMException('share failed', errorName); },
+    });
+    globalThis.fetch = async () => calendarResponse();
+    URL.createObjectURL = () => 'blob:test';
+    URL.revokeObjectURL = () => {};
+    globalThis.document = {
+      body: { appendChild: () => {} },
+      createElement: () => ({ click: () => { clicked = true; }, remove: () => {} }),
+    };
+    assert.equal(await exportScheduleEvent('schedule-1'), 'downloaded');
+    assert.equal(clicked, true);
+  });
+}
 
 test('unsupported file sharing uses the safe download fallback', async () => {
   let clicked = false;
@@ -91,6 +131,19 @@ test('export errors are surfaced and an empty itinerary is rejected', async () =
   globalThis.fetch = async () => new Response('failed', { status: 500 });
   await assert.rejects(exportScheduleEvent('schedule-1'), /could not be created/);
   await assert.rejects(exportScheduleItinerary([]), /Star at least one event/);
+});
+
+test('a failed Web Share and failed download surfaces the fallback error', async () => {
+  setNavigator({
+    canShare: () => true,
+    share: async () => { throw new DOMException('share failed', 'DataError'); },
+  });
+  globalThis.fetch = async () => calendarResponse();
+  globalThis.document = undefined;
+  await assert.rejects(
+    exportScheduleEvent('schedule-1'),
+    /Calendar file download is unavailable on this device/,
+  );
 });
 
 test('shared time formatting preserves ranges and omits a trailing separator', () => {
