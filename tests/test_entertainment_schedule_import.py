@@ -11,6 +11,7 @@ from backend.import_ipm_entertainment_schedule import (
     EXPECTED_COUNTS,
     EXPECTED_TOTAL,
     ONTARIO,
+    PRODUCTION_EVENT_NAME,
     PRODUCTION_EVENT_SLUG,
     PRODUCTION_PROJECT_REF,
     SOURCE,
@@ -63,11 +64,16 @@ class EntertainmentScheduleImportTests(unittest.TestCase):
         self.assertEqual(107, len([row for row in existing if row["source"] == "mnp_lifestyles_2026_workbook"]))
 
     def test_staging_only_guard_refuses_production_and_unknown_targets(self):
-        with self.assertRaisesRegex(ImportSafetyError, "Production"):
-            target_guard(PRODUCTION_PROJECT_REF, PRODUCTION_EVENT_SLUG)
-        with self.assertRaisesRegex(ImportSafetyError, "Only"):
-            target_guard("unknown", "ipm-staging")
-        target_guard("hooiqjcbcbwzjjvnwyxf", "ipm-staging")
+        with self.assertRaisesRegex(ImportSafetyError, "explicit production"):
+            target_guard("production", "hooiqjcbcbwzjjvnwyxf", "ipm-staging")
+        with self.assertRaisesRegex(ImportSafetyError, "explicit staging"):
+            target_guard("staging", PRODUCTION_PROJECT_REF, PRODUCTION_EVENT_SLUG)
+        with self.assertRaisesRegex(ImportSafetyError, "explicit staging or production"):
+            target_guard("unknown", "hooiqjcbcbwzjjvnwyxf", "ipm-staging")
+        self.assertEqual(
+            (PRODUCTION_PROJECT_REF, PRODUCTION_EVENT_SLUG, PRODUCTION_EVENT_NAME),
+            target_guard("production", PRODUCTION_PROJECT_REF, PRODUCTION_EVENT_SLUG),
+        )
 
     def test_source_is_separate_and_pdf_checksum_is_enforced(self):
         self.assertEqual("ipm_entertainment_2026_revised_pdf", SOURCE)

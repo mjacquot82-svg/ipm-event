@@ -19,6 +19,11 @@ STAGING_EVENT_SLUG = "ipm-staging"
 STAGING_EVENT_NAME = "IPM Staging"
 PRODUCTION_PROJECT_REF = "hppboivlpqkfhhzfftuu"
 PRODUCTION_EVENT_SLUG = "ipm-2026"
+PRODUCTION_EVENT_NAME = "IPM 2026"
+APPROVED_TARGETS = {
+    "staging": (STAGING_PROJECT_REF, STAGING_EVENT_SLUG, STAGING_EVENT_NAME),
+    "production": (PRODUCTION_PROJECT_REF, PRODUCTION_EVENT_SLUG, PRODUCTION_EVENT_NAME),
+}
 SOURCE = "ipm_entertainment_2026_revised_pdf"
 MNP_SOURCE = "mnp_lifestyles_2026_workbook"
 EXPECTED_TOTAL = 39
@@ -187,29 +192,32 @@ def service_key_from_stdin() -> str:
     raise ImportSafetyError("No staging service-role API key was provided")
 
 
-def target_guard(project_ref: str, event_slug: str) -> None:
-    if project_ref == PRODUCTION_PROJECT_REF or event_slug == PRODUCTION_EVENT_SLUG:
-        raise ImportSafetyError("Production/ipm-2026 is explicitly forbidden")
-    if (project_ref, event_slug) != (STAGING_PROJECT_REF, STAGING_EVENT_SLUG):
-        raise ImportSafetyError("Only the IPM Staging project/event pair is approved")
+def target_guard(target: str, project_ref: str, event_slug: str) -> tuple[str, str, str]:
+    approved = APPROVED_TARGETS.get(target)
+    if approved is None:
+        raise ImportSafetyError("An explicit staging or production target is required")
+    if (project_ref, event_slug) != approved[:2]:
+        raise ImportSafetyError(f"Project/event pair does not match explicit {target} target")
+    return approved
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--target", choices=sorted(APPROVED_TARGETS), required=True)
     parser.add_argument("--api-keys-json-stdin", action="store_true")
     parser.add_argument("--backup", type=Path, required=True)
     parser.add_argument("--project-ref", required=True)
     parser.add_argument("--event-slug", required=True)
     args = parser.parse_args()
-    target_guard(args.project_ref, args.event_slug)
+    _, expected_slug, expected_name = target_guard(args.target, args.project_ref, args.event_slug)
     if not args.api_keys_json_stdin:
         raise ImportSafetyError("Use --api-keys-json-stdin; credentials must not be command-line arguments")
     manifest = load_manifest()
     client = SupabaseRest(args.project_ref, service_key_from_stdin())
     events = client.call("GET", "/events", params={"select": "id,slug,name,timezone", "slug": f"eq.{args.event_slug}"})
-    if len(events) != 1 or events[0].get("slug") != STAGING_EVENT_SLUG or events[0].get("name") != STAGING_EVENT_NAME:
-        raise ImportSafetyError("Target is not exactly the IPM Staging event")
+    if len(events) != 1 or events[0].get("slug") != expected_slug or events[0].get("name") != expected_name:
+        raise ImportSafetyError(f"Target is not exactly the approved {args.target} event")
     if events[0].get("timezone") != "America/Toronto":
         raise ImportSafetyError("IPM Staging timezone is not America/Toronto")
     event_id = events[0]["id"]
@@ -221,7 +229,7 @@ def main() -> int:
     mnp_fingerprint = fingerprint(mnp_before)
     result = classify(existing, desired_rows(manifest, event_id))
     summary = {key.lower(): len(value) for key, value in result.items()}
-    print(json.dumps({"mode": "apply" if args.apply else "dry-run", "project": STAGING_EVENT_NAME,
+    print(json.dumps({"mode": "apply" if args.apply else "dry-run", "target": args.target, "project": expected_name,
                       "event_slug": args.event_slug, "backup": str(args.backup), **summary}, indent=2))
     if result["CONFLICT"] or result["UPDATE"]:
         raise ImportSafetyError("Conflicts or updates detected; insert-only importer refuses to write")
