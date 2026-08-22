@@ -5,7 +5,7 @@ import unittest
 
 from backend.import_mnp_lifestyles_schedule import (
     APPROVED_TARGETS,
-    APPROVED_ANNOTATIONS,
+    APPROVED_DESCRIPTIONS,
     EXPECTED_COUNTS,
     SOURCE,
     classify,
@@ -23,7 +23,7 @@ class MnpScheduleImportTests(unittest.TestCase):
         for row in manifest["events"]:
             counts[row["days_active"]] = counts.get(row["days_active"], 0) + 1
             self.assertEqual("MNP Lifestyles Tent Events", row["category"])
-            self.assertEqual(APPROVED_ANNOTATIONS.get(row["external_id"]), row["description"])
+            self.assertEqual(APPROVED_DESCRIPTIONS.get(row["external_id"]), row["description"])
             self.assertEqual("America/Toronto", row["timezone"])
         self.assertEqual(EXPECTED_COUNTS, counts)
 
@@ -43,6 +43,59 @@ class MnpScheduleImportTests(unittest.TestCase):
         self.assertEqual("4:00 PM", events["2026-09-22-quality-homes-d30"]["start_time"])
         saturday = [row for row in events.values() if row["date"] == "2026-09-26"]
         self.assertTrue(all(row["title"] == "GINA LIVY" and row["location_name"] == "Foodland - Stage" for row in saturday))
+
+    def test_multiline_workbook_content_is_preserved_exactly(self):
+        events = {row["external_id"]: row for row in load_manifest()["events"]}
+        expected = {
+            "2026-09-22-foodland-b6": ("Start of Day Movement", "Definition Fitness"),
+            "2026-09-22-foodland-b7": ("Home and Garden", "Aaniin Collective"),
+            "2026-09-22-foodland-b14": ("Food and Drink", "Greenock Collective"),
+            "2026-09-22-foodland-b18": ("meat smoking", "Liesemer Home Hardware"),
+            "2026-09-22-foodland-b21": ("Fashion", "Photography Bietz"),
+            "2026-09-22-foodland-b23": ("MakeUp Artist", "Hayley Wilhem"),
+            "2026-09-22-foodland-b28": ("Wellness", "The Space Between\nAlicia Gibbons"),
+            "2026-09-22-foodland-b30": ("Nature Babes", "Amanada Butchart"),
+            "2026-09-22-foodland-b32": ("The WOMB", "Rebecca Grubb & Jess Connor"),
+            "2026-09-22-harleys-c19": ("Charcuterie Sampling Harley's", None),
+            "2026-09-22-quality-homes-d18": ("MakeUp Artist", "Hayley Wilhelm"),
+            "2026-09-22-quality-homes-d22": ("Pilates Demo", "Chelsea\nAll Bodies"),
+            "2026-09-22-quality-homes-d30": ("Shroom Soda", "West Shore"),
+            "2026-09-23-foodland-e7": ("Wellness", "Essential Wellness\nLiza Weltz"),
+            "2026-09-23-foodland-e9": ("Evergreen Connections", "Rachel Stroeder"),
+            "2026-09-23-foodland-e12": ("Art Studio", "Susan Seitz"),
+            "2026-09-23-foodland-e14": ("Home and Garden", "Ruth Montgomery (Energy in the Home)"),
+            "2026-09-23-foodland-e21": ("furniture refresh", "Willow Home"),
+            "2026-09-23-foodland-e28": ("Fashion", "J&H Womens Fashions"),
+            "2026-09-23-harleys-f7": ("Wood Working", "Mark Grubb"),
+            "2026-09-23-harleys-f21": ("Simply Potts", "by Lauriss"),
+            "2026-09-23-quality-homes-g13": ("cupcake decorating", "Labour of Love"),
+            "2026-09-24-foodland-h6": ("Start of Day Movement", "Definition Fitness"),
+            "2026-09-24-foodland-h7": ("Fashion", "Pure Elegance"),
+            "2026-09-24-foodland-h14": ("Wellness", "Hannah Grieg"),
+            "2026-09-24-foodland-h16": ("Tobermory Hyperbaric Chamber", "George Harpur"),
+            "2026-09-24-foodland-h18": ("Soul Purpose", "Ashley Grant"),
+            "2026-09-24-foodland-h20": ("The Feeling of Home - Designing Beyond the Trend", "Home and Garden"),
+            "2026-09-24-foodland-h25": ("Food and Drink", "Southampton Olive Oil"),
+            "2026-09-24-foodland-h31": ("all things canning", "Greenock Collective"),
+            "2026-09-24-harleys-i7": ("Christmas Urns", "Brenda Kreamer"),
+            "2026-09-24-harleys-i16": ("Doterra w Jodi", None),
+            "2026-09-24-quality-homes-j12": ("replanting house plants", "Guest House"),
+            "2026-09-24-quality-homes-j14": ("sampling cold brew", "Guest House"),
+            "2026-09-25-foodland-k6": ("Start of Day Movement", "Freezer Fitness"),
+            "2026-09-25-foodland-k7": ("Food and Drink", "Fire Cider & Honey"),
+            "2026-09-25-foodland-k11": ("Hormones and Food", "Jennifer Dunsmoor"),
+            "2026-09-25-foodland-k14": ("Fashion", "Forrest Maiden"),
+            "2026-09-25-foodland-k21": ("Wellness", "Freezer Fitness\nJackie West, Dianne Zettle, Conor Fischer"),
+            "2026-09-25-foodland-k31": ("Home and Garden", "Carrie Lynn Floral"),
+            "2026-09-25-foodland-k33": ("Angela - Up stage Design", None),
+            "2026-09-25-harleys-l22": ("Organic Facial", "Sara Porter\nRemind Wellness"),
+            "2026-09-25-quality-homes-m10": ("All things honey -Jody", None),
+            "2026-09-25-quality-homes-m15": ("The perfect Christmas Trees", "Flowers by Uss"),
+        }
+        self.assertEqual(44, len(expected))
+        for identity, content in expected.items():
+            row = events[identity]
+            self.assertEqual(content, (row["title"], row["description"]), identity)
 
     def test_classification_is_idempotent_and_preserves_uuid(self):
         wanted = desired_rows(load_manifest(), "event-uuid")
