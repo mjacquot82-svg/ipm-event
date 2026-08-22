@@ -21,13 +21,53 @@ APPROVED_TARGETS = {
 SOURCE = "mnp_lifestyles_2026_workbook"
 EXPECTED_COUNTS = {"Tuesday": 28, "Wednesday": 27, "Thursday": 27, "Friday": 23, "Saturday": 2}
 EXPECTED_TOTAL = 107
-APPROVED_ANNOTATIONS = {
+APPROVED_DESCRIPTIONS = {
+    "2026-09-22-foodland-b6": "Definition Fitness",
+    "2026-09-22-foodland-b7": "Aaniin Collective",
     "2026-09-22-foodland-b9": "(1050-1120)",
     "2026-09-22-foodland-b11": "(1125-1145)",
+    "2026-09-22-foodland-b14": "Greenock Collective",
+    "2026-09-22-foodland-b18": "Liesemer Home Hardware",
+    "2026-09-22-foodland-b21": "Photography Bietz",
+    "2026-09-22-foodland-b23": "Hayley Wilhem",
     "2026-09-22-foodland-b25": "1510-Makeover",
+    "2026-09-22-foodland-b28": "The Space Between\nAlicia Gibbons",
+    "2026-09-22-foodland-b30": "Amanada Butchart",
+    "2026-09-22-foodland-b32": "Rebecca Grubb & Jess Connor",
+    "2026-09-22-quality-homes-d18": "Hayley Wilhelm",
+    "2026-09-22-quality-homes-d22": "Chelsea\nAll Bodies",
+    "2026-09-22-quality-homes-d30": "West Shore",
+    "2026-09-23-foodland-e7": "Essential Wellness\nLiza Weltz",
+    "2026-09-23-foodland-e9": "Rachel Stroeder",
+    "2026-09-23-foodland-e12": "Susan Seitz",
+    "2026-09-23-foodland-e14": "Ruth Montgomery (Energy in the Home)",
+    "2026-09-23-foodland-e21": "Willow Home",
+    "2026-09-23-foodland-e28": "J&H Womens Fashions",
     "2026-09-23-foodland-e32": "1655-Makeover",
+    "2026-09-23-harleys-f7": "Mark Grubb",
+    "2026-09-23-harleys-f21": "by Lauriss",
+    "2026-09-23-quality-homes-g13": "Labour of Love",
+    "2026-09-24-foodland-h6": "Definition Fitness",
+    "2026-09-24-foodland-h7": "Pure Elegance",
     "2026-09-24-foodland-h11": "1140-Makeover",
+    "2026-09-24-foodland-h14": "Hannah Grieg",
+    "2026-09-24-foodland-h16": "George Harpur",
+    "2026-09-24-foodland-h18": "Ashley Grant",
+    "2026-09-24-foodland-h20": "Home and Garden",
+    "2026-09-24-foodland-h25": "Southampton Olive Oil",
+    "2026-09-24-foodland-h31": "Greenock Collective",
+    "2026-09-24-harleys-i7": "Brenda Kreamer",
+    "2026-09-24-quality-homes-j12": "Guest House",
+    "2026-09-24-quality-homes-j14": "Guest House",
+    "2026-09-25-foodland-k6": "Freezer Fitness",
+    "2026-09-25-foodland-k7": "Fire Cider & Honey",
+    "2026-09-25-foodland-k11": "Jennifer Dunsmoor",
+    "2026-09-25-foodland-k14": "Forrest Maiden",
     "2026-09-25-foodland-k18": "1325-Makeover",
+    "2026-09-25-foodland-k21": "Freezer Fitness\nJackie West, Dianne Zettle, Conor Fischer",
+    "2026-09-25-foodland-k31": "Carrie Lynn Floral",
+    "2026-09-25-harleys-l22": "Sara Porter\nRemind Wellness",
+    "2026-09-25-quality-homes-m15": "Flowers by Uss",
 }
 MANIFEST_PATH = Path(__file__).parent / "import_manifests" / "mnp_lifestyles_2026.json"
 WORKBOOK_PATH = Path(__file__).parents[1] / "data" / "MMP Lifestyle Tent.xlsx"
@@ -64,9 +104,9 @@ def load_manifest(path: Path = MANIFEST_PATH, workbook_path: Path = WORKBOOK_PAT
             raise ImportSafetyError("Every row must use the approved category")
         if row.get("timezone") != "America/Toronto":
             raise ImportSafetyError("Every row must use America/Toronto")
-        expected_description = APPROVED_ANNOTATIONS.get(row["external_id"])
+        expected_description = APPROVED_DESCRIPTIONS.get(row["external_id"])
         if row.get("description") != expected_description:
-            raise ImportSafetyError("An unapproved or missing embedded annotation is present")
+            raise ImportSafetyError("An unapproved or missing workbook description is present")
     return manifest
 
 
