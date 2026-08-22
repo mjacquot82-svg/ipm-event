@@ -14,9 +14,10 @@ from typing import Any
 from urllib import error, parse, request
 from zoneinfo import ZoneInfo
 
-PROJECT_REF = "hooiqjcbcbwzjjvnwyxf"
-PROJECT_URL = f"https://{PROJECT_REF}.supabase.co"
-EVENT_SLUG = "ipm-staging"
+APPROVED_TARGETS = {
+    "hooiqjcbcbwzjjvnwyxf": "ipm-staging",
+    "hppboivlpqkfhhzfftuu": "ipm-2026",
+}
 SOURCE = "mnp_lifestyles_2026_workbook"
 EXPECTED_COUNTS = {"Tuesday": 28, "Wednesday": 27, "Thursday": 27, "Friday": 23, "Saturday": 2}
 EXPECTED_TOTAL = 107
@@ -42,8 +43,10 @@ class ImportSafetyError(RuntimeError):
 
 def load_manifest(path: Path = MANIFEST_PATH, workbook_path: Path = WORKBOOK_PATH) -> dict[str, Any]:
     manifest = json.loads(path.read_text(encoding="utf-8"))
-    if manifest.get("event_slug") != EVENT_SLUG or manifest.get("source") != SOURCE:
-        raise ImportSafetyError("Manifest target/source safety check failed")
+    if manifest.get("source") != SOURCE:
+        raise ImportSafetyError("Manifest source safety check failed")
+    if set(manifest.get("approved_event_slugs", [])) != set(APPROVED_TARGETS.values()):
+        raise ImportSafetyError("Manifest approved-target safety check failed")
     if not workbook_path.is_file():
         raise ImportSafetyError(f"Authoritative workbook is missing: {workbook_path}")
     digest = hashlib.sha256(workbook_path.read_bytes()).hexdigest()
@@ -139,11 +142,12 @@ def classify(existing_rows: list[dict[str, Any]], wanted_rows: list[dict[str, An
 
 
 class SupabaseRest:
-    def __init__(self, key: str):
+    def __init__(self, project_ref: str, key: str):
+        self.project_url = f"https://{project_ref}.supabase.co"
         self.key = key
 
     def call(self, method: str, path: str, *, params: dict[str, str] | None = None, body: Any = None) -> Any:
-        url = f"{PROJECT_URL}/rest/v1{path}"
+        url = f"{self.project_url}/rest/v1{path}"
         if params:
             url += "?" + parse.urlencode(params, safe=".*,()")
         data = None if body is None else json.dumps(body).encode()
@@ -182,15 +186,19 @@ def main() -> int:
     parser.add_argument("--apply", action="store_true", help="Apply the classified inserts/updates")
     parser.add_argument("--api-keys-json-stdin", action="store_true")
     parser.add_argument("--backup", type=Path)
+    parser.add_argument("--project-ref", required=True)
+    parser.add_argument("--event-slug", required=True)
     args = parser.parse_args()
     if not args.api_keys_json_stdin:
         raise ImportSafetyError("Use --api-keys-json-stdin; credentials must never be command-line arguments")
+    if APPROVED_TARGETS.get(args.project_ref) != args.event_slug:
+        raise ImportSafetyError("Project/event target pair is not approved")
 
     manifest = load_manifest()
-    client = SupabaseRest(service_key_from_stdin())
-    events = client.call("GET", "/events", params={"select": "id,slug,name,timezone", "slug": f"eq.{EVENT_SLUG}"})
-    if len(events) != 1 or events[0].get("slug") != EVENT_SLUG:
-        raise ImportSafetyError("Exactly one ipm-staging event must exist")
+    client = SupabaseRest(args.project_ref, service_key_from_stdin())
+    events = client.call("GET", "/events", params={"select": "id,slug,name,timezone", "slug": f"eq.{args.event_slug}"})
+    if len(events) != 1 or events[0].get("slug") != args.event_slug:
+        raise ImportSafetyError(f"Exactly one {args.event_slug} event must exist")
     if events[0].get("timezone") != "America/Toronto":
         raise ImportSafetyError("ipm-staging event timezone is not America/Toronto")
     event_id = events[0]["id"]
@@ -201,7 +209,7 @@ def main() -> int:
     result = classify(existing, wanted)
     unrelated_count = sum(1 for row in existing if row.get("source") != SOURCE)
     summary = summarize(result, unrelated_count)
-    print(json.dumps({"mode": "apply" if args.apply else "dry-run", "project_ref": PROJECT_REF, "event_slug": EVENT_SLUG, **summary}, indent=2))
+    print(json.dumps({"mode": "apply" if args.apply else "dry-run", "project_ref": args.project_ref, "event_slug": args.event_slug, **summary}, indent=2))
     if result["CONFLICT"]:
         raise ImportSafetyError("Identity conflicts detected; refusing to write")
     if not args.apply:
