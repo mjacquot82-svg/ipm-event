@@ -32,4 +32,6 @@ test('send guard requires distinct A and B and targets only A', () => {
   assert.match(server, /Distinct Device B registration is required/);
   assert.match(server, /installation_id not in WONDERPUSH_TEST_INSTALLATION_IDS/);
   assert.doesNotMatch(server.slice(server.indexOf('send_itinerary_targeting_test')), /send_everyone/);
+  assert.match(server, /distinct_capabilities/);
+  assert.match(server, /device_a_verification_code/);
 });

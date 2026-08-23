@@ -1923,8 +1923,13 @@ async def itinerary_test_readiness():
     labels = {item.get("test_device_label"): item for item in registrations}
     distinct = bool(labels.get("A") and labels.get("B") and
         labels["A"]["wonderpush_installation_id"] != labels["B"]["wonderpush_installation_id"])
+    distinct_capabilities = bool(labels.get("A") and labels.get("B") and
+        not hmac.compare_digest(labels["A"]["capability_hash"], labels["B"]["capability_hash"]))
     return {"device_a_registered": "A" in labels, "device_b_registered": "B" in labels,
-        "distinct_installations": distinct, "ready_for_authorization": distinct,
+        "distinct_installations": distinct, "distinct_capabilities": distinct_capabilities,
+        "device_a_verification_code": test_device_status(labels["A"])["fingerprint"] if labels.get("A") else None,
+        "device_b_verification_code": test_device_status(labels["B"])["fingerprint"] if labels.get("B") else None,
+        "ready_for_authorization": distinct and distinct_capabilities,
         "target": "Device A only" if distinct else None, "notification_sent": False}
 
 @api_router.post("/admin/itinerary-reminders/test/{installation_id}")
@@ -1946,6 +1951,8 @@ async def send_itinerary_targeting_test(
         raise HTTPException(status_code=403, detail="Only registered Device A may be targeted")
     if not labels.get("B") or labels["B"]["wonderpush_installation_id"] == installation_id:
         raise HTTPException(status_code=409, detail="Distinct Device B registration is required")
+    if hmac.compare_digest(labels["A"]["capability_hash"], labels["B"]["capability_hash"]):
+        raise HTTPException(status_code=409, detail="Distinct device capabilities are required")
     provider = require_wonderpush_client()
     targeted_provider = InstallationTargetedWonderPush(repository, provider)
     campaign_id = await targeted_provider.send(

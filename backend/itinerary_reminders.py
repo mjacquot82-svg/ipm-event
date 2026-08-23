@@ -83,7 +83,7 @@ class SupabaseItineraryReminderRepository:
     async def test_registrations(self) -> list[dict[str, Any]]:
         event_id = await self._event_id()
         return await self.client.request("GET", "/itinerary_reminder_installations", params={
-            "select": "id,wonderpush_installation_id,test_device_label",
+            "select": "id,wonderpush_installation_id,capability_hash,test_device_label",
             "event_id": f"eq.{event_id}", "test_device_label": "not.is.null",
         })
 
