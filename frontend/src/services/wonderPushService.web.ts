@@ -177,3 +177,33 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
     return sdk.getInstallationId();
   }, STATUS_TIMEOUT_MS, 'WonderPush installation lookup timed out.');
 }
+
+export type WonderPushDiagnostics = {
+  browserPermission: 'granted' | 'denied' | 'default' | 'unavailable';
+  sdk: 'ready' | 'unavailable';
+  subscription: 'subscribed' | 'not-subscribed' | 'unavailable';
+  installation: 'available' | 'unavailable';
+  failureStage: string | null;
+};
+
+export async function getWonderPushDiagnostics(): Promise<WonderPushDiagnostics> {
+  const result: WonderPushDiagnostics = {
+    browserPermission: typeof Notification === 'undefined' ? 'unavailable' : Notification.permission,
+    sdk: 'unavailable', subscription: 'unavailable', installation: 'unavailable', failureStage: null,
+  };
+  try { await initializeWonderPush(); result.sdk = 'ready'; }
+  catch { result.failureStage = 'wonderpush_sdk_initialization'; return result; }
+  try {
+    const sdk = window.WonderPush;
+    if (!sdk?.isSubscribedToNotifications) throw new Error();
+    const subscribed = await withTimeout(sdk.isSubscribedToNotifications(), STATUS_TIMEOUT_MS, 'status timeout');
+    result.subscription = subscribed ? 'subscribed' : 'not-subscribed';
+    if (!subscribed) { result.failureStage = 'wonderpush_subscription'; return result; }
+  } catch { result.failureStage = 'wonderpush_subscription_check'; return result; }
+  try {
+    const id = await window.WonderPush?.getInstallationId?.();
+    result.installation = id ? 'available' : 'unavailable';
+    if (!id) result.failureStage = 'wonderpush_installation_id';
+  } catch { result.failureStage = 'wonderpush_installation_lookup'; }
+  return result;
+}

@@ -1,9 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSubscribedInstallationId } from './wonderPushService.web';
+import { getSubscribedInstallationId, getWonderPushDiagnostics } from './wonderPushService.web';
 
 const CAPABILITY_KEY = '@ipm_itinerary_reminder_capability_v1';
 const ENABLED_KEY = '@ipm_itinerary_reminders_enabled_v1';
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
+class ApiSyncError extends Error {
+  constructor(public status: number) { super(`Itinerary reminder synchronization failed (${status}).`); }
+}
 
 function base64Url(bytes: Uint8Array): string {
   let binary = '';
@@ -38,7 +42,7 @@ async function request(path: string, method: string, body?: unknown) {
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  if (!response.ok) throw new Error(`Itinerary reminder synchronization failed (${response.status}).`);
+  if (!response.ok) throw new ApiSyncError(response.status);
   return response.json();
 }
 
@@ -51,6 +55,26 @@ export async function registerControlledTestDevice(label: TestDeviceLabel) {
 
 export async function getControlledTestDeviceStatus() {
   return request('/test-device', 'GET');
+}
+
+export async function diagnoseControlledTestRegistration(label: TestDeviceLabel) {
+  const wonderPush = await getWonderPushDiagnostics();
+  const diagnostic = { ...wonderPush, capability: 'unavailable', registrationApi: 'not-attempted',
+    labelApi: 'not-attempted', backendStatus: null as number | null, failureStage: wonderPush.failureStage };
+  if (wonderPush.installation !== 'available') return diagnostic;
+  try { await getOrCreateDeviceCapability(); diagnostic.capability = 'available'; }
+  catch { diagnostic.failureStage = 'device_capability_storage'; return diagnostic; }
+  try { await request('/register', 'POST'); diagnostic.registrationApi = 'success'; }
+  catch (error) {
+    diagnostic.registrationApi = 'failure'; diagnostic.failureStage = 'registration_api';
+    diagnostic.backendStatus = error instanceof ApiSyncError ? error.status : null; return diagnostic;
+  }
+  try { await request('/test-device', 'PUT', { label }); diagnostic.labelApi = 'success'; diagnostic.failureStage = null; }
+  catch (error) {
+    diagnostic.labelApi = 'failure'; diagnostic.failureStage = 'test_device_label_api';
+    diagnostic.backendStatus = error instanceof ApiSyncError ? error.status : null;
+  }
+  return diagnostic;
 }
 
 export async function configureItineraryReminderSync(starredScheduleIds: string[]): Promise<void> {

@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useRouter } from 'expo-router';
 import {
   getControlledTestDeviceStatus,
-  registerControlledTestDevice,
+  diagnoseControlledTestRegistration,
   TestDeviceLabel,
 } from '../src/services/itineraryReminderSync.web';
 
@@ -14,6 +14,7 @@ export default function ReminderTestRegistration() {
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('Checking this subscribed phone…');
+  const [diagnostic, setDiagnostic] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     getControlledTestDeviceStatus().then(setStatus).catch(() => setMessage('Choose the correct phone below to register it.'));
@@ -23,8 +24,14 @@ export default function ReminderTestRegistration() {
     setBusy(true);
     setMessage('Registering this phone securely…');
     try {
-      setStatus(await registerControlledTestDevice(label));
-      setMessage('Registration verified. No notification was sent.');
+      const result = await diagnoseControlledTestRegistration(label);
+      setDiagnostic(result);
+      if (result.failureStage) {
+        setMessage(`Registration stopped at: ${String(result.failureStage).replaceAll('_', ' ')}.`);
+      } else {
+        setStatus(await getControlledTestDeviceStatus());
+        setMessage('Registration verified. No notification was sent.');
+      }
     } catch {
       setMessage('Registration failed. Confirm notifications are enabled on this phone and try again.');
     } finally {
@@ -48,6 +55,17 @@ export default function ReminderTestRegistration() {
       </Pressable>
     </>}
     {busy ? <ActivityIndicator /> : null}<Text style={styles.message}>{message}</Text>
+    {diagnostic ? <View style={styles.diagnostics} accessibilityLiveRegion="polite">
+      <Text style={styles.diagnosticTitle}>Safe diagnostics</Text>
+      <Text>Browser permission: {String(diagnostic.browserPermission)}</Text>
+      <Text>WonderPush SDK: {String(diagnostic.sdk)}</Text>
+      <Text>WonderPush subscription: {String(diagnostic.subscription)}</Text>
+      <Text>Installation ID: {String(diagnostic.installation)}</Text>
+      <Text>Capability: {String(diagnostic.capability)}</Text>
+      <Text>Registration API: {String(diagnostic.registrationApi)}</Text>
+      <Text>Device label API: {String(diagnostic.labelApi)}</Text>
+      <Text>Backend response: {diagnostic.backendStatus ? `HTTP ${diagnostic.backendStatus}` : 'not reached / none'}</Text>
+    </View> : null}
     <Pressable style={styles.back} onPress={() => router.replace('/')} accessibilityRole="button"><Text>Back to IPM</Text></Pressable>
   </View>;
 }
@@ -62,4 +80,6 @@ const styles = StyleSheet.create({
   success: { borderRadius: 12, padding: 18, backgroundColor: '#ECFDF5', borderWidth: 1, borderColor: '#047857' },
   successTitle: { fontSize: 20, fontWeight: '700', color: '#065F46' }, message: { minHeight: 24, color: '#374151' },
   back: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  diagnostics: { borderRadius: 12, padding: 16, gap: 6, backgroundColor: '#F3F4F6' },
+  diagnosticTitle: { fontSize: 17, fontWeight: '700', color: '#1F2937' },
 });

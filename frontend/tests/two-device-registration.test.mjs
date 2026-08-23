@@ -9,7 +9,15 @@ test('phones enroll normally without displaying installation IDs or capabilities
   assert.match(page, /Register Marc’s Phone as Device A/);
   assert.match(page, /Register Jen’s Phone as Device B/);
   assert.match(page, /never displayed/);
-  assert.doesNotMatch(page, /installationId|capability/);
+  assert.doesNotMatch(page, /diagnostic\.installationId|diagnostic\.capabilitySecret/);
+});
+
+test('safe diagnostics identify every client and API registration stage', () => {
+  for (const label of ['Browser permission', 'WonderPush SDK', 'WonderPush subscription',
+    'Installation ID', 'Capability', 'Registration API', 'Backend response']) {
+    assert.match(page, new RegExp(label));
+  }
+  assert.doesNotMatch(page, /diagnostic\.installationId|diagnostic\.capabilitySecret/);
 });
 
 test('send guard requires distinct A and B and targets only A', () => {
