@@ -1967,7 +1967,7 @@ async def send_itinerary_targeting_test(
     )
     return {"status": "sent", "provider_campaign_id": campaign_id, "installation_id": installation_id}
 
-CONTROLLED_SEND_TOKEN_HASH = "69ab70d6d27c68c82ac155b72179c80876e5c591ff05d33972ef73a050cd9726"
+CONTROLLED_SEND_TOKEN_HASH = "c1dc23c0ac58cf66310f75eb685e9b1e2ce7dd7befca7dabda5059f8abbf113a"
 
 @api_router.post("/itinerary-reminders/controlled-device-a-send")
 async def controlled_device_a_send(data: ControlledTargetingSendPayload, request: Request):
