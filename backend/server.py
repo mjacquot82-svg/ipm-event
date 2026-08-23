@@ -269,6 +269,10 @@ class ItineraryEnabledPayload(BaseModel):
 class TestDevicePayload(BaseModel):
     label: Literal["A", "B"]
 
+class ControlledTargetingSendPayload(BaseModel):
+    device_a_verification_code: str
+    device_b_verification_code: str
+
 class ScheduleImportProblem(BaseModel):
     row_number: int
     errors: List[str]
@@ -1962,6 +1966,42 @@ async def send_itinerary_targeting_test(
         installation_id=installation_id,
     )
     return {"status": "sent", "provider_campaign_id": campaign_id, "installation_id": installation_id}
+
+CONTROLLED_SEND_TOKEN_HASH = "69ab70d6d27c68c82ac155b72179c80876e5c591ff05d33972ef73a050cd9726"
+
+@api_router.post("/itinerary-reminders/controlled-device-a-send")
+async def controlled_device_a_send(data: ControlledTargetingSendPayload, request: Request):
+    repository = require_itinerary_foundation()
+    supplied = request.headers.get("X-Controlled-Send-Authorization", "")
+    if not supplied or not hmac.compare_digest(hashlib.sha256(supplied.encode()).hexdigest(), CONTROLLED_SEND_TOKEN_HASH):
+        raise HTTPException(status_code=403, detail="Invalid controlled-send authorization")
+    registrations = await repository.test_registrations()
+    labels = {item.get("test_device_label"): item for item in registrations}
+    if not labels.get("A") or not labels.get("B"):
+        raise HTTPException(status_code=409, detail="Both controlled devices must be registered")
+    if labels["A"]["wonderpush_installation_id"] == labels["B"]["wonderpush_installation_id"]:
+        raise HTTPException(status_code=409, detail="Installations are not distinct")
+    if hmac.compare_digest(labels["A"]["capability_hash"], labels["B"]["capability_hash"]):
+        raise HTTPException(status_code=409, detail="Capabilities are not distinct")
+    if not hmac.compare_digest(test_device_status(labels["A"])["fingerprint"], data.device_a_verification_code):
+        raise HTTPException(status_code=409, detail="Device A verification failed")
+    if not hmac.compare_digest(test_device_status(labels["B"])["fingerprint"], data.device_b_verification_code):
+        raise HTTPException(status_code=409, detail="Device B verification failed")
+    claim = await repository.claim_controlled_test(labels["A"]["id"])
+    if not claim:
+        raise HTTPException(status_code=409, detail="Controlled test was already claimed; no repeat permitted")
+    provider = InstallationTargetedWonderPush(repository, require_wonderpush_client())
+    try:
+        provider_id = await provider.send(installation_id=labels["A"]["wonderpush_installation_id"],
+            title="IPM — Targeting Test",
+            message="This staging-only notification was sent to Device A only.",
+            target_url=f"{PUBLIC_APP_URL}/itinerary")
+    except Exception as exc:
+        await repository.finish_controlled_test(claim["id"], status="failed", error_message=str(exc))
+        raise HTTPException(status_code=502, detail="Controlled provider send failed; it will not be retried") from exc
+    await repository.finish_controlled_test(claim["id"], status="sent", provider_delivery_id=provider_id)
+    return {"status": "sent", "target": "Device A only", "provider_delivery_id": provider_id,
+        "device_b_targeted": False, "broadcast": False}
 
 
 CALENDAR_BULK_EXPORT_LIMIT = 200

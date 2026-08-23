@@ -87,6 +87,25 @@ class SupabaseItineraryReminderRepository:
             "event_id": f"eq.{event_id}", "test_device_label": "not.is.null",
         })
 
+    async def claim_controlled_test(self, registration_id: str) -> dict[str, Any] | None:
+        event_id = await self._event_id()
+        try:
+            rows = await self.client.request("POST", "/controlled_targeting_tests", json={
+                "event_id": event_id, "registration_id": registration_id, "status": "claimed",
+            }, headers={"Prefer": "return=representation"})
+            return rows[0]
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 409: return None
+            raise
+
+    async def finish_controlled_test(self, claim_id: str, *, status: str,
+        provider_delivery_id: str | None = None, error_message: str | None = None) -> None:
+        body = {"status": status, "provider_delivery_id": provider_delivery_id,
+            "error_message": error_message[:1000] if error_message else None}
+        if status == "sent": body["sent_at"] = datetime.now(timezone.utc).isoformat()
+        await self.client.request("PATCH", "/controlled_targeting_tests",
+            params={"id": f"eq.{claim_id}"}, json=body, headers={"Prefer": "return=minimal"})
+
     async def sync_full_set(self, registration: dict[str, Any], schedule_ids: list[str]) -> dict[str, Any]:
         """RPC performs the delete/insert reconciliation in one transaction."""
         result = await self.client.request("POST", "/rpc/sync_itinerary_reminder_stars", json={
