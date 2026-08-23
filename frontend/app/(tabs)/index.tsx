@@ -549,8 +549,10 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openQuickLink('camping', 'camping')}
+              onPress={() => quickAction('camping', 'internal', () => router.push('/camping' as never))}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Camping information"
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
                 <Feather name="sun" size={22} color="#FFFFFF" />
