@@ -108,6 +108,19 @@ class WonderPushClient:
             target={"targetInstallationIds": ",".join(installation_ids)},
         )
 
+    async def send_one_installation(
+        self, *, title: str, message: str, target_url: str, installation_id: str
+    ) -> str:
+        """Send to exactly one installation; this method has no broadcast fallback."""
+        target = installation_id.strip()
+        if not target or "," in target or target == "@ALL":
+            raise WonderPushError("Exactly one WonderPush installation ID is required")
+        content = self.notification_content(title, message, target_url)
+        return await self._send(
+            content=content,
+            target={"targetInstallationIds": target},
+        )
+
 
 class EventService:
     """Resolve platform event context for backend content services."""

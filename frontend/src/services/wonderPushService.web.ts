@@ -13,6 +13,7 @@ type WonderPushQueue = unknown[] & {
   isSubscribedToNotifications?: () => Promise<boolean>;
   subscribeToNotifications?: () => Promise<unknown>;
   unsubscribeFromNotifications?: () => Promise<unknown>;
+  getInstallationId?: () => Promise<string | null>;
 };
 
 declare global {
@@ -167,4 +168,12 @@ export async function unsubscribeFromNotifications(): Promise<NotificationState>
   } catch {
     return 'error';
   }
+}
+
+export async function getSubscribedInstallationId(): Promise<string | null> {
+  if (await getNotificationState() !== 'subscribed') return null;
+  return withSdk(async (sdk) => {
+    if (!sdk.getInstallationId) throw new Error('WonderPush installation API is unavailable.');
+    return sdk.getInstallationId();
+  }, STATUS_TIMEOUT_MS, 'WonderPush installation lookup timed out.');
 }

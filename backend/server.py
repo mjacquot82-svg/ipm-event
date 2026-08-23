@@ -39,6 +39,7 @@ try:
         summary_report as get_analytics_summary_report,
         traffic_report as get_analytics_traffic_report,
     )
+    from backend.itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, public_status
 except ModuleNotFoundError:
     from analytics import (
         ANALYTICS_EVENT_SCOPE,
@@ -60,6 +61,7 @@ except ModuleNotFoundError:
         summary_report as get_analytics_summary_report,
         traffic_report as get_analytics_traffic_report,
     )
+    from itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, public_status
 import secrets
 import base64
 import hmac
@@ -142,6 +144,12 @@ WONDERPUSH_TEST_INSTALLATION_IDS = [
     for installation_id in os.environ.get("WONDERPUSH_TEST_INSTALLATION_IDS", "").split(",")
     if installation_id.strip()
 ]
+ITINERARY_REMINDER_FOUNDATION_ENABLED = os.environ.get(
+    "ITINERARY_REMINDER_FOUNDATION_ENABLED", "true" if ENVIRONMENT == "staging" else "false"
+).lower() == "true"
+ITINERARY_REMINDER_TEST_ENABLED = os.environ.get(
+    "ITINERARY_REMINDER_TEST_ENABLED", "false"
+).lower() == "true"
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
 ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
 ADMIN_SESSION_DAYS = int(os.environ.get("ADMIN_SESSION_DAYS", "7"))
@@ -245,6 +253,12 @@ class ScheduleImportRow(BaseModel):
 
 class CalendarBulkExportRequest(BaseModel):
     schedule_ids: List[uuid.UUID]
+
+class ItineraryStarsPayload(BaseModel):
+    schedule_ids: List[uuid.UUID]
+
+class ItineraryEnabledPayload(BaseModel):
+    enabled: bool
 
 class ScheduleImportProblem(BaseModel):
     row_number: int
@@ -784,6 +798,7 @@ else:
 
 announcement_service = None
 notification_delivery_service = None
+itinerary_reminder_repository = None
 if CONTENT_SOURCE == "supabase":
     announcement_service = SupabaseAnnouncementService(
         supabase_url=SUPABASE_URL,
@@ -794,6 +809,9 @@ if CONTENT_SOURCE == "supabase":
         supabase_url=SUPABASE_URL,
         service_role_key=SUPABASE_SERVICE_ROLE_KEY,
         event_slug=event_service.get_public_event_id(),
+    )
+    itinerary_reminder_repository = SupabaseItineraryReminderRepository(
+        schedule_service.client, event_service.get_public_event_id()
     )
 
 wonderpush_client = None
@@ -1806,6 +1824,93 @@ async def get_schedule():
     except Exception as e:
         logger.error(f"Error processing schedule: {e}")
         raise HTTPException(status_code=500, detail="Error processing schedule data")
+
+
+ITINERARY_STAR_LIMIT = 250
+
+def require_itinerary_foundation():
+    if ENVIRONMENT != "staging" or not ITINERARY_REMINDER_FOUNDATION_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found")
+    if itinerary_reminder_repository is None:
+        raise HTTPException(status_code=503, detail="Itinerary reminder storage is unavailable")
+    return itinerary_reminder_repository
+
+def itinerary_device_headers(request: Request) -> tuple[str, str]:
+    installation_id = request.headers.get("X-WonderPush-Installation-Id", "").strip()
+    capability = request.headers.get("X-Itinerary-Device-Capability", "").strip()
+    if not installation_id or len(installation_id) > 500:
+        raise HTTPException(status_code=400, detail="A WonderPush installation ID is required")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    return installation_id, capability
+
+async def authorize_itinerary_device(request: Request):
+    repository = require_itinerary_foundation()
+    installation_id, capability = itinerary_device_headers(request)
+    try:
+        registration = await repository.authorize(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid installation credentials") from exc
+    return repository, registration
+
+@api_router.post("/itinerary-reminders/register")
+async def register_itinerary_device(request: Request):
+    repository = require_itinerary_foundation()
+    installation_id, capability = itinerary_device_headers(request)
+    try:
+        registration = await repository.register(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid installation credentials") from exc
+    return public_status(registration)
+
+@api_router.get("/itinerary-reminders/status")
+async def itinerary_reminder_status(request: Request):
+    _, registration = await authorize_itinerary_device(request)
+    return public_status(registration)
+
+@api_router.put("/itinerary-reminders/enabled")
+async def set_itinerary_reminders_enabled(data: ItineraryEnabledPayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    return public_status(await repository.set_enabled(registration["id"], data.enabled))
+
+@api_router.put("/itinerary-reminders/stars")
+async def sync_itinerary_reminder_stars(data: ItineraryStarsPayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    schedule_ids = [str(item) for item in data.schedule_ids]
+    if len(schedule_ids) > ITINERARY_STAR_LIMIT:
+        raise HTTPException(status_code=413, detail="Too many starred Schedule events")
+    if len(set(schedule_ids)) != len(schedule_ids):
+        raise HTTPException(status_code=400, detail="Duplicate Schedule UUIDs are not allowed")
+    if schedule_ids:
+        getter = getattr(schedule_service, "get_calendar_rows", None)
+        rows = await getter(schedule_ids) if getter else []
+        if len(rows) != len(schedule_ids):
+            raise HTTPException(status_code=404, detail="Unknown or cross-event Schedule UUID")
+    result = await repository.sync_full_set(registration, schedule_ids)
+    return {"synced": True, "starred_count": int(result.get("starred_count", len(schedule_ids)))}
+
+@api_router.post("/admin/itinerary-reminders/test/{installation_id}")
+async def send_itinerary_targeting_test(
+    installation_id: str,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_announcement_manager_role(current_user)
+    repository = require_itinerary_foundation()
+    if not ITINERARY_REMINDER_TEST_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found")
+    if installation_id not in WONDERPUSH_TEST_INSTALLATION_IDS:
+        raise HTTPException(status_code=403, detail="Installation is not allowlisted for targeting tests")
+    if not await repository.get(installation_id):
+        raise HTTPException(status_code=404, detail="Installation is not registered")
+    provider = require_wonderpush_client()
+    targeted_provider = InstallationTargetedWonderPush(repository, provider)
+    campaign_id = await targeted_provider.send(
+        title="IPM — Targeting Test",
+        message="This staging-only notification was sent to one allowlisted installation.",
+        target_url=f"{PUBLIC_APP_URL}/itinerary",
+        installation_id=installation_id,
+    )
+    return {"status": "sent", "provider_campaign_id": campaign_id, "installation_id": installation_id}
 
 
 CALENDAR_BULK_EXPORT_LIMIT = 200

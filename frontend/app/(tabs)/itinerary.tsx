@@ -31,6 +31,7 @@ import {
 import { formatScheduleDate } from '../../src/utils/scheduleDate';
 import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
 import { exportScheduleItinerary } from '../../src/services/calendarService';
+import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
 
 export default function ItineraryScreen() {
   usePageAnalytics('itinerary', 'home_quick_action');
@@ -57,6 +58,7 @@ export default function ItineraryScreen() {
   const loadFavorites = useCallback(async () => {
     const storedFavorites = await getFavorites();
     setFavorites(storedFavorites);
+    void syncStarredEventsWithBackend(storedFavorites);
   }, []);
 
   const fetchSchedule = useCallback(async () => {
@@ -92,6 +94,7 @@ export default function ItineraryScreen() {
   const handleRemove = async (eventId: string) => {
     const result = await toggleFavorite(eventId);
     setFavorites(result.favorites);
+    void syncStarredEventsWithBackend(result.favorites);
     void queueAnalyticsEvent('favorite_changed', { schedule_item_id: eventId, action: 'removed' });
   };
 

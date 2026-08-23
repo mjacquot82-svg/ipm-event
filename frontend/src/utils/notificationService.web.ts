@@ -5,8 +5,9 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   return null;
 }
 
-export async function syncStarredEventsWithBackend(_starredEventIds: string[]): Promise<void> {
-  return undefined;
+export async function syncStarredEventsWithBackend(starredEventIds: string[]): Promise<void> {
+  const { reconcileItineraryReminderStars } = await import('../services/itineraryReminderSync.web');
+  return reconcileItineraryReminderStars(starredEventIds);
 }
 
 export async function getStoredPushToken(): Promise<string | null> {
