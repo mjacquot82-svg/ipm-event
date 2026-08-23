@@ -14,7 +14,8 @@
     "test:install": "node --test tests/install-environment.test.mjs tests/install-flow-component.test.mjs",
     "test:notifications": "node --test tests/wonderpush.test.mjs",
     "test:pwa": "node --test tests/pwa-icons.test.mjs",
-    "test:camping": "node --test tests/camping-page.test.mjs"
+    "test:camping": "node --test tests/camping-page.test.mjs",
+    "test:home": "node --test tests/home-action-groups.test.mjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.20.6",
