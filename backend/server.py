@@ -39,7 +39,7 @@ try:
         summary_report as get_analytics_summary_report,
         traffic_report as get_analytics_traffic_report,
     )
-    from backend.itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, public_status
+    from backend.itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, public_status, test_device_status
 except ModuleNotFoundError:
     from analytics import (
         ANALYTICS_EVENT_SCOPE,
@@ -61,7 +61,7 @@ except ModuleNotFoundError:
         summary_report as get_analytics_summary_report,
         traffic_report as get_analytics_traffic_report,
     )
-    from itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, public_status
+    from itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, public_status, test_device_status
 import secrets
 import base64
 import hmac
@@ -265,6 +265,9 @@ class ItineraryStarsPayload(BaseModel):
 
 class ItineraryEnabledPayload(BaseModel):
     enabled: bool
+
+class TestDevicePayload(BaseModel):
+    label: Literal["A", "B"]
 
 class ScheduleImportProblem(BaseModel):
     row_number: int
@@ -1895,6 +1898,35 @@ async def sync_itinerary_reminder_stars(data: ItineraryStarsPayload, request: Re
     result = await repository.sync_full_set(registration, schedule_ids)
     return {"synced": True, "starred_count": int(result.get("starred_count", len(schedule_ids)))}
 
+@api_router.get("/itinerary-reminders/test-device")
+async def get_itinerary_test_device(request: Request):
+    _, registration = await authorize_itinerary_device(request)
+    if not registration.get("test_device_label"):
+        raise HTTPException(status_code=404, detail="This phone is not registered for the test")
+    return test_device_status(registration)
+
+@api_router.put("/itinerary-reminders/test-device")
+async def set_itinerary_test_device(data: TestDevicePayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    try:
+        updated = await repository.set_test_label(registration["id"], data.label)
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 409:
+            raise HTTPException(status_code=409, detail=f"Device {data.label} is already registered") from exc
+        raise
+    return test_device_status(updated)
+
+@api_router.get("/itinerary-reminders/test-readiness")
+async def itinerary_test_readiness():
+    repository = require_itinerary_foundation()
+    registrations = await repository.test_registrations()
+    labels = {item.get("test_device_label"): item for item in registrations}
+    distinct = bool(labels.get("A") and labels.get("B") and
+        labels["A"]["wonderpush_installation_id"] != labels["B"]["wonderpush_installation_id"])
+    return {"device_a_registered": "A" in labels, "device_b_registered": "B" in labels,
+        "distinct_installations": distinct, "ready_for_authorization": distinct,
+        "target": "Device A only" if distinct else None, "notification_sent": False}
+
 @api_router.post("/admin/itinerary-reminders/test/{installation_id}")
 async def send_itinerary_targeting_test(
     installation_id: str,
@@ -1908,6 +1940,12 @@ async def send_itinerary_targeting_test(
         raise HTTPException(status_code=403, detail="Installation is not allowlisted for targeting tests")
     if not await repository.get(installation_id):
         raise HTTPException(status_code=404, detail="Installation is not registered")
+    registrations = await repository.test_registrations()
+    labels = {item.get("test_device_label"): item for item in registrations}
+    if not labels.get("A") or labels["A"]["wonderpush_installation_id"] != installation_id:
+        raise HTTPException(status_code=403, detail="Only registered Device A may be targeted")
+    if not labels.get("B") or labels["B"]["wonderpush_installation_id"] == installation_id:
+        raise HTTPException(status_code=409, detail="Distinct Device B registration is required")
     provider = require_wonderpush_client()
     targeted_provider = InstallationTargetedWonderPush(repository, provider)
     campaign_id = await targeted_provider.send(

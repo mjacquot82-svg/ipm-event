@@ -42,6 +42,17 @@ async function request(path: string, method: string, body?: unknown) {
   return response.json();
 }
 
+export type TestDeviceLabel = 'A' | 'B';
+
+export async function registerControlledTestDevice(label: TestDeviceLabel) {
+  await request('/register', 'POST');
+  return request('/test-device', 'PUT', { label });
+}
+
+export async function getControlledTestDeviceStatus() {
+  return request('/test-device', 'GET');
+}
+
 export async function configureItineraryReminderSync(starredScheduleIds: string[]): Promise<void> {
   const auth = await credentials();
   if (!auth) throw new Error('A subscribed WonderPush installation is required.');

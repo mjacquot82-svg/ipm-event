@@ -74,6 +74,19 @@ class SupabaseItineraryReminderRepository:
             headers={"Prefer": "return=representation"})
         return rows[0]
 
+    async def set_test_label(self, registration_id: str, label: str) -> dict[str, Any]:
+        rows = await self.client.request("PATCH", "/itinerary_reminder_installations",
+            params={"id": f"eq.{registration_id}"}, json={"test_device_label": label},
+            headers={"Prefer": "return=representation"})
+        return rows[0]
+
+    async def test_registrations(self) -> list[dict[str, Any]]:
+        event_id = await self._event_id()
+        return await self.client.request("GET", "/itinerary_reminder_installations", params={
+            "select": "id,wonderpush_installation_id,test_device_label",
+            "event_id": f"eq.{event_id}", "test_device_label": "not.is.null",
+        })
+
     async def sync_full_set(self, registration: dict[str, Any], schedule_ids: list[str]) -> dict[str, Any]:
         """RPC performs the delete/insert reconciliation in one transaction."""
         result = await self.client.request("POST", "/rpc/sync_itinerary_reminder_stars", json={
@@ -107,6 +120,15 @@ def public_status(registration: dict[str, Any]) -> dict[str, Any]:
         "reminders_enabled": bool(registration.get("reminders_enabled")),
         "starred_count": int(registration.get("starred_count", 0)),
         "last_sync_at": registration.get("last_sync_at"),
+    }
+
+
+def test_device_status(registration: dict[str, Any]) -> dict[str, Any]:
+    installation_id = registration["wonderpush_installation_id"]
+    return {
+        "registered": True,
+        "label": registration.get("test_device_label"),
+        "fingerprint": hashlib.sha256(installation_id.encode()).hexdigest()[:10].upper(),
     }
 
 
