@@ -1946,12 +1946,23 @@ async def device_a_delivery_diagnostics():
     installation = await require_wonderpush_client().get_installation(device_a["wonderpush_installation_id"])
     tests = [await repository.controlled_test("initial"), await repository.controlled_test("vpn_off")]
     safe_keys = set(installation or {})
-    reachability = (installation or {}).get("reachability") or (installation or {}).get("subscriptionStatus")
+    preferences = (installation or {}).get("preferences") or {}
+    push_token = (installation or {}).get("pushToken") or {}
+    device = (installation or {}).get("device") or {}
+    subscription_status = preferences.get("subscriptionStatus")
+    has_push_token = bool(push_token.get("data"))
+    reachability = "optOut" if not has_push_token else ("softOptOut" if subscription_status == "optOut" else "optIn")
     return {
         "verification_code": test_device_status(device_a)["fingerprint"],
         "provider_installation_found": installation is not None,
         "provider_reachability": reachability,
-        "provider_platform": (installation or {}).get("platform"),
+        "provider_has_push_token": has_push_token,
+        "provider_subscription_status": subscription_status,
+        "provider_os_notifications_visible": preferences.get("osNotificationsVisible"),
+        "provider_subscribed_to_notifications": preferences.get("subscribedToNotifications"),
+        "provider_platform": (installation or {}).get("platform") or device.get("platform"),
+        "provider_browser_or_brand": device.get("brand"),
+        "provider_last_activity_at": (installation or {}).get("lastActivityDate"),
         "provider_created_at": (installation or {}).get("creationDate"),
         "provider_updated_at": (installation or {}).get("updateDate"),
         "provider_metadata_fields": sorted(key for key in safe_keys if key in {
