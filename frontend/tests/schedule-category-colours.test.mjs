@@ -15,7 +15,7 @@ const approved = [
 
 test('approved Schedule category mapping is exact and centralized', () => {
   for (const [category, primary, foreground] of approved) {
-    assert.match(categoryStyles, new RegExp(`'${category.replace(/[()]/g, '\\$&')}': \\{ primary: '${primary}', tint: '#[0-9A-F]{6}', tintForeground: '#[0-9A-F]{6}', strongForeground: '${foreground}' \\}`));
+    assert.match(categoryStyles, new RegExp(`'${category.replace(/[()]/g, '\\$&')}': \\{ primary: '${primary}', tint: '#[0-9A-F]{6}', tintForeground: '#[0-9A-F]{6}', strongForeground: '${foreground}', selectedFilterForeground: '#[0-9A-F]{6}' \\}`));
     assert.equal([...schedule.matchAll(new RegExp(primary, 'g'))].length, 0, `${primary} must not be scattered through the component`);
   }
   assert.match(schedule, /import \{ getScheduleCategoryStyle \} from/);
@@ -37,19 +37,39 @@ test('every rendered event card derives tint, edge, time, and location identity 
   assert.match(schedule, /styles\.locationBadge, \{ borderColor: categoryStyle\.primary \}/);
 });
 
-test('desktop category filters use category tint, strong colour, and approved foreground', () => {
+test('desktop category filters use category tint, strong colour, and selected-filter foreground', () => {
   assert.match(schedule, /categoryOptions\.length > 0 && isDesktop/);
   assert.match(schedule, /backgroundColor: categoryStyle\.tint, borderColor: categoryStyle\.primary/);
   assert.match(schedule, /isActive && \{ backgroundColor: categoryStyle\.primary \}/);
-  assert.match(schedule, /categoryStyle\.strongForeground/);
+  assert.match(schedule, /categoryStyle\.selectedFilterForeground/);
 });
 
-test('mobile selector retains compact structure and exposes category colour indicators', () => {
+test('mobile sheet uses full-width light-tinted rounded rows with neutral All and selection indicators', () => {
   assert.match(schedule, /categoryOptions\.length > 0 && !isDesktop/);
   assert.match(schedule, /styles\.categorySelectorButton/);
   assert.match(schedule, /styles\.categoryColourIndicator/);
   assert.match(schedule, /category \? categoryStyle\.primary : colors\.surface/);
+  assert.match(schedule, /backgroundColor: category \? categoryStyle\.tint : colors\.surfaceHighlight/);
+  assert.match(schedule, /borderColor: isActive \? categoryStyle\.primary : 'transparent'/);
+  assert.match(schedule, /isActive && styles\.categoryOptionSelected/);
+  assert.match(schedule, /isActive && <Feather name="check"/);
+  assert.match(schedule, /marginBottom: 10/);
   assert.match(schedule, /\[null, \.\.\.categoryOptions\]\.map/);
+});
+
+test('every approved category retains its own existing light tint in the mobile sheet', () => {
+  for (const tint of ['#E5F1ED', '#F2EEE5', '#E6EDF4', '#F9E8EA', '#FFF1D9']) {
+    assert.ok(categoryStyles.includes(`tint: '${tint}'`));
+  }
+  assert.match(schedule, /backgroundColor: category \? categoryStyle\.tint/);
+});
+
+test('only strong selected CKNX filters override foreground to white', () => {
+  assert.match(categoryStyles, /'CKNX Centennial Pavilion \(GFO Stage\) Lounge': \{ primary: '#826D40',[^\n]*strongForeground: '#2D2926', selectedFilterForeground: '#FFFFFF' \}/);
+  assert.match(schedule, /isActive \? categoryStyle\.selectedFilterForeground : categoryStyle\.tintForeground/);
+  assert.match(schedule, /styles\.eventTitle[\s\S]*color: colors\.textPrimary/);
+  assert.match(schedule, /styles\.eventDescription[\s\S]*color: colors\.textSecondary/);
+  assert.match(schedule, /\{ color: categoryStyle\.tintForeground \}/);
 });
 
 test('event detail modal carries restrained category identity and still opens normally', () => {

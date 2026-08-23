@@ -537,12 +537,12 @@ export default function ScheduleScreen() {
                   <Feather
                     name="tag"
                     size={14}
-                    color={isActive ? categoryStyle.strongForeground : categoryStyle.tintForeground}
+                    color={isActive ? categoryStyle.selectedFilterForeground : categoryStyle.tintForeground}
                   />
                   <Text style={[
                     styles.filterText,
                     { color: categoryStyle.tintForeground },
-                    isActive && { color: categoryStyle.strongForeground },
+                    isActive && { color: categoryStyle.selectedFilterForeground },
                   ]}>
                     {category}
                   </Text>
@@ -566,16 +566,16 @@ export default function ScheduleScreen() {
             accessibilityHint="Opens the category filter options"
             accessibilityState={{ expanded: showCategorySelector }}
           >
-            <Feather name="tag" size={18} color={selectedCategory ? selectedCategoryStyle.strongForeground : colors.primary} />
+            <Feather name="tag" size={18} color={selectedCategory ? selectedCategoryStyle.selectedFilterForeground : colors.primary} />
             <View style={styles.categorySelectorTextContainer}>
-              <Text style={[styles.categorySelectorLabel, selectedCategory && { color: selectedCategoryStyle.strongForeground }]}>
+              <Text style={[styles.categorySelectorLabel, selectedCategory && { color: selectedCategoryStyle.selectedFilterForeground }]}>
                 Categories
               </Text>
-              <Text style={[styles.categorySelectorStatus, selectedCategory && { color: selectedCategoryStyle.strongForeground }]}>
+              <Text style={[styles.categorySelectorStatus, selectedCategory && { color: selectedCategoryStyle.selectedFilterForeground }]}>
                 {selectedCategory ? '1 category selected' : 'All categories'}
               </Text>
             </View>
-            <Feather name="chevron-down" size={20} color={selectedCategory ? selectedCategoryStyle.strongForeground : colors.textSecondary} />
+            <Feather name="chevron-down" size={20} color={selectedCategory ? selectedCategoryStyle.selectedFilterForeground : colors.textSecondary} />
           </TouchableOpacity>
         )}
         {dayOptions.length > 0 && (
@@ -803,7 +803,14 @@ export default function ScheduleScreen() {
                 return (
                   <TouchableOpacity
                     key={label}
-                    style={[styles.categoryOption, isActive && { backgroundColor: categoryStyle.tint }]}
+                    style={[
+                      styles.categoryOption,
+                      {
+                        backgroundColor: category ? categoryStyle.tint : colors.surfaceHighlight,
+                        borderColor: isActive ? categoryStyle.primary : 'transparent',
+                      },
+                      isActive && styles.categoryOptionSelected,
+                    ]}
                     onPress={() => selectCategory(category)}
                     accessibilityRole="menuitem"
                     accessibilityLabel={label}
@@ -819,7 +826,8 @@ export default function ScheduleScreen() {
                       />
                       <Text style={[
                         styles.categoryOptionText,
-                        isActive && { color: categoryStyle.tintForeground, fontWeight: '700' },
+                        { color: categoryStyle.tintForeground },
+                        isActive && { fontWeight: '700' },
                       ]}>
                         {label}
                       </Text>
@@ -1254,6 +1262,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  categoryOptionSelected: {
+    borderWidth: 2,
   },
   categoryOptionLabel: {
     flex: 1,
