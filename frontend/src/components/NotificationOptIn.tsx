@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -21,6 +22,7 @@ const STATE_COPY: Record<NotificationState, string> = {
 };
 
 export default function NotificationOptIn() {
+  const router = useRouter();
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
 
@@ -45,6 +47,8 @@ export default function NotificationOptIn() {
 
   if (Platform.OS !== 'web') return null;
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
+  const stagingPwaTestLink = (process.env.EXPO_PUBLIC_BACKEND_URL || '').includes('staging')
+    && (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true);
 
   return (
     <View style={styles.card} accessibilityLabel="IPM notification settings">
@@ -67,6 +71,16 @@ export default function NotificationOptIn() {
           </Text>
         </TouchableOpacity>
       ) : null}
+      {stagingPwaTestLink ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Open staging reminder device registration"
+          onPress={() => router.push('/reminder-test-registration')}
+          style={styles.testLink}
+        >
+          <Text style={styles.testLinkText}>Device test</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -82,4 +96,6 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', textAlign: 'center' },
   disableButton: { backgroundColor: '#FFFFFF', borderColor: colors.primary, borderWidth: 1 },
   disableButtonText: { color: colors.primary },
+  testLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
+  testLinkText: { color: colors.primary, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
 });

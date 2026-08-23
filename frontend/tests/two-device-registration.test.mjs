@@ -4,12 +4,19 @@ import test from 'node:test';
 
 const page = fs.readFileSync(new URL('../app/reminder-test-registration.tsx', import.meta.url), 'utf8');
 const server = fs.readFileSync(new URL('../../backend/server.py', import.meta.url), 'utf8');
+const optIn = fs.readFileSync(new URL('../src/components/NotificationOptIn.tsx', import.meta.url), 'utf8');
 
 test('phones enroll normally without displaying installation IDs or capabilities', () => {
   assert.match(page, /Register Marc’s Phone as Device A/);
   assert.match(page, /Register Jen’s Phone as Device B/);
   assert.match(page, /never displayed/);
   assert.doesNotMatch(page, /diagnostic\.installationId|diagnostic\.capabilitySecret/);
+});
+
+test('installed staging PWA has an internal route to device diagnostics', () => {
+  assert.match(optIn, /display-mode: standalone/);
+  assert.match(optIn, /router\.push\('\/reminder-test-registration'\)/);
+  assert.match(optIn, /includes\('staging'\)/);
 });
 
 test('safe diagnostics identify every client and API registration stage', () => {
