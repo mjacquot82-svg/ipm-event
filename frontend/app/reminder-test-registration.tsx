@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   getControlledTestDeviceStatus,
@@ -91,7 +91,12 @@ export default function ReminderTestRegistration() {
     }
   };
 
-  return <View style={styles.page}>
+  return <ScrollView
+    style={styles.scroll}
+    contentContainerStyle={styles.page}
+    keyboardShouldPersistTaps="handled"
+    showsVerticalScrollIndicator
+  >
     <Text style={styles.title}>Staging Reminder Test Registration</Text>
     <Text style={styles.copy}>This registers this subscribed phone for the controlled two-device test. Installation IDs and device credentials are never displayed.</Text>
     {status ? <View style={styles.success} accessibilityLiveRegion="polite">
@@ -140,11 +145,12 @@ export default function ReminderTestRegistration() {
       <Text>Backend response: {diagnostic.backendStatus ? `HTTP ${diagnostic.backendStatus}` : 'not reached / none'}</Text>
     </View> : null}
     <Pressable style={styles.back} onPress={() => router.replace('/')} accessibilityRole="button"><Text>Back to IPM</Text></Pressable>
-  </View>;
+  </ScrollView>;
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, width: '100%', maxWidth: 640, alignSelf: 'center', padding: 24, gap: 16, backgroundColor: '#FFF' },
+  scroll: { flex: 1, width: '100%', backgroundColor: '#FFF' },
+  page: { flexGrow: 1, width: '100%', maxWidth: 640, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 48, gap: 16 },
   title: { fontSize: 26, fontWeight: '700', color: '#1F2937' }, copy: { fontSize: 16, lineHeight: 24, color: '#374151' },
   button: { minHeight: 52, borderRadius: 12, backgroundColor: '#8B1538', alignItems: 'center', justifyContent: 'center', padding: 14 },
   buttonText: { color: '#FFF', fontSize: 16, fontWeight: '700', textAlign: 'center' },

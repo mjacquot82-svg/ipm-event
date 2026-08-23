@@ -51,3 +51,11 @@ test('reminder controls are explicit, Device A only, and promise no send', () =>
   assert.match(page, /IS_STAGING/);
   assert.match(page, /if \(!IS_STAGING\)/);
 });
+
+test('diagnostic page scrolls through all rows on narrow mobile screens', () => {
+  assert.match(page, /ScrollView/);
+  assert.match(page, /contentContainerStyle=\{styles\.page\}/);
+  assert.match(page, /flexGrow: 1/);
+  assert.match(page, /paddingBottom: 48/);
+  assert.match(page, /showsVerticalScrollIndicator/);
+});
