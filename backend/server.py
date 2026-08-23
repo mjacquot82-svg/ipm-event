@@ -1936,6 +1936,34 @@ async def itinerary_test_readiness():
         "ready_for_authorization": distinct and distinct_capabilities,
         "target": "Device A only" if distinct else None, "notification_sent": False}
 
+@api_router.get("/itinerary-reminders/device-a-delivery-diagnostics")
+async def device_a_delivery_diagnostics():
+    repository = require_itinerary_foundation()
+    registrations = await repository.test_registrations()
+    labels = {item.get("test_device_label"): item for item in registrations}
+    device_a = labels.get("A")
+    if not device_a: raise HTTPException(status_code=404, detail="Device A is not registered")
+    installation = await require_wonderpush_client().get_installation(device_a["wonderpush_installation_id"])
+    tests = [await repository.controlled_test("initial"), await repository.controlled_test("vpn_off")]
+    safe_keys = set(installation or {})
+    reachability = (installation or {}).get("reachability") or (installation or {}).get("subscriptionStatus")
+    return {
+        "verification_code": test_device_status(device_a)["fingerprint"],
+        "provider_installation_found": installation is not None,
+        "provider_reachability": reachability,
+        "provider_platform": (installation or {}).get("platform"),
+        "provider_created_at": (installation or {}).get("creationDate"),
+        "provider_updated_at": (installation or {}).get("updateDate"),
+        "provider_metadata_fields": sorted(key for key in safe_keys if key in {
+            "creationDate", "updateDate", "lastActivityDate", "platform", "reachability", "subscriptionStatus"
+        }),
+        "tests": [{"test_key": item.get("test_key"), "status": item.get("status"),
+            "claimed_at": item.get("claimed_at"), "sent_at": item.get("sent_at"),
+            "provider_result": item.get("provider_delivery_id")} for item in tests if item],
+        "automatic_retry_pending": False,
+        "device_b_targeted": False,
+    }
+
 @api_router.post("/admin/itinerary-reminders/test/{installation_id}")
 async def send_itinerary_targeting_test(
     installation_id: str,

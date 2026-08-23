@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 import json
 import logging
 from typing import Any, Optional
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -120,6 +120,16 @@ class WonderPushClient:
             content=content,
             target={"targetInstallationIds": target},
         )
+
+    async def get_installation(self, installation_id: str) -> dict[str, Any] | None:
+        url = f"https://management-api.wonderpush.com/v1/installations/{quote(installation_id, safe='')}"
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.get(url, params={"accessToken": self.access_token, "userId": ""})
+        if response.status_code == 404: return None
+        if response.status_code != 200:
+            raise WonderPushError(f"WonderPush installation lookup failed (HTTP {response.status_code})")
+        result = response.json()
+        return result if isinstance(result, dict) else None
 
 
 class EventService:
