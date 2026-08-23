@@ -87,16 +87,23 @@ class SupabaseItineraryReminderRepository:
             "event_id": f"eq.{event_id}", "test_device_label": "not.is.null",
         })
 
-    async def claim_controlled_test(self, registration_id: str) -> dict[str, Any] | None:
+    async def claim_controlled_test(self, registration_id: str, test_key: str = "initial") -> dict[str, Any] | None:
         event_id = await self._event_id()
         try:
             rows = await self.client.request("POST", "/controlled_targeting_tests", json={
-                "event_id": event_id, "registration_id": registration_id, "status": "claimed",
+                "event_id": event_id, "registration_id": registration_id, "test_key": test_key, "status": "claimed",
             }, headers={"Prefer": "return=representation"})
             return rows[0]
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 409: return None
             raise
+
+    async def controlled_test(self, test_key: str) -> dict[str, Any] | None:
+        event_id = await self._event_id()
+        rows = await self.client.request("GET", "/controlled_targeting_tests", params={
+            "select": "*", "event_id": f"eq.{event_id}", "test_key": f"eq.{test_key}", "limit": "1",
+        })
+        return rows[0] if rows else None
 
     async def finish_controlled_test(self, claim_id: str, *, status: str,
         provider_delivery_id: str | None = None, error_message: str | None = None) -> None:
