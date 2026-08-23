@@ -144,8 +144,9 @@ WONDERPUSH_TEST_INSTALLATION_IDS = [
     for installation_id in os.environ.get("WONDERPUSH_TEST_INSTALLATION_IDS", "").split(",")
     if installation_id.strip()
 ]
+IS_STAGING_DEPLOYMENT = ENVIRONMENT == "staging" or os.environ.get("RENDER_GIT_BRANCH") == "staging"
 ITINERARY_REMINDER_FOUNDATION_ENABLED = os.environ.get(
-    "ITINERARY_REMINDER_FOUNDATION_ENABLED", "true" if ENVIRONMENT == "staging" else "false"
+    "ITINERARY_REMINDER_FOUNDATION_ENABLED", "true" if IS_STAGING_DEPLOYMENT else "false"
 ).lower() == "true"
 ITINERARY_REMINDER_TEST_ENABLED = os.environ.get(
     "ITINERARY_REMINDER_TEST_ENABLED", "false"
@@ -1829,7 +1830,7 @@ async def get_schedule():
 ITINERARY_STAR_LIMIT = 250
 
 def require_itinerary_foundation():
-    if ENVIRONMENT != "staging" or not ITINERARY_REMINDER_FOUNDATION_ENABLED:
+    if not IS_STAGING_DEPLOYMENT or not ITINERARY_REMINDER_FOUNDATION_ENABLED:
         raise HTTPException(status_code=404, detail="Not found")
     if itinerary_reminder_repository is None:
         raise HTTPException(status_code=503, detail="Itinerary reminder storage is unavailable")
