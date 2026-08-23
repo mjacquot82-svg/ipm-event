@@ -25,6 +25,13 @@ test('safe diagnostics identify every client and API registration stage', () => 
     assert.match(page, new RegExp(label));
   }
   assert.doesNotMatch(page, /diagnostic\.installationId|diagnostic\.capabilitySecret/);
+  for (const label of ['Backend registration', 'Current installation match',
+    'Provider reachability', 'Reminder readiness']) assert.match(page, new RegExp(label));
+});
+
+test('iPhone Safari explains the installed Home Screen requirement', () => {
+  assert.match(optIn, /Install IPM to your Home Screen/);
+  assert.match(optIn, /iPhone\|iPad\|iPod/);
 });
 
 test('send guard requires distinct A and B and targets only A', () => {

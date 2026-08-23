@@ -109,6 +109,9 @@ test('subscription states cover default, granted, denied, subscribe and unsubscr
   await initialization;
 
   assert.equal(await service.getNotificationState(), 'default');
+  subscribed = true;
+  assert.equal(await service.getNotificationState(), 'default', 'SDK state cannot override browser permission');
+  subscribed = false;
   browser.notification.permission = 'granted';
   assert.equal(await service.getNotificationState(), 'unsubscribed');
   assert.equal(await service.subscribeToNotifications(), 'subscribed');

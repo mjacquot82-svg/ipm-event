@@ -3,7 +3,7 @@ import asyncio
 
 import pytest
 
-from backend.itinerary_reminders import InstallationTargetedWonderPush, capability_matches, hash_capability, is_t30_eligible
+from backend.itinerary_reminders import InstallationTargetedWonderPush, capability_matches, hash_capability, is_t30_eligible, provider_readiness
 from backend.platform_services import WonderPushClient, WonderPushError
 
 
@@ -45,7 +45,7 @@ def test_single_installation_provider_has_no_broadcast_fallback(monkeypatch):
 def test_targeting_boundary_rejects_another_device():
     class Repository:
         async def get(self, installation_id):
-            return {"id": "registered-a"} if installation_id == "installation-a" else None
+            return {"id": "registered-a", "provider_deliverable": True} if installation_id == "installation-a" else None
     class Provider:
         async def send_one_installation(self, **kwargs):
             return kwargs["installation_id"]
@@ -56,4 +56,26 @@ def test_targeting_boundary_rejects_another_device():
     with pytest.raises(PermissionError):
         asyncio.run(targeter.send(
             installation_id="installation-b", title="Test", message="B", target_url="https://staging.example"
+        ))
+
+
+def test_provider_readiness_requires_opt_in_and_push_token():
+    assert provider_readiness(None) == ("unknown", False)
+    assert provider_readiness({"preferences": {"subscriptionStatus": "optIn"}}) == ("optOut", False)
+    assert provider_readiness({"pushToken": {"data": "token"},
+        "preferences": {"subscriptionStatus": "optOut"}}) == ("softOptOut", True)
+    assert provider_readiness({"pushToken": {"data": "token"},
+        "preferences": {"subscriptionStatus": "optIn"}}) == ("optIn", True)
+
+
+def test_targeting_boundary_rejects_stale_registration():
+    class Repository:
+        async def get(self, installation_id):
+            return {"id": "stale", "provider_deliverable": False}
+    class Provider:
+        async def send_one_installation(self, **kwargs):
+            raise AssertionError("provider must not be called")
+    with pytest.raises(PermissionError, match="provider-reachable"):
+        asyncio.run(InstallationTargetedWonderPush(Repository(), Provider()).send(
+            installation_id="installation-a", title="Test", message="A", target_url="https://staging.example"
         ))

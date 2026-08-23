@@ -136,7 +136,7 @@ export async function getNotificationState(): Promise<NotificationState> {
       if (!sdk.isSubscribedToNotifications) throw new Error('WonderPush subscription API is unavailable.');
       return sdk.isSubscribedToNotifications();
     }, STATUS_TIMEOUT_MS, 'WonderPush notification status timed out.');
-    if (subscribed) return 'subscribed';
+    if (subscribed && Notification.permission === 'granted') return 'subscribed';
     return Notification.permission === 'granted' ? 'unsubscribed' : 'default';
   } catch {
     return 'error';
@@ -185,6 +185,29 @@ export type WonderPushDiagnostics = {
   installation: 'available' | 'unavailable';
   failureStage: string | null;
 };
+
+export type WonderPushClientReadiness = WonderPushDiagnostics & {
+  supportedContext: boolean;
+  clientReady: boolean;
+};
+
+export function evaluateWonderPushClientReadiness(
+  diagnostic: WonderPushDiagnostics
+): WonderPushClientReadiness {
+  const supportedContext = diagnostic.browserPermission !== 'unavailable' && diagnostic.sdk === 'ready';
+  return {
+    ...diagnostic,
+    supportedContext,
+    clientReady: supportedContext
+      && diagnostic.browserPermission === 'granted'
+      && diagnostic.subscription === 'subscribed'
+      && diagnostic.installation === 'available',
+  };
+}
+
+export async function getWonderPushClientReadiness(): Promise<WonderPushClientReadiness> {
+  return evaluateWonderPushClientReadiness(await getWonderPushDiagnostics());
+}
 
 export async function getWonderPushDiagnostics(): Promise<WonderPushDiagnostics> {
   const result: WonderPushDiagnostics = {

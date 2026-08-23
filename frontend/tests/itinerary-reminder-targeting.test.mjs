@@ -5,12 +5,34 @@ import test from 'node:test';
 const sdk = fs.readFileSync(new URL('../src/services/wonderPushService.web.ts', import.meta.url), 'utf8');
 const sync = fs.readFileSync(new URL('../src/services/itineraryReminderSync.web.ts', import.meta.url), 'utf8');
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260823000100_itinerary_reminder_targeting.sql', import.meta.url), 'utf8');
+const hardening = fs.readFileSync(new URL('../../supabase/migrations/20260823000500_harden_itinerary_reminder_readiness.sql', import.meta.url), 'utf8');
 
 test('uses supported SDK installation ID and a 256-bit local capability', () => {
   assert.match(sdk, /getInstallationId/);
   assert.match(sync, /getRandomValues\(new Uint8Array\(32\)\)/);
   assert.match(sync, /CAPABILITY_KEY/);
   assert.doesNotMatch(sync, /console\.(log|error).*capability/i);
+});
+
+test('stale registrations are excluded and delivery acceptance stays honest', () => {
+  assert.match(hardening, /registration\.provider_deliverable/);
+  assert.match(hardening, /registration\.provider_reachability = 'optIn'/);
+  assert.match(hardening, /registration\.provider_has_push_token/);
+  assert.match(hardening, /provider_checked_at > p_now - interval '15 minutes'/);
+  assert.match(hardening, /provider_accepted/);
+  assert.match(hardening, /delivery_unknown/);
+  assert.match(hardening, /confirmed_delivered/);
+});
+
+test('client and backend readiness are evaluated separately', () => {
+  assert.match(sdk, /clientReady: supportedContext/);
+  assert.match(sdk, /browserPermission === 'granted'/);
+  assert.match(sdk, /subscription === 'subscribed'/);
+  assert.match(sdk, /installation === 'available'/);
+  assert.match(sync, /status-by-capability/);
+  assert.match(sync, /current_installation_unavailable/);
+  assert.match(sync, /installation_mismatch/);
+  assert.match(sync, /current\.provider_deliverable/);
 });
 
 test('full-set sync is retryable and gated by local enabled state', () => {

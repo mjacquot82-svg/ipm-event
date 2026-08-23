@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSubscribedInstallationId, getWonderPushDiagnostics } from './wonderPushService.web';
+import { getSubscribedInstallationId, getWonderPushClientReadiness } from './wonderPushService.web';
 
 const CAPABILITY_KEY = '@ipm_itinerary_reminder_capability_v1';
 const ENABLED_KEY = '@ipm_itinerary_reminders_enabled_v1';
@@ -46,6 +46,33 @@ async function request(path: string, method: string, body?: unknown) {
   return response.json();
 }
 
+async function statusByCapability() {
+  const capability = await AsyncStorage.getItem(CAPABILITY_KEY);
+  if (!capability) return null;
+  const response = await fetch(`${API_BASE_URL}/api/itinerary-reminders/status-by-capability`, {
+    headers: { 'X-Itinerary-Device-Capability': capability },
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new ApiSyncError(response.status);
+  return response.json();
+}
+
+export async function getItineraryReminderReadiness() {
+  const client = await getWonderPushClientReadiness();
+  const existing = await statusByCapability().catch(() => null);
+  if (!client.clientReady) {
+    return { client, registration: existing, currentInstallationMatch: 'unavailable', reminderReady: false,
+      staleReason: existing?.registered ? 'current_installation_unavailable' : null };
+  }
+  const current = await request('/status', 'GET');
+  const match = existing
+    ? existing.registration_fingerprint === current.registration_fingerprint
+    : true;
+  return { client, registration: current, currentInstallationMatch: match ? 'match' : 'mismatch',
+    reminderReady: Boolean(match && current.reminders_enabled && current.provider_deliverable),
+    staleReason: match ? (current.provider_deliverable ? null : 'provider_unreachable') : 'installation_mismatch' };
+}
+
 export type TestDeviceLabel = 'A' | 'B';
 
 export async function registerControlledTestDevice(label: TestDeviceLabel) {
@@ -58,7 +85,7 @@ export async function getControlledTestDeviceStatus() {
 }
 
 export async function diagnoseControlledTestRegistration(label: TestDeviceLabel) {
-  const wonderPush = await getWonderPushDiagnostics();
+  const wonderPush = await getWonderPushClientReadiness();
   const diagnostic = { ...wonderPush, capability: 'unavailable', registrationApi: 'not-attempted',
     labelApi: 'not-attempted', backendStatus: null as number | null, failureStage: wonderPush.failureStage };
   if (wonderPush.installation !== 'available') return diagnostic;

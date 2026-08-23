@@ -17,7 +17,7 @@ const STATE_COPY: Record<NotificationState, string> = {
   subscribed: 'Notifications are enabled on this device.',
   unsubscribed: 'Notifications are currently disabled on this device.',
   denied: 'Notifications are blocked in your browser settings.',
-  unsupported: 'Notifications are not supported in this browser.',
+  unsupported: 'Notifications require a supported browser or installed app.',
   error: 'Notifications are temporarily unavailable. The IPM app will continue to work.',
 };
 
@@ -49,6 +49,7 @@ export default function NotificationOptIn() {
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
   const stagingPwaTestLink = (process.env.EXPO_PUBLIC_BACKEND_URL || '').includes('staging')
     && (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true);
+  const isIphoneSafari = /iPhone|iPad|iPod/.test(window.navigator.userAgent || '') && !stagingPwaTestLink;
 
   return (
     <View style={styles.card} accessibilityLabel="IPM notification settings">
@@ -57,6 +58,7 @@ export default function NotificationOptIn() {
         <Text style={styles.title}>IPM Notifications</Text>
         <Text style={styles.message}>{STATE_COPY[state]}</Text>
         {state === 'denied' ? <Text style={styles.hint}>Allow notifications for this site in browser settings to enable them.</Text> : null}
+        {state === 'unsupported' && isIphoneSafari ? <Text style={styles.hint}>Install IPM to your Home Screen, then open the installed IPM app to enable notifications.</Text> : null}
       </View>
       {state === 'loading' || working ? <ActivityIndicator color={colors.primary} /> : null}
       {canAct && !working ? (
@@ -75,7 +77,7 @@ export default function NotificationOptIn() {
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="Open staging reminder device registration"
-          onPress={() => router.push('/reminder-test-registration')}
+          onPress={() => router.push('/reminder-test-registration' as never)}
           style={styles.testLink}
         >
           <Text style={styles.testLinkText}>Device test</Text>

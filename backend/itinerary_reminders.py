@@ -49,12 +49,35 @@ class SupabaseItineraryReminderRepository:
         })
         return rows[0] if rows else None
 
+    async def get_by_capability(self, capability: str) -> dict[str, Any] | None:
+        event_id = await self._event_id()
+        rows = await self.client.request("GET", "/itinerary_reminder_installations", params={
+            "select": "*", "event_id": f"eq.{event_id}",
+            "capability_hash": f"eq.{hash_capability(capability)}", "limit": "1",
+        })
+        registration = rows[0] if rows else None
+        if not registration or not capability_matches(capability, registration["capability_hash"]):
+            return None
+        return registration
+
     async def register(self, installation_id: str, capability: str) -> dict[str, Any]:
         existing = await self.get(installation_id)
         if existing:
             if not capability_matches(capability, existing["capability_hash"]):
                 raise PermissionError("Device capability does not match")
             return existing
+        prior_for_device = await self.get_by_capability(capability)
+        if prior_for_device:
+            rows = await self.client.request("PATCH", "/itinerary_reminder_installations",
+                params={"id": f"eq.{prior_for_device['id']}"}, json={
+                    "wonderpush_installation_id": installation_id,
+                    "reminders_enabled": False,
+                    "provider_reachability": "unknown",
+                    "provider_has_push_token": False,
+                    "provider_deliverable": False,
+                    "provider_checked_at": None,
+                }, headers={"Prefer": "return=representation"})
+            return rows[0]
         event_id = await self._event_id()
         rows = await self.client.request("POST", "/itinerary_reminder_installations", json={
             "event_id": event_id, "wonderpush_installation_id": installation_id,
@@ -72,6 +95,18 @@ class SupabaseItineraryReminderRepository:
         rows = await self.client.request("PATCH", "/itinerary_reminder_installations",
             params={"id": f"eq.{registration_id}"}, json={"reminders_enabled": enabled},
             headers={"Prefer": "return=representation"})
+        return rows[0]
+
+    async def set_readiness(self, registration_id: str, *, reachability: str,
+        has_push_token: bool, checked_at: datetime) -> dict[str, Any]:
+        deliverable = reachability == "optIn" and has_push_token
+        rows = await self.client.request("PATCH", "/itinerary_reminder_installations",
+            params={"id": f"eq.{registration_id}"}, json={
+                "provider_reachability": reachability,
+                "provider_has_push_token": has_push_token,
+                "provider_checked_at": checked_at.astimezone(timezone.utc).isoformat(),
+                "provider_deliverable": deliverable,
+            }, headers={"Prefer": "return=representation"})
         return rows[0]
 
     async def set_test_label(self, registration_id: str, label: str) -> dict[str, Any]:
@@ -109,7 +144,7 @@ class SupabaseItineraryReminderRepository:
         provider_delivery_id: str | None = None, error_message: str | None = None) -> None:
         body = {"status": status, "provider_delivery_id": provider_delivery_id,
             "error_message": error_message[:1000] if error_message else None}
-        if status == "sent": body["sent_at"] = datetime.now(timezone.utc).isoformat()
+        if status == "provider_accepted": body["provider_accepted_at"] = datetime.now(timezone.utc).isoformat()
         await self.client.request("PATCH", "/controlled_targeting_tests",
             params={"id": f"eq.{claim_id}"}, json=body, headers={"Prefer": "return=minimal"})
 
@@ -141,12 +176,30 @@ class SupabaseItineraryReminderRepository:
 
 
 def public_status(registration: dict[str, Any]) -> dict[str, Any]:
+    reachability = registration.get("provider_reachability") or "unknown"
     return {
         "registered": True,
         "reminders_enabled": bool(registration.get("reminders_enabled")),
         "starred_count": int(registration.get("starred_count", 0)),
         "last_sync_at": registration.get("last_sync_at"),
+        "registration_fingerprint": hashlib.sha256(
+            registration["wonderpush_installation_id"].encode()).hexdigest()[:10].upper(),
+        "provider_reachability": reachability,
+        "provider_has_push_token": bool(registration.get("provider_has_push_token")),
+        "provider_checked_at": registration.get("provider_checked_at"),
+        "provider_deliverable": bool(registration.get("provider_deliverable")),
     }
+
+
+def provider_readiness(installation: dict[str, Any] | None) -> tuple[str, bool]:
+    if installation is None:
+        return "unknown", False
+    preferences = installation.get("preferences") or {}
+    push_token = installation.get("pushToken") or {}
+    has_push_token = bool(push_token.get("data"))
+    status = preferences.get("subscriptionStatus")
+    reachability = "optOut" if not has_push_token else ("softOptOut" if status == "optOut" else "optIn")
+    return reachability, has_push_token
 
 
 def test_device_status(registration: dict[str, Any]) -> dict[str, Any]:
@@ -168,8 +221,11 @@ class InstallationTargetedWonderPush:
     async def send(self, *, installation_id: str, title: str, message: str, target_url: str) -> str:
         if not installation_id or installation_id == "@ALL" or "," in installation_id:
             raise ValueError("Exactly one installation is required")
-        if not await self.repository.get(installation_id):
+        registration = await self.repository.get(installation_id)
+        if not registration:
             raise PermissionError("Installation is not registered for this event")
+        if not registration.get("provider_deliverable"):
+            raise PermissionError("Installation is not currently provider-reachable")
         return await self.provider.send_one_installation(
             installation_id=installation_id, title=title, message=message, target_url=target_url
         )

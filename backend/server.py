@@ -39,7 +39,7 @@ try:
         summary_report as get_analytics_summary_report,
         traffic_report as get_analytics_traffic_report,
     )
-    from backend.itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, public_status, test_device_status
+    from backend.itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
 except ModuleNotFoundError:
     from analytics import (
         ANALYTICS_EVENT_SCOPE,
@@ -61,7 +61,7 @@ except ModuleNotFoundError:
         summary_report as get_analytics_summary_report,
         traffic_report as get_analytics_traffic_report,
     )
-    from itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, public_status, test_device_status
+    from itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
 import secrets
 import base64
 import hmac
@@ -1866,6 +1866,29 @@ async def authorize_itinerary_device(request: Request):
         raise HTTPException(status_code=403, detail="Invalid installation credentials") from exc
     return repository, registration
 
+async def refresh_provider_readiness(repository, registration):
+    try:
+        installation = await require_wonderpush_client().get_installation(
+            registration["wonderpush_installation_id"])
+        reachability, has_push_token = provider_readiness(installation)
+    except Exception:
+        reachability, has_push_token = "unknown", False
+    return await repository.set_readiness(registration["id"], reachability=reachability,
+        has_push_token=has_push_token, checked_at=datetime.now(timezone.utc))
+
+async def inspect_provider_readiness(registration):
+    try:
+        installation = await require_wonderpush_client().get_installation(
+            registration["wonderpush_installation_id"])
+        reachability, has_push_token = provider_readiness(installation)
+    except Exception:
+        reachability, has_push_token = "unknown", False
+    result = public_status(registration)
+    result.update({"provider_reachability": reachability,
+        "provider_has_push_token": has_push_token,
+        "provider_deliverable": reachability == "optIn" and has_push_token})
+    return result
+
 @api_router.post("/itinerary-reminders/register")
 async def register_itinerary_device(request: Request):
     repository = require_itinerary_foundation()
@@ -1874,16 +1897,34 @@ async def register_itinerary_device(request: Request):
         registration = await repository.register(installation_id, capability)
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail="Invalid installation credentials") from exc
-    return public_status(registration)
+    return public_status(await refresh_provider_readiness(repository, registration))
 
 @api_router.get("/itinerary-reminders/status")
 async def itinerary_reminder_status(request: Request):
     _, registration = await authorize_itinerary_device(request)
-    return public_status(registration)
+    return await inspect_provider_readiness(registration)
+
+@api_router.get("/itinerary-reminders/status-by-capability")
+async def itinerary_reminder_status_by_capability(request: Request):
+    repository = require_itinerary_foundation()
+    capability = request.headers.get("X-Itinerary-Device-Capability", "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    registration = await repository.get_by_capability(capability)
+    if not registration:
+        raise HTTPException(status_code=404, detail="No reminder registration exists for this device")
+    result = await inspect_provider_readiness(registration)
+    result["current_installation_match"] = "unavailable"
+    result["reminder_ready"] = False
+    return result
 
 @api_router.put("/itinerary-reminders/enabled")
 async def set_itinerary_reminders_enabled(data: ItineraryEnabledPayload, request: Request):
     repository, registration = await authorize_itinerary_device(request)
+    if data.enabled:
+        registration = await refresh_provider_readiness(repository, registration)
+        if not registration.get("provider_deliverable"):
+            raise HTTPException(status_code=409, detail="This installation is not currently provider-reachable")
     return public_status(await repository.set_enabled(registration["id"], data.enabled))
 
 @api_router.put("/itinerary-reminders/stars")
@@ -1929,11 +1970,15 @@ async def itinerary_test_readiness():
         labels["A"]["wonderpush_installation_id"] != labels["B"]["wonderpush_installation_id"])
     distinct_capabilities = bool(labels.get("A") and labels.get("B") and
         not hmac.compare_digest(labels["A"]["capability_hash"], labels["B"]["capability_hash"]))
+    device_a_provider = await inspect_provider_readiness(labels["A"]) if labels.get("A") else {}
+    device_b_provider = await inspect_provider_readiness(labels["B"]) if labels.get("B") else {}
     return {"device_a_registered": "A" in labels, "device_b_registered": "B" in labels,
         "distinct_installations": distinct, "distinct_capabilities": distinct_capabilities,
         "device_a_verification_code": test_device_status(labels["A"])["fingerprint"] if labels.get("A") else None,
         "device_b_verification_code": test_device_status(labels["B"])["fingerprint"] if labels.get("B") else None,
-        "ready_for_authorization": distinct and distinct_capabilities,
+        "device_a_provider_reachability": device_a_provider.get("provider_reachability", "unknown"),
+        "device_b_provider_reachability": device_b_provider.get("provider_reachability", "unknown"),
+        "ready_for_authorization": distinct and distinct_capabilities and bool(device_a_provider.get("provider_deliverable")),
         "target": "Device A only" if distinct else None, "notification_sent": False}
 
 @api_router.get("/itinerary-reminders/device-a-delivery-diagnostics")
@@ -1996,6 +2041,9 @@ async def send_itinerary_targeting_test(
         raise HTTPException(status_code=409, detail="Distinct Device B registration is required")
     if hmac.compare_digest(labels["A"]["capability_hash"], labels["B"]["capability_hash"]):
         raise HTTPException(status_code=409, detail="Distinct device capabilities are required")
+    refreshed = await refresh_provider_readiness(repository, labels["A"])
+    if not refreshed.get("provider_deliverable"):
+        raise HTTPException(status_code=409, detail="Device A is not currently provider-reachable")
     provider = require_wonderpush_client()
     targeted_provider = InstallationTargetedWonderPush(repository, provider)
     campaign_id = await targeted_provider.send(
@@ -2023,6 +2071,9 @@ async def controlled_device_a_send(data: ControlledTargetingSendPayload, request
         raise HTTPException(status_code=409, detail="Installations are not distinct")
     if hmac.compare_digest(labels["A"]["capability_hash"], labels["B"]["capability_hash"]):
         raise HTTPException(status_code=409, detail="Capabilities are not distinct")
+    device_a = await refresh_provider_readiness(repository, labels["A"])
+    if not device_a.get("provider_deliverable"):
+        raise HTTPException(status_code=409, detail="Device A is not currently provider-reachable")
     if not hmac.compare_digest(test_device_status(labels["A"])["fingerprint"], data.device_a_verification_code):
         raise HTTPException(status_code=409, detail="Device A verification failed")
     if not hmac.compare_digest(test_device_status(labels["B"])["fingerprint"], data.device_b_verification_code):
@@ -2037,10 +2088,10 @@ async def controlled_device_a_send(data: ControlledTargetingSendPayload, request
             message="This staging-only notification was sent to Device A only.",
             target_url=f"{PUBLIC_APP_URL}/itinerary")
     except Exception as exc:
-        await repository.finish_controlled_test(claim["id"], status="failed", error_message=str(exc))
+        await repository.finish_controlled_test(claim["id"], status="provider_failed", error_message=str(exc))
         raise HTTPException(status_code=502, detail="Controlled provider send failed; it will not be retried") from exc
-    await repository.finish_controlled_test(claim["id"], status="sent", provider_delivery_id=provider_id)
-    return {"status": "sent", "target": "Device A only", "provider_delivery_id": provider_id,
+    await repository.finish_controlled_test(claim["id"], status="provider_accepted", provider_delivery_id=provider_id)
+    return {"status": "provider_accepted", "physical_delivery": "unknown", "target": "Device A only", "provider_delivery_id": provider_id,
         "device_b_targeted": False, "broadcast": False}
 
 @api_router.post("/itinerary-reminders/controlled-device-a-vpn-off-send")
@@ -2052,7 +2103,7 @@ async def controlled_device_a_vpn_off_send(data: ControlledTargetingSendPayload,
     registrations = await repository.test_registrations()
     labels = {item.get("test_device_label"): item for item in registrations}
     prior = await repository.controlled_test("initial")
-    if not labels.get("A") or not labels.get("B") or not prior or prior.get("status") != "sent":
+    if not labels.get("A") or not labels.get("B") or not prior or prior.get("status") not in {"sent", "provider_accepted"}:
         raise HTTPException(status_code=409, detail="Prior controlled test state is not complete")
     if prior["registration_id"] != labels["A"]["id"]:
         raise HTTPException(status_code=409, detail="Device A registration changed since prior test")
@@ -2060,6 +2111,9 @@ async def controlled_device_a_vpn_off_send(data: ControlledTargetingSendPayload,
         raise HTTPException(status_code=409, detail="Installations are not distinct")
     if hmac.compare_digest(labels["A"]["capability_hash"], labels["B"]["capability_hash"]):
         raise HTTPException(status_code=409, detail="Capabilities are not distinct")
+    device_a = await refresh_provider_readiness(repository, labels["A"])
+    if not device_a.get("provider_deliverable"):
+        raise HTTPException(status_code=409, detail="Device A is not currently provider-reachable")
     if test_device_status(labels["A"])["fingerprint"] != data.device_a_verification_code or test_device_status(labels["B"])["fingerprint"] != data.device_b_verification_code:
         raise HTTPException(status_code=409, detail="Device verification failed")
     claim = await repository.claim_controlled_test(labels["A"]["id"], "vpn_off")
@@ -2071,10 +2125,10 @@ async def controlled_device_a_vpn_off_send(data: ControlledTargetingSendPayload,
             title="IPM — Targeting Test", message="VPN-off Device A delivery test.",
             target_url=f"{PUBLIC_APP_URL}/itinerary")
     except Exception as exc:
-        await repository.finish_controlled_test(claim["id"], status="failed", error_message=str(exc))
+        await repository.finish_controlled_test(claim["id"], status="provider_failed", error_message=str(exc))
         raise HTTPException(status_code=502, detail="VPN-off provider send failed; it will not be retried") from exc
-    await repository.finish_controlled_test(claim["id"], status="sent", provider_delivery_id=provider_id)
-    return {"status": "sent", "test_key": "vpn_off", "target": "Device A only",
+    await repository.finish_controlled_test(claim["id"], status="provider_accepted", provider_delivery_id=provider_id)
+    return {"status": "provider_accepted", "physical_delivery": "unknown", "test_key": "vpn_off", "target": "Device A only",
         "verification_code": data.device_a_verification_code, "provider_delivery_id": provider_id,
         "device_b_targeted": False, "broadcast": False,
         "sent_at": datetime.now(timezone.utc).isoformat()}

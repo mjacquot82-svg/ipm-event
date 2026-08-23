@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import {
   getControlledTestDeviceStatus,
   diagnoseControlledTestRegistration,
+  getItineraryReminderReadiness,
   TestDeviceLabel,
 } from '../src/services/itineraryReminderSync.web';
 
@@ -17,7 +18,18 @@ export default function ReminderTestRegistration() {
   const [diagnostic, setDiagnostic] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
-    getControlledTestDeviceStatus().then(setStatus).catch(() => setMessage('Choose the correct phone below to register it.'));
+    getItineraryReminderReadiness().then((result) => {
+      setDiagnostic({ ...result.client,
+        backendRegistration: result.registration?.registered ? 'exists' : 'none',
+        installationMatch: result.currentInstallationMatch,
+        providerReachability: result.registration?.provider_reachability || 'unknown',
+        reminderReady: result.reminderReady });
+      if (!result.reminderReady && result.registration?.registered) {
+        setMessage('An earlier registration exists, but this device is stale or not reminder-ready. No notification was sent.');
+      } else {
+        getControlledTestDeviceStatus().then(setStatus).catch(() => setMessage('Choose the correct phone below to register it.'));
+      }
+    }).catch(() => setMessage('Safe readiness diagnostics are temporarily unavailable.'));
   }, []);
 
   const register = async (label: TestDeviceLabel) => {
@@ -61,6 +73,10 @@ export default function ReminderTestRegistration() {
       <Text>WonderPush SDK: {String(diagnostic.sdk)}</Text>
       <Text>WonderPush subscription: {String(diagnostic.subscription)}</Text>
       <Text>Installation ID: {String(diagnostic.installation)}</Text>
+      <Text>Backend registration: {String(diagnostic.backendRegistration || 'not checked')}</Text>
+      <Text>Current installation match: {String(diagnostic.installationMatch || 'not checked')}</Text>
+      <Text>Provider reachability: {String(diagnostic.providerReachability || 'unknown')}</Text>
+      <Text>Reminder readiness: {String(diagnostic.reminderReady ?? false)}</Text>
       <Text>Capability: {String(diagnostic.capability)}</Text>
       <Text>Registration API: {String(diagnostic.registrationApi)}</Text>
       <Text>Device label API: {String(diagnostic.labelApi)}</Text>
