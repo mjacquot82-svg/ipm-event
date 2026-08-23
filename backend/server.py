@@ -144,7 +144,12 @@ WONDERPUSH_TEST_INSTALLATION_IDS = [
     for installation_id in os.environ.get("WONDERPUSH_TEST_INSTALLATION_IDS", "").split(",")
     if installation_id.strip()
 ]
-IS_STAGING_DEPLOYMENT = ENVIRONMENT == "staging" or os.environ.get("RENDER_GIT_BRANCH") == "staging"
+STAGING_SUPABASE_HOST = "https://hooiqjcbcbwzjjvnwyxf.supabase.co"
+IS_STAGING_DEPLOYMENT = (
+    ENVIRONMENT == "staging"
+    or os.environ.get("RENDER_GIT_BRANCH") == "staging"
+    or SUPABASE_URL.rstrip("/") == STAGING_SUPABASE_HOST
+)
 ITINERARY_REMINDER_FOUNDATION_ENABLED = os.environ.get(
     "ITINERARY_REMINDER_FOUNDATION_ENABLED", "true" if IS_STAGING_DEPLOYMENT else "false"
 ).lower() == "true"
