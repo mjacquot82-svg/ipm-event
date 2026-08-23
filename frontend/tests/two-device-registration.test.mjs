@@ -15,7 +15,7 @@ test('phones enroll normally without displaying installation IDs or capabilities
 
 test('installed staging PWA has an internal route to device diagnostics', () => {
   assert.match(optIn, /display-mode: standalone/);
-  assert.match(optIn, /router\.push\('\/reminder-test-registration'\)/);
+  assert.match(optIn, /router\.push\('\/reminder-test-registration'(?: as never)?\)/);
   assert.match(optIn, /includes\('staging'\)/);
 });
 
@@ -41,4 +41,13 @@ test('send guard requires distinct A and B and targets only A', () => {
   assert.doesNotMatch(server.slice(server.indexOf('send_itinerary_targeting_test')), /send_everyone/);
   assert.match(server, /distinct_capabilities/);
   assert.match(server, /device_a_verification_code/);
+});
+
+test('reminder controls are explicit, Device A only, and promise no send', () => {
+  assert.match(page, /Enable 30-Minute Event Reminders/);
+  assert.match(page, /Disable Event Reminders/);
+  assert.match(page, /status\?\.label === 'A'/);
+  assert.match(page, /Enabling or disabling does not send a notification/);
+  assert.match(page, /IS_STAGING/);
+  assert.match(page, /if \(!IS_STAGING\)/);
 });

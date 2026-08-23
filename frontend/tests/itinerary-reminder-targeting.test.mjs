@@ -6,6 +6,8 @@ const sdk = fs.readFileSync(new URL('../src/services/wonderPushService.web.ts', 
 const sync = fs.readFileSync(new URL('../src/services/itineraryReminderSync.web.ts', import.meta.url), 'utf8');
 const migration = fs.readFileSync(new URL('../../supabase/migrations/20260823000100_itinerary_reminder_targeting.sql', import.meta.url), 'utf8');
 const hardening = fs.readFileSync(new URL('../../supabase/migrations/20260823000500_harden_itinerary_reminder_readiness.sql', import.meta.url), 'utf8');
+const testPage = fs.readFileSync(new URL('../app/reminder-test-registration.tsx', import.meta.url), 'utf8');
+const favorites = fs.readFileSync(new URL('../src/utils/favoritesStorage.ts', import.meta.url), 'utf8');
 
 test('uses supported SDK installation ID and a 256-bit local capability', () => {
   assert.match(sdk, /getInstallationId/);
@@ -33,6 +35,38 @@ test('client and backend readiness are evaluated separately', () => {
   assert.match(sync, /current_installation_unavailable/);
   assert.match(sync, /installation_mismatch/);
   assert.match(sync, /current\.provider_deliverable/);
+});
+
+test('deliberate Device A control enables, full-set syncs, and rereads readiness', () => {
+  assert.match(testPage, /Enable 30-Minute Event Reminders/);
+  assert.match(testPage, /onPress=\{\(\) => changeReminders\(true\)\}/);
+  assert.match(testPage, /enableItineraryRemindersForTesting\(await getFavorites\(\)\)/);
+  assert.match(sync, /currentInstallationMatch !== 'match'/);
+  assert.match(sync, /registration\?\.provider_deliverable/);
+  assert.match(sync, /const completeSet = \[\.\.\.new Set\(starredScheduleIds\)\]/);
+  assert.match(sync, /request\('\/enabled', 'PUT', \{ enabled: true \}\)/);
+  assert.match(sync, /request\('\/stars', 'PUT', \{ schedule_ids: completeSet \}\)/);
+  assert.match(sync, /return getItineraryReminderReadiness\(\)/);
+  assert.doesNotMatch(sync, /send_one_installation|targetInstallationIds|\/controlled-device-a-send/);
+});
+
+test('empty full set is valid and synchronization failure safely disables', () => {
+  assert.doesNotMatch(sync, /starredScheduleIds\.length/);
+  assert.match(sync, /request\('\/enabled', 'PUT', \{ enabled: false \}\)\.catch/);
+  assert.match(sync, /AsyncStorage\.setItem\(ENABLED_KEY, 'false'\)/);
+});
+
+test('deliberate disable preserves favorites and returns readiness false', () => {
+  assert.match(testPage, /Disable Event Reminders/);
+  assert.match(testPage, /onPress=\{\(\) => changeReminders\(false\)\}/);
+  assert.match(sync, /disableItineraryRemindersForTesting/);
+  assert.doesNotMatch(sync, /clearFavorites|removeFavorite/);
+  assert.match(favorites, /const FAVORITES_KEY/);
+});
+
+test('staging enablement control is isolated to registered Device A', () => {
+  assert.match(testPage, /status\?\.label === 'A'/);
+  assert.doesNotMatch(testPage, /status\?\.label === 'B'.*changeReminders/s);
 });
 
 test('full-set sync is retryable and gated by local enabled state', () => {

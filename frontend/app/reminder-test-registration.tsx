@@ -5,10 +5,14 @@ import {
   getControlledTestDeviceStatus,
   diagnoseControlledTestRegistration,
   getItineraryReminderReadiness,
+  enableItineraryRemindersForTesting,
+  disableItineraryRemindersForTesting,
   TestDeviceLabel,
 } from '../src/services/itineraryReminderSync.web';
+import { getFavorites } from '../src/utils/favoritesStorage';
 
 type Status = { registered: boolean; label: TestDeviceLabel; fingerprint: string };
+const IS_STAGING = (process.env.EXPO_PUBLIC_BACKEND_URL || '').includes('staging');
 
 export default function ReminderTestRegistration() {
   const router = useRouter();
@@ -17,13 +21,23 @@ export default function ReminderTestRegistration() {
   const [message, setMessage] = useState('Checking this subscribed phone…');
   const [diagnostic, setDiagnostic] = useState<Record<string, unknown> | null>(null);
 
+  const showReadiness = (result: Awaited<ReturnType<typeof getItineraryReminderReadiness>>) => {
+    setDiagnostic({ ...result.client,
+      backendRegistration: result.registration?.registered ? 'exists' : 'none',
+      remindersEnabled: Boolean(result.registration?.reminders_enabled),
+      starredCount: result.registration?.starred_count ?? 'unknown',
+      installationMatch: result.currentInstallationMatch,
+      providerReachability: result.registration?.provider_reachability || 'unknown',
+      providerDeliverable: Boolean(result.registration?.provider_deliverable),
+      providerCheckedAt: result.registration?.provider_checked_at || 'unknown',
+      reminderReady: result.reminderReady });
+  };
+
   useEffect(() => {
+    if (!IS_STAGING) return;
     getItineraryReminderReadiness().then((result) => {
-      setDiagnostic({ ...result.client,
-        backendRegistration: result.registration?.registered ? 'exists' : 'none',
-        installationMatch: result.currentInstallationMatch,
-        providerReachability: result.registration?.provider_reachability || 'unknown',
-        reminderReady: result.reminderReady });
+      showReadiness(result);
+      getControlledTestDeviceStatus().then(setStatus).catch(() => undefined);
       if (!result.reminderReady && result.registration?.registered) {
         setMessage('An earlier registration exists, but this device is stale or not reminder-ready. No notification was sent.');
       } else {
@@ -31,6 +45,12 @@ export default function ReminderTestRegistration() {
       }
     }).catch(() => setMessage('Safe readiness diagnostics are temporarily unavailable.'));
   }, []);
+
+  if (!IS_STAGING) {
+    return <View style={styles.page}><Text style={styles.title}>Not available</Text>
+      <Pressable style={styles.back} onPress={() => router.replace('/')} accessibilityRole="button"><Text>Back to IPM</Text></Pressable>
+    </View>;
+  }
 
   const register = async (label: TestDeviceLabel) => {
     setBusy(true);
@@ -46,6 +66,26 @@ export default function ReminderTestRegistration() {
       }
     } catch {
       setMessage('Registration failed. Confirm notifications are enabled on this phone and try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+
+  const changeReminders = async (enabled: boolean) => {
+    setBusy(true);
+    setMessage(enabled ? 'Verifying and enabling reminders…' : 'Disabling reminders…');
+    try {
+      const result = enabled
+        ? await enableItineraryRemindersForTesting(await getFavorites())
+        : await disableItineraryRemindersForTesting();
+      showReadiness(result);
+      setMessage(enabled
+        ? `Reminder synchronization enabled for ${result.registration?.starred_count ?? 0} starred event(s). No notification was sent.`
+        : 'Event reminders disabled. Your local itinerary was preserved. No notification was sent.');
+    } catch {
+      setMessage('Reminder setting was not changed because a readiness or synchronization check failed.');
+      getItineraryReminderReadiness().then(showReadiness).catch(() => undefined);
     } finally {
       setBusy(false);
     }
@@ -67,6 +107,19 @@ export default function ReminderTestRegistration() {
       </Pressable>
     </>}
     {busy ? <ActivityIndicator /> : null}<Text style={styles.message}>{message}</Text>
+    {status?.label === 'A' && diagnostic ? <View style={styles.controls}>
+      <Text style={styles.diagnosticTitle}>Device A reminder synchronization</Text>
+      <Text style={styles.copy}>This enables reminders for the complete itinerary stored on this device. Enabling or disabling does not send a notification.</Text>
+      {diagnostic.reminderReady ? (
+        <Pressable disabled={busy} style={styles.secondary} onPress={() => changeReminders(false)} accessibilityRole="button">
+          <Text style={styles.secondaryText}>Disable Event Reminders</Text>
+        </Pressable>
+      ) : (
+        <Pressable disabled={busy} style={styles.button} onPress={() => changeReminders(true)} accessibilityRole="button">
+          <Text style={styles.buttonText}>Enable 30-Minute Event Reminders</Text>
+        </Pressable>
+      )}
+    </View> : null}
     {diagnostic ? <View style={styles.diagnostics} accessibilityLiveRegion="polite">
       <Text style={styles.diagnosticTitle}>Safe diagnostics</Text>
       <Text>Browser permission: {String(diagnostic.browserPermission)}</Text>
@@ -74,8 +127,12 @@ export default function ReminderTestRegistration() {
       <Text>WonderPush subscription: {String(diagnostic.subscription)}</Text>
       <Text>Installation ID: {String(diagnostic.installation)}</Text>
       <Text>Backend registration: {String(diagnostic.backendRegistration || 'not checked')}</Text>
+      <Text>Reminders enabled: {String(diagnostic.remindersEnabled ?? false)}</Text>
+      <Text>Synced starred events: {String(diagnostic.starredCount ?? 'unknown')}</Text>
       <Text>Current installation match: {String(diagnostic.installationMatch || 'not checked')}</Text>
       <Text>Provider reachability: {String(diagnostic.providerReachability || 'unknown')}</Text>
+      <Text>Provider deliverable: {String(diagnostic.providerDeliverable ?? false)}</Text>
+      <Text>Provider verification: {String(diagnostic.providerCheckedAt || 'unknown')}</Text>
       <Text>Reminder readiness: {String(diagnostic.reminderReady ?? false)}</Text>
       <Text>Capability: {String(diagnostic.capability)}</Text>
       <Text>Registration API: {String(diagnostic.registrationApi)}</Text>
@@ -98,4 +155,5 @@ const styles = StyleSheet.create({
   back: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   diagnostics: { borderRadius: 12, padding: 16, gap: 6, backgroundColor: '#F3F4F6' },
   diagnosticTitle: { fontSize: 17, fontWeight: '700', color: '#1F2937' },
+  controls: { borderRadius: 12, padding: 16, gap: 12, backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#C2410C' },
 });

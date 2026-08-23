@@ -105,17 +105,35 @@ export async function diagnoseControlledTestRegistration(label: TestDeviceLabel)
 }
 
 export async function configureItineraryReminderSync(starredScheduleIds: string[]): Promise<void> {
-  const auth = await credentials();
-  if (!auth) throw new Error('A subscribed WonderPush installation is required.');
-  await request('/register', 'POST');
+  const readiness = await getItineraryReminderReadiness();
+  if (!readiness.client.clientReady) throw new Error('The current browser is not notification-ready.');
+  if (readiness.currentInstallationMatch !== 'match') throw new Error('The current installation does not match its registration.');
+  if (!readiness.registration?.provider_deliverable) throw new Error('The current installation is not provider-reachable.');
+  const completeSet = [...new Set(starredScheduleIds)];
   await request('/enabled', 'PUT', { enabled: true });
-  await AsyncStorage.setItem(ENABLED_KEY, 'true');
-  await request('/stars', 'PUT', { schedule_ids: starredScheduleIds });
+  try {
+    await request('/stars', 'PUT', { schedule_ids: completeSet });
+    await AsyncStorage.setItem(ENABLED_KEY, 'true');
+  } catch (error) {
+    await request('/enabled', 'PUT', { enabled: false }).catch(() => undefined);
+    await AsyncStorage.setItem(ENABLED_KEY, 'false');
+    throw error;
+  }
+}
+
+export async function enableItineraryRemindersForTesting(starredScheduleIds: string[]) {
+  await configureItineraryReminderSync(starredScheduleIds);
+  return getItineraryReminderReadiness();
 }
 
 export async function disableItineraryReminderSync(): Promise<void> {
   await request('/enabled', 'PUT', { enabled: false });
   await AsyncStorage.setItem(ENABLED_KEY, 'false');
+}
+
+export async function disableItineraryRemindersForTesting() {
+  await disableItineraryReminderSync();
+  return getItineraryReminderReadiness();
 }
 
 export async function reconcileItineraryReminderStars(starredScheduleIds: string[]): Promise<void> {
