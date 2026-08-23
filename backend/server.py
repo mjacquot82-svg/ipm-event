@@ -2056,6 +2056,7 @@ async def send_itinerary_targeting_test(
 
 CONTROLLED_SEND_TOKEN_HASH = "c1dc23c0ac58cf66310f75eb685e9b1e2ce7dd7befca7dabda5059f8abbf113a"
 VPN_OFF_SEND_TOKEN_HASH = "013e62bc68eb47cc3ea3719f963b407bc3ea96db887a47fad6b9743f393ab3a7"
+READY_DEVICE_SEND_TOKEN_HASH = "9736cd1011a2872d81b5de661f060948f4cab316db5a37e5aa187a39204f4a81"
 
 @api_router.post("/itinerary-reminders/controlled-device-a-send")
 async def controlled_device_a_send(data: ControlledTargetingSendPayload, request: Request):
@@ -2132,6 +2133,46 @@ async def controlled_device_a_vpn_off_send(data: ControlledTargetingSendPayload,
         "verification_code": data.device_a_verification_code, "provider_delivery_id": provider_id,
         "device_b_targeted": False, "broadcast": False,
         "sent_at": datetime.now(timezone.utc).isoformat()}
+
+@api_router.post("/itinerary-reminders/controlled-ready-device-a-send")
+async def controlled_ready_device_a_send(data: ControlledTargetingSendPayload, request: Request):
+    repository = require_itinerary_foundation()
+    supplied = request.headers.get("X-Controlled-Send-Authorization", "")
+    if not supplied or not hmac.compare_digest(hashlib.sha256(supplied.encode()).hexdigest(), READY_DEVICE_SEND_TOKEN_HASH):
+        raise HTTPException(status_code=403, detail="Invalid controlled-send authorization")
+    registrations = await repository.test_registrations()
+    labels = {item.get("test_device_label"): item for item in registrations}
+    if not labels.get("A") or not labels.get("B"):
+        raise HTTPException(status_code=409, detail="Both controlled devices must be registered")
+    if labels["A"]["wonderpush_installation_id"] == labels["B"]["wonderpush_installation_id"]:
+        raise HTTPException(status_code=409, detail="Installations are not distinct")
+    if hmac.compare_digest(labels["A"]["capability_hash"], labels["B"]["capability_hash"]):
+        raise HTTPException(status_code=409, detail="Capabilities are not distinct")
+    if not hmac.compare_digest(test_device_status(labels["A"])["fingerprint"], data.device_a_verification_code):
+        raise HTTPException(status_code=409, detail="Device A verification failed")
+    if not hmac.compare_digest(test_device_status(labels["B"])["fingerprint"], data.device_b_verification_code):
+        raise HTTPException(status_code=409, detail="Device B verification failed")
+    device_a = await refresh_provider_readiness(repository, labels["A"])
+    if not device_a.get("reminders_enabled"):
+        raise HTTPException(status_code=409, detail="Device A reminders are not enabled")
+    if not device_a.get("provider_deliverable") or device_a.get("provider_reachability") != "optIn" or not device_a.get("provider_has_push_token"):
+        raise HTTPException(status_code=409, detail="Device A is not currently provider-reachable")
+    claim = await repository.claim_controlled_test(labels["A"]["id"], "ready_device")
+    if not claim:
+        raise HTTPException(status_code=409, detail="Ready-device test already claimed; no repeat permitted")
+    provider = InstallationTargetedWonderPush(repository, require_wonderpush_client())
+    try:
+        provider_id = await provider.send(installation_id=labels["A"]["wonderpush_installation_id"],
+            title="IPM — Targeting Test", message="Ready-device delivery test.",
+            target_url=f"{PUBLIC_APP_URL}/itinerary")
+    except Exception as exc:
+        await repository.finish_controlled_test(claim["id"], status="provider_failed", error_message=str(exc))
+        raise HTTPException(status_code=502, detail="Ready-device provider send failed; it will not be retried") from exc
+    await repository.finish_controlled_test(claim["id"], status="provider_accepted", provider_delivery_id=provider_id)
+    return {"status": "provider_accepted", "physical_delivery": "unknown", "test_key": "ready_device",
+        "target": "Device A only", "verification_code": data.device_a_verification_code,
+        "provider_delivery_id": provider_id, "device_b_targeted": False, "broadcast": False,
+        "automatic_retry": False, "provider_accepted_at": datetime.now(timezone.utc).isoformat()}
 
 
 CALENDAR_BULK_EXPORT_LIMIT = 200

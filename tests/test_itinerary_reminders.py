@@ -79,3 +79,19 @@ def test_targeting_boundary_rejects_stale_registration():
         asyncio.run(InstallationTargetedWonderPush(Repository(), Provider()).send(
             installation_id="installation-a", title="Test", message="A", target_url="https://staging.example"
         ))
+
+
+def test_ready_device_send_route_is_single_target_and_honest():
+    source = open("backend/server.py", encoding="utf-8").read()
+    route = source[source.index('controlled-ready-device-a-send'):]
+    assert '"ready_device"' in route
+    assert 'message="Ready-device delivery test."' in route
+    assert 'device_a.get("reminders_enabled")' in route
+    assert 'device_a.get("provider_reachability") != "optIn"' in route
+    assert 'device_a.get("provider_has_push_token")' in route
+    assert 'status="provider_accepted"' in route
+    assert '"physical_delivery": "unknown"' in route
+    assert '"device_b_targeted": False' in route
+    assert '"broadcast": False' in route
+    assert '"automatic_retry": False' in route
+    assert "send_everyone" not in route
