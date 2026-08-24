@@ -72,7 +72,7 @@ def test_scale_indexes_cover_claim_and_backlog_shapes():
 
 def test_429_burst_opens_circuit_and_stops_provider_calls():
     class Repository:
-        def __init__(self): self.finished = []
+        def __init__(self): self.finished, self.failures = [], 0
         async def close_stale_claims(self, *args, **kwargs): pass
         async def due_registrations(self, *args, **kwargs):
             return [{"registration_id": "reg-0", "wonderpush_installation_id": "installation-0"}]
@@ -88,6 +88,16 @@ def test_429_burst_opens_circuit_and_stops_provider_calls():
             return {"batch_id": f"batch-{values['schedule_item_id']}", "target_count": len(values["delivery_ids"])}
         async def finish_batch(self, batch_id, delivery_ids, **values):
             self.finished.extend((delivery_id, values) for delivery_id in delivery_ids)
+        async def recover_expired_batches(self, now): return {"released_pre_submit": 0, "marked_ambiguous": 0}
+        async def lease_assigned_batches(self, *args, **kwargs): return []
+        async def acquire_provider_slot(self, *args, **kwargs):
+            return {"granted": self.failures < 20, "retry_after_ms": 0,
+                "breaker_state": "closed" if self.failures < 20 else "open"}
+        async def mark_batch_attempted(self, *args, **kwargs): return True
+        async def record_provider_outcome(self, *args, **kwargs):
+            self.failures += 1
+            return "open" if self.failures >= 20 else "closed"
+        async def evaluate_alerts(self, now): return 1 if self.failures >= 20 else 0
     class Provider:
         def __init__(self): self.calls = 0
         async def get_installation(self, installation_id):
@@ -107,5 +117,5 @@ def test_429_burst_opens_circuit_and_stops_provider_calls():
     assert result["provider_429"] == 20
     assert result["circuit_breaker"] == "open"
     assert provider.calls == 20
-    assert len(repository.finished) == 25
+    assert len(repository.finished) == 20
     assert all(item[1]["status"] == "provider_failed" for item in repository.finished)

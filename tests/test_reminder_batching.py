@@ -117,6 +117,13 @@ class BatchRepository:
         return {"batch_id": "batch-a", "target_count": len(values["delivery_ids"])}
     async def finish_batch(self, batch_id, delivery_ids, **values):
         self.finished.append((batch_id, delivery_ids, values))
+    async def recover_expired_batches(self, now): return {"released_pre_submit": 0, "marked_ambiguous": 0}
+    async def lease_assigned_batches(self, *args, **kwargs): return []
+    async def acquire_provider_slot(self, *args, **kwargs):
+        return {"granted": True, "retry_after_ms": 0, "breaker_state": "closed"}
+    async def mark_batch_attempted(self, *args, **kwargs): return True
+    async def record_provider_outcome(self, *args, **kwargs): return "closed"
+    async def evaluate_alerts(self, now): return 0
 
 
 class BatchProvider:

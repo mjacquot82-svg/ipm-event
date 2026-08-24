@@ -1987,14 +1987,18 @@ async def itinerary_reminder_operations():
     now = datetime.now(timezone.utc)
     metrics = await repository.operational_metrics(now)
     batch_metrics = await repository.batch_metrics(now)
-    return {**metrics, **batch_metrics, "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
+    durable_metrics = await repository.durable_metrics(now)
+    provider_control = await repository.provider_control_status()
+    benchmark_results = await repository.benchmark_results() if IS_STAGING_DEPLOYMENT else []
+    return {**metrics, **batch_metrics, **durable_metrics,
+        "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
         "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
         "eligibility_window_minutes": {"after": 25, "through": 30},
         "claim_batch_size": ITINERARY_REMINDER_CLAIM_BATCH_SIZE,
         "concurrency": ITINERARY_REMINDER_CONCURRENCY,
         "max_sends_per_second": ITINERARY_REMINDER_MAX_SENDS_PER_SECOND,
         "max_targets_per_request": ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST,
-        "circuit_breaker": itinerary_reminder_engine().circuit_breaker.state}
+        "provider_control": provider_control, "staging_database_benchmark": benchmark_results}
 
 @api_router.get("/admin/itinerary-reminders/scale-report")
 async def itinerary_reminder_scale_report(current_user: dict = Depends(get_current_organizer_user)):
