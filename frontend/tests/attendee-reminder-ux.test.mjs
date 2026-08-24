@@ -139,6 +139,23 @@ test('refresh-race recovery verifies readiness and preserves full-set reconcilia
   assert.doesNotMatch(statusFlow, /subscribeToNotifications\(/);
 });
 
+test('installation diagnostics distinguish unknown, mismatch, and subscription failure', () => {
+  assert.match(sync, /getCurrentInstallationFingerprint/);
+  assert.match(sync, /existing\.registration_fingerprint === currentFingerprint \? 'match' : 'mismatch'/);
+  assert.match(sync, /currentInstallationMatch === 'mismatch' \? 'installation_mismatch'/);
+  assert.match(sync, /client\.subscription !== 'subscribed' \? 'wonderpush_subscription'/);
+  assert.match(ux, /currentInstallationMatch === 'unavailable'[\s\S]*\? null/);
+});
+
+test('deliberate reconnect replaces association then preserves full local star set without sending', () => {
+  const configure = sync.slice(sync.indexOf('export async function configureItineraryReminderSync'),
+    sync.indexOf('export async function enableItineraryRemindersForTesting'));
+  assert.ok(configure.indexOf("request('/register', 'POST')") < configure.indexOf("request('/enabled', 'PUT'"));
+  assert.ok(configure.indexOf("request('/enabled', 'PUT'") < configure.indexOf("request('/stars', 'PUT'"));
+  assert.match(configure, /const completeSet = \[\.\.\.new Set\(starredScheduleIds\)\]/);
+  assert.doesNotMatch(configure, /\/deliveries|send_installations|send_everyone|send_one_installation/);
+});
+
 test('attendee UI exposes no diagnostic identifiers or staging device link', () => {
   const attendee = `${schedule}\n${itinerary}\n${optIn}`;
   for (const forbidden of ['WonderPush installation', 'capability credential', 'Device A', 'Device B', 'verification code', 'Device test']) {

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
@@ -159,6 +160,23 @@ test('bounded read-only settling preserves a genuine missing installation', asyn
   assert.equal(snapshot.subscribed, false);
   assert.equal(snapshot.installationId, null);
   assert.equal(reads, 3);
+});
+
+test('current installation comparison exposes only the same safe fingerprint format as backend', async () => {
+  const browser = installBrowserMocks();
+  process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
+  const service = await import('../src/services/wonderPushService.web.ts?safe-fingerprint');
+  browser.notification.permission = 'granted';
+  const rawInstallation = 'never-render-this-installation-id';
+  const initialization = service.initializeWonderPush();
+  browser.makeSdkReady({
+    isSubscribedToNotifications: async () => false,
+    getInstallationId: async () => rawInstallation,
+  });
+  await initialization;
+  const fingerprint = await service.getCurrentInstallationFingerprint();
+  assert.equal(fingerprint, createHash('sha256').update(rawInstallation).digest('hex').slice(0, 10).toUpperCase());
+  assert.notEqual(fingerprint, rawInstallation);
 });
 
 test('readiness timeout returns an error state, resets initialization and permits retry', async (t) => {

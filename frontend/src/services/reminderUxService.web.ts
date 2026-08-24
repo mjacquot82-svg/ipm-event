@@ -67,7 +67,8 @@ export async function getAttendeeReminderStatus() {
     subscribed: readiness.client.subscription === 'subscribed',
     current_installation_available: readiness.client.installation === 'available',
     registration_exists: Boolean(readiness.registration?.registered || readiness.registration?.registration_exists),
-    installation_match: readiness.currentInstallationMatch === 'match',
+    installation_match: readiness.currentInstallationMatch === 'unavailable'
+      ? null : readiness.currentInstallationMatch === 'match',
     reminders_enabled: Boolean(readiness.registration?.reminders_enabled),
     local_reminder_sync_enabled: localReminderSyncEnabled,
     synchronized_star_count: Number(readiness.registration?.synchronized_star_count

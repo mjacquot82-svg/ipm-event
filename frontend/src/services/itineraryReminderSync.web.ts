@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSubscribedInstallationId, getWonderPushClientReadiness } from './wonderPushService.web';
+import { getCurrentInstallationFingerprint, getSubscribedInstallationId,
+  getWonderPushClientReadiness } from './wonderPushService.web';
 
 const CAPABILITY_KEY = '@ipm_itinerary_reminder_capability_v1';
 const ENABLED_KEY = '@ipm_itinerary_reminders_enabled_v1';
@@ -70,8 +71,16 @@ export async function getItineraryReminderReadiness({ verifyProvider = false } =
   const client = await getWonderPushClientReadiness();
   const existing = await statusByCapability().catch(() => null);
   if (!client.clientReady) {
-    return { client, registration: existing, currentInstallationMatch: 'unavailable', reminderReady: false,
-      staleReason: existing?.registered ? 'current_installation_unavailable' : null };
+    const currentFingerprint = client.installation === 'available'
+      ? await getCurrentInstallationFingerprint().catch(() => null) : null;
+    const currentInstallationMatch = existing?.registration_fingerprint && currentFingerprint
+      ? (existing.registration_fingerprint === currentFingerprint ? 'match' : 'mismatch') : 'unavailable';
+    const staleReason = currentInstallationMatch === 'mismatch' ? 'installation_mismatch'
+      : client.subscription !== 'subscribed' ? 'wonderpush_subscription'
+        : client.installation !== 'available' ? 'current_installation_unavailable'
+          : 'current_installation_unverified';
+    return { client, registration: existing, currentInstallationMatch, reminderReady: false,
+      staleReason: existing?.registered ? staleReason : null };
   }
   const current = await request('/status', 'GET');
   const match = existing
@@ -122,8 +131,10 @@ export async function diagnoseControlledTestRegistration(label: TestDeviceLabel)
 export async function configureItineraryReminderSync(starredScheduleIds: string[]) {
   const client = await getWonderPushClientReadiness();
   if (!client.clientReady) throw new Error('The current browser is not notification-ready.');
-  const existing = await statusByCapability();
-  if (!existing) await request('/register', 'POST');
+  await statusByCapability();
+  // This is a deliberate attendee action. Registering is idempotent for a match and safely
+  // replaces only this capability's stale installation association for a mismatch.
+  await request('/register', 'POST');
   const readiness = await getItineraryReminderReadiness({ verifyProvider: true });
   if (readiness.currentInstallationMatch !== 'match') throw new Error('The current installation does not match its registration.');
   if (!readiness.registration?.provider_deliverable) throw new Error('The current installation is not provider-reachable.');

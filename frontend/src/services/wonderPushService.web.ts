@@ -251,6 +251,15 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
   return snapshot.subscribed ? snapshot.installationId : null;
 }
 
+export async function getCurrentInstallationFingerprint(): Promise<string | null> {
+  if (!isSupported()) return null;
+  const installationId = (await readWonderPushSnapshot()).installationId;
+  if (!installationId || !globalThis.crypto?.subtle) return null;
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(installationId));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('').slice(0, 10).toUpperCase();
+}
+
 export type WonderPushDiagnostics = {
   browserPermission: 'granted' | 'denied' | 'default' | 'unavailable';
   sdk: 'ready' | 'unavailable';
