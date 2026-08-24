@@ -156,6 +156,25 @@ test('deliberate reconnect replaces association then preserves full local star s
   assert.doesNotMatch(configure, /\/deliveries|send_installations|send_everyone|send_one_installation/);
 });
 
+test('reminder card cannot optimistically render on from enablement or stale diagnostics', () => {
+  const changeHandler = itinerary.slice(itinerary.indexOf('const changeReminderStatus'),
+    itinerary.indexOf('const starredEvents'));
+  assert.match(changeHandler, /const verified = await refreshReminderStatus\(\)/);
+  assert.match(changeHandler, /verified\?\.state === 'on'[\s\S]*verified\.reminderReady/);
+  assert.doesNotMatch(changeHandler, /setReminderState\('on'\)/);
+  assert.match(itinerary, /setReminderDiagnostics\(result\?\.diagnostics \|\| null\)/);
+  assert.match(itinerary, /sequence !== reminderRefreshSequence\.current/);
+});
+
+test('authoritative on requires subscription, fresh provider readiness, and exact star count', () => {
+  assert.match(ux, /subscribed: readiness\.client\.subscription === 'subscribed'/);
+  assert.match(ux, /provider_fresh: Boolean\(readiness\.registration\?\.provider_fresh\)/);
+  assert.match(ux, /if \(readiness\.reminderReady\) return \{ state: 'on'/);
+  assert.match(sync, /Number\(synchronized\.starred_count\) !== completeSet\.length/);
+  assert.match(sync, /!finalReadiness\.reminderReady \|\| synchronizedCount !== completeSet\.length/);
+  assert.doesNotMatch(sync, /reminders_enabled[^\n]*reminderReady: true/);
+});
+
 test('attendee UI exposes no diagnostic identifiers or staging device link', () => {
   const attendee = `${schedule}\n${itinerary}\n${optIn}`;
   for (const forbidden of ['WonderPush installation', 'capability credential', 'Device A', 'Device B', 'verification code', 'Device test']) {

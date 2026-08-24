@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -70,13 +70,17 @@ export default function ItineraryScreen() {
   const [reminderFailureStage, setReminderFailureStage] = useState<string | null>(null);
   const [showReminderDiagnostics, setShowReminderDiagnostics] = useState(false);
   const [diagnosticsCopyMessage, setDiagnosticsCopyMessage] = useState<string | null>(null);
+  const reminderRefreshSequence = useRef(0);
 
   const refreshReminderStatus = useCallback(async () => {
+    const sequence = ++reminderRefreshSequence.current;
     setReminderState('checking');
     const result = await getAttendeeReminderStatus().catch(() => null);
+    if (sequence !== reminderRefreshSequence.current) return null;
     setReminderState((result?.state as typeof reminderState) || (result?.reminderReady ? 'on' : 'checking'));
     setReminderDiagnostics(result?.diagnostics || null);
     setReminderFailureStage(result?.failureStage || null);
+    return result;
   }, []);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
@@ -128,25 +132,22 @@ export default function ItineraryScreen() {
     setReminderMessage(null);
     try {
       if (reminderState === 'on') {
-        const result = await disableAttendeeItineraryReminders();
-        setReminderState(result?.reminderReady ? 'on' : 'off');
+        await disableAttendeeItineraryReminders();
+        await refreshReminderStatus();
         setReminderMessage('Event reminders are off. Your itinerary is unchanged.');
       } else {
         const result = await enableAttendeeItineraryReminders();
-        if (result.enabled && result.readiness?.reminderReady) {
-          setReminderState('on');
+        const verified = await refreshReminderStatus();
+        if (result.enabled && result.readiness?.reminderReady && verified?.state === 'on'
+          && verified.reminderReady) {
           setReminderMessage('Event reminders are on for this device.');
-        } else if (result.notificationState === 'requires_install') {
-          setReminderState('install_required');
+        } else if (verified?.state === 'install_required' || result.notificationState === 'requires_install') {
           setReminderMessage('On iPhone, install IPM to your Home Screen and open the installed app to enable reminders.');
-        } else if (result.notificationState === 'denied') {
-          setReminderState('blocked');
+        } else if (verified?.state === 'blocked' || result.notificationState === 'denied') {
           setReminderMessage('Notifications are blocked. Allow them in browser settings to enable reminders.');
-        } else if (result.transient) {
-          setReminderState('checking');
+        } else if (verified?.state === 'checking' || result.transient) {
           setReminderMessage('Verifying event reminders… Your itinerary is still saved.');
         } else if (!result.enabled) {
-          setReminderState('recovery');
           setReminderMessage('Reminders could not be enabled. Your itinerary is still saved.');
         }
       }

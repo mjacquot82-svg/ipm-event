@@ -54,7 +54,9 @@ test('deliberate Device A control enables, full-set syncs, and rereads readiness
   assert.match(sync, /const completeSet = \[\.\.\.new Set\(starredScheduleIds\)\]/);
   assert.match(sync, /request\('\/enabled', 'PUT', \{ enabled: true \}\)/);
   assert.match(sync, /request\('\/stars', 'PUT', \{ schedule_ids: completeSet \}\)/);
-  assert.match(sync, /return getItineraryReminderReadiness\(\{ verifyProvider: true \}\)/);
+  assert.match(sync, /const finalReadiness = await getItineraryReminderReadiness\(\{ verifyProvider: true \}\)/);
+  assert.match(sync, /synchronizedCount !== completeSet\.length/);
+  assert.match(sync, /return finalReadiness/);
   assert.doesNotMatch(sync, /send_one_installation|targetInstallationIds|\/controlled-device-a-send/);
 });
 

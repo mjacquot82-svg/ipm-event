@@ -141,14 +141,23 @@ export async function configureItineraryReminderSync(starredScheduleIds: string[
   const completeSet = [...new Set(starredScheduleIds)];
   await request('/enabled', 'PUT', { enabled: true });
   try {
-    await request('/stars', 'PUT', { schedule_ids: completeSet });
+    const synchronized = await request('/stars', 'PUT', { schedule_ids: completeSet });
+    if (!synchronized.synced || Number(synchronized.starred_count) !== completeSet.length) {
+      throw new Error('The complete itinerary could not be synchronized.');
+    }
     await AsyncStorage.setItem(ENABLED_KEY, 'true');
   } catch (error) {
     await request('/enabled', 'PUT', { enabled: false }).catch(() => undefined);
     await AsyncStorage.setItem(ENABLED_KEY, 'false');
     throw error;
   }
-  return getItineraryReminderReadiness({ verifyProvider: true });
+  const finalReadiness = await getItineraryReminderReadiness({ verifyProvider: true });
+  const synchronizedCount = Number(finalReadiness.registration?.synchronized_star_count
+    ?? finalReadiness.registration?.starred_count ?? -1);
+  if (!finalReadiness.reminderReady || synchronizedCount !== completeSet.length) {
+    throw new Error('Final authoritative reminder readiness was not established.');
+  }
+  return finalReadiness;
 }
 
 export async function enableItineraryRemindersForTesting(starredScheduleIds: string[]) {
