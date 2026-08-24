@@ -60,6 +60,10 @@ export async function getAttendeeReminderStatus() {
   } catch {
     // Diagnostics remain read-only and must never change the attendee reminder state.
   }
+  const localStarCount = (await getFavorites()).length;
+  const synchronizedStarCount = Number(readiness.registration?.synchronized_star_count
+    ?? readiness.registration?.starred_count ?? 0);
+  const fullySynchronized = synchronizedStarCount === localStarCount;
   const redacted = {
     supported_context: readiness.client.supportedContext,
     browser_permission_granted: readiness.client.browserPermission === 'granted',
@@ -71,15 +75,14 @@ export async function getAttendeeReminderStatus() {
       ? null : readiness.currentInstallationMatch === 'match',
     reminders_enabled: Boolean(readiness.registration?.reminders_enabled),
     local_reminder_sync_enabled: localReminderSyncEnabled,
-    synchronized_star_count: Number(readiness.registration?.synchronized_star_count
-      ?? readiness.registration?.starred_count ?? 0),
+    synchronized_star_count: synchronizedStarCount,
     provider_reachability: readiness.registration?.provider_reachability || 'unknown',
     provider_deliverable: Boolean(readiness.registration?.provider_deliverable),
     provider_checked_at: readiness.registration?.provider_checked_at || null,
     provider_fresh: Boolean(readiness.registration?.provider_fresh),
-    final_reminder_ready: readiness.reminderReady,
+    final_reminder_ready: readiness.reminderReady && fullySynchronized,
   };
-  if (readiness.reminderReady) return { state: 'on' as const, reminderReady: true, readiness,
+  if (readiness.reminderReady && fullySynchronized) return { state: 'on' as const, reminderReady: true, readiness,
     diagnostics: redacted, failureStage: null };
   const registrationExists = Boolean(readiness?.registration?.registered
     || readiness?.registration?.registration_exists);
@@ -87,7 +90,8 @@ export async function getAttendeeReminderStatus() {
     diagnostics: redacted, failureStage: 'not_configured' };
   return { state: registrationExists ? 'recovery' as const : 'off' as const,
     reminderReady: false, readiness, diagnostics: redacted,
-    failureStage: readiness.staleReason || 'confirmed_readiness_failure' };
+    failureStage: fullySynchronized ? readiness.staleReason || 'confirmed_readiness_failure'
+      : 'star_synchronization_outstanding' };
 }
 
 export async function shouldShowReminderPromotion(event: { start_date: string; start_time: string }): Promise<boolean> {

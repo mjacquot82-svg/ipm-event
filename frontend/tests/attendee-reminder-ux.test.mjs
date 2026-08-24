@@ -169,10 +169,18 @@ test('reminder card cannot optimistically render on from enablement or stale dia
 test('authoritative on requires subscription, fresh provider readiness, and exact star count', () => {
   assert.match(ux, /subscribed: readiness\.client\.subscription === 'subscribed'/);
   assert.match(ux, /provider_fresh: Boolean\(readiness\.registration\?\.provider_fresh\)/);
-  assert.match(ux, /if \(readiness\.reminderReady\) return \{ state: 'on'/);
+  assert.match(ux, /if \(readiness\.reminderReady && fullySynchronized\) return \{ state: 'on'/);
   assert.match(sync, /Number\(synchronized\.starred_count\) !== completeSet\.length/);
   assert.match(sync, /!finalReadiness\.reminderReady \|\| synchronizedCount !== completeSet\.length/);
   assert.doesNotMatch(sync, /reminders_enabled[^\n]*reminderReady: true/);
+});
+
+test('healthy diagnostics report the current-device star count and no recovery stage', () => {
+  assert.match(ux, /const synchronizedStarCount = Number\(readiness\.registration/);
+  assert.match(ux, /fullySynchronized = synchronizedStarCount === localStarCount/);
+  assert.match(ux, /final_reminder_ready: readiness\.reminderReady && fullySynchronized/);
+  assert.match(ux, /star_synchronization_outstanding/);
+  assert.match(itinerary, /reminderFailureStage \|\| \(reminderReady \? 'none' : null\)/);
 });
 
 test('attendee UI exposes no diagnostic identifiers or staging device link', () => {

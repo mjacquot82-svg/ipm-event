@@ -193,6 +193,13 @@ class SupabaseItineraryReminderRepository:
         })
         return result[0] if isinstance(result, list) and result else {"starred_count": len(schedule_ids)}
 
+    async def with_starred_count(self, registration: dict[str, Any]) -> dict[str, Any]:
+        """Hydrate only this registration's synchronized count; never use device aggregates."""
+        rows = await self.client.request("GET", "/itinerary_reminder_stars", params={
+            "select": "schedule_item_id", "registration_id": f"eq.{registration['id']}",
+        }) or []
+        return {**registration, "starred_count": len(rows)}
+
     async def claim(self, registration_id: str, schedule_item_id: str) -> dict[str, Any] | None:
         try:
             rows = await self.client.request("POST", "/itinerary_reminder_deliveries", json={

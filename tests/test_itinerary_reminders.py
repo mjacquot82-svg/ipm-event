@@ -35,6 +35,19 @@ class VerificationRepository:
             provider_deliverable=values["reachability"] == "optIn" and values["has_push_token"],
             provider_checked_at=values["checked_at"].isoformat())
         return self.registration
+    async def with_starred_count(self, registration):
+        return registration
+
+
+def test_registration_star_count_is_device_scoped_not_aggregate():
+    class Client:
+        async def request(self, method, path, params=None, **kwargs):
+            assert path == "/itinerary_reminder_stars"
+            assert params["registration_id"] == "eq.reg-current"
+            return [{"schedule_item_id": str(index)} for index in range(4)]
+    repository = server.SupabaseItineraryReminderRepository(Client(), "ipm-2026")
+    hydrated = asyncio.run(repository.with_starred_count({"id": "reg-current", "starred_count": 99}))
+    assert hydrated["starred_count"] == 4
 
 
 def test_current_device_verification_refreshes_durable_mirror_and_returns_redacted_status(monkeypatch):

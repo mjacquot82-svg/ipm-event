@@ -94,7 +94,8 @@ export default function ItineraryScreen() {
   const loadFavorites = useCallback(async () => {
     const storedFavorites = await getFavorites();
     setFavorites(storedFavorites);
-    void syncStarredEventsWithBackend(storedFavorites);
+    await syncStarredEventsWithBackend(storedFavorites);
+    return storedFavorites;
   }, []);
 
   const fetchSchedule = useCallback(async () => {
@@ -115,15 +116,13 @@ export default function ItineraryScreen() {
   }, [applyScheduleResult]);
 
   useEffect(() => {
-    loadFavorites();
+    void loadFavorites().then(() => refreshReminderStatus());
     fetchSchedule();
-    refreshReminderStatus();
   }, [fetchSchedule, loadFavorites, refreshReminderStatus]);
 
   useFocusEffect(
     useCallback(() => {
-      loadFavorites();
-      refreshReminderStatus();
+      void loadFavorites().then(() => refreshReminderStatus());
     }, [loadFavorites, refreshReminderStatus])
   );
 
@@ -193,7 +192,7 @@ export default function ItineraryScreen() {
     ['Provider deliverable', reminderDiagnostics?.provider_deliverable],
     ['Provider readiness fresh', reminderDiagnostics?.provider_fresh],
     ['Final reminder readiness', reminderDiagnostics?.final_reminder_ready],
-    ['Failure / recovery stage', reminderFailureStage],
+    ['Failure / recovery stage', reminderFailureStage || (reminderReady ? 'none' : null)],
   ] as const;
 
   const copyReminderDiagnostics = async () => {

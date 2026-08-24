@@ -2004,13 +2004,15 @@ async def register_itinerary_device(request: Request):
 
 @api_router.get("/itinerary-reminders/status")
 async def itinerary_reminder_status(request: Request):
-    _, registration = await authorize_itinerary_device(request)
+    repository, registration = await authorize_itinerary_device(request)
+    registration = await repository.with_starred_count(registration)
     return {**public_status(registration), **authoritative_readiness_status(registration)}
 
 @api_router.post("/itinerary-reminders/readiness/verify")
 async def verify_itinerary_reminder_readiness(request: Request):
     repository, registration = await authorize_itinerary_device(request)
     verified = await verify_current_provider_readiness(repository, registration)
+    verified = await repository.with_starred_count(verified)
     return authoritative_readiness_status(verified)
 
 @api_router.get("/itinerary-reminders/status-by-capability")
@@ -2022,6 +2024,7 @@ async def itinerary_reminder_status_by_capability(request: Request):
     registration = await repository.get_by_capability(capability)
     if not registration:
         raise HTTPException(status_code=404, detail="No reminder registration exists for this device")
+    registration = await repository.with_starred_count(registration)
     result = {**public_status(registration), **authoritative_readiness_status(registration)}
     result["current_installation_match"] = "unavailable"
     result["installation_match"] = None
@@ -2258,6 +2261,7 @@ async def device_a_delivery_diagnostics():
     labels = {item.get("test_device_label"): item for item in registrations}
     device_a = labels.get("A")
     if not device_a: raise HTTPException(status_code=404, detail="Device A is not registered")
+    device_a = await repository.with_starred_count(device_a)
     installation = await require_wonderpush_client().get_installation(device_a["wonderpush_installation_id"])
     tests = [await repository.controlled_test("initial"), await repository.controlled_test("vpn_off")]
     safe_keys = set(installation or {})
@@ -2277,6 +2281,7 @@ async def device_a_delivery_diagnostics():
         "provider_subscribed_to_notifications": preferences.get("subscribedToNotifications"),
         "provider_platform": (installation or {}).get("platform") or device.get("platform"),
         "provider_browser_or_brand": device.get("brand"),
+        "synchronized_star_count": int(device_a.get("starred_count", 0)),
         "provider_last_activity_at": (installation or {}).get("lastActivityDate"),
         "provider_created_at": (installation or {}).get("creationDate"),
         "provider_updated_at": (installation or {}).get("updateDate"),
