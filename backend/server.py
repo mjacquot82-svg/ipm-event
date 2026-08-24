@@ -1975,10 +1975,12 @@ async def itinerary_reminder_operations():
         "concurrency": ITINERARY_REMINDER_CONCURRENCY}
 
 @api_router.get("/itinerary-reminders/synthetic-fixture-status")
-async def synthetic_reminder_fixture_status():
+async def synthetic_reminder_fixture_status(fixture_key: str = "device_isolation_t30"):
     """Safe staging diagnostic: no device identifiers, secrets, provider calls, or writes."""
+    if fixture_key not in {"device_isolation_t30", "device_isolation_t30_retest_2", "late_star_suppression"}:
+        raise HTTPException(status_code=400, detail="Unknown synthetic reminder fixture")
     repository = require_itinerary_foundation()
-    fixture = await repository.synthetic_fixture_status("device_isolation_t30")
+    fixture = await repository.synthetic_fixture_status(fixture_key)
     return {"fixture_exists": fixture is not None, "fixture": fixture,
         "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
         "scheduler_invoked": False, "notification_sent_by_this_check": False}
@@ -1987,14 +1989,18 @@ async def synthetic_reminder_fixture_status():
 async def set_synthetic_reminder_fixture(data: SyntheticReminderFixturePayload, request: Request):
     repository, registration = await authorize_itinerary_device(request)
     now = datetime.now(timezone.utc)
-    if data.scenario not in {"t30", "late"}:
+    if data.scenario not in {"t30", "t30_retest_2", "late"}:
         raise HTTPException(status_code=400, detail="Unknown synthetic reminder scenario")
     late = data.scenario == "late"
+    retest = data.scenario == "t30_retest_2"
+    fixture_key = "late_star_suppression" if late else (
+        "device_isolation_t30_retest_2" if retest else "device_isolation_t30")
     fixture = await repository.prepare_synthetic_fixture(registration["id"],
         starts_at=now + timedelta(minutes=20 if late else 31), starred_at=now, starred=data.starred,
-        fixture_key="late_star_suppression" if late else "device_isolation_t30",
-        title="IPM Late-Star Demo Event" if late else "IPM Reminder Demo Event")
-    return {"fixture": "late_star_suppression" if late else "device_isolation_t30",
+        fixture_key=fixture_key,
+        title="IPM Late-Star Demo Event" if late else (
+            "IPM Reminder Demo Event — Retest 2" if retest else "IPM Reminder Demo Event"))
+    return {"fixture": fixture_key,
         "title": fixture["title"], "starred": data.starred,
         "starts_in_minutes": 20 if late else 31, "notification_sent": False}
 

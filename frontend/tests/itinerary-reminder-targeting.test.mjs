@@ -91,6 +91,9 @@ test('synthetic fixture uses the same readiness, timing, claim, and uniqueness r
   assert.doesNotMatch(engineMigration, /update\s+schedule_items/i);
   assert.match(server, /"late_star_suppression"/);
   assert.match(server, /timedelta\(minutes=20 if late else 31\)/);
+  assert.match(server, /device_isolation_t30_retest_2/);
+  assert.match(testPage, /Associate Fresh T-30 Retest 2 with Device A/);
+  assert.match(testPage, /styles\.fixtureMessage/);
 });
 
 test('first-star reminder pill is temporary, actionable, dismissible, and never attached to unstar', () => {

@@ -20,6 +20,7 @@ export default function ReminderTestRegistration() {
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('Checking this subscribed phone…');
+  const [fixtureMessage, setFixtureMessage] = useState('');
   const [diagnostic, setDiagnostic] = useState<Record<string, unknown> | null>(null);
 
   const showReadiness = (result: Awaited<ReturnType<typeof getItineraryReminderReadiness>>) => {
@@ -92,15 +93,17 @@ export default function ReminderTestRegistration() {
     }
   };
 
-  const prepareSyntheticFixture = async (starred: boolean, scenario: 't30' | 'late' = 't30') => {
+  const prepareSyntheticFixture = async (starred: boolean, scenario: 't30' | 't30_retest_2' | 'late' = 't30') => {
     setBusy(true);
+    setFixtureMessage('Preparing the selected synthetic fixture…');
     try {
       await setSyntheticReminderFixtureStarred(starred, scenario);
-      setMessage(starred
-        ? `${scenario === 'late' ? 'Late-star' : 'T-30'} synthetic demo event associated with Device A. The delivery kill switch remains on; no notification was sent.`
-        : `${scenario === 'late' ? 'Late-star' : 'T-30'} synthetic demo event removed from Device A. No notification was sent.`);
+      const label = scenario === 'late' ? 'Late-star' : (scenario === 't30_retest_2' ? 'Fresh T-30 retest' : 'T-30');
+      setFixtureMessage(starred
+        ? `${label} synthetic event associated with Device A. The delivery kill switch remains on; no notification was sent.`
+        : `${label} synthetic event removed from Device A. No notification was sent.`);
     } catch {
-      setMessage('Synthetic fixture could not be updated. No notification was sent.');
+      setFixtureMessage('Synthetic fixture could not be updated. No notification was sent.');
     } finally { setBusy(false); }
   };
 
@@ -137,12 +140,10 @@ export default function ReminderTestRegistration() {
           <Text style={styles.buttonText}>Enable 30-Minute Event Reminders</Text>
         </Pressable>
       )}
-      <Pressable disabled={busy} style={styles.secondary} onPress={() => prepareSyntheticFixture(true)} accessibilityRole="button">
-        <Text style={styles.secondaryText}>Associate T-30 Demo Event with Device A</Text>
+      <Pressable disabled={busy} style={styles.secondary} onPress={() => prepareSyntheticFixture(true, 't30_retest_2')} accessibilityRole="button">
+        <Text style={styles.secondaryText}>Associate Fresh T-30 Retest 2 with Device A</Text>
       </Pressable>
-      <Pressable disabled={busy} style={styles.fixtureRemove} onPress={() => prepareSyntheticFixture(false)} accessibilityRole="button">
-        <Text style={styles.fixtureRemoveText}>Remove T-30 Demo Event</Text>
-      </Pressable>
+      {fixtureMessage ? <Text style={styles.fixtureMessage} accessibilityLiveRegion="polite">{fixtureMessage}</Text> : null}
       <Pressable disabled={busy} style={styles.secondary} onPress={() => prepareSyntheticFixture(true, 'late')} accessibilityRole="button">
         <Text style={styles.secondaryText}>Associate Late-Star Suppression Fixture</Text>
       </Pressable>
@@ -189,4 +190,5 @@ const styles = StyleSheet.create({
   controls: { borderRadius: 12, padding: 16, gap: 12, backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#C2410C' },
   fixtureRemove: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   fixtureRemoveText: { color: '#6B7280', fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
+  fixtureMessage: { borderRadius: 10, backgroundColor: '#ECFDF5', color: '#065F46', padding: 12, fontSize: 15, lineHeight: 21 },
 });

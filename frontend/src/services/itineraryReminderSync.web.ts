@@ -139,7 +139,7 @@ export async function disableItineraryRemindersForTesting() {
   return getItineraryReminderReadiness();
 }
 
-export async function setSyntheticReminderFixtureStarred(starred: boolean, scenario: 't30' | 'late' = 't30') {
+export async function setSyntheticReminderFixtureStarred(starred: boolean, scenario: 't30' | 't30_retest_2' | 'late' = 't30') {
   return request('/synthetic-fixture', 'PUT', { starred, scenario });
 }
 
