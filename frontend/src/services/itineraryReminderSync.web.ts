@@ -105,8 +105,11 @@ export async function diagnoseControlledTestRegistration(label: TestDeviceLabel)
 }
 
 export async function configureItineraryReminderSync(starredScheduleIds: string[]): Promise<void> {
+  const client = await getWonderPushClientReadiness();
+  if (!client.clientReady) throw new Error('The current browser is not notification-ready.');
+  const existing = await statusByCapability();
+  if (!existing) await request('/register', 'POST');
   const readiness = await getItineraryReminderReadiness();
-  if (!readiness.client.clientReady) throw new Error('The current browser is not notification-ready.');
   if (readiness.currentInstallationMatch !== 'match') throw new Error('The current installation does not match its registration.');
   if (!readiness.registration?.provider_deliverable) throw new Error('The current installation is not provider-reachable.');
   const completeSet = [...new Set(starredScheduleIds)];
@@ -134,6 +137,10 @@ export async function disableItineraryReminderSync(): Promise<void> {
 export async function disableItineraryRemindersForTesting() {
   await disableItineraryReminderSync();
   return getItineraryReminderReadiness();
+}
+
+export async function setSyntheticReminderFixtureStarred(starred: boolean) {
+  return request('/synthetic-fixture', 'PUT', { starred });
 }
 
 export async function reconcileItineraryReminderStars(starredScheduleIds: string[]): Promise<void> {

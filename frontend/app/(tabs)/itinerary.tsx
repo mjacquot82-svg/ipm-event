@@ -32,6 +32,11 @@ import { formatScheduleDate } from '../../src/utils/scheduleDate';
 import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
 import { exportScheduleItinerary } from '../../src/services/calendarService';
 import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
+import {
+  disableAttendeeItineraryReminders,
+  enableAttendeeItineraryReminders,
+  getAttendeeReminderStatus,
+} from '../../src/services/reminderUxService';
 
 export default function ItineraryScreen() {
   usePageAnalytics('itinerary', 'home_quick_action');
@@ -46,6 +51,14 @@ export default function ItineraryScreen() {
   const [showCalendarConfirmation, setShowCalendarConfirmation] = useState(false);
   const [calendarExporting, setCalendarExporting] = useState(false);
   const [calendarMessage, setCalendarMessage] = useState<string | null>(null);
+  const [reminderReady, setReminderReady] = useState(false);
+  const [reminderWorking, setReminderWorking] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState<string | null>(null);
+
+  const refreshReminderStatus = useCallback(async () => {
+    const result = await getAttendeeReminderStatus().catch(() => null);
+    setReminderReady(Boolean(result?.reminderReady));
+  }, []);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
@@ -81,13 +94,39 @@ export default function ItineraryScreen() {
   useEffect(() => {
     loadFavorites();
     fetchSchedule();
-  }, [fetchSchedule, loadFavorites]);
+    refreshReminderStatus();
+  }, [fetchSchedule, loadFavorites, refreshReminderStatus]);
 
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
-    }, [loadFavorites])
+      refreshReminderStatus();
+    }, [loadFavorites, refreshReminderStatus])
   );
+
+  const changeReminderStatus = async () => {
+    setReminderWorking(true);
+    setReminderMessage(null);
+    try {
+      if (reminderReady) {
+        const result = await disableAttendeeItineraryReminders();
+        setReminderReady(Boolean(result?.reminderReady));
+        setReminderMessage('Event reminders are off. Your itinerary is unchanged.');
+      } else {
+        const result = await enableAttendeeItineraryReminders();
+        setReminderReady(Boolean(result.readiness?.reminderReady));
+        if (result.notificationState === 'unsupported') {
+          setReminderMessage('On iPhone, install IPM to your Home Screen and open the installed app to enable reminders.');
+        } else if (result.notificationState === 'denied') {
+          setReminderMessage('Notifications are blocked. Allow them in browser settings to enable reminders.');
+        } else if (!result.enabled) {
+          setReminderMessage('Reminders could not be enabled. Your itinerary is still saved.');
+        }
+      }
+    } finally {
+      setReminderWorking(false);
+    }
+  };
 
   const starredEvents = events.filter((event) => favorites.includes(event.id));
 
@@ -159,6 +198,16 @@ export default function ItineraryScreen() {
         <Text style={styles.subtitle}>
           {starredEvents.length} starred event{starredEvents.length === 1 ? '' : 's'}
         </Text>
+        <TouchableOpacity style={[styles.reminderButton, reminderReady && styles.reminderButtonOn]}
+          onPress={() => void changeReminderStatus()} disabled={reminderWorking}
+          accessibilityRole="button" accessibilityLabel={reminderReady ? 'Event reminders on. Tap to disable.' : 'Get 30-minute event reminders'}
+          accessibilityState={{ disabled: reminderWorking, busy: reminderWorking }}>
+          <Feather name="bell" size={18} color={reminderReady ? '#065F46' : '#8B1538'} />
+          <Text style={[styles.reminderButtonText, reminderReady && styles.reminderButtonTextOn]}>
+            {reminderWorking ? 'Checking reminders…' : reminderReady ? 'Event reminders on' : 'Get 30-minute event reminders'}
+          </Text>
+        </TouchableOpacity>
+        {reminderMessage ? <Text style={styles.reminderMessage} accessibilityLiveRegion="polite">{reminderMessage}</Text> : null}
         {starredEvents.length > 0 ? (
           <TouchableOpacity
             style={styles.calendarButton}
@@ -334,6 +383,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
+  reminderButton: {
+    minHeight: 48, marginTop: 14, borderWidth: 1, borderColor: '#8B1538', borderRadius: 12,
+    paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  reminderButtonOn: { borderColor: '#047857', backgroundColor: '#ECFDF5' },
+  reminderButtonText: { color: '#8B1538', fontSize: 14, fontWeight: '700' },
+  reminderButtonTextOn: { color: '#065F46' },
+  reminderMessage: { color: '#4B5563', fontSize: 13, lineHeight: 18, marginTop: 8 },
   calendarButtonText: {
     color: '#FFFFFF',
     fontSize: 15,

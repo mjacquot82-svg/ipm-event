@@ -42,6 +42,7 @@ import { exportScheduleEvent, getGoogleCalendarUrl } from '../../src/services/ca
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
+import { enableAttendeeItineraryReminders, shouldShowReminderPromotion } from '../../src/services/reminderUxService';
 
 export default function ScheduleScreen() {
   const { frameStyle, sectionStyle } = useAttendeeLayout();
@@ -67,6 +68,9 @@ export default function ScheduleScreen() {
   const [calendarExporting, setCalendarExporting] = useState(false);
   const [calendarMessage, setCalendarMessage] = useState<string | null>(null);
   const [showCalendarChooser, setShowCalendarChooser] = useState(false);
+  const [showReminderPrompt, setShowReminderPrompt] = useState(false);
+  const [reminderPromptMessage, setReminderPromptMessage] = useState<string | null>(null);
+  const reminderPromptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
 
@@ -150,6 +154,30 @@ export default function ScheduleScreen() {
     });
     // Sync with backend for notifications
     syncStarredEventsWithBackend(result.favorites);
+    if (result.isFavorite && await shouldShowReminderPromotion()) {
+      setShowReminderPrompt(true);
+      reminderPromptTimerRef.current = setTimeout(() => setShowReminderPrompt(false), 6000);
+    }
+  };
+
+  useEffect(() => () => {
+    if (reminderPromptTimerRef.current) clearTimeout(reminderPromptTimerRef.current);
+  }, []);
+
+  const enableRemindersFromPrompt = async () => {
+    if (reminderPromptTimerRef.current) clearTimeout(reminderPromptTimerRef.current);
+    setReminderPromptMessage('Opening notification setup…');
+    const result = await enableAttendeeItineraryReminders().catch(() => null);
+    if (result?.enabled && result.readiness?.reminderReady) {
+      setReminderPromptMessage('Event reminders are on.');
+      setTimeout(() => setShowReminderPrompt(false), 1800);
+    } else if (result?.notificationState === 'unsupported') {
+      setReminderPromptMessage('On iPhone, install IPM to your Home Screen and open the installed app to enable reminders.');
+    } else if (result?.notificationState === 'denied') {
+      setReminderPromptMessage('Notifications are blocked. Allow them in browser settings to enable reminders.');
+    } else {
+      setReminderPromptMessage('Reminders could not be enabled. Your itinerary is still saved.');
+    }
   };
 
   const handleCalendarExport = async (eventId: string) => {
@@ -1091,6 +1119,20 @@ export default function ScheduleScreen() {
           </View>
         </View>
       </Modal>
+      {showReminderPrompt ? <View style={styles.reminderPrompt} accessibilityLiveRegion="polite">
+        <TouchableOpacity style={styles.reminderPromptBody} onPress={() => void enableRemindersFromPrompt()}
+          accessibilityRole="button" accessibilityLabel="Get event reminders. Enable notifications and itinerary reminders.">
+          <Feather name="bell" size={20} color="#FFFFFF" />
+          <View style={styles.reminderPromptCopy}>
+            <Text style={styles.reminderPromptTitle}>Get event reminders</Text>
+            <Text style={styles.reminderPromptText}>{reminderPromptMessage || "Enable notifications and we'll remind you 30 minutes before events in your itinerary start."}</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.reminderPromptClose} onPress={() => setShowReminderPrompt(false)}
+          accessibilityRole="button" accessibilityLabel="Dismiss event reminder offer">
+          <Feather name="x" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View> : null}
     </View>
   );
 }
@@ -1755,4 +1797,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  reminderPrompt: {
+    position: 'absolute', left: 16, right: 16, bottom: 82, minHeight: 72,
+    flexDirection: 'row', alignItems: 'stretch', backgroundColor: '#1F2937',
+    borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 }, elevation: 8,
+  },
+  reminderPromptBody: { flex: 1, minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  reminderPromptCopy: { flex: 1 },
+  reminderPromptTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+  reminderPromptText: { color: '#F3F4F6', fontSize: 13, lineHeight: 18, marginTop: 2 },
+  reminderPromptClose: { width: 48, minHeight: 72, alignItems: 'center', justifyContent: 'center' },
 });

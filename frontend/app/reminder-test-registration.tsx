@@ -7,6 +7,7 @@ import {
   getItineraryReminderReadiness,
   enableItineraryRemindersForTesting,
   disableItineraryRemindersForTesting,
+  setSyntheticReminderFixtureStarred,
   TestDeviceLabel,
 } from '../src/services/itineraryReminderSync.web';
 import { getFavorites } from '../src/utils/favoritesStorage';
@@ -91,6 +92,18 @@ export default function ReminderTestRegistration() {
     }
   };
 
+  const prepareSyntheticFixture = async (starred: boolean) => {
+    setBusy(true);
+    try {
+      await setSyntheticReminderFixtureStarred(starred);
+      setMessage(starred
+        ? 'Synthetic demo event associated with Device A. The delivery kill switch remains on; no notification was sent.'
+        : 'Synthetic demo event removed from Device A. No notification was sent.');
+    } catch {
+      setMessage('Synthetic fixture could not be updated. No notification was sent.');
+    } finally { setBusy(false); }
+  };
+
   return <ScrollView
     style={styles.scroll}
     contentContainerStyle={styles.page}
@@ -124,6 +137,12 @@ export default function ReminderTestRegistration() {
           <Text style={styles.buttonText}>Enable 30-Minute Event Reminders</Text>
         </Pressable>
       )}
+      <Pressable disabled={busy} style={styles.secondary} onPress={() => prepareSyntheticFixture(true)} accessibilityRole="button">
+        <Text style={styles.secondaryText}>Associate T-30 Demo Event with Device A</Text>
+      </Pressable>
+      <Pressable disabled={busy} style={styles.fixtureRemove} onPress={() => prepareSyntheticFixture(false)} accessibilityRole="button">
+        <Text style={styles.fixtureRemoveText}>Remove Demo Event</Text>
+      </Pressable>
     </View> : null}
     {diagnostic ? <View style={styles.diagnostics} accessibilityLiveRegion="polite">
       <Text style={styles.diagnosticTitle}>Safe diagnostics</Text>
@@ -162,4 +181,6 @@ const styles = StyleSheet.create({
   diagnostics: { borderRadius: 12, padding: 16, gap: 6, backgroundColor: '#F3F4F6' },
   diagnosticTitle: { fontSize: 17, fontWeight: '700', color: '#1F2937' },
   controls: { borderRadius: 12, padding: 16, gap: 12, backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#C2410C' },
+  fixtureRemove: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  fixtureRemoveText: { color: '#6B7280', fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
 });

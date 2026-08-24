@@ -3,7 +3,7 @@ import asyncio
 
 import pytest
 
-from backend.itinerary_reminders import InstallationTargetedWonderPush, capability_matches, hash_capability, is_t30_eligible, provider_readiness
+from backend.itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, capability_matches, hash_capability, is_t30_eligible, provider_readiness
 from backend.platform_services import WonderPushClient, WonderPushError
 
 
@@ -95,3 +95,87 @@ def test_ready_device_send_route_is_single_target_and_honest():
     assert '"broadcast": False' in route
     assert '"automatic_retry": False' in route
     assert "send_everyone" not in route
+
+
+class FakeEngineRepository:
+    def __init__(self):
+        self.registration = {"id": "reg-a", "provider_deliverable": True}
+        self.claimed = False
+        self.finished = []
+    async def close_stale_claims(self, now, **kwargs): pass
+    async def due_registrations(self, now, **kwargs):
+        return [{"registration_id": "reg-a", "wonderpush_installation_id": "installation-a"}]
+    async def set_readiness(self, registration_id, **values):
+        self.registration["provider_deliverable"] = values["reachability"] == "optIn" and values["has_push_token"]
+    async def claim_due_batch(self, now, **kwargs):
+        if self.claimed: return []
+        self.claimed = True
+        return [{"delivery_id": "delivery-a", "registration_id": "reg-a", "schedule_item_id": "event-a",
+            "wonderpush_installation_id": "installation-a", "title": "Demo Event",
+            "location_name": "Demo Stage", "starts_at": now + timedelta(minutes=30)}]
+    async def get(self, installation_id): return self.registration if installation_id == "installation-a" else None
+    async def finish_delivery(self, delivery_id, **values): self.finished.append((delivery_id, values))
+
+
+class FakeEngineProvider:
+    def __init__(self): self.sent = []
+    async def get_installation(self, installation_id):
+        return {"pushToken": {"data": "mock-token"}, "preferences": {"subscriptionStatus": "optIn"}}
+    async def send_one_installation(self, **kwargs):
+        self.sent.append(kwargs)
+        return "mock-accepted"
+
+
+def test_real_engine_kill_switch_inspects_without_claim_or_send():
+    repository, provider = FakeEngineRepository(), FakeEngineProvider()
+    result = asyncio.run(ItineraryReminderEngine(repository, provider, delivery_enabled=False).run(
+        now=datetime(2026, 9, 22, 14, 0, tzinfo=timezone.utc)))
+    assert result["kill_switch_enabled"] is True
+    assert result["claimed"] == 0
+    assert provider.sent == []
+
+
+def test_real_engine_targets_one_installation_and_deduplicates_second_run():
+    repository, provider = FakeEngineRepository(), FakeEngineProvider()
+    engine = ItineraryReminderEngine(repository, provider, delivery_enabled=True,
+        target_url="https://staging.theipm.ca/itinerary")
+    now = datetime(2026, 9, 22, 14, 0, tzinfo=timezone.utc)
+    first = asyncio.run(engine.run(now=now))
+    second = asyncio.run(engine.run(now=now))
+    assert first["provider_accepted"] == 1 and second["claimed"] == 0
+    assert len(provider.sent) == 1
+    assert provider.sent[0]["installation_id"] == "installation-a"
+    assert provider.sent[0]["title"] == "IPM — Starting Soon"
+    assert provider.sent[0]["message"] == "Demo Event starts in 30 minutes at Demo Stage."
+    assert repository.finished[0][1]["status"] == "provider_accepted"
+
+
+def test_provider_timeout_becomes_delivery_unknown_without_automatic_retry():
+    class TimeoutProvider(FakeEngineProvider):
+        async def send_one_installation(self, **kwargs): raise RuntimeError("request timed out")
+    repository = FakeEngineRepository()
+    result = asyncio.run(ItineraryReminderEngine(repository, TimeoutProvider(), delivery_enabled=True).run(
+        now=datetime(2026, 9, 22, 14, 0, tzinfo=timezone.utc)))
+    assert result["delivery_unknown"] == 1
+    assert repository.finished[0][1]["retry_at"] is None
+
+
+def test_definitive_provider_rejection_can_retry_without_duplicate_acceptance():
+    class RetryRepository(FakeEngineRepository):
+        async def finish_delivery(self, delivery_id, **values):
+            await super().finish_delivery(delivery_id, **values)
+            if values["status"] == "provider_failed": self.claimed = False
+    class RejectOnceProvider(FakeEngineProvider):
+        async def send_one_installation(self, **kwargs):
+            if not self.sent:
+                self.sent.append(kwargs)
+                raise RuntimeError("WonderPush rejected the notification (HTTP 503)")
+            self.sent.append(kwargs)
+            return "accepted-on-safe-retry"
+    repository, provider = RetryRepository(), RejectOnceProvider()
+    engine = ItineraryReminderEngine(repository, provider, delivery_enabled=True)
+    now = datetime(2026, 9, 22, 14, 0, tzinfo=timezone.utc)
+    first = asyncio.run(engine.run(now=now))
+    second = asyncio.run(engine.run(now=now + timedelta(minutes=1)))
+    assert first["provider_failed"] == 1 and second["provider_accepted"] == 1
+    assert len(provider.sent) == 2

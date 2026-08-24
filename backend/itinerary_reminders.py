@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import asyncio
 import hashlib
 import hmac
 from typing import Any
@@ -28,7 +29,7 @@ def is_t30_eligible(*, starts_at: datetime, starred_at: datetime, now: datetime)
     start = starts_at.astimezone(TORONTO)
     current = now.astimezone(TORONTO)
     starred = starred_at.astimezone(TORONTO)
-    return start > current and starred <= start - timedelta(minutes=30)
+    return start > current and starred < start - timedelta(minutes=30)
 
 
 class SupabaseItineraryReminderRepository:
@@ -169,10 +170,73 @@ class SupabaseItineraryReminderRepository:
 
     async def claim_due(self, now: datetime) -> list[dict[str, Any]]:
         """Atomically claim the eventual worker's T-30 window from canonical rows."""
+        event_id = await self._event_id()
         rows = await self.client.request("POST", "/rpc/claim_due_itinerary_reminders", json={
-            "p_now": now.astimezone(timezone.utc).isoformat(),
+            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id, "p_limit": 250,
         })
         return rows or []
+
+    async def due_registrations(self, now: datetime, *, synthetic: bool = False,
+        limit: int = 1000) -> list[dict[str, Any]]:
+        name = "list_due_synthetic_itinerary_reminder_registrations" if synthetic else "list_due_itinerary_reminder_registrations"
+        event_id = await self._event_id()
+        return await self.client.request("POST", f"/rpc/{name}", json={
+            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id, "p_limit": limit,
+        }) or []
+
+    async def claim_due_batch(self, now: datetime, *, synthetic: bool = False,
+        limit: int = 250) -> list[dict[str, Any]]:
+        name = "claim_due_synthetic_itinerary_reminders" if synthetic else "claim_due_itinerary_reminders"
+        event_id = await self._event_id()
+        return await self.client.request("POST", f"/rpc/{name}", json={
+            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id, "p_limit": limit,
+        }) or []
+
+    async def finish_delivery(self, delivery_id: str, *, status: str, synthetic: bool = False,
+        provider_delivery_id: str | None = None, error_message: str | None = None,
+        retry_at: datetime | None = None) -> None:
+        table = "/itinerary_reminder_synthetic_deliveries" if synthetic else "/itinerary_reminder_deliveries"
+        now = datetime.now(timezone.utc).isoformat()
+        body: dict[str, Any] = {"status": status, "updated_at": now,
+            "provider_delivery_id": provider_delivery_id,
+            "error_message": error_message[:1000] if error_message else None}
+        if status == "provider_accepted": body["provider_accepted_at"] = now
+        if status == "provider_failed": body.update({"failed_at": now,
+            "next_attempt_at": retry_at.astimezone(timezone.utc).isoformat() if retry_at else None})
+        await self.client.request("PATCH", table, params={"id": f"eq.{delivery_id}"},
+            json=body, headers={"Prefer": "return=minimal"})
+
+    async def close_stale_claims(self, now: datetime, *, synthetic: bool = False) -> None:
+        table = "/itinerary_reminder_synthetic_deliveries" if synthetic else "/itinerary_reminder_deliveries"
+        cutoff = (now - timedelta(minutes=2)).astimezone(timezone.utc).isoformat()
+        await self.client.request("PATCH", table, params={"status": "eq.claimed", "claimed_at": f"lt.{cutoff}"},
+            json={"status": "delivery_unknown", "updated_at": now.astimezone(timezone.utc).isoformat(),
+                "error_message": "Worker claim expired before a provider outcome was recorded"},
+            headers={"Prefer": "return=minimal"})
+
+    async def prepare_synthetic_fixture(self, registration_id: str, *, starts_at: datetime,
+        starred_at: datetime, starred: bool = True) -> dict[str, Any]:
+        event_id = await self._event_id()
+        rows = await self.client.request("POST", "/itinerary_reminder_synthetic_events", json={
+            "event_id": event_id, "fixture_key": "device_isolation_t30", "title": "IPM Reminder Demo Event",
+            "location_name": None, "starts_at": starts_at.astimezone(timezone.utc).isoformat(), "status": "published",
+        }, params={"on_conflict": "event_id,fixture_key"},
+            headers={"Prefer": "resolution=merge-duplicates,return=representation"})
+        fixture = rows[0]
+        await self.client.request("DELETE", "/itinerary_reminder_synthetic_stars", params={
+            "synthetic_event_id": f"eq.{fixture['id']}", "registration_id": f"eq.{registration_id}"})
+        if starred:
+            await self.client.request("POST", "/itinerary_reminder_synthetic_stars", json={
+                "registration_id": registration_id, "synthetic_event_id": fixture["id"],
+                "starred_at": starred_at.astimezone(timezone.utc).isoformat(),
+            }, headers={"Prefer": "return=minimal"})
+        return fixture
+
+    async def operational_metrics(self, now: datetime) -> dict[str, int]:
+        event_id = await self._event_id()
+        rows = await self.client.request("POST", "/rpc/itinerary_reminder_operational_metrics", json={
+            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id})
+        return {key: int(value or 0) for key, value in (rows[0] if rows else {}).items()}
 
 
 def public_status(registration: dict[str, Any]) -> dict[str, Any]:
@@ -229,3 +293,71 @@ class InstallationTargetedWonderPush:
         return await self.provider.send_one_installation(
             installation_id=installation_id, title=title, message=message, target_url=target_url
         )
+
+
+class ItineraryReminderEngine:
+    """Shared real/synthetic T-30 execution path; each provider call targets one installation."""
+
+    def __init__(self, repository: SupabaseItineraryReminderRepository, provider: Any, *,
+        delivery_enabled: bool = False, batch_size: int = 250, concurrency: int = 20,
+        target_url: str = ""):
+        self.repository, self.provider = repository, provider
+        self.delivery_enabled = delivery_enabled
+        self.batch_size = max(1, min(batch_size, 1000))
+        self.concurrency = max(1, min(concurrency, 100))
+        self.target_url = target_url
+
+    async def run(self, *, now: datetime, synthetic: bool = False) -> dict[str, Any]:
+        await self.repository.close_stale_claims(now, synthetic=synthetic)
+        candidates = await self.repository.due_registrations(now, synthetic=synthetic,
+            limit=self.batch_size * 4)
+        semaphore = asyncio.Semaphore(self.concurrency)
+        unreachable = 0
+
+        async def refresh(candidate: dict[str, Any]) -> None:
+            nonlocal unreachable
+            async with semaphore:
+                try:
+                    installation = await self.provider.get_installation(candidate["wonderpush_installation_id"])
+                    reachability, has_token = provider_readiness(installation)
+                except Exception:
+                    reachability, has_token = "unknown", False
+                await self.repository.set_readiness(candidate["registration_id"], reachability=reachability,
+                    has_push_token=has_token, checked_at=now)
+                if reachability != "optIn" or not has_token: unreachable += 1
+
+        await asyncio.gather(*(refresh(candidate) for candidate in candidates))
+        result = {"synthetic": synthetic, "kill_switch_enabled": not self.delivery_enabled,
+            "candidate_registrations": len(candidates), "suppressed_installation_unreachable": unreachable,
+            "claimed": 0, "provider_accepted": 0, "provider_failed": 0, "delivery_unknown": 0}
+        if not self.delivery_enabled:
+            return result
+        claims = await self.repository.claim_due_batch(now, synthetic=synthetic, limit=self.batch_size)
+        result["claimed"] = len(claims)
+        targeter = InstallationTargetedWonderPush(self.repository, self.provider)
+
+        async def deliver(claim: dict[str, Any]) -> None:
+            async with semaphore:
+                location = (claim.get("location_name") or "").strip()
+                message = f"{claim['title']} starts in 30 minutes"
+                if location: message += f" at {location}"
+                message += "."
+                try:
+                    provider_id = await targeter.send(installation_id=claim["wonderpush_installation_id"],
+                        title="IPM — Starting Soon", message=message, target_url=self.target_url)
+                except Exception as exc:
+                    # A timeout/network loss may have reached the provider; never retry that ambiguity.
+                    text = str(exc)
+                    rejected = "rejected" in text.lower()
+                    status = "provider_failed" if rejected else "delivery_unknown"
+                    retry_at = now + timedelta(minutes=1) if rejected else None
+                    await self.repository.finish_delivery(claim["delivery_id"], status=status,
+                        synthetic=synthetic, error_message=text, retry_at=retry_at)
+                    result[status] += 1
+                    return
+                await self.repository.finish_delivery(claim["delivery_id"], status="provider_accepted",
+                    synthetic=synthetic, provider_delivery_id=provider_id)
+                result["provider_accepted"] += 1
+
+        await asyncio.gather(*(deliver(claim) for claim in claims))
+        return result

@@ -8,6 +8,10 @@ const migration = fs.readFileSync(new URL('../../supabase/migrations/20260823000
 const hardening = fs.readFileSync(new URL('../../supabase/migrations/20260823000500_harden_itinerary_reminder_readiness.sql', import.meta.url), 'utf8');
 const testPage = fs.readFileSync(new URL('../app/reminder-test-registration.tsx', import.meta.url), 'utf8');
 const favorites = fs.readFileSync(new URL('../src/utils/favoritesStorage.ts', import.meta.url), 'utf8');
+const reminderUx = fs.readFileSync(new URL('../src/services/reminderUxService.web.ts', import.meta.url), 'utf8');
+const schedulePage = fs.readFileSync(new URL('../app/(tabs)/schedule.tsx', import.meta.url), 'utf8');
+const itineraryPage = fs.readFileSync(new URL('../app/(tabs)/itinerary.tsx', import.meta.url), 'utf8');
+const engineMigration = fs.readFileSync(new URL('../../supabase/migrations/20260823000600_real_itinerary_reminder_engine.sql', import.meta.url), 'utf8');
 
 test('uses supported SDK installation ID and a 256-bit local capability', () => {
   assert.match(sdk, /getInstallationId/);
@@ -67,6 +71,45 @@ test('deliberate disable preserves favorites and returns readiness false', () =>
 test('staging enablement control is isolated to registered Device A', () => {
   assert.match(testPage, /status\?\.label === 'A'/);
   assert.doesNotMatch(testPage, /status\?\.label === 'B'.*changeReminders/s);
+});
+
+test('real scheduler rereads canonical time, applies T-30 window, and atomically deduplicates', () => {
+  assert.match(engineMigration, /join schedule_items item/);
+  assert.match(engineMigration, /item\.starts_at > p_now \+ interval '25 minutes'/);
+  assert.match(engineMigration, /item\.starts_at <= p_now \+ interval '30 minutes'/);
+  assert.match(engineMigration, /star\.starred_at < item\.starts_at - interval '30 minutes'/);
+  assert.match(engineMigration, /item\.status='published'|item\.status = 'published'/);
+  assert.match(engineMigration, /on conflict \(registration_id, schedule_item_id, reminder_type\)/);
+  assert.match(engineMigration, /provider_checked_at > p_now - interval '15 minutes'/);
+});
+
+test('synthetic fixture uses the same readiness, timing, claim, and uniqueness rules', () => {
+  assert.match(engineMigration, /claim_due_synthetic_itinerary_reminders/);
+  assert.match(engineMigration, /registration\.provider_deliverable/);
+  assert.match(engineMigration, /unique\(registration_id, synthetic_event_id, reminder_type\)/);
+  assert.doesNotMatch(engineMigration, /update\s+schedule_items/i);
+});
+
+test('first-star reminder pill is temporary, actionable, dismissible, and never attached to unstar', () => {
+  assert.match(schedulePage, /result\.isFavorite && await shouldShowReminderPromotion/);
+  assert.match(schedulePage, /setTimeout\(\(\) => setShowReminderPrompt\(false\), 6000\)/);
+  assert.match(schedulePage, /enableRemindersFromPrompt/);
+  assert.match(schedulePage, /Dismiss event reminder offer/);
+  assert.match(schedulePage, /Enable notifications and we'll remind you 30 minutes/);
+});
+
+test('no-nag policy permits at most two local displays and suppresses when ready', () => {
+  assert.match(reminderUx, /MAX_PROMPT_SHOWS = 2/);
+  assert.match(reminderUx, /if \(readiness\?\.reminderReady\) return false/);
+  assert.match(reminderUx, /AsyncStorage\.setItem\(PROMPT_COUNT_KEY, String\(count \+ 1\)\)/);
+});
+
+test('personal itinerary exposes hardened reminder status and platform guidance', () => {
+  assert.match(itineraryPage, /Get 30-minute event reminders/);
+  assert.match(itineraryPage, /Event reminders on/);
+  assert.match(itineraryPage, /result\.readiness\?\.reminderReady/);
+  assert.match(itineraryPage, /install IPM to your Home Screen/);
+  assert.match(itineraryPage, /Notifications are blocked/);
 });
 
 test('full-set sync is retryable and gated by local enabled state', () => {

@@ -39,7 +39,7 @@ try:
         summary_report as get_analytics_summary_report,
         traffic_report as get_analytics_traffic_report,
     )
-    from backend.itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
+    from backend.itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
 except ModuleNotFoundError:
     from analytics import (
         ANALYTICS_EVENT_SCOPE,
@@ -61,7 +61,7 @@ except ModuleNotFoundError:
         summary_report as get_analytics_summary_report,
         traffic_report as get_analytics_traffic_report,
     )
-    from itinerary_reminders import InstallationTargetedWonderPush, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
+    from itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
 import secrets
 import base64
 import hmac
@@ -156,6 +156,15 @@ ITINERARY_REMINDER_FOUNDATION_ENABLED = os.environ.get(
 ITINERARY_REMINDER_TEST_ENABLED = os.environ.get(
     "ITINERARY_REMINDER_TEST_ENABLED", "false"
 ).lower() == "true"
+ITINERARY_REMINDER_SCHEDULER_ENABLED = os.environ.get(
+    "ITINERARY_REMINDER_SCHEDULER_ENABLED", "true" if IS_STAGING_DEPLOYMENT else "false"
+).lower() == "true"
+ITINERARY_REMINDER_DELIVERY_ENABLED = os.environ.get(
+    "ITINERARY_REMINDER_DELIVERY_ENABLED", "false"
+).lower() == "true"
+ITINERARY_REMINDER_INTERVAL_SECONDS = max(30, int(os.environ.get("ITINERARY_REMINDER_INTERVAL_SECONDS", "60")))
+ITINERARY_REMINDER_BATCH_SIZE = max(1, min(1000, int(os.environ.get("ITINERARY_REMINDER_BATCH_SIZE", "250"))))
+ITINERARY_REMINDER_CONCURRENCY = max(1, min(100, int(os.environ.get("ITINERARY_REMINDER_CONCURRENCY", "20"))))
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
 ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
 ADMIN_SESSION_DAYS = int(os.environ.get("ADMIN_SESSION_DAYS", "7"))
@@ -272,6 +281,9 @@ class TestDevicePayload(BaseModel):
 class ControlledTargetingSendPayload(BaseModel):
     device_a_verification_code: str
     device_b_verification_code: str
+
+class SyntheticReminderFixturePayload(BaseModel):
+    starred: bool = True
 
 class ScheduleImportProblem(BaseModel):
     row_number: int
@@ -1848,6 +1860,14 @@ def require_itinerary_foundation():
         raise HTTPException(status_code=503, detail="Itinerary reminder storage is unavailable")
     return itinerary_reminder_repository
 
+def itinerary_reminder_engine() -> ItineraryReminderEngine:
+    repository = require_itinerary_foundation()
+    return ItineraryReminderEngine(repository, require_wonderpush_client(),
+        delivery_enabled=ITINERARY_REMINDER_DELIVERY_ENABLED,
+        batch_size=ITINERARY_REMINDER_BATCH_SIZE,
+        concurrency=ITINERARY_REMINDER_CONCURRENCY,
+        target_url=f"{PUBLIC_APP_URL}/itinerary")
+
 def itinerary_device_headers(request: Request) -> tuple[str, str]:
     installation_id = request.headers.get("X-WonderPush-Installation-Id", "").strip()
     capability = request.headers.get("X-Itinerary-Device-Capability", "").strip()
@@ -1942,6 +1962,33 @@ async def sync_itinerary_reminder_stars(data: ItineraryStarsPayload, request: Re
             raise HTTPException(status_code=404, detail="Unknown or cross-event Schedule UUID")
     result = await repository.sync_full_set(registration, schedule_ids)
     return {"synced": True, "starred_count": int(result.get("starred_count", len(schedule_ids)))}
+
+@api_router.get("/itinerary-reminders/operations")
+async def itinerary_reminder_operations():
+    repository = require_itinerary_foundation()
+    metrics = await repository.operational_metrics(datetime.now(timezone.utc))
+    return {**metrics, "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
+        "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
+        "eligibility_window_minutes": {"after": 25, "through": 30},
+        "batch_size": ITINERARY_REMINDER_BATCH_SIZE,
+        "concurrency": ITINERARY_REMINDER_CONCURRENCY}
+
+@api_router.put("/itinerary-reminders/synthetic-fixture")
+async def set_synthetic_reminder_fixture(data: SyntheticReminderFixturePayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    now = datetime.now(timezone.utc)
+    fixture = await repository.prepare_synthetic_fixture(registration["id"],
+        starts_at=now + timedelta(minutes=31), starred_at=now, starred=data.starred)
+    return {"fixture": "device_isolation_t30", "title": fixture["title"],
+        "starred": data.starred, "starts_in_minutes": 31, "notification_sent": False}
+
+@api_router.post("/admin/itinerary-reminders/run")
+async def run_itinerary_reminder_worker(
+    synthetic: bool = False,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_announcement_manager_role(current_user)
+    return await itinerary_reminder_engine().run(now=datetime.now(timezone.utc), synthetic=synthetic)
 
 @api_router.get("/itinerary-reminders/test-device")
 async def get_itinerary_test_device(request: Request):
@@ -2836,9 +2883,22 @@ async def cron_scheduler():
         
         await asyncio.sleep(CHECK_INTERVAL_SECONDS)
 
+async def itinerary_reminder_scheduler():
+    """Real canonical T-30 worker; the independent delivery kill switch defaults off."""
+    while True:
+        try:
+            result = await itinerary_reminder_engine().run(now=datetime.now(timezone.utc))
+            logger.info("Itinerary reminder scheduler result=%s", result)
+        except Exception as exc:
+            logger.error("Itinerary reminder scheduler error: %s", exc)
+        await asyncio.sleep(ITINERARY_REMINDER_INTERVAL_SECONDS)
+
 @app.on_event("startup")
 async def startup_event():
     """Start the cron job when the server starts"""
+    if ITINERARY_REMINDER_SCHEDULER_ENABLED and itinerary_reminder_repository and wonderpush_client:
+        logger.info("Starting itinerary reminder scheduler (delivery_enabled=%s)", ITINERARY_REMINDER_DELIVERY_ENABLED)
+        asyncio.create_task(itinerary_reminder_scheduler())
     if db is None:
         logger.warning("MongoDB unavailable; event change notification cron is disabled")
         return
