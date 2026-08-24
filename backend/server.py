@@ -165,7 +165,8 @@ ITINERARY_REMINDER_DELIVERY_ENABLED = os.environ.get(
     "ITINERARY_REMINDER_DELIVERY_ENABLED", "false"
 ).lower() == "true"
 ITINERARY_REMINDER_INTERVAL_SECONDS = max(30, int(os.environ.get("ITINERARY_REMINDER_INTERVAL_SECONDS", "60")))
-ITINERARY_REMINDER_BATCH_SIZE = max(1, min(10000, int(os.environ.get("ITINERARY_REMINDER_BATCH_SIZE", "10000"))))
+ITINERARY_REMINDER_CLAIM_BATCH_SIZE = max(1, min(10000, int(
+    os.environ.get("ITINERARY_REMINDER_CLAIM_BATCH_SIZE", "10000"))))
 ITINERARY_REMINDER_CONCURRENCY = max(1, min(100, int(os.environ.get("ITINERARY_REMINDER_CONCURRENCY", "20"))))
 ITINERARY_REMINDER_MAX_SENDS_PER_SECOND = max(1, min(1000, int(
     os.environ.get("ITINERARY_REMINDER_MAX_SENDS_PER_SECOND", "10"))))
@@ -1878,7 +1879,7 @@ def itinerary_reminder_engine() -> ItineraryReminderEngine:
     if _itinerary_reminder_engine_instance is None:
         _itinerary_reminder_engine_instance = ItineraryReminderEngine(repository, require_wonderpush_client(),
             delivery_enabled=ITINERARY_REMINDER_DELIVERY_ENABLED,
-            batch_size=ITINERARY_REMINDER_BATCH_SIZE,
+            batch_size=ITINERARY_REMINDER_CLAIM_BATCH_SIZE,
             concurrency=ITINERARY_REMINDER_CONCURRENCY,
             max_sends_per_second=ITINERARY_REMINDER_MAX_SENDS_PER_SECOND,
             max_targets_per_request=ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST,
@@ -1989,7 +1990,7 @@ async def itinerary_reminder_operations():
     return {**metrics, **batch_metrics, "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
         "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
         "eligibility_window_minutes": {"after": 25, "through": 30},
-        "batch_size": ITINERARY_REMINDER_BATCH_SIZE,
+        "claim_batch_size": ITINERARY_REMINDER_CLAIM_BATCH_SIZE,
         "concurrency": ITINERARY_REMINDER_CONCURRENCY,
         "max_sends_per_second": ITINERARY_REMINDER_MAX_SENDS_PER_SECOND,
         "max_targets_per_request": ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST,
