@@ -51,7 +51,12 @@ export async function getAttendeeReminderStatus() {
     return { state: 'checking' as const, reminderReady: false, readiness: null,
       failureStage: 'authoritative_verification_temporarily_unavailable' };
   }
-  const localReminderSyncEnabled = await AsyncStorage.getItem(REMINDER_SYNC_ENABLED_KEY) === 'true';
+  let localReminderSyncEnabled: boolean | null = null;
+  try {
+    localReminderSyncEnabled = await AsyncStorage.getItem(REMINDER_SYNC_ENABLED_KEY) === 'true';
+  } catch {
+    // Diagnostics remain read-only and must never change the attendee reminder state.
+  }
   const redacted = {
     supported_context: readiness.client.supportedContext,
     browser_permission_granted: readiness.client.browserPermission === 'granted',
