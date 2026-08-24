@@ -12,6 +12,7 @@ const reminderUx = fs.readFileSync(new URL('../src/services/reminderUxService.we
 const schedulePage = fs.readFileSync(new URL('../app/(tabs)/schedule.tsx', import.meta.url), 'utf8');
 const itineraryPage = fs.readFileSync(new URL('../app/(tabs)/itinerary.tsx', import.meta.url), 'utf8');
 const engineMigration = fs.readFileSync(new URL('../../supabase/migrations/20260823000600_real_itinerary_reminder_engine.sql', import.meta.url), 'utf8');
+const authorizationMigration = fs.readFileSync(new URL('../../supabase/migrations/20260824000100_synthetic_t30_one_shot_authorizations.sql', import.meta.url), 'utf8');
 const server = fs.readFileSync(new URL('../../backend/server.py', import.meta.url), 'utf8');
 
 test('uses supported SDK installation ID and a 256-bit local capability', () => {
@@ -92,8 +93,21 @@ test('synthetic fixture uses the same readiness, timing, claim, and uniqueness r
   assert.match(server, /"late_star_suppression"/);
   assert.match(server, /timedelta\(minutes=20 if late else 31\)/);
   assert.match(server, /device_isolation_t30_retest_2/);
-  assert.match(testPage, /Associate Fresh T-30 Retest 2 with Device A/);
+  assert.match(testPage, /Create &amp; Associate Fresh T-30 Demo/);
   assert.match(testPage, /styles\.fixtureMessage/);
+});
+
+test('one-shot workflow is organizer authorized, atomic, expiring, and synthetic only', () => {
+  assert.match(authorizationMigration, /itinerary_reminder_synthetic_authorizations/);
+  assert.match(authorizationMigration, /unique\(synthetic_event_id, reminder_type\)/);
+  assert.match(authorizationMigration, /consumed_at is null/);
+  assert.match(authorizationMigration, /expires_at>p_now/);
+  assert.match(authorizationMigration, /registration\.test_device_label='A'/);
+  assert.doesNotMatch(authorizationMigration, /references public\.schedule_items/);
+  assert.match(sync, /credentials: 'include'/);
+  assert.match(testPage, /Authorize One T-30 Demo Reminder/);
+  assert.match(testPage, /Run Eligible T-30 Demo/);
+  assert.match(testPage, /Global kill switch: ON/);
 });
 
 test('first-star reminder pill is temporary, actionable, dismissible, and never attached to unstar', () => {

@@ -8,11 +8,20 @@ import {
   enableItineraryRemindersForTesting,
   disableItineraryRemindersForTesting,
   setSyntheticReminderFixtureStarred,
+  createOneShotSyntheticFixture,
+  getOneShotSyntheticFixtureStatus,
+  authorizeOneShotSyntheticFixture,
+  runOneShotSyntheticFixture,
   TestDeviceLabel,
 } from '../src/services/itineraryReminderSync.web';
 import { getFavorites } from '../src/utils/favoritesStorage';
 
 type Status = { registered: boolean; label: TestDeviceLabel; fingerprint: string };
+type OneShotStatus = {
+  title?: string; starts_at?: string; device_a_associated_at?: string;
+  authorization_status?: 'none' | 'unused' | 'consumed'; authorization_expires_at?: string;
+  delivery_count?: number; delivery_statuses?: string[]; provider_call_count?: number;
+};
 const IS_STAGING = (process.env.EXPO_PUBLIC_BACKEND_URL || '').includes('staging');
 
 export default function ReminderTestRegistration() {
@@ -21,6 +30,8 @@ export default function ReminderTestRegistration() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('Checking this subscribed phone…');
   const [fixtureMessage, setFixtureMessage] = useState('');
+  const [oneShotKey, setOneShotKey] = useState('');
+  const [oneShotStatus, setOneShotStatus] = useState<OneShotStatus | null>(null);
   const [diagnostic, setDiagnostic] = useState<Record<string, unknown> | null>(null);
 
   const showReadiness = (result: Awaited<ReturnType<typeof getItineraryReminderReadiness>>) => {
@@ -107,6 +118,44 @@ export default function ReminderTestRegistration() {
     } finally { setBusy(false); }
   };
 
+  const refreshOneShot = async (key = oneShotKey) => {
+    if (!key) return;
+    const result = await getOneShotSyntheticFixtureStatus(key);
+    setOneShotStatus(result.fixture || null);
+  };
+
+  const createOneShot = async () => {
+    setBusy(true); setFixtureMessage('Creating and associating a fresh Device A demo…');
+    try {
+      const result = await createOneShotSyntheticFixture();
+      setOneShotKey(result.fixture_key); setOneShotStatus(result.fixture);
+      setFixtureMessage('Fresh one-shot demo associated with Device A. No notification was sent.');
+    } catch { setFixtureMessage('Fresh demo creation failed. No notification was sent.'); }
+    finally { setBusy(false); }
+  };
+
+  const authorizeOneShot = async () => {
+    setBusy(true); setFixtureMessage('Creating short-lived organizer authorization…');
+    try {
+      await authorizeOneShotSyntheticFixture(oneShotKey); await refreshOneShot();
+      setFixtureMessage('One T-30 demo reminder authorized. Authorization alone sent nothing.');
+    } catch { setFixtureMessage('Authorization failed or organizer sign-in is required. Nothing was sent.'); }
+    finally { setBusy(false); }
+  };
+
+  const runOneShot = async () => {
+    setBusy(true); setFixtureMessage('Running the real eligible T-30 scheduler path…');
+    try {
+      const result = await runOneShotSyntheticFixture(oneShotKey); await refreshOneShot();
+      setFixtureMessage(`Scheduler finished: ${result.provider_call_count || 0} provider call(s), ${result.provider_accepted || 0} accepted.`);
+    } catch { setFixtureMessage('Scheduler did not run or the fixture was not eligible. No manual fallback was used.'); }
+    finally { setBusy(false); }
+  };
+
+  const oneShotStart = oneShotStatus?.starts_at ? new Date(oneShotStatus.starts_at) : null;
+  const oneShotWindowStart = oneShotStart ? new Date(oneShotStart.getTime() - 30 * 60_000) : null;
+  const oneShotWindowEnd = oneShotStart ? new Date(oneShotStart.getTime() - 25 * 60_000) : null;
+
   return <ScrollView
     style={styles.scroll}
     contentContainerStyle={styles.page}
@@ -140,10 +189,29 @@ export default function ReminderTestRegistration() {
           <Text style={styles.buttonText}>Enable 30-Minute Event Reminders</Text>
         </Pressable>
       )}
-      <Pressable disabled={busy} style={styles.secondary} onPress={() => prepareSyntheticFixture(true, 't30_retest_2')} accessibilityRole="button">
-        <Text style={styles.secondaryText}>Associate Fresh T-30 Retest 2 with Device A</Text>
+      <Text style={styles.diagnosticTitle}>One-shot real scheduler test</Text>
+      <Text style={styles.copy}>The global reminder kill switch stays on. Organizer authorization applies only to one synthetic fixture and this Device A registration.</Text>
+      <Pressable disabled={busy || Boolean(oneShotKey)} style={styles.secondary} onPress={createOneShot} accessibilityRole="button">
+        <Text style={styles.secondaryText}>1. Create &amp; Associate Fresh T-30 Demo</Text>
+      </Pressable>
+      <Pressable disabled={busy || !oneShotKey || oneShotStatus?.authorization_status !== 'none'} style={styles.secondary} onPress={authorizeOneShot} accessibilityRole="button">
+        <Text style={styles.secondaryText}>2. Authorize One T-30 Demo Reminder</Text>
+      </Pressable>
+      <Pressable disabled={busy || !oneShotKey || oneShotStatus?.authorization_status !== 'unused'} style={styles.button} onPress={runOneShot} accessibilityRole="button">
+        <Text style={styles.buttonText}>3. Run Eligible T-30 Demo</Text>
       </Pressable>
       {fixtureMessage ? <Text style={styles.fixtureMessage} accessibilityLiveRegion="polite">{fixtureMessage}</Text> : null}
+      {oneShotStatus ? <View style={styles.fixtureStatus}>
+        <Text>Synthetic event: {String(oneShotStatus.title)}</Text>
+        <Text>Associated: {String(oneShotStatus.device_a_associated_at || 'none')}</Text>
+        <Text>Canonical start: {String(oneShotStatus.starts_at)}</Text>
+        <Text>T-30 window: {oneShotWindowStart?.toISOString()} – {oneShotWindowEnd?.toISOString()}</Text>
+        <Text>Authorization: {String(oneShotStatus.authorization_status)}</Text>
+        <Text>Authorization expires: {String(oneShotStatus.authorization_expires_at || 'none')}</Text>
+        <Text>Delivery: {oneShotStatus.delivery_count ? (oneShotStatus.delivery_statuses || []).join(', ') : 'unclaimed'}</Text>
+        <Text>Provider calls: {String(oneShotStatus.provider_call_count || 0)}</Text>
+        <Text>Global kill switch: ON</Text>
+      </View> : null}
       <Pressable disabled={busy} style={styles.secondary} onPress={() => prepareSyntheticFixture(true, 'late')} accessibilityRole="button">
         <Text style={styles.secondaryText}>Associate Late-Star Suppression Fixture</Text>
       </Pressable>
@@ -191,4 +259,5 @@ const styles = StyleSheet.create({
   fixtureRemove: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   fixtureRemoveText: { color: '#6B7280', fontSize: 14, fontWeight: '600', textDecorationLine: 'underline' },
   fixtureMessage: { borderRadius: 10, backgroundColor: '#ECFDF5', color: '#065F46', padding: 12, fontSize: 15, lineHeight: 21 },
+  fixtureStatus: { borderRadius: 10, backgroundColor: '#F3F4F6', padding: 12, gap: 5 },
 });

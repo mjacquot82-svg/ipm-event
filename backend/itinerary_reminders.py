@@ -255,7 +255,11 @@ class SupabaseItineraryReminderRepository:
             await self.client.request("GET", "/itinerary_reminder_installations", params={
                 "select": "id,test_device_label", "event_id": f"eq.{event_id}"}) or []}
         deliveries = await self.client.request("GET", "/itinerary_reminder_synthetic_deliveries", params={
-            "select": "registration_id,status,claimed_at,provider_accepted_at,provider_delivery_id",
+            "select": "registration_id,status,claimed_at,provider_accepted_at,provider_delivery_id,attempt_count",
+            "synthetic_event_id": f"eq.{fixture['id']}",
+        }) or []
+        authorizations = await self.client.request("GET", "/itinerary_reminder_synthetic_authorizations", params={
+            "select": "registration_id,created_at,expires_at,consumed_at,reminder_type",
             "synthetic_event_id": f"eq.{fixture['id']}",
         }) or []
         by_label = {"A": [], "B": []}
@@ -269,7 +273,46 @@ class SupabaseItineraryReminderRepository:
             "delivery_count": len(deliveries),
             "delivery_statuses": sorted({row["status"] for row in deliveries}),
             "provider_call_recorded": any(row.get("provider_delivery_id") for row in deliveries),
+            "provider_call_count": sum(int(row.get("attempt_count") or 0) for row in deliveries
+                if row.get("status") != "claimed"),
+            "authorization_count": len(authorizations),
+            "authorization_status": ("consumed" if authorizations and authorizations[0].get("consumed_at")
+                else "unused") if authorizations else "none",
+            "authorization_created_at": authorizations[0].get("created_at") if authorizations else None,
+            "authorization_expires_at": authorizations[0].get("expires_at") if authorizations else None,
+            "authorization_consumed_at": authorizations[0].get("consumed_at") if authorizations else None,
         }
+
+    async def synthetic_fixture_by_key(self, fixture_key: str) -> dict[str, Any] | None:
+        event_id = await self._event_id()
+        rows = await self.client.request("GET", "/itinerary_reminder_synthetic_events", params={
+            "select": "*", "event_id": f"eq.{event_id}", "fixture_key": f"eq.{fixture_key}", "limit": "1"})
+        return rows[0] if rows else None
+
+    async def registration_by_id(self, registration_id: str) -> dict[str, Any] | None:
+        event_id = await self._event_id()
+        rows = await self.client.request("GET", "/itinerary_reminder_installations", params={
+            "select": "*", "event_id": f"eq.{event_id}", "id": f"eq.{registration_id}", "limit": "1"})
+        return rows[0] if rows else None
+
+    async def authorize_synthetic_fixture(self, *, fixture_id: str, registration_id: str,
+        authorized_by: str, now: datetime) -> dict[str, Any]:
+        event_id = await self._event_id()
+        rows = await self.client.request("POST", "/itinerary_reminder_synthetic_authorizations", json={
+            "event_id": event_id, "synthetic_event_id": fixture_id, "registration_id": registration_id,
+            "reminder_type": REMINDER_TYPE, "created_at": now.astimezone(timezone.utc).isoformat(),
+            "expires_at": (now + timedelta(minutes=15)).astimezone(timezone.utc).isoformat(),
+            "authorized_by": authorized_by[:200],
+        }, headers={"Prefer": "return=representation"})
+        return rows[0]
+
+    async def claim_authorized_synthetic(self, *, now: datetime, fixture_id: str,
+        registration_id: str) -> list[dict[str, Any]]:
+        event_id = await self._event_id()
+        return await self.client.request("POST", "/rpc/claim_authorized_synthetic_itinerary_reminder", json={
+            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id,
+            "p_synthetic_event_id": fixture_id, "p_registration_id": registration_id,
+        }) or []
 
 
 def public_status(registration: dict[str, Any]) -> dict[str, Any]:
@@ -393,4 +436,48 @@ class ItineraryReminderEngine:
                 result["provider_accepted"] += 1
 
         await asyncio.gather(*(deliver(claim) for claim in claims))
+        return result
+
+    async def run_authorized_synthetic(self, *, now: datetime, fixture_id: str,
+        registration_id: str) -> dict[str, Any]:
+        """One authorization can admit one synthetic claim while the global kill switch stays on."""
+        result = {"synthetic": True, "fixture_scoped_authorization": True,
+            "global_kill_switch_enabled": not self.delivery_enabled, "claimed": 0,
+            "provider_accepted": 0, "provider_failed": 0, "delivery_unknown": 0,
+            "provider_call_count": 0}
+        registration = await self.repository.registration_by_id(registration_id)
+        if not registration or registration.get("test_device_label") != "A": return result
+        try:
+            installation = await self.provider.get_installation(registration["wonderpush_installation_id"])
+            reachability, has_token = provider_readiness(installation)
+        except Exception:
+            reachability, has_token = "unknown", False
+        await self.repository.set_readiness(registration_id, reachability=reachability,
+            has_push_token=has_token, checked_at=now)
+        claims = await self.repository.claim_authorized_synthetic(now=now,
+            fixture_id=fixture_id, registration_id=registration_id)
+        result["claimed"] = len(claims)
+        if not claims: return result
+        # The atomic RPC can return at most one exact fixture/registration claim.
+        claim = claims[0]
+        targeter = InstallationTargetedWonderPush(self.repository, self.provider)
+        location = (claim.get("location_name") or "").strip()
+        message = f"{claim['title']} starts in 30 minutes"
+        if location: message += f" at {location}"
+        message += "."
+        result["provider_call_count"] = 1
+        try:
+            provider_id = await targeter.send(installation_id=claim["wonderpush_installation_id"],
+                title="IPM — Starting Soon", message=message, target_url=self.target_url)
+        except Exception as exc:
+            text = str(exc)
+            status = "provider_failed" if "rejected" in text.lower() else "delivery_unknown"
+            await self.repository.finish_delivery(claim["delivery_id"], status=status,
+                synthetic=True, error_message=text, retry_at=None)
+            result[status] = 1
+            return result
+        await self.repository.finish_delivery(claim["delivery_id"], status="provider_accepted",
+            synthetic=True, provider_delivery_id=provider_id)
+        result["provider_accepted"] = 1
+        result["provider_delivery_id"] = provider_id
         return result

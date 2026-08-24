@@ -46,6 +46,15 @@ async function request(path: string, method: string, body?: unknown) {
   return response.json();
 }
 
+async function organizerRequest(path: string, body: unknown) {
+  const response = await fetch(`${API_BASE_URL}/api/admin/itinerary-reminders/synthetic-one-shot/${path}`, {
+    method: 'POST', credentials: 'include',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new ApiSyncError(response.status);
+  return response.json();
+}
+
 async function statusByCapability() {
   const capability = await AsyncStorage.getItem(CAPABILITY_KEY);
   if (!capability) return null;
@@ -141,6 +150,24 @@ export async function disableItineraryRemindersForTesting() {
 
 export async function setSyntheticReminderFixtureStarred(starred: boolean, scenario: 't30' | 't30_retest_2' | 'late' = 't30') {
   return request('/synthetic-fixture', 'PUT', { starred, scenario });
+}
+
+export async function createOneShotSyntheticFixture() {
+  return request('/synthetic-one-shot-fixture', 'POST');
+}
+
+export async function getOneShotSyntheticFixtureStatus(fixtureKey: string) {
+  const response = await fetch(`${API_BASE_URL}/api/itinerary-reminders/synthetic-fixture-status?fixture_key=${encodeURIComponent(fixtureKey)}`);
+  if (!response.ok) throw new ApiSyncError(response.status);
+  return response.json();
+}
+
+export async function authorizeOneShotSyntheticFixture(fixtureKey: string) {
+  return organizerRequest('authorize', { fixture_key: fixtureKey });
+}
+
+export async function runOneShotSyntheticFixture(fixtureKey: string) {
+  return organizerRequest('run', { fixture_key: fixtureKey });
 }
 
 export async function reconcileItineraryReminderStars(starredScheduleIds: string[]): Promise<void> {

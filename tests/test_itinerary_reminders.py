@@ -143,6 +143,23 @@ class FakeEngineRepository:
     async def finish_delivery(self, delivery_id, **values): self.finished.append((delivery_id, values))
 
 
+class FakeAuthorizedRepository(FakeEngineRepository):
+    def __init__(self):
+        super().__init__()
+        self.registration.update({"test_device_label": "A", "wonderpush_installation_id": "installation-a",
+            "reminders_enabled": True})
+    async def registration_by_id(self, registration_id):
+        return self.registration if registration_id == "reg-a" else None
+    async def claim_authorized_synthetic(self, **kwargs):
+        if self.claimed: return []
+        self.claimed = True
+        now = kwargs["now"]
+        return [{"delivery_id": "delivery-auth", "authorization_id": "authorization-a",
+            "registration_id": "reg-a", "synthetic_event_id": "fixture-a",
+            "wonderpush_installation_id": "installation-a", "title": "One-Shot Demo",
+            "location_name": None, "starts_at": now + timedelta(minutes=30)}]
+
+
 class FakeEngineProvider:
     def __init__(self): self.sent = []
     async def get_installation(self, installation_id):
@@ -205,3 +222,49 @@ def test_definitive_provider_rejection_can_retry_without_duplicate_acceptance():
     second = asyncio.run(engine.run(now=now + timedelta(minutes=1)))
     assert first["provider_failed"] == 1 and second["provider_accepted"] == 1
     assert len(provider.sent) == 2
+
+
+def test_authorized_synthetic_bypasses_only_global_kill_switch_once():
+    repository, provider = FakeAuthorizedRepository(), FakeEngineProvider()
+    engine = ItineraryReminderEngine(repository, provider, delivery_enabled=False)
+    now = datetime(2026, 9, 22, 14, 0, tzinfo=timezone.utc)
+    first = asyncio.run(engine.run_authorized_synthetic(now=now,
+        fixture_id="fixture-a", registration_id="reg-a"))
+    second = asyncio.run(engine.run_authorized_synthetic(now=now,
+        fixture_id="fixture-a", registration_id="reg-a"))
+    assert first["global_kill_switch_enabled"] is True
+    assert first["claimed"] == 1 and first["provider_call_count"] == 1
+    assert second["claimed"] == 0 and second["provider_call_count"] == 0
+    assert len(provider.sent) == 1
+    assert provider.sent[0]["installation_id"] == "installation-a"
+    assert provider.sent[0]["message"] == "One-Shot Demo starts in 30 minutes."
+
+
+def test_one_shot_schema_is_synthetic_atomic_expiring_and_single_device():
+    source = open("supabase/migrations/20260824000100_synthetic_t30_one_shot_authorizations.sql", encoding="utf-8").read()
+    assert "references public.itinerary_reminder_synthetic_events" in source
+    assert "references public.schedule_items" not in source
+    assert "expires_at <= created_at + interval '15 minutes'" in source
+    assert "unique(synthetic_event_id, reminder_type)" in source
+    assert "authz.consumed_at is null" in source
+    assert "authz.synthetic_event_id=p_synthetic_event_id" in source
+    assert "authz.registration_id=p_registration_id" in source
+    assert "authz.expires_at>p_now" in source
+    assert "registration.test_device_label='A'" in source
+    assert "item.starts_at>p_now+interval '25 minutes'" in source
+    assert "item.starts_at<=p_now+interval '30 minutes'" in source
+    assert "registration.provider_checked_at>p_now-interval '15 minutes'" in source
+    assert "not exists(select 1 from itinerary_reminder_synthetic_deliveries" in source
+
+
+def test_one_shot_routes_are_staging_organizer_scoped_without_broadcast():
+    source = open("backend/server.py", encoding="utf-8").read()
+    route = source[source.index('/admin/itinerary-reminders/synthetic-one-shot/authorize'):]
+    assert route.count("if not IS_STAGING_DEPLOYMENT") >= 2
+    assert "Depends(get_current_organizer_user)" in route
+    assert "require_announcement_manager_role(current_user)" in route
+    assert "Global reminder kill switch must remain on" in route
+    assert '"device_b_targeted": False' in route
+    assert '"broadcast": False' in route
+    assert '"automatic_retry": False' in route
+    assert "@ALL" not in route

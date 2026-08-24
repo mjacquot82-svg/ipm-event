@@ -286,6 +286,9 @@ class SyntheticReminderFixturePayload(BaseModel):
     starred: bool = True
     scenario: str = "t30"
 
+class SyntheticOneShotPayload(BaseModel):
+    fixture_key: str
+
 class ScheduleImportProblem(BaseModel):
     row_number: int
     errors: List[str]
@@ -1977,13 +1980,88 @@ async def itinerary_reminder_operations():
 @api_router.get("/itinerary-reminders/synthetic-fixture-status")
 async def synthetic_reminder_fixture_status(fixture_key: str = "device_isolation_t30"):
     """Safe staging diagnostic: no device identifiers, secrets, provider calls, or writes."""
-    if fixture_key not in {"device_isolation_t30", "device_isolation_t30_retest_2", "late_star_suppression"}:
+    fixed = {"device_isolation_t30", "device_isolation_t30_retest_2", "late_star_suppression"}
+    if fixture_key not in fixed and not re.fullmatch(r"device_isolation_t30_oneshot_[0-9a-f]{32}", fixture_key):
         raise HTTPException(status_code=400, detail="Unknown synthetic reminder fixture")
     repository = require_itinerary_foundation()
     fixture = await repository.synthetic_fixture_status(fixture_key)
     return {"fixture_exists": fixture is not None, "fixture": fixture,
         "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
         "scheduler_invoked": False, "notification_sent_by_this_check": False}
+
+@api_router.post("/itinerary-reminders/synthetic-one-shot-fixture")
+async def create_synthetic_one_shot_fixture(request: Request):
+    if not IS_STAGING_DEPLOYMENT:
+        raise HTTPException(status_code=404, detail="Not found")
+    repository, registration = await authorize_itinerary_device(request)
+    if registration.get("test_device_label") != "A":
+        raise HTTPException(status_code=403, detail="Only registered Device A can create this staging fixture")
+    now = datetime.now(timezone.utc)
+    fixture_key = f"device_isolation_t30_oneshot_{uuid.uuid4().hex}"
+    fixture = await repository.prepare_synthetic_fixture(registration["id"],
+        starts_at=now + timedelta(minutes=31), starred_at=now, starred=True,
+        fixture_key=fixture_key, title="IPM Reminder Demo Event — One-Shot Test")
+    status = await repository.synthetic_fixture_status(fixture_key)
+    return {"fixture_key": fixture_key, "fixture": status,
+        "global_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED, "notification_sent": False}
+
+@api_router.post("/admin/itinerary-reminders/synthetic-one-shot/authorize")
+async def authorize_synthetic_one_shot(data: SyntheticOneShotPayload,
+    current_user: dict = Depends(get_current_organizer_user)):
+    if not IS_STAGING_DEPLOYMENT:
+        raise HTTPException(status_code=404, detail="Not found")
+    require_announcement_manager_role(current_user)
+    if ITINERARY_REMINDER_DELIVERY_ENABLED:
+        raise HTTPException(status_code=409, detail="Global reminder kill switch must remain on")
+    repository = require_itinerary_foundation()
+    fixture = await repository.synthetic_fixture_by_key(data.fixture_key)
+    if not fixture or not re.fullmatch(r"device_isolation_t30_oneshot_[0-9a-f]{32}", data.fixture_key):
+        raise HTTPException(status_code=404, detail="Unknown one-shot synthetic fixture")
+    status = await repository.synthetic_fixture_status(data.fixture_key)
+    if status["device_a_association_count"] != 1 or status["device_b_association_count"] != 0:
+        raise HTTPException(status_code=409, detail="Fixture association isolation check failed")
+    registrations = await repository.test_registrations()
+    device_a = next((item for item in registrations if item.get("test_device_label") == "A"), None)
+    if not device_a:
+        raise HTTPException(status_code=409, detail="Device A is not registered")
+    actor = str(current_user.get("username") or current_user.get("id") or "organizer")
+    try:
+        authorization = await repository.authorize_synthetic_fixture(fixture_id=fixture["id"],
+            registration_id=device_a["id"], authorized_by=actor, now=datetime.now(timezone.utc))
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 409:
+            raise HTTPException(status_code=409, detail="This fixture already has an authorization") from exc
+        raise
+    return {"fixture_key": data.fixture_key, "authorization_status": "unused",
+        "created_at": authorization["created_at"], "expires_at": authorization["expires_at"],
+        "global_kill_switch": True, "notification_sent": False}
+
+@api_router.post("/admin/itinerary-reminders/synthetic-one-shot/run")
+async def run_synthetic_one_shot(data: SyntheticOneShotPayload,
+    current_user: dict = Depends(get_current_organizer_user)):
+    if not IS_STAGING_DEPLOYMENT:
+        raise HTTPException(status_code=404, detail="Not found")
+    require_announcement_manager_role(current_user)
+    if ITINERARY_REMINDER_DELIVERY_ENABLED:
+        raise HTTPException(status_code=409, detail="Global reminder kill switch must remain on")
+    if not re.fullmatch(r"device_isolation_t30_oneshot_[0-9a-f]{32}", data.fixture_key):
+        raise HTTPException(status_code=400, detail="Invalid one-shot fixture")
+    repository = require_itinerary_foundation()
+    fixture = await repository.synthetic_fixture_by_key(data.fixture_key)
+    if not fixture:
+        raise HTTPException(status_code=404, detail="Unknown one-shot synthetic fixture")
+    status = await repository.synthetic_fixture_status(data.fixture_key)
+    if status["device_a_association_count"] != 1 or status["device_b_association_count"] != 0:
+        raise HTTPException(status_code=409, detail="Fixture association isolation check failed")
+    registrations = await repository.test_registrations()
+    device_a = next((item for item in registrations if item.get("test_device_label") == "A"), None)
+    if not device_a:
+        raise HTTPException(status_code=409, detail="Device A is not registered")
+    result = await itinerary_reminder_engine().run_authorized_synthetic(
+        now=datetime.now(timezone.utc), fixture_id=fixture["id"], registration_id=device_a["id"])
+    return {**result, "fixture_key": data.fixture_key, "target": "Device A only",
+        "device_b_targeted": False, "broadcast": False, "automatic_retry": False,
+        "global_kill_switch": True, "physical_delivery": "unknown"}
 
 @api_router.put("/itinerary-reminders/synthetic-fixture")
 async def set_synthetic_reminder_fixture(data: SyntheticReminderFixturePayload, request: Request):

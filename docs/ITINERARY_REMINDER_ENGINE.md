@@ -41,5 +41,15 @@ claim window without weakening the strict “starred more than 30 minutes before
 The separate late-star fixture starts 20 minutes ahead and therefore exercises the same
 worker's suppression rule without modifying a real event.
 
+### Fixture-scoped one-shot authorization
+
+The staging test page can create a uniquely keyed synthetic event associated only with
+registered Device A. An Owner or Communications organizer may authorize that exact
+synthetic event and registration for `itinerary_t30`; the authorization expires within
+15 minutes. The database atomically consumes it only when all ordinary T-30/readiness
+predicates pass and the unique delivery claim is created. The explicit authorized run
+uses the normal single-installation provider boundary while the global delivery kill
+switch remains on. Production rejects the creation, authorization, and execution routes.
+
 Rollback removes the synthetic tables/functions and added ledger columns, then restores
 the prior claim RPC. The migration is additive and never updates Schedule records.
