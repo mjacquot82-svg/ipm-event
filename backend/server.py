@@ -1254,6 +1254,20 @@ async def create_organizer_session(database, user: dict, response: Response) -> 
 async def root():
     return {"message": "Hello World"}
 
+
+@api_router.get("/version")
+async def deployment_version():
+    """Expose only non-secret build identity for staging deployment verification."""
+    if not IS_STAGING_DEPLOYMENT:
+        raise HTTPException(status_code=404, detail="Not found")
+    commit = os.environ.get("RENDER_GIT_COMMIT", "").strip()
+    return {
+        "environment": "staging",
+        "git_commit": commit or None,
+        "git_commit_available": bool(commit),
+    }
+
+
 @api_router.get("/download-dist")
 async def download_dist():
     """Download the dist folder as a zip file for Netlify deployment"""
