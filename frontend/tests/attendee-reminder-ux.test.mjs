@@ -107,6 +107,20 @@ test('staging diagnostic expander renders only the existing redacted snapshot', 
   assert.doesNotMatch(expander, /installation ID|capability|push token|API credential|raw provider/i);
 });
 
+test('narrow-mobile diagnostics scroll independently and copy only the redacted report', () => {
+  assert.match(itinerary, /<ScrollView[\s\S]*nestedScrollEnabled[\s\S]*persistentScrollbar/);
+  assert.match(itinerary, /reminderDiagnosticsPanel: \{ maxHeight: 280/);
+  assert.match(itinerary, /Copy reminder diagnostics/);
+  assert.match(itinerary, /navigator\.clipboard\.writeText\(diagnosticReport\)/);
+  const copyHandler = itinerary.slice(itinerary.indexOf('const copyReminderDiagnostics'),
+    itinerary.indexOf('const handleRemove'));
+  assert.match(copyHandler, /diagnosticRows[\s\S]*\.map\([\s\S]*\.join\('\\n'\)/);
+  assert.doesNotMatch(copyHandler, /fetch\(|request\(|subscribe|register|enable|reconnect|deliver/);
+  assert.doesNotMatch(copyHandler, /installation_id|capability|push_token|credential|raw provider/i);
+  assert.doesNotMatch(itinerary.slice(itinerary.indexOf('const diagnosticRows'),
+    itinerary.indexOf('const copyReminderDiagnostics')), /provider_checked_at|installation_id|capability|push_token|credential/i);
+});
+
 test('full-set reconciliation is used for star and unstar without breaking local favorites', () => {
   assert.match(schedule, /syncStarredEventsWithBackend\(result\.favorites\)/);
   assert.match(itinerary, /syncStarredEventsWithBackend\(result\.favorites\)/);

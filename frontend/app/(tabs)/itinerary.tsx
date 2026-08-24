@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -68,6 +69,7 @@ export default function ItineraryScreen() {
   const [reminderDiagnostics, setReminderDiagnostics] = useState<ReminderDiagnostics | null>(null);
   const [reminderFailureStage, setReminderFailureStage] = useState<string | null>(null);
   const [showReminderDiagnostics, setShowReminderDiagnostics] = useState(false);
+  const [diagnosticsCopyMessage, setDiagnosticsCopyMessage] = useState<string | null>(null);
 
   const refreshReminderStatus = useCallback(async () => {
     setReminderState('checking');
@@ -188,11 +190,23 @@ export default function ItineraryScreen() {
     ['Synchronized starred count', reminderDiagnostics?.synchronized_star_count],
     ['Provider reachability', reminderDiagnostics?.provider_reachability],
     ['Provider deliverable', reminderDiagnostics?.provider_deliverable],
-    ['Provider checked at', reminderDiagnostics?.provider_checked_at],
     ['Provider readiness fresh', reminderDiagnostics?.provider_fresh],
     ['Final reminder readiness', reminderDiagnostics?.final_reminder_ready],
     ['Failure / recovery stage', reminderFailureStage],
   ] as const;
+
+  const copyReminderDiagnostics = async () => {
+    const diagnosticReport = diagnosticRows
+      .map(([label, value]) => `${label}: ${diagnosticResult(value)}`)
+      .join('\n');
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(diagnosticReport);
+      setDiagnosticsCopyMessage('Reminder diagnostics copied.');
+    } catch {
+      setDiagnosticsCopyMessage('Unable to copy diagnostics on this browser.');
+    }
+  };
 
   const handleRemove = async (eventId: string) => {
     const result = await toggleFavorite(eventId);
@@ -294,14 +308,33 @@ export default function ItineraryScreen() {
               </Text>
             </TouchableOpacity>
             {showReminderDiagnostics ? (
-              <View style={styles.reminderDiagnosticsPanel} accessibilityLabel="Redacted reminder diagnostics">
+              <ScrollView
+                style={styles.reminderDiagnosticsPanel}
+                contentContainerStyle={styles.reminderDiagnosticsPanelContent}
+                nestedScrollEnabled
+                persistentScrollbar
+                accessibilityLabel="Redacted reminder diagnostics"
+              >
                 {diagnosticRows.map(([label, value]) => (
                   <View key={label} style={styles.reminderDiagnosticRow}>
                     <Text style={styles.reminderDiagnosticLabel}>{label}</Text>
                     <Text style={styles.reminderDiagnosticValue}>{diagnosticResult(value)}</Text>
                   </View>
                 ))}
-              </View>
+                <TouchableOpacity
+                  style={styles.reminderDiagnosticsCopyButton}
+                  onPress={() => void copyReminderDiagnostics()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Copy reminder diagnostics"
+                >
+                  <Text style={styles.reminderDiagnosticsCopyButtonText}>Copy reminder diagnostics</Text>
+                </TouchableOpacity>
+                {diagnosticsCopyMessage ? (
+                  <Text style={styles.reminderDiagnosticsCopyMessage} accessibilityLiveRegion="polite">
+                    {diagnosticsCopyMessage}
+                  </Text>
+                ) : null}
+              </ScrollView>
             ) : null}
           </View>
         ) : null}
@@ -499,12 +532,17 @@ const styles = StyleSheet.create({
   reminderDiagnosticsSection: { marginTop: 8 },
   reminderDiagnosticsButton: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', paddingHorizontal: 2 },
   reminderDiagnosticsButtonText: { color: '#6B7280', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
-  reminderDiagnosticsPanel: { marginTop: 6, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10,
-    padding: 10, backgroundColor: '#F9FAFB', gap: 6 },
+  reminderDiagnosticsPanel: { maxHeight: 280, marginTop: 6, borderWidth: 1, borderColor: '#D1D5DB',
+    borderRadius: 10, backgroundColor: '#F9FAFB' },
+  reminderDiagnosticsPanelContent: { padding: 10, gap: 6 },
   reminderDiagnosticRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
   reminderDiagnosticLabel: { flex: 1, color: '#374151', fontSize: 12, lineHeight: 17 },
   reminderDiagnosticValue: { maxWidth: '48%', color: '#111827', fontSize: 12, lineHeight: 17,
     fontWeight: '700', textAlign: 'right' },
+  reminderDiagnosticsCopyButton: { minHeight: 44, marginTop: 6, borderWidth: 1, borderColor: '#6B7280',
+    borderRadius: 8, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
+  reminderDiagnosticsCopyButtonText: { color: '#374151', fontSize: 13, fontWeight: '700' },
+  reminderDiagnosticsCopyMessage: { color: '#4B5563', fontSize: 12, lineHeight: 17, marginTop: 2 },
   calendarButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
