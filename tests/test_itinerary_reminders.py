@@ -97,6 +97,22 @@ def test_ready_device_send_route_is_single_target_and_honest():
     assert "send_everyone" not in route
 
 
+def test_physical_retest_has_new_atomic_key_and_complete_gate():
+    source = open("backend/server.py", encoding="utf-8").read()
+    route = source[source.index('controlled-ready-device-a-physical-retest'):]
+    assert '"ready_device_physical_retest_20260823"' in route
+    assert 'message="Ready-device physical delivery test."' in route
+    assert 'preferences.get("subscriptionStatus") == "optIn"' in route
+    assert 'preferences.get("osNotificationsVisible") is True' in route
+    assert 'device_a.get("reminders_enabled")' in route
+    assert 'status="provider_accepted"' in route
+    assert '"physical_delivery": "unknown"' in route
+    assert '"device_b_targeted": False' in route
+    assert '"broadcast": False' in route
+    assert '"automatic_retry": False' in route
+    assert "send_everyone" not in route
+
+
 class FakeEngineRepository:
     def __init__(self):
         self.registration = {"id": "reg-a", "provider_deliverable": True}
