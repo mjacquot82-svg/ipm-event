@@ -120,6 +120,33 @@ class SupabaseItineraryReminderRepository:
             }, headers={"Prefer": "return=representation"})
         return rows[0]
 
+    async def registered_installation_ids(self) -> set[str]:
+        event_id = await self._event_id()
+        rows = await self.client.request("GET", "/itinerary_reminder_installations", params={
+            "select": "wonderpush_installation_id", "event_id": f"eq.{event_id}",
+        }) or []
+        return {row["wonderpush_installation_id"] for row in rows}
+
+    async def apply_readiness_refresh(self, *, rows: list[dict[str, Any]], checked_at: datetime,
+        full_refresh: bool, pages: int, duration_ms: int, error_message: str | None = None) -> dict[str, Any]:
+        event_id = await self._event_id()
+        result = await self.client.request("POST", "/rpc/apply_itinerary_provider_readiness_refresh", json={
+            "p_event_id": event_id, "p_checked_at": checked_at.astimezone(timezone.utc).isoformat(),
+            "p_rows": rows, "p_full_refresh": full_refresh, "p_pages": pages,
+            "p_duration_ms": duration_ms, "p_error_message": error_message,
+        })
+        return result[0] if isinstance(result, list) and result else {}
+
+    async def record_readiness_refresh_failure(self, *, checked_at: datetime,
+        duration_ms: int, error_message: str) -> None:
+        event_id = await self._event_id()
+        await self.client.request("POST", "/itinerary_reminder_provider_refresh_runs", json={
+            "event_id": event_id, "started_at": checked_at.astimezone(timezone.utc).isoformat(),
+            "finished_at": datetime.now(timezone.utc).isoformat(), "status": "failed",
+            "duration_ms": duration_ms, "provider_requests": 0, "installations_processed": 0,
+            "error_message": error_message[:1000],
+        }, headers={"Prefer": "return=minimal"})
+
     async def set_test_label(self, registration_id: str, label: str) -> dict[str, Any]:
         rows = await self.client.request("PATCH", "/itinerary_reminder_installations",
             params={"id": f"eq.{registration_id}"}, json={"test_device_label": label},
@@ -195,12 +222,15 @@ class SupabaseItineraryReminderRepository:
         }) or []
 
     async def claim_due_batch(self, now: datetime, *, synthetic: bool = False,
-        limit: int = 250) -> list[dict[str, Any]]:
-        name = "claim_due_synthetic_itinerary_reminders" if synthetic else "claim_due_itinerary_reminders"
+        limit: int = 250, provider_readiness_max_age_seconds: int = 900) -> list[dict[str, Any]]:
+        name = "claim_due_synthetic_itinerary_reminders" if synthetic else "claim_due_itinerary_reminders_cached"
         event_id = await self._event_id()
-        return await self.client.request("POST", f"/rpc/{name}", json={
+        payload = {
             "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id, "p_limit": limit,
-        }) or []
+        }
+        if not synthetic:
+            payload["p_provider_readiness_max_age_seconds"] = provider_readiness_max_age_seconds
+        return await self.client.request("POST", f"/rpc/{name}", json=payload) or []
 
     async def finish_delivery(self, delivery_id: str, *, status: str, synthetic: bool = False,
         provider_delivery_id: str | None = None, error_message: str | None = None,
@@ -288,6 +318,20 @@ class SupabaseItineraryReminderRepository:
             "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id})
         return {key: int(value or 0) for key, value in (rows[0] if rows else {}).items()}
 
+    async def readiness_metrics(self, now: datetime, max_age_seconds: int) -> dict[str, Any]:
+        event_id = await self._event_id()
+        rows = await self.client.request("POST", "/rpc/itinerary_provider_readiness_metrics", json={
+            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id,
+            "p_max_age_seconds": max_age_seconds})
+        return (rows[0] if rows else {})
+
+    async def evaluate_readiness_alert(self, now: datetime, max_age_seconds: int) -> dict[str, Any]:
+        event_id = await self._event_id()
+        rows = await self.client.request("POST", "/rpc/evaluate_itinerary_provider_readiness_alert", json={
+            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id,
+            "p_max_age_seconds": max_age_seconds, "p_warning_count": 1})
+        return rows[0] if rows else {}
+
     async def acquire_provider_slot(self, now: datetime, *, rate: int, burst: int) -> dict[str, Any]:
         event_id = await self._event_id()
         rows = await self.client.request("POST", "/rpc/acquire_itinerary_provider_slot", json={
@@ -341,6 +385,11 @@ class SupabaseItineraryReminderRepository:
         return await self.client.request("GET", "/itinerary_reminder_benchmark_results", params={
             "select": "run_key,worker_count,registration_count,candidate_query_ms,claim_ms,batching_ms,claimed_count,duplicate_count,batch_count,waiting_locks,schedule_count_before,schedule_count_after,real_registration_count_before,real_registration_count_after,synthetic_cleanup_verified,created_at",
             "order": "created_at.desc", "limit": "3"}) or []
+
+    async def readiness_benchmark_results(self) -> list[dict[str, Any]]:
+        return await self.client.request("GET", "/itinerary_provider_readiness_benchmark_results", params={
+            "select": "run_key,registration_count,modeled_provider_pages,readiness_update_ms,candidate_query_ms,claim_ms,batching_ms,claimed_count,duplicate_count,scheduler_readiness_provider_calls,schedule_count_before,schedule_count_after,real_registration_count_before,real_registration_count_after,synthetic_cleanup_verified,created_at",
+            "order": "created_at.desc", "limit": "1"}) or []
 
     async def synthetic_fixture_status(self, fixture_key: str) -> dict[str, Any] | None:
         event_id = await self._event_id()
@@ -445,6 +494,53 @@ def provider_readiness(installation: dict[str, Any] | None) -> tuple[str, bool]:
     return reachability, has_push_token
 
 
+class ProviderReadinessSynchronizer:
+    """Refresh the durable readiness mirror outside the T-30 critical path."""
+
+    def __init__(self, repository: SupabaseItineraryReminderRepository, provider: Any,
+        *, page_size: int = 1000, max_age_seconds: int = 900):
+        self.repository = repository
+        self.provider = provider
+        self.page_size = max(1, min(page_size, 1000))
+        self.max_age_seconds = max(60, max_age_seconds)
+
+    async def refresh(self, *, now: datetime, updated_since: datetime | None = None) -> dict[str, Any]:
+        started = datetime.now(timezone.utc)
+        full_refresh = updated_since is None
+        try:
+            installations, pages = await self.provider.list_installations(
+                updated_since=updated_since, page_size=self.page_size)
+            registered = await self.repository.registered_installation_ids()
+            mirror_rows = []
+            for installation in installations:
+                installation_id = str(installation.get("id") or "")
+                if installation_id not in registered:
+                    continue
+                reachability, has_token = provider_readiness(installation)
+                mirror_rows.append({
+                    "installation_id": installation_id,
+                    "reachability": reachability,
+                    "has_push_token": has_token,
+                    "subscription_state": (installation.get("preferences") or {}).get("subscriptionStatus"),
+                    "provider_updated_at": installation.get("updateDate"),
+                })
+            duration_ms = max(0, int((datetime.now(timezone.utc) - started).total_seconds() * 1000))
+            applied = await self.repository.apply_readiness_refresh(rows=mirror_rows,
+                checked_at=now, full_refresh=full_refresh, pages=pages,
+                duration_ms=duration_ms)
+            alert = await self.repository.evaluate_readiness_alert(now, self.max_age_seconds)
+            return {**applied, "provider_requests": pages,
+                "provider_installations_scanned": len(installations),
+                "registered_installations_matched": len(mirror_rows),
+                "duration_ms": duration_ms, "full_refresh": full_refresh,
+                "upcoming_readiness_alert": alert}
+        except Exception as exc:
+            duration_ms = max(0, int((datetime.now(timezone.utc) - started).total_seconds() * 1000))
+            await self.repository.record_readiness_refresh_failure(checked_at=now,
+                duration_ms=duration_ms, error_message=str(exc))
+            raise
+
+
 def test_device_status(registration: dict[str, Any]) -> dict[str, Any]:
     installation_id = registration["wonderpush_installation_id"]
     return {
@@ -493,7 +589,7 @@ class ItineraryReminderEngine:
     def __init__(self, repository: SupabaseItineraryReminderRepository, provider: Any, *,
         delivery_enabled: bool = False, batch_size: int = 250, concurrency: int = 20,
         max_sends_per_second: int = 10, max_targets_per_request: int = 10000,
-        target_url: str = ""):
+        provider_readiness_max_age_seconds: int = 900, target_url: str = ""):
         self.repository, self.provider = repository, provider
         self.delivery_enabled = delivery_enabled
         self.batch_size = max(1, min(batch_size, 10000))
@@ -502,6 +598,7 @@ class ItineraryReminderEngine:
         self.circuit_breaker = ProviderCircuitBreaker()
         self.max_sends_per_second = max(1, max_sends_per_second)
         self.max_targets_per_request = max(1, min(max_targets_per_request, 10000))
+        self.provider_readiness_max_age_seconds = max(60, provider_readiness_max_age_seconds)
         self.target_url = target_url
 
     async def _bounded(self, rows: list[dict[str, Any]], operation) -> None:
@@ -509,40 +606,24 @@ class ItineraryReminderEngine:
             await asyncio.gather(*(operation(row) for row in rows[offset:offset + self.concurrency]))
 
     async def run(self, *, now: datetime, synthetic: bool = False) -> dict[str, Any]:
-        await self.repository.close_stale_claims(now, synthetic=synthetic)
-        candidates = await self.repository.due_registrations(now, synthetic=synthetic,
-            limit=self.batch_size * 4)
         semaphore = asyncio.Semaphore(self.concurrency)
-        unreachable = 0
-
-        async def refresh(candidate: dict[str, Any]) -> None:
-            nonlocal unreachable
-            async with semaphore:
-                try:
-                    installation = await self.provider.get_installation(candidate["wonderpush_installation_id"])
-                    reachability, has_token = provider_readiness(installation)
-                except Exception:
-                    reachability, has_token = "unknown", False
-                await self.repository.set_readiness(candidate["registration_id"], reachability=reachability,
-                    has_push_token=has_token, checked_at=now)
-                if reachability != "optIn" or not has_token: unreachable += 1
-
-        await self._bounded(candidates, refresh)
         result = {"synthetic": synthetic, "kill_switch_enabled": not self.delivery_enabled,
-            "candidate_registrations": len(candidates), "suppressed_installation_unreachable": unreachable,
+            "candidate_registrations": 0, "suppressed_installation_unreachable": 0,
             "claimed": 0, "provider_accepted": 0, "provider_failed": 0, "delivery_unknown": 0,
             "provider_429": 0, "provider_5xx": 0, "send_rate_limit": self.max_sends_per_second,
             "concurrency": self.concurrency, "circuit_breaker": self.circuit_breaker.state,
-            "provider_requests": 0, "exact_target_batches": 0}
+            "provider_requests": 0, "provider_readiness_requests": 0, "exact_target_batches": 0}
         if not self.delivery_enabled:
             return result
+        await self.repository.close_stale_claims(now, synthetic=synthetic)
         recovered_rows: list[dict[str, Any]] = []
         if not synthetic:
             recovery = await self.repository.recover_expired_batches(now)
             result.update({f"recovery_{key}": value for key, value in recovery.items()})
             recovered_rows = await self.repository.lease_assigned_batches(now,
                 worker_id="scheduler", limit=100, lease_seconds=90)
-        claims = await self.repository.claim_due_batch(now, synthetic=synthetic, limit=self.batch_size)
+        claims = await self.repository.claim_due_batch(now, synthetic=synthetic, limit=self.batch_size,
+            provider_readiness_max_age_seconds=self.provider_readiness_max_age_seconds)
         result["claimed"] = len(claims)
         targeter = InstallationTargetedWonderPush(self.repository, self.provider)
 

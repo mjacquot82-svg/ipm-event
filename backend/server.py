@@ -39,7 +39,7 @@ try:
         summary_report as get_analytics_summary_report,
         traffic_report as get_analytics_traffic_report,
     )
-    from backend.itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
+    from backend.itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, ProviderReadinessSynchronizer, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
     from backend.reminder_scale import batched_scale_report, scale_report
 except ModuleNotFoundError:
     from analytics import (
@@ -62,7 +62,7 @@ except ModuleNotFoundError:
         summary_report as get_analytics_summary_report,
         traffic_report as get_analytics_traffic_report,
     )
-    from itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
+    from itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, ProviderReadinessSynchronizer, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
     from reminder_scale import batched_scale_report, scale_report
 import secrets
 import base64
@@ -172,6 +172,12 @@ ITINERARY_REMINDER_MAX_SENDS_PER_SECOND = max(1, min(1000, int(
     os.environ.get("ITINERARY_REMINDER_MAX_SENDS_PER_SECOND", "10"))))
 ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST = max(1, min(10000, int(
     os.environ.get("ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST", "10000"))))
+ITINERARY_REMINDER_PROVIDER_READINESS_MAX_AGE_SECONDS = max(60, int(os.environ.get(
+    "ITINERARY_REMINDER_PROVIDER_READINESS_MAX_AGE_SECONDS", "900")))
+ITINERARY_REMINDER_PROVIDER_REFRESH_INTERVAL_SECONDS = max(60, int(os.environ.get(
+    "ITINERARY_REMINDER_PROVIDER_REFRESH_INTERVAL_SECONDS", "300")))
+ITINERARY_REMINDER_PROVIDER_REFRESH_ENABLED = os.environ.get(
+    "ITINERARY_REMINDER_PROVIDER_REFRESH_ENABLED", "false").lower() == "true"
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
 ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
 ADMIN_SESSION_DAYS = int(os.environ.get("ADMIN_SESSION_DAYS", "7"))
@@ -1883,6 +1889,7 @@ def itinerary_reminder_engine() -> ItineraryReminderEngine:
             concurrency=ITINERARY_REMINDER_CONCURRENCY,
             max_sends_per_second=ITINERARY_REMINDER_MAX_SENDS_PER_SECOND,
             max_targets_per_request=ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST,
+            provider_readiness_max_age_seconds=ITINERARY_REMINDER_PROVIDER_READINESS_MAX_AGE_SECONDS,
             target_url=f"{PUBLIC_APP_URL}/itinerary")
     return _itinerary_reminder_engine_instance
 
@@ -1988,9 +1995,12 @@ async def itinerary_reminder_operations():
     metrics = await repository.operational_metrics(now)
     batch_metrics = await repository.batch_metrics(now)
     durable_metrics = await repository.durable_metrics(now)
+    readiness_metrics = await repository.readiness_metrics(
+        now, ITINERARY_REMINDER_PROVIDER_READINESS_MAX_AGE_SECONDS)
     provider_control = await repository.provider_control_status()
     benchmark_results = await repository.benchmark_results() if IS_STAGING_DEPLOYMENT else []
-    return {**metrics, **batch_metrics, **durable_metrics,
+    readiness_benchmark = await repository.readiness_benchmark_results() if IS_STAGING_DEPLOYMENT else []
+    return {**metrics, **batch_metrics, **durable_metrics, **readiness_metrics,
         "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
         "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
         "eligibility_window_minutes": {"after": 25, "through": 30},
@@ -1998,7 +2008,20 @@ async def itinerary_reminder_operations():
         "concurrency": ITINERARY_REMINDER_CONCURRENCY,
         "max_sends_per_second": ITINERARY_REMINDER_MAX_SENDS_PER_SECOND,
         "max_targets_per_request": ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST,
-        "provider_control": provider_control, "staging_database_benchmark": benchmark_results}
+        "provider_readiness_max_age_seconds": ITINERARY_REMINDER_PROVIDER_READINESS_MAX_AGE_SECONDS,
+        "provider_refresh_interval_seconds": ITINERARY_REMINDER_PROVIDER_REFRESH_INTERVAL_SECONDS,
+        "provider_refresh_enabled": ITINERARY_REMINDER_PROVIDER_REFRESH_ENABLED,
+        "provider_control": provider_control, "staging_database_benchmark": benchmark_results,
+        "staging_readiness_benchmark": readiness_benchmark}
+
+@api_router.post("/admin/itinerary-reminders/refresh-provider-readiness")
+async def refresh_itinerary_provider_readiness(
+    current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    synchronizer = ProviderReadinessSynchronizer(require_itinerary_foundation(),
+        require_wonderpush_client(),
+        max_age_seconds=ITINERARY_REMINDER_PROVIDER_READINESS_MAX_AGE_SECONDS)
+    return await synchronizer.refresh(now=datetime.now(timezone.utc))
 
 @api_router.get("/admin/itinerary-reminders/scale-report")
 async def itinerary_reminder_scale_report(current_user: dict = Depends(get_current_organizer_user)):
@@ -3093,12 +3116,28 @@ async def itinerary_reminder_scheduler():
             logger.error("Itinerary reminder scheduler error: %s", exc)
         await asyncio.sleep(ITINERARY_REMINDER_INTERVAL_SECONDS)
 
+async def itinerary_provider_readiness_scheduler():
+    """Refresh the provider mirror ahead of T-30; this worker never sends notifications."""
+    synchronizer = ProviderReadinessSynchronizer(
+        require_itinerary_foundation(), require_wonderpush_client(),
+        max_age_seconds=ITINERARY_REMINDER_PROVIDER_READINESS_MAX_AGE_SECONDS)
+    while True:
+        try:
+            result = await synchronizer.refresh(now=datetime.now(timezone.utc))
+            logger.info("Itinerary provider readiness refresh result=%s", result)
+        except Exception as exc:
+            logger.error("Itinerary provider readiness refresh failed: %s", exc)
+        await asyncio.sleep(ITINERARY_REMINDER_PROVIDER_REFRESH_INTERVAL_SECONDS)
+
 @app.on_event("startup")
 async def startup_event():
     """Start the cron job when the server starts"""
     if ITINERARY_REMINDER_SCHEDULER_ENABLED and itinerary_reminder_repository and wonderpush_client:
         logger.info("Starting itinerary reminder scheduler (delivery_enabled=%s)", ITINERARY_REMINDER_DELIVERY_ENABLED)
         asyncio.create_task(itinerary_reminder_scheduler())
+    if ITINERARY_REMINDER_PROVIDER_REFRESH_ENABLED and itinerary_reminder_repository and wonderpush_client:
+        logger.info("Starting itinerary provider readiness mirror refresh")
+        asyncio.create_task(itinerary_provider_readiness_scheduler())
     if db is None:
         logger.warning("MongoDB unavailable; event change notification cron is disabled")
         return

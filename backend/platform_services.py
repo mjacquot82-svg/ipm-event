@@ -165,6 +165,45 @@ class WonderPushClient:
         result = response.json()
         return result if isinstance(result, dict) else None
 
+    async def list_installations(self, *, updated_since: datetime | None = None,
+        page_size: int = 1000) -> tuple[list[dict[str, Any]], int]:
+        """Page through installations without exposing cursor URLs or credentials."""
+        url: str | None = "https://management-api.wonderpush.com/v1/installations"
+        params: dict[str, Any] | None = {
+            "accessToken": self.access_token,
+            "limit": max(1, min(page_size, 1000)),
+            "sort": "none",
+            "fields": "id,updateDate,preferences,pushToken,device",
+        }
+        if updated_since is not None:
+            params["updateDateFrom"] = updated_since.astimezone(timezone.utc).isoformat()
+        installations: list[dict[str, Any]] = []
+        pages = 0
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            while url:
+                try:
+                    response = await client.get(url, params=params)
+                except httpx.TimeoutException as exc:
+                    raise WonderPushError("WonderPush installation listing timed out") from exc
+                except httpx.RequestError as exc:
+                    raise WonderPushError("WonderPush installation listing could not be reached") from exc
+                if response.status_code != 200:
+                    raise WonderPushError(
+                        f"WonderPush installation listing failed (HTTP {response.status_code})",
+                        status_code=response.status_code)
+                payload = response.json()
+                data = payload.get("data") if isinstance(payload, dict) else None
+                pagination = payload.get("pagination") if isinstance(payload, dict) else None
+                if not isinstance(data, list) or not isinstance(pagination, dict):
+                    raise WonderPushError("WonderPush installation listing returned malformed data")
+                installations.extend(item for item in data if isinstance(item, dict))
+                pages += 1
+                next_url = pagination.get("next")
+                url = next_url if isinstance(next_url, str) and next_url.startswith(
+                    "https://management-api.wonderpush.com/") else None
+                params = None  # Cursor URL must be followed unchanged.
+        return installations, pages
+
 
 class EventService:
     """Resolve platform event context for backend content services."""
