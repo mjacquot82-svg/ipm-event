@@ -107,6 +107,7 @@ test('one-shot workflow is organizer authorized, atomic, expiring, and synthetic
   assert.match(sync, /credentials: 'include'/);
   assert.match(testPage, /Authorize One T-30 Demo Reminder/);
   assert.match(testPage, /Run Eligible T-30 Demo/);
+  assert.match(testPage, /authorization_status === 'none'/);
   assert.match(testPage, /Global kill switch: ON/);
 });
 

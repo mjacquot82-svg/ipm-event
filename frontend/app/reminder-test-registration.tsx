@@ -197,7 +197,7 @@ export default function ReminderTestRegistration() {
       <Pressable disabled={busy || !oneShotKey || oneShotStatus?.authorization_status !== 'none'} style={styles.secondary} onPress={authorizeOneShot} accessibilityRole="button">
         <Text style={styles.secondaryText}>2. Authorize One T-30 Demo Reminder</Text>
       </Pressable>
-      <Pressable disabled={busy || !oneShotKey || oneShotStatus?.authorization_status !== 'unused'} style={styles.button} onPress={runOneShot} accessibilityRole="button">
+      <Pressable disabled={busy || !oneShotKey || oneShotStatus?.authorization_status === 'none'} style={styles.button} onPress={runOneShot} accessibilityRole="button">
         <Text style={styles.buttonText}>3. Run Eligible T-30 Demo</Text>
       </Pressable>
       {fixtureMessage ? <Text style={styles.fixtureMessage} accessibilityLiveRegion="polite">{fixtureMessage}</Text> : null}
