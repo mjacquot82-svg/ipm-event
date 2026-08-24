@@ -41,6 +41,14 @@ Schedule or pre-existing registration counts change. Its 2/4/8 labels model coop
 claimers in one database session; they are not simultaneous independent connections, so
 a true concurrent lock-contention run is still required.
 
+The corrected `staging-10k-claim-fix-20260824` run selected candidates in 64.907 ms.
+It claimed all 10,000 rows with zero duplicates in 19,811.734 ms (2 claimers),
+4,223.205 ms (4 claimers), and 3,100.533 ms (8 claimers). Batch construction took
+10.218/14.723/19.383 ms respectively and produced one exact-target batch. PostgreSQL
+reported no waiting locks at each observation point. These figures prove the persisted
+query/claim path and cleanup at 10,000 rows; because the claimers were interleaved on one
+connection, they do not prove concurrent lock contention or distributed-worker latency.
+
 The normal scheduler also refreshes provider reachability with one installation lookup
 per due registration before batching. That provider-side N-call readiness audit remains
 a scaling blocker unless WonderPush confirms a safe bulk lookup or IPM adopts a rigorously

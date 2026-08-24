@@ -71,3 +71,15 @@ def test_database_benchmark_is_10k_synthetic_and_self_cleaning():
     assert "schedule_after<>schedule_before" in source
     assert "registrations_after<>registrations_before" in source
     assert "synthetic_cleanup_verified=true" in source
+
+
+def test_claim_query_advances_past_existing_ledger_before_limit():
+    source = open("supabase/migrations/20260824000600_fix_reminder_claim_backlog.sql",
+        encoding="utf-8").read()
+    assert source.count("left join itinerary_reminder") >= 2
+    assert source.count("existing.id is null") == 2
+    assert "limit greatest(1,least(p_limit,10000))" in source
+    rerun = open("supabase/migrations/20260824000700_rerun_itinerary_reminder_10k_benchmark.sql",
+        encoding="utf-8").read()
+    assert "staging-10k-claim-fix-20260824" in rerun
+    assert "schedule_after<>schedule_before" in rerun
