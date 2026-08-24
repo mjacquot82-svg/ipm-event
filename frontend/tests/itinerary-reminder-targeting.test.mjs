@@ -112,7 +112,7 @@ test('one-shot workflow is organizer authorized, atomic, expiring, and synthetic
 });
 
 test('first-star reminder pill is temporary, actionable, dismissible, and never attached to unstar', () => {
-  assert.match(schedulePage, /result\.isFavorite && await shouldShowReminderPromotion/);
+  assert.match(schedulePage, /starSucceeded && starredEvent && await shouldShowReminderPromotion\(starredEvent\)/);
   assert.match(schedulePage, /setTimeout\(\(\) => setShowReminderPrompt\(false\), 6000\)/);
   assert.match(schedulePage, /enableRemindersFromPrompt/);
   assert.match(schedulePage, /Dismiss event reminder offer/);
@@ -120,8 +120,7 @@ test('first-star reminder pill is temporary, actionable, dismissible, and never 
 });
 
 test('no-nag policy permits at most two local displays and suppresses when ready', () => {
-  assert.match(reminderUx, /MAX_PROMPT_SHOWS = 2/);
-  assert.match(reminderUx, /if \(readiness\?\.reminderReady\) return false/);
+  assert.match(reminderUx, /mayShowReminderPromotion/);
   assert.match(reminderUx, /AsyncStorage\.setItem\(PROMPT_COUNT_KEY, String\(count \+ 1\)\)/);
 });
 

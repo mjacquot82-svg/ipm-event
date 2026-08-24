@@ -154,7 +154,10 @@ export default function ScheduleScreen() {
     });
     // Sync with backend for notifications
     syncStarredEventsWithBackend(result.favorites);
-    if (result.isFavorite && await shouldShowReminderPromotion()) {
+    const starredEvent = events.find((event) => event.id === eventId);
+    const starSucceeded = result.isFavorite && result.favorites.includes(eventId);
+    if (starSucceeded && starredEvent && await shouldShowReminderPromotion(starredEvent)) {
+      setReminderPromptMessage(null);
       setShowReminderPrompt(true);
       reminderPromptTimerRef.current = setTimeout(() => setShowReminderPrompt(false), 6000);
     }
@@ -171,7 +174,7 @@ export default function ScheduleScreen() {
     if (result?.enabled && result.readiness?.reminderReady) {
       setReminderPromptMessage('Event reminders are on.');
       setTimeout(() => setShowReminderPrompt(false), 1800);
-    } else if (result?.notificationState === 'unsupported') {
+    } else if (result?.notificationState === 'requires_install') {
       setReminderPromptMessage('On iPhone, install IPM to your Home Screen and open the installed app to enable reminders.');
     } else if (result?.notificationState === 'denied') {
       setReminderPromptMessage('Notifications are blocked. Allow them in browser settings to enable reminders.');
@@ -1128,7 +1131,10 @@ export default function ScheduleScreen() {
             <Text style={styles.reminderPromptText}>{reminderPromptMessage || "Enable notifications and we'll remind you 30 minutes before events in your itinerary start."}</Text>
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.reminderPromptClose} onPress={() => setShowReminderPrompt(false)}
+        <TouchableOpacity style={styles.reminderPromptClose} onPress={() => {
+          if (reminderPromptTimerRef.current) clearTimeout(reminderPromptTimerRef.current);
+          setShowReminderPrompt(false);
+        }}
           accessibilityRole="button" accessibilityLabel="Dismiss event reminder offer">
           <Feather name="x" size={20} color="#FFFFFF" />
         </TouchableOpacity>

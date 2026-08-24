@@ -1,5 +1,4 @@
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -22,7 +21,6 @@ const STATE_COPY: Record<NotificationState, string> = {
 };
 
 export default function NotificationOptIn() {
-  const router = useRouter();
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
 
@@ -47,16 +45,18 @@ export default function NotificationOptIn() {
 
   if (Platform.OS !== 'web') return null;
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
-  const stagingPwaTestLink = (process.env.EXPO_PUBLIC_BACKEND_URL || '').includes('staging')
-    && (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true);
-  const isIphoneSafari = /iPhone|iPad|iPod/.test(window.navigator.userAgent || '') && !stagingPwaTestLink;
+  const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const isIphoneSafari = /iPhone|iPad|iPod/.test(window.navigator.userAgent || '') && !standalone;
+  const stateMessage = state === 'unsupported' && isIphoneSafari
+    ? 'On iPhone, notifications are available from the installed IPM app.'
+    : STATE_COPY[state];
 
   return (
     <View style={styles.card} accessibilityLabel="IPM notification settings">
       <View style={styles.icon}><Feather name="bell" size={22} color="#FFFFFF" /></View>
       <View style={styles.copy}>
         <Text style={styles.title}>IPM Notifications</Text>
-        <Text style={styles.message}>{STATE_COPY[state]}</Text>
+        <Text style={styles.message}>{stateMessage}</Text>
         {state === 'denied' ? <Text style={styles.hint}>Allow notifications for this site in browser settings to enable them.</Text> : null}
         {state === 'unsupported' && isIphoneSafari ? <Text style={styles.hint}>Install IPM to your Home Screen, then open the installed IPM app to enable notifications.</Text> : null}
       </View>
@@ -71,16 +71,6 @@ export default function NotificationOptIn() {
           <Text style={[styles.buttonText, state === 'subscribed' && styles.disableButtonText]}>
             {state === 'subscribed' ? 'Disable' : 'Enable'}
           </Text>
-        </TouchableOpacity>
-      ) : null}
-      {stagingPwaTestLink ? (
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel="Open staging reminder device registration"
-          onPress={() => router.push('/reminder-test-registration' as never)}
-          style={styles.testLink}
-        >
-          <Text style={styles.testLinkText}>Device test</Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -98,6 +88,4 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', textAlign: 'center' },
   disableButton: { backgroundColor: '#FFFFFF', borderColor: colors.primary, borderWidth: 1 },
   disableButtonText: { color: colors.primary },
-  testLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
-  testLinkText: { color: colors.primary, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
 });

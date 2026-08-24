@@ -13,10 +13,10 @@ test('phones enroll normally without displaying installation IDs or capabilities
   assert.doesNotMatch(page, /diagnostic\.installationId|diagnostic\.capabilitySecret/);
 });
 
-test('installed staging PWA has an internal route to device diagnostics', () => {
+test('normal attendee notification card no longer links to device diagnostics', () => {
   assert.match(optIn, /display-mode: standalone/);
-  assert.match(optIn, /router\.push\('\/reminder-test-registration'(?: as never)?\)/);
-  assert.match(optIn, /includes\('staging'\)/);
+  assert.doesNotMatch(optIn, /router\.push\('\/reminder-test-registration'(?: as never)?\)/);
+  assert.doesNotMatch(optIn, /Device test/);
 });
 
 test('safe diagnostics identify every client and API registration stage', () => {

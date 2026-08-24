@@ -1,6 +1,6 @@
-type NativeReminderReadiness = { reminderReady?: boolean } | null;
-export async function getAttendeeReminderStatus(): Promise<NativeReminderReadiness> { return null; }
-export async function shouldShowReminderPromotion() { return false; }
+type NativeReminderReadiness = { reminderReady?: boolean; state?: string } | null;
+export async function getAttendeeReminderStatus(): Promise<NativeReminderReadiness> { return { reminderReady: false, state: 'off' }; }
+export async function shouldShowReminderPromotion(_event: { start_date: string; start_time: string }) { return false; }
 export async function enableAttendeeItineraryReminders() {
   return { enabled: false, notificationState: 'unsupported', readiness: null as NativeReminderReadiness };
 }
