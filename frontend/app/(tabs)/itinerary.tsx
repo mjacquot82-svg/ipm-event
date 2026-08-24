@@ -38,6 +38,17 @@ import {
   getAttendeeReminderStatus,
 } from '../../src/services/reminderUxService';
 
+const IS_STAGING = (process.env.EXPO_PUBLIC_BACKEND_URL || '').includes('staging');
+
+type ReminderDiagnostics = Record<string, boolean | number | string | null | undefined>;
+
+function diagnosticResult(value: unknown) {
+  if (value === true) return 'PASS';
+  if (value === false) return 'FAIL';
+  if (value === null || value === undefined || value === '') return 'UNKNOWN';
+  return String(value);
+}
+
 export default function ItineraryScreen() {
   usePageAnalytics('itinerary', 'home_quick_action');
   const { frameStyle } = useAttendeeLayout();
@@ -54,11 +65,16 @@ export default function ItineraryScreen() {
   const [reminderState, setReminderState] = useState<'checking' | 'off' | 'on' | 'blocked' | 'install_required' | 'recovery'>('checking');
   const [reminderWorking, setReminderWorking] = useState(false);
   const [reminderMessage, setReminderMessage] = useState<string | null>(null);
+  const [reminderDiagnostics, setReminderDiagnostics] = useState<ReminderDiagnostics | null>(null);
+  const [reminderFailureStage, setReminderFailureStage] = useState<string | null>(null);
+  const [showReminderDiagnostics, setShowReminderDiagnostics] = useState(false);
 
   const refreshReminderStatus = useCallback(async () => {
     setReminderState('checking');
     const result = await getAttendeeReminderStatus().catch(() => null);
     setReminderState((result?.state as typeof reminderState) || (result?.reminderReady ? 'on' : 'checking'));
+    setReminderDiagnostics(result?.diagnostics || null);
+    setReminderFailureStage(result?.failureStage || null);
   }, []);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
@@ -159,6 +175,24 @@ export default function ItineraryScreen() {
           : reminderState === 'checking'
             ? 'Verifying this device without changing your saved itinerary.'
             : "We'll remind you before eligible events in your itinerary begin.";
+  const diagnosticRows = [
+    ['Supported context', reminderDiagnostics?.supported_context],
+    ['Browser notification permission', reminderDiagnostics?.browser_permission_granted],
+    ['WonderPush SDK ready', reminderDiagnostics?.sdk_ready],
+    ['WonderPush subscribed', reminderDiagnostics?.subscribed],
+    ['Current installation available', reminderDiagnostics?.current_installation_available],
+    ['Backend registration exists', reminderDiagnostics?.registration_exists],
+    ['Current installation match', reminderDiagnostics?.installation_match],
+    ['Reminders enabled', reminderDiagnostics?.reminders_enabled],
+    ['Local reminder sync enabled', reminderDiagnostics?.local_reminder_sync_enabled],
+    ['Synchronized starred count', reminderDiagnostics?.synchronized_star_count],
+    ['Provider reachability', reminderDiagnostics?.provider_reachability],
+    ['Provider deliverable', reminderDiagnostics?.provider_deliverable],
+    ['Provider checked at', reminderDiagnostics?.provider_checked_at],
+    ['Provider readiness fresh', reminderDiagnostics?.provider_fresh],
+    ['Final reminder readiness', reminderDiagnostics?.final_reminder_ready],
+    ['Failure / recovery stage', reminderFailureStage],
+  ] as const;
 
   const handleRemove = async (eventId: string) => {
     const result = await toggleFavorite(eventId);
@@ -246,6 +280,31 @@ export default function ItineraryScreen() {
           </TouchableOpacity>
         </View>
         {reminderMessage ? <Text style={styles.reminderMessage} accessibilityLiveRegion="polite">{reminderMessage}</Text> : null}
+        {IS_STAGING ? (
+          <View style={styles.reminderDiagnosticsSection}>
+            <TouchableOpacity
+              style={styles.reminderDiagnosticsButton}
+              onPress={() => setShowReminderDiagnostics((visible) => !visible)}
+              accessibilityRole="button"
+              accessibilityLabel={showReminderDiagnostics ? 'Hide reminder diagnostics' : 'Show reminder diagnostics'}
+              accessibilityState={{ expanded: showReminderDiagnostics }}
+            >
+              <Text style={styles.reminderDiagnosticsButtonText}>
+                {showReminderDiagnostics ? 'Hide reminder diagnostics' : 'Show reminder diagnostics'}
+              </Text>
+            </TouchableOpacity>
+            {showReminderDiagnostics ? (
+              <View style={styles.reminderDiagnosticsPanel} accessibilityLabel="Redacted reminder diagnostics">
+                {diagnosticRows.map(([label, value]) => (
+                  <View key={label} style={styles.reminderDiagnosticRow}>
+                    <Text style={styles.reminderDiagnosticLabel}>{label}</Text>
+                    <Text style={styles.reminderDiagnosticValue}>{diagnosticResult(value)}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
         {starredEvents.length > 0 ? (
           <TouchableOpacity
             style={styles.calendarButton}
@@ -437,6 +496,15 @@ const styles = StyleSheet.create({
   reminderButtonText: { color: '#8B1538', fontSize: 14, fontWeight: '700' },
   reminderButtonTextOn: { color: '#065F46' },
   reminderMessage: { color: '#4B5563', fontSize: 13, lineHeight: 18, marginTop: 8 },
+  reminderDiagnosticsSection: { marginTop: 8 },
+  reminderDiagnosticsButton: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', paddingHorizontal: 2 },
+  reminderDiagnosticsButtonText: { color: '#6B7280', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
+  reminderDiagnosticsPanel: { marginTop: 6, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10,
+    padding: 10, backgroundColor: '#F9FAFB', gap: 6 },
+  reminderDiagnosticRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+  reminderDiagnosticLabel: { flex: 1, color: '#374151', fontSize: 12, lineHeight: 17 },
+  reminderDiagnosticValue: { maxWidth: '48%', color: '#111827', fontSize: 12, lineHeight: 17,
+    fontWeight: '700', textAlign: 'right' },
   calendarButtonText: {
     color: '#FFFFFF',
     fontSize: 15,

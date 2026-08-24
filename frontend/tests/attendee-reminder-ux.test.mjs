@@ -89,11 +89,22 @@ test('transient checks stay neutral while confirmed failures require recovery', 
 test('attendee diagnostics are redacted readiness facts only', () => {
   for (const field of ['supported_context', 'browser_permission_granted', 'sdk_ready',
     'subscribed', 'current_installation_available', 'registration_exists',
-    'installation_match', 'reminders_enabled', 'synchronized_star_count',
+    'installation_match', 'reminders_enabled', 'local_reminder_sync_enabled', 'synchronized_star_count',
     'provider_reachability', 'provider_deliverable', 'provider_checked_at',
     'provider_fresh', 'final_reminder_ready']) assert.match(ux, new RegExp(field));
   const diagnostics = ux.slice(ux.indexOf('const redacted ='), ux.indexOf('if (readiness.reminderReady)'));
   assert.doesNotMatch(diagnostics, /installation_id|capability|push_token|credential/i);
+});
+
+test('staging diagnostic expander renders only the existing redacted snapshot', () => {
+  assert.match(itinerary, /const IS_STAGING = .*includes\('staging'\)/);
+  assert.match(itinerary, /\{IS_STAGING \? \(/);
+  assert.match(itinerary, /Show reminder diagnostics/);
+  assert.match(itinerary, /onPress=\{\(\) => setShowReminderDiagnostics\(\(visible\) => !visible\)\}/);
+  assert.match(itinerary, /Redacted reminder diagnostics/);
+  const expander = itinerary.slice(itinerary.indexOf('{IS_STAGING ? ('), itinerary.indexOf('{starredEvents.length > 0'));
+  assert.doesNotMatch(expander, /getAttendeeReminderStatus|configureItineraryReminderSync|subscribeToNotifications|fetch\(|request\(|\/register|\/enabled|\/stars|\/deliveries/);
+  assert.doesNotMatch(expander, /installation ID|capability|push token|API credential|raw provider/i);
 });
 
 test('full-set reconciliation is used for star and unstar without breaking local favorites', () => {

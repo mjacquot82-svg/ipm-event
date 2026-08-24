@@ -10,6 +10,7 @@ import { detectInstallEnvironment, detectStandaloneSignals } from '../utils/inst
 import { isReminderPromotionEligible, mayShowReminderPromotion } from './reminderUxPolicy';
 
 const PROMPT_COUNT_KEY = '@ipm_itinerary_reminder_prompt_count_v1';
+const REMINDER_SYNC_ENABLED_KEY = '@ipm_itinerary_reminders_enabled_v1';
 
 export type AttendeeReminderUiState = 'checking' | 'on' | 'off' | 'blocked' | 'install_required' | 'recovery';
 
@@ -50,6 +51,7 @@ export async function getAttendeeReminderStatus() {
     return { state: 'checking' as const, reminderReady: false, readiness: null,
       failureStage: 'authoritative_verification_temporarily_unavailable' };
   }
+  const localReminderSyncEnabled = await AsyncStorage.getItem(REMINDER_SYNC_ENABLED_KEY) === 'true';
   const redacted = {
     supported_context: readiness.client.supportedContext,
     browser_permission_granted: readiness.client.browserPermission === 'granted',
@@ -59,6 +61,7 @@ export async function getAttendeeReminderStatus() {
     registration_exists: Boolean(readiness.registration?.registered || readiness.registration?.registration_exists),
     installation_match: readiness.currentInstallationMatch === 'match',
     reminders_enabled: Boolean(readiness.registration?.reminders_enabled),
+    local_reminder_sync_enabled: localReminderSyncEnabled,
     synchronized_star_count: Number(readiness.registration?.synchronized_star_count
       ?? readiness.registration?.starred_count ?? 0),
     provider_reachability: readiness.registration?.provider_reachability || 'unknown',
