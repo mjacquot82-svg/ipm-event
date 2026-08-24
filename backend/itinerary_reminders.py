@@ -10,6 +10,10 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 import httpx
+try:
+    from backend.reminder_scale import ProviderCircuitBreaker, SlidingWindowRateLimiter, classify_provider_failure
+except ModuleNotFoundError:
+    from reminder_scale import ProviderCircuitBreaker, SlidingWindowRateLimiter, classify_provider_failure
 
 
 REMINDER_TYPE = "itinerary_t30"
@@ -376,12 +380,19 @@ class ItineraryReminderEngine:
 
     def __init__(self, repository: SupabaseItineraryReminderRepository, provider: Any, *,
         delivery_enabled: bool = False, batch_size: int = 250, concurrency: int = 20,
-        target_url: str = ""):
+        max_sends_per_second: int = 10, target_url: str = ""):
         self.repository, self.provider = repository, provider
         self.delivery_enabled = delivery_enabled
         self.batch_size = max(1, min(batch_size, 1000))
         self.concurrency = max(1, min(concurrency, 100))
+        self.rate_limiter = SlidingWindowRateLimiter(max_sends_per_second)
+        self.circuit_breaker = ProviderCircuitBreaker()
+        self.max_sends_per_second = max(1, max_sends_per_second)
         self.target_url = target_url
+
+    async def _bounded(self, rows: list[dict[str, Any]], operation) -> None:
+        for offset in range(0, len(rows), self.concurrency):
+            await asyncio.gather(*(operation(row) for row in rows[offset:offset + self.concurrency]))
 
     async def run(self, *, now: datetime, synthetic: bool = False) -> dict[str, Any]:
         await self.repository.close_stale_claims(now, synthetic=synthetic)
@@ -402,11 +413,16 @@ class ItineraryReminderEngine:
                     has_push_token=has_token, checked_at=now)
                 if reachability != "optIn" or not has_token: unreachable += 1
 
-        await asyncio.gather(*(refresh(candidate) for candidate in candidates))
+        await self._bounded(candidates, refresh)
         result = {"synthetic": synthetic, "kill_switch_enabled": not self.delivery_enabled,
             "candidate_registrations": len(candidates), "suppressed_installation_unreachable": unreachable,
-            "claimed": 0, "provider_accepted": 0, "provider_failed": 0, "delivery_unknown": 0}
+            "claimed": 0, "provider_accepted": 0, "provider_failed": 0, "delivery_unknown": 0,
+            "provider_429": 0, "provider_5xx": 0, "send_rate_limit": self.max_sends_per_second,
+            "concurrency": self.concurrency, "circuit_breaker": self.circuit_breaker.state}
         if not self.delivery_enabled:
+            return result
+        if not self.circuit_breaker.allow():
+            result["circuit_breaker"] = "open"
             return result
         claims = await self.repository.claim_due_batch(now, synthetic=synthetic, limit=self.batch_size)
         result["claimed"] = len(claims)
@@ -414,6 +430,13 @@ class ItineraryReminderEngine:
 
         async def deliver(claim: dict[str, Any]) -> None:
             async with semaphore:
+                if not self.circuit_breaker.allow():
+                    await self.repository.finish_delivery(claim["delivery_id"], status="provider_failed",
+                        synthetic=synthetic, error_message="Provider circuit breaker is open",
+                        retry_at=now + timedelta(minutes=1))
+                    result["provider_failed"] += 1
+                    return
+                await self.rate_limiter.acquire()
                 location = (claim.get("location_name") or "").strip()
                 message = f"{claim['title']} starts in 30 minutes"
                 if location: message += f" at {location}"
@@ -424,18 +447,22 @@ class ItineraryReminderEngine:
                 except Exception as exc:
                     # A timeout/network loss may have reached the provider; never retry that ambiguity.
                     text = str(exc)
-                    rejected = "rejected" in text.lower()
-                    status = "provider_failed" if rejected else "delivery_unknown"
-                    retry_at = now + timedelta(minutes=1) if rejected else None
+                    status, failure_kind = classify_provider_failure(exc)
+                    retry_at = now + timedelta(minutes=1) if status == "provider_failed" else None
                     await self.repository.finish_delivery(claim["delivery_id"], status=status,
                         synthetic=synthetic, error_message=text, retry_at=retry_at)
                     result[status] += 1
+                    if failure_kind == "429": result["provider_429"] += 1
+                    if failure_kind == "5xx": result["provider_5xx"] += 1
+                    self.circuit_breaker.record(False)
                     return
                 await self.repository.finish_delivery(claim["delivery_id"], status="provider_accepted",
                     synthetic=synthetic, provider_delivery_id=provider_id)
                 result["provider_accepted"] += 1
+                self.circuit_breaker.record(True)
 
-        await asyncio.gather(*(deliver(claim) for claim in claims))
+        await self._bounded(claims, deliver)
+        result["circuit_breaker"] = self.circuit_breaker.state
         return result
 
     async def run_authorized_synthetic(self, *, now: datetime, fixture_id: str,
@@ -454,6 +481,9 @@ class ItineraryReminderEngine:
             reachability, has_token = "unknown", False
         await self.repository.set_readiness(registration_id, reachability=reachability,
             has_push_token=has_token, checked_at=now)
+        if not self.circuit_breaker.allow():
+            result["circuit_breaker"] = "open"
+            return result
         claims = await self.repository.claim_authorized_synthetic(now=now,
             fixture_id=fixture_id, registration_id=registration_id)
         result["claimed"] = len(claims)
@@ -466,18 +496,21 @@ class ItineraryReminderEngine:
         if location: message += f" at {location}"
         message += "."
         result["provider_call_count"] = 1
+        await self.rate_limiter.acquire()
         try:
             provider_id = await targeter.send(installation_id=claim["wonderpush_installation_id"],
                 title="IPM — Starting Soon", message=message, target_url=self.target_url)
         except Exception as exc:
             text = str(exc)
-            status = "provider_failed" if "rejected" in text.lower() else "delivery_unknown"
+            status, _failure_kind = classify_provider_failure(exc)
             await self.repository.finish_delivery(claim["delivery_id"], status=status,
                 synthetic=True, error_message=text, retry_at=None)
+            self.circuit_breaker.record(False)
             result[status] = 1
             return result
         await self.repository.finish_delivery(claim["delivery_id"], status="provider_accepted",
             synthetic=True, provider_delivery_id=provider_id)
         result["provider_accepted"] = 1
+        self.circuit_breaker.record(True)
         result["provider_delivery_id"] = provider_id
         return result
