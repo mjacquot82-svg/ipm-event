@@ -79,21 +79,30 @@ def test_429_burst_opens_circuit_and_stops_provider_calls():
         async def set_readiness(self, *args, **kwargs): pass
         async def claim_due_batch(self, now, **kwargs):
             return [{"delivery_id": f"delivery-{i}", "registration_id": f"reg-{i}",
-                "schedule_item_id": "event", "wonderpush_installation_id": f"installation-{i}",
+                "schedule_item_id": f"event-{i}", "wonderpush_installation_id": f"installation-{i}",
                 "title": "Demo", "location_name": None, "starts_at": now + timedelta(minutes=30)}
                 for i in range(25)]
         async def get(self, installation_id): return {"provider_deliverable": True}
         async def finish_delivery(self, delivery_id, **values): self.finished.append((delivery_id, values))
+        async def assign_batch(self, **values):
+            return {"batch_id": f"batch-{values['schedule_item_id']}", "target_count": len(values["delivery_ids"])}
+        async def finish_batch(self, batch_id, delivery_ids, **values):
+            self.finished.extend((delivery_id, values) for delivery_id in delivery_ids)
     class Provider:
         def __init__(self): self.calls = 0
         async def get_installation(self, installation_id):
             return {"pushToken": {"data": "mock"}, "preferences": {"subscriptionStatus": "optIn"}}
-        async def send_one_installation(self, **kwargs):
+        async def send_installations(self, **kwargs):
             self.calls += 1
             raise RuntimeError("HTTP 429 rate limit exceeded")
     repository, provider = Repository(), Provider()
-    result = asyncio.run(ItineraryReminderEngine(repository, provider, delivery_enabled=True,
-        concurrency=1, max_sends_per_second=1000).run(
+    engine = ItineraryReminderEngine(repository, provider, delivery_enabled=True,
+        concurrency=1, max_sends_per_second=1000)
+    class NoWaitLimiter:
+        async def acquire(self): pass
+        async def defer(self, seconds): pass
+    engine.rate_limiter = NoWaitLimiter()
+    result = asyncio.run(engine.run(
             now=datetime(2026, 9, 22, 14, 0, tzinfo=timezone.utc)))
     assert result["provider_429"] == 20
     assert result["circuit_breaker"] == "open"

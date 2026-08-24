@@ -141,6 +141,10 @@ class FakeEngineRepository:
             "location_name": "Demo Stage", "starts_at": now + timedelta(minutes=30)}]
     async def get(self, installation_id): return self.registration if installation_id == "installation-a" else None
     async def finish_delivery(self, delivery_id, **values): self.finished.append((delivery_id, values))
+    async def assign_batch(self, **values):
+        return {"batch_id": "batch-a", "target_count": len(values["delivery_ids"])}
+    async def finish_batch(self, batch_id, delivery_ids, **values):
+        self.finished.extend((delivery_id, values) for delivery_id in delivery_ids)
 
 
 class FakeAuthorizedRepository(FakeEngineRepository):
@@ -167,6 +171,9 @@ class FakeEngineProvider:
     async def send_one_installation(self, **kwargs):
         self.sent.append(kwargs)
         return "mock-accepted"
+    async def send_installations(self, **kwargs):
+        self.sent.append(kwargs)
+        return {"provider_delivery_id": "mock-accepted", "status_code": 202, "rate_limit": {}}
 
 
 def test_real_engine_kill_switch_inspects_without_claim_or_send():
@@ -187,7 +194,7 @@ def test_real_engine_targets_one_installation_and_deduplicates_second_run():
     second = asyncio.run(engine.run(now=now))
     assert first["provider_accepted"] == 1 and second["claimed"] == 0
     assert len(provider.sent) == 1
-    assert provider.sent[0]["installation_id"] == "installation-a"
+    assert provider.sent[0]["installation_ids"] == ["installation-a"]
     assert provider.sent[0]["title"] == "IPM — Starting Soon"
     assert provider.sent[0]["message"] == "Demo Event starts in 30 minutes at Demo Stage."
     assert repository.finished[0][1]["status"] == "provider_accepted"
@@ -195,7 +202,7 @@ def test_real_engine_targets_one_installation_and_deduplicates_second_run():
 
 def test_provider_timeout_becomes_delivery_unknown_without_automatic_retry():
     class TimeoutProvider(FakeEngineProvider):
-        async def send_one_installation(self, **kwargs): raise RuntimeError("request timed out")
+        async def send_installations(self, **kwargs): raise RuntimeError("request timed out")
     repository = FakeEngineRepository()
     result = asyncio.run(ItineraryReminderEngine(repository, TimeoutProvider(), delivery_enabled=True).run(
         now=datetime(2026, 9, 22, 14, 0, tzinfo=timezone.utc)))
@@ -205,16 +212,16 @@ def test_provider_timeout_becomes_delivery_unknown_without_automatic_retry():
 
 def test_definitive_provider_rejection_can_retry_without_duplicate_acceptance():
     class RetryRepository(FakeEngineRepository):
-        async def finish_delivery(self, delivery_id, **values):
-            await super().finish_delivery(delivery_id, **values)
+        async def finish_batch(self, batch_id, delivery_ids, **values):
+            await super().finish_batch(batch_id, delivery_ids, **values)
             if values["status"] == "provider_failed": self.claimed = False
     class RejectOnceProvider(FakeEngineProvider):
-        async def send_one_installation(self, **kwargs):
+        async def send_installations(self, **kwargs):
             if not self.sent:
                 self.sent.append(kwargs)
                 raise RuntimeError("WonderPush rejected the notification (HTTP 503)")
             self.sent.append(kwargs)
-            return "accepted-on-safe-retry"
+            return {"provider_delivery_id": "accepted-on-safe-retry", "status_code": 202, "rate_limit": {}}
     repository, provider = RetryRepository(), RejectOnceProvider()
     engine = ItineraryReminderEngine(repository, provider, delivery_enabled=True)
     now = datetime(2026, 9, 22, 14, 0, tzinfo=timezone.utc)

@@ -40,7 +40,7 @@ try:
         traffic_report as get_analytics_traffic_report,
     )
     from backend.itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
-    from backend.reminder_scale import scale_report
+    from backend.reminder_scale import batched_scale_report, scale_report
 except ModuleNotFoundError:
     from analytics import (
         ANALYTICS_EVENT_SCOPE,
@@ -63,7 +63,7 @@ except ModuleNotFoundError:
         traffic_report as get_analytics_traffic_report,
     )
     from itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
-    from reminder_scale import scale_report
+    from reminder_scale import batched_scale_report, scale_report
 import secrets
 import base64
 import hmac
@@ -165,10 +165,12 @@ ITINERARY_REMINDER_DELIVERY_ENABLED = os.environ.get(
     "ITINERARY_REMINDER_DELIVERY_ENABLED", "false"
 ).lower() == "true"
 ITINERARY_REMINDER_INTERVAL_SECONDS = max(30, int(os.environ.get("ITINERARY_REMINDER_INTERVAL_SECONDS", "60")))
-ITINERARY_REMINDER_BATCH_SIZE = max(1, min(1000, int(os.environ.get("ITINERARY_REMINDER_BATCH_SIZE", "250"))))
+ITINERARY_REMINDER_BATCH_SIZE = max(1, min(10000, int(os.environ.get("ITINERARY_REMINDER_BATCH_SIZE", "10000"))))
 ITINERARY_REMINDER_CONCURRENCY = max(1, min(100, int(os.environ.get("ITINERARY_REMINDER_CONCURRENCY", "20"))))
 ITINERARY_REMINDER_MAX_SENDS_PER_SECOND = max(1, min(1000, int(
     os.environ.get("ITINERARY_REMINDER_MAX_SENDS_PER_SECOND", "10"))))
+ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST = max(1, min(10000, int(
+    os.environ.get("ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST", "10000"))))
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
 ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
 ADMIN_SESSION_DAYS = int(os.environ.get("ADMIN_SESSION_DAYS", "7"))
@@ -1879,6 +1881,7 @@ def itinerary_reminder_engine() -> ItineraryReminderEngine:
             batch_size=ITINERARY_REMINDER_BATCH_SIZE,
             concurrency=ITINERARY_REMINDER_CONCURRENCY,
             max_sends_per_second=ITINERARY_REMINDER_MAX_SENDS_PER_SECOND,
+            max_targets_per_request=ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST,
             target_url=f"{PUBLIC_APP_URL}/itinerary")
     return _itinerary_reminder_engine_instance
 
@@ -1980,13 +1983,16 @@ async def sync_itinerary_reminder_stars(data: ItineraryStarsPayload, request: Re
 @api_router.get("/itinerary-reminders/operations")
 async def itinerary_reminder_operations():
     repository = require_itinerary_foundation()
-    metrics = await repository.operational_metrics(datetime.now(timezone.utc))
-    return {**metrics, "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
+    now = datetime.now(timezone.utc)
+    metrics = await repository.operational_metrics(now)
+    batch_metrics = await repository.batch_metrics(now)
+    return {**metrics, **batch_metrics, "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
         "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
         "eligibility_window_minutes": {"after": 25, "through": 30},
         "batch_size": ITINERARY_REMINDER_BATCH_SIZE,
         "concurrency": ITINERARY_REMINDER_CONCURRENCY,
         "max_sends_per_second": ITINERARY_REMINDER_MAX_SENDS_PER_SECOND,
+        "max_targets_per_request": ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST,
         "circuit_breaker": itinerary_reminder_engine().circuit_breaker.state}
 
 @api_router.get("/admin/itinerary-reminders/scale-report")
@@ -1994,7 +2000,8 @@ async def itinerary_reminder_scale_report(current_user: dict = Depends(get_curre
     if not IS_STAGING_DEPLOYMENT:
         raise HTTPException(status_code=404, detail="Not found")
     require_announcement_manager_role(current_user)
-    return {**scale_report(), "provider_mode": "mock-only", "real_notifications_sent": 0,
+    return {**scale_report(), "exact_target_batching": batched_scale_report(),
+        "provider_mode": "mock-only", "real_notifications_sent": 0,
         "global_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
         "rate_limit_source": "configurable conservative default; WonderPush publishes 429 semantics but no numeric quota"}
 

@@ -20,6 +20,11 @@ REMINDER_TYPE = "itinerary_t30"
 TORONTO = ZoneInfo("America/Toronto")
 
 
+def _safe_int(value: Any) -> int | None:
+    try: return int(value) if value is not None else None
+    except (TypeError, ValueError): return None
+
+
 def hash_capability(capability: str) -> str:
     return hashlib.sha256(capability.encode("utf-8")).hexdigest()
 
@@ -210,6 +215,33 @@ class SupabaseItineraryReminderRepository:
         await self.client.request("PATCH", table, params={"id": f"eq.{delivery_id}"},
             json=body, headers={"Prefer": "return=minimal"})
 
+    async def assign_batch(self, *, now: datetime, schedule_item_id: str,
+        delivery_ids: list[str], idempotency_key: str) -> dict[str, Any]:
+        event_id = await self._event_id()
+        rows = await self.client.request("POST", "/rpc/assign_itinerary_reminder_batch", json={
+            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id,
+            "p_schedule_item_id": schedule_item_id, "p_delivery_ids": delivery_ids,
+            "p_idempotency_key": idempotency_key,
+        })
+        return rows[0]
+
+    async def finish_batch(self, batch_id: str, delivery_ids: list[str], *, status: str,
+        now: datetime, provider_result: dict[str, Any] | None = None,
+        error_message: str | None = None, retry_at: datetime | None = None) -> None:
+        provider_result = provider_result or {}
+        rate = provider_result.get("rate_limit") or {}
+        await self.client.request("POST", "/rpc/finish_itinerary_reminder_batch", json={
+            "p_now": now.isoformat(), "p_batch_id": batch_id, "p_delivery_ids": delivery_ids,
+            "p_status": status, "p_provider_delivery_id": provider_result.get("provider_delivery_id"),
+            "p_provider_http_status": provider_result.get("status_code"),
+            "p_error_message": error_message[:1000] if error_message else None,
+            "p_next_attempt_at": retry_at.isoformat() if retry_at else None,
+            "p_rate_limit_limit": _safe_int(rate.get("x-ratelimit-limit")),
+            "p_rate_limit_remaining": _safe_int(rate.get("x-ratelimit-remaining")),
+            "p_rate_limit_reset_seconds": _safe_int(rate.get("x-ratelimit-reset")),
+            "p_retry_after_seconds": _safe_int(rate.get("retry-after")),
+        })
+
     async def close_stale_claims(self, now: datetime, *, synthetic: bool = False) -> None:
         table = "/itinerary_reminder_synthetic_deliveries" if synthetic else "/itinerary_reminder_deliveries"
         cutoff = (now - timedelta(minutes=2)).astimezone(timezone.utc).isoformat()
@@ -240,6 +272,12 @@ class SupabaseItineraryReminderRepository:
     async def operational_metrics(self, now: datetime) -> dict[str, int]:
         event_id = await self._event_id()
         rows = await self.client.request("POST", "/rpc/itinerary_reminder_operational_metrics", json={
+            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id})
+        return {key: int(value or 0) for key, value in (rows[0] if rows else {}).items()}
+
+    async def batch_metrics(self, now: datetime) -> dict[str, int]:
+        event_id = await self._event_id()
+        rows = await self.client.request("POST", "/rpc/itinerary_reminder_batch_metrics", json={
             "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id})
         return {key: int(value or 0) for key, value in (rows[0] if rows else {}).items()}
 
@@ -374,20 +412,35 @@ class InstallationTargetedWonderPush:
             installation_id=installation_id, title=title, message=message, target_url=target_url
         )
 
+    async def send_claim_batch(self, *, claims: list[dict[str, Any]], title: str,
+        message: str, target_url: str, idempotency_key: str,
+        expiration_time: str) -> dict[str, Any]:
+        if not claims or len(claims) > 10000: raise ValueError("Invalid exact claim batch size")
+        event_keys = {(claim["schedule_item_id"], claim["title"],
+            (claim.get("location_name") or "").strip(), str(claim["starts_at"])) for claim in claims}
+        targets = [claim["wonderpush_installation_id"] for claim in claims]
+        if len(event_keys) != 1 or len(set(targets)) != len(targets):
+            raise ValueError("Exact claim batch must contain one event payload and unique installations")
+        return await self.provider.send_installations(installation_ids=targets, title=title,
+            message=message, target_url=target_url, idempotency_key=idempotency_key,
+            expiration_time=expiration_time)
+
 
 class ItineraryReminderEngine:
-    """Shared real/synthetic T-30 execution path; each provider call targets one installation."""
+    """Shared T-30 path; normal reminders batch exact claims by event payload."""
 
     def __init__(self, repository: SupabaseItineraryReminderRepository, provider: Any, *,
         delivery_enabled: bool = False, batch_size: int = 250, concurrency: int = 20,
-        max_sends_per_second: int = 10, target_url: str = ""):
+        max_sends_per_second: int = 10, max_targets_per_request: int = 10000,
+        target_url: str = ""):
         self.repository, self.provider = repository, provider
         self.delivery_enabled = delivery_enabled
-        self.batch_size = max(1, min(batch_size, 1000))
+        self.batch_size = max(1, min(batch_size, 10000))
         self.concurrency = max(1, min(concurrency, 100))
         self.rate_limiter = SlidingWindowRateLimiter(max_sends_per_second)
         self.circuit_breaker = ProviderCircuitBreaker()
         self.max_sends_per_second = max(1, max_sends_per_second)
+        self.max_targets_per_request = max(1, min(max_targets_per_request, 10000))
         self.target_url = target_url
 
     async def _bounded(self, rows: list[dict[str, Any]], operation) -> None:
@@ -418,7 +471,8 @@ class ItineraryReminderEngine:
             "candidate_registrations": len(candidates), "suppressed_installation_unreachable": unreachable,
             "claimed": 0, "provider_accepted": 0, "provider_failed": 0, "delivery_unknown": 0,
             "provider_429": 0, "provider_5xx": 0, "send_rate_limit": self.max_sends_per_second,
-            "concurrency": self.concurrency, "circuit_breaker": self.circuit_breaker.state}
+            "concurrency": self.concurrency, "circuit_breaker": self.circuit_breaker.state,
+            "provider_requests": 0, "exact_target_batches": 0}
         if not self.delivery_enabled:
             return result
         if not self.circuit_breaker.allow():
@@ -427,6 +481,73 @@ class ItineraryReminderEngine:
         claims = await self.repository.claim_due_batch(now, synthetic=synthetic, limit=self.batch_size)
         result["claimed"] = len(claims)
         targeter = InstallationTargetedWonderPush(self.repository, self.provider)
+
+        if not synthetic and claims:
+            groups: dict[tuple[str, str, str, str], list[dict[str, Any]]] = {}
+            for claim in claims:
+                key = (claim["schedule_item_id"], claim["title"],
+                    (claim.get("location_name") or "").strip(), str(claim["starts_at"]))
+                groups.setdefault(key, []).append(claim)
+            batches: list[list[dict[str, Any]]] = []
+            for key in sorted(groups):
+                group = sorted(groups[key], key=lambda item: item["wonderpush_installation_id"])
+                batches.extend(group[offset:offset + self.max_targets_per_request]
+                    for offset in range(0, len(group), self.max_targets_per_request))
+
+            async def deliver_batch(batch_claims: list[dict[str, Any]]) -> None:
+                async with semaphore:
+                    if not self.circuit_breaker.allow():
+                        for claim in batch_claims:
+                            await self.repository.finish_delivery(claim["delivery_id"], status="provider_failed",
+                                error_message="Provider circuit breaker is open", retry_at=now + timedelta(minutes=1))
+                        result["provider_failed"] += len(batch_claims)
+                        return
+                    digest = hashlib.sha256("|".join(sorted(claim["delivery_id"] for claim in batch_claims)).encode()).hexdigest()[:48]
+                    idempotency_key = f"ipm-t30-{digest}"
+                    audit = await self.repository.assign_batch(now=now,
+                        schedule_item_id=batch_claims[0]["schedule_item_id"],
+                        delivery_ids=[claim["delivery_id"] for claim in batch_claims],
+                        idempotency_key=idempotency_key)
+                    batch_id = audit["batch_id"]
+                    await self.rate_limiter.acquire()
+                    location = (batch_claims[0].get("location_name") or "").strip()
+                    message = f"{batch_claims[0]['title']} starts in 30 minutes"
+                    if location: message += f" at {location}"
+                    message += "."
+                    result["provider_requests"] += 1
+                    result["exact_target_batches"] += 1
+                    try:
+                        provider_result = await targeter.send_claim_batch(claims=batch_claims,
+                            title="IPM — Starting Soon", message=message, target_url=self.target_url,
+                            idempotency_key=idempotency_key, expiration_time="10 minutes")
+                    except Exception as exc:
+                        status, failure_kind = classify_provider_failure(exc)
+                        retry_seconds = _safe_int(getattr(exc, "headers", {}).get("retry-after"))
+                        if failure_kind == "429": await self.rate_limiter.defer(retry_seconds or 60)
+                        retry_at = now + timedelta(seconds=retry_seconds or 60) if status == "provider_failed" else None
+                        await self.repository.finish_batch(batch_id,
+                            [claim["delivery_id"] for claim in batch_claims], status=status, now=now,
+                            error_message=str(exc), retry_at=retry_at)
+                        result[status] += len(batch_claims)
+                        if failure_kind == "429": result["provider_429"] += 1
+                        if failure_kind == "5xx": result["provider_5xx"] += 1
+                        self.circuit_breaker.record(False)
+                        return
+                    await self.repository.finish_batch(batch_id,
+                        [claim["delivery_id"] for claim in batch_claims], status="provider_accepted",
+                        now=now, provider_result=provider_result)
+                    rate = provider_result.get("rate_limit") or {}
+                    remaining = _safe_int(rate.get("x-ratelimit-remaining"))
+                    reset = _safe_int(rate.get("x-ratelimit-reset"))
+                    limit = _safe_int(rate.get("x-ratelimit-limit"))
+                    if remaining == 0 and reset and limit:
+                        await self.rate_limiter.defer(max(1, reset / limit))
+                    result["provider_accepted"] += len(batch_claims)
+                    self.circuit_breaker.record(True)
+
+            await self._bounded(batches, deliver_batch)
+            result["circuit_breaker"] = self.circuit_breaker.state
+            return result
 
         async def deliver(claim: dict[str, Any]) -> None:
             async with semaphore:

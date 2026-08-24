@@ -15,18 +15,27 @@ class SlidingWindowRateLimiter:
         self.clock, self.sleep = clock, sleep
         self.timestamps: deque[float] = deque()
         self.lock = asyncio.Lock()
+        self.blocked_until = 0.0
 
     async def acquire(self) -> None:
         while True:
             async with self.lock:
                 now = self.clock()
+                if now < self.blocked_until:
+                    delay = self.blocked_until - now
+                else:
+                    delay = 0.0
                 while self.timestamps and self.timestamps[0] <= now - 1:
                     self.timestamps.popleft()
-                if len(self.timestamps) < self.rate:
+                if delay == 0 and len(self.timestamps) < self.rate:
                     self.timestamps.append(now)
                     return
-                delay = max(0.001, 1 - (now - self.timestamps[0]))
+                if delay == 0: delay = max(0.001, 1 - (now - self.timestamps[0]))
             await self.sleep(delay)
+
+    async def defer(self, seconds: int | float) -> None:
+        async with self.lock:
+            self.blocked_until = max(self.blocked_until, self.clock() + max(0, seconds))
 
 
 class ProviderCircuitBreaker:
@@ -90,6 +99,22 @@ class LoadResult:
     within_5_minutes_pct: float
 
 
+@dataclass
+class BatchedLoadResult:
+    eligible: int
+    event_count: int
+    provider_max_targets: int
+    api_requests: int
+    batch_sizes: list[int]
+    duplicate_claims_prevented: int
+    duplicate_targets: int
+    worker_count: int
+    modeled_drain_seconds: float
+    within_1_minute_pct: float
+    within_2_minutes_pct: float
+    within_5_minutes_pct: float
+
+
 def simulate_load(eligible: int, *, workers: int = 1, rate_per_second: int = 10,
     batch_size: int = 250, cycle_seconds: int = 60) -> LoadResult:
     """Concrete in-memory candidate/claim simulation; never imports a provider client."""
@@ -130,3 +155,44 @@ def scale_report() -> dict:
     return {"scenarios": [asdict(simulate_load(size)) for size in (100, 1000, 5000, 10000)],
         "races": [asdict(simulate_load(10000, workers=count)) for count in (2, 4, 8)],
         "modeled_25000_devices_20pct": asdict(simulate_load(5000))}
+
+
+def simulate_batched_load(eligible: int, *, event_count: int = 1, workers: int = 1,
+    provider_max_targets: int = 10000, requests_per_second: int = 10) -> BatchedLoadResult:
+    """Provider-free exact-target model after individual eligibility and atomic claims."""
+    if eligible < 0 or event_count < 1 or provider_max_targets < 1: raise ValueError("Invalid load shape")
+    claims: set[tuple[str, int]] = set()
+    duplicate_claims = 0
+    for _worker in range(workers):
+        for index in range(eligible):
+            key = (f"installation-{index}", index % event_count)
+            if key in claims: duplicate_claims += 1
+            else: claims.add(key)
+    grouped: dict[int, list[str]] = {}
+    for installation, event in sorted(claims, key=lambda value: (value[1], value[0])):
+        grouped.setdefault(event, []).append(installation)
+    batches: list[list[str]] = []
+    for event in sorted(grouped):
+        targets = grouped[event]
+        batches.extend(targets[offset:offset + provider_max_targets]
+            for offset in range(0, len(targets), provider_max_targets))
+    send_times = [index / requests_per_second for index in range(len(batches))]
+    target_times = [send_times[index] for index, batch in enumerate(batches) for _ in batch]
+    pct = lambda seconds: round(100 * sum(value <= seconds for value in target_times) /
+        max(1, len(target_times)), 2)
+    return BatchedLoadResult(eligible, event_count, provider_max_targets, len(batches),
+        [len(batch) for batch in batches], duplicate_claims,
+        sum(len(batch) - len(set(batch)) for batch in batches), workers,
+        round(max(send_times, default=0), 3), pct(60), pct(120), pct(300))
+
+
+def batched_scale_report() -> dict:
+    scenarios = {}
+    for size in (100, 1000, 5000, 10000):
+        scenarios[str(size)] = {str(events): asdict(simulate_batched_load(size, event_count=events))
+            for events in (1, 5, 20)}
+    return {"provider_max_targets": 10000, "scenarios": scenarios,
+        "one_event_over_limit": asdict(simulate_batched_load(25000, event_count=1)),
+        "modeled_25000_devices_20pct": asdict(simulate_batched_load(5000, event_count=5)),
+        "races": {str(workers): asdict(simulate_batched_load(10000, event_count=20, workers=workers))
+            for workers in (2, 4, 8)}}

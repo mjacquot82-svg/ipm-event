@@ -23,6 +23,12 @@ logger = logging.getLogger(__name__)
 class WonderPushError(Exception):
     """Normalized provider error safe to expose through the admin API."""
 
+    def __init__(self, message: str, *, status_code: int | None = None,
+        headers: dict[str, str] | None = None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.headers = headers or {}
+
 
 class WonderPushClient:
     """Small server-side client for the WonderPush Management API."""
@@ -42,7 +48,8 @@ class WonderPushClient:
             "target_url": target_url,
         }
 
-    async def _send(self, *, content: dict[str, str], target: dict[str, str]) -> str:
+    async def _send_detailed(self, *, content: dict[str, str], target: dict[str, str],
+        idempotency_key: str | None = None, expiration_time: str | None = None) -> dict[str, Any]:
         notification_target = urlsplit(content["target_url"])
         notification = {
             "alert": {
@@ -62,6 +69,8 @@ class WonderPushClient:
                 },
             },
         }
+        if expiration_time:
+            notification["push"]["expirationTime"] = expiration_time
         form = {
             "accessToken": self.access_token,
             "notification": json.dumps(notification, separators=(",", ":")),
@@ -70,7 +79,8 @@ class WonderPushClient:
         }
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.post(self.DELIVERIES_URL, data=form)
+                headers = {"X-WonderPush-Idempotency-Key": idempotency_key} if idempotency_key else None
+                response = await client.post(self.DELIVERIES_URL, data=form, headers=headers)
         except httpx.TimeoutException as exc:
             raise WonderPushError("WonderPush request timed out") from exc
         except httpx.RequestError as exc:
@@ -80,8 +90,11 @@ class WonderPushClient:
             "WonderPush delivery response status_code=%s",
             response.status_code,
         )
+        response_headers = {key.lower(): value for key, value in response.headers.items()
+            if key.lower() in {"x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset", "retry-after"}}
         if response.status_code != 202:
-            raise WonderPushError(f"WonderPush rejected the notification (HTTP {response.status_code})")
+            raise WonderPushError(f"WonderPush rejected the notification (HTTP {response.status_code})",
+                status_code=response.status_code, headers=response_headers)
 
         reference = response.headers.get("Location") or response.headers.get("X-Request-Id")
         if not reference:
@@ -91,7 +104,12 @@ class WonderPushClient:
                 result = None
             if isinstance(result, dict):
                 reference = result.get("id") or result.get("deliveryId")
-        return str(reference or "wonderpush:accepted")
+        return {"provider_delivery_id": str(reference or "wonderpush:accepted"),
+            "status_code": response.status_code, "rate_limit": response_headers}
+
+    async def _send(self, *, content: dict[str, str], target: dict[str, str]) -> str:
+        result = await self._send_detailed(content=content, target=target)
+        return result["provider_delivery_id"]
 
     async def send_everyone(self, *, title: str, message: str, target_url: str) -> str:
         content = self.notification_content(title, message, target_url)
@@ -120,6 +138,22 @@ class WonderPushClient:
             content=content,
             target={"targetInstallationIds": target},
         )
+
+    async def send_installations(self, *, title: str, message: str, target_url: str,
+        installation_ids: list[str], idempotency_key: str,
+        expiration_time: str = "15 minutes") -> dict[str, Any]:
+        """Send one payload to an exact, bounded installation set; never broadcasts."""
+        targets = [value.strip() for value in installation_ids]
+        if not targets or len(targets) > 10000 or len(set(targets)) != len(targets):
+            raise WonderPushError("Between 1 and 10000 unique installation IDs are required")
+        if any(not value or value == "@ALL" or "," in value for value in targets):
+            raise WonderPushError("Exact WonderPush installation IDs are required")
+        if not idempotency_key or len(idempotency_key) > 64:
+            raise WonderPushError("A valid WonderPush idempotency key is required")
+        content = self.notification_content(title, message, target_url)
+        return await self._send_detailed(content=content,
+            target={"targetInstallationIds": ",".join(targets)},
+            idempotency_key=idempotency_key, expiration_time=expiration_time)
 
     async def get_installation(self, installation_id: str) -> dict[str, Any] | None:
         url = f"https://management-api.wonderpush.com/v1/installations/{quote(installation_id, safe='')}"
