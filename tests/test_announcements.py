@@ -378,6 +378,7 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
     assert captured["data"]["accessToken"] == "not-a-credential"
     assert captured["data"]["targetInstallationIds"] == "123,456"
     assert captured["data"]["filterPlatforms"] == "Web"
+    assert "disableCapping" not in captured["data"]
     notification = __import__("json").loads(captured["data"]["notification"])
     assert notification["alert"] == {
         "title": "IPM — Title", "text": "Message",
@@ -409,6 +410,9 @@ def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
     assert result == "wonderpush:accepted"
     assert captured["data"]["targetSegmentIds"] == "@ALL"
     assert "targetInstallationIds" not in captured["data"]
+    assert "disableCapping" not in captured["data"]
+    assert "expirationTime" not in __import__("json").loads(
+        captured["data"]["notification"])["push"]
 
 
 def test_wonderpush_errors_are_normalized_without_exposing_provider_body(monkeypatch):

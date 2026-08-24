@@ -580,7 +580,7 @@ class InstallationTargetedWonderPush:
             raise ValueError("Exact claim batch must contain one event payload and unique installations")
         return await self.provider.send_installations(installation_ids=targets, title=title,
             message=message, target_url=target_url, idempotency_key=idempotency_key,
-            expiration_time=expiration_time)
+            expiration_time=expiration_time, disable_capping=True)
 
 
 class ItineraryReminderEngine:

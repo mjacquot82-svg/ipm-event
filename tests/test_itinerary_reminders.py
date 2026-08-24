@@ -252,6 +252,8 @@ def test_authorized_synthetic_bypasses_only_global_kill_switch_once():
     assert len(provider.sent) == 1
     assert provider.sent[0]["installation_id"] == "installation-a"
     assert provider.sent[0]["message"] == "One-Shot Demo starts in 30 minutes."
+    assert "disable_capping" not in provider.sent[0]
+    assert "expiration_time" not in provider.sent[0]
 
 
 def test_one_shot_schema_is_synthetic_atomic_expiring_and_single_device():

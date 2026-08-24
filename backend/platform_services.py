@@ -49,7 +49,8 @@ class WonderPushClient:
         }
 
     async def _send_detailed(self, *, content: dict[str, str], target: dict[str, str],
-        idempotency_key: str | None = None, expiration_time: str | None = None) -> dict[str, Any]:
+        idempotency_key: str | None = None, expiration_time: str | None = None,
+        disable_capping: bool = False) -> dict[str, Any]:
         notification_target = urlsplit(content["target_url"])
         notification = {
             "alert": {
@@ -77,6 +78,10 @@ class WonderPushClient:
             "filterPlatforms": "Web",
             **target,
         }
+        if disable_capping:
+            # WonderPush's deliveries endpoint expects this as a form field, not
+            # inside the JSON-encoded notification payload.
+            form["disableCapping"] = "true"
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 headers = {"X-WonderPush-Idempotency-Key": idempotency_key} if idempotency_key else None
@@ -141,7 +146,7 @@ class WonderPushClient:
 
     async def send_installations(self, *, title: str, message: str, target_url: str,
         installation_ids: list[str], idempotency_key: str,
-        expiration_time: str = "15 minutes") -> dict[str, Any]:
+        expiration_time: str = "15 minutes", disable_capping: bool = False) -> dict[str, Any]:
         """Send one payload to an exact, bounded installation set; never broadcasts."""
         targets = [value.strip() for value in installation_ids]
         if not targets or len(targets) > 10000 or len(set(targets)) != len(targets):
@@ -153,7 +158,8 @@ class WonderPushClient:
         content = self.notification_content(title, message, target_url)
         return await self._send_detailed(content=content,
             target={"targetInstallationIds": ",".join(targets)},
-            idempotency_key=idempotency_key, expiration_time=expiration_time)
+            idempotency_key=idempotency_key, expiration_time=expiration_time,
+            disable_capping=disable_capping)
 
     async def get_installation(self, installation_id: str) -> dict[str, Any] | None:
         url = f"https://management-api.wonderpush.com/v1/installations/{quote(installation_id, safe='')}"

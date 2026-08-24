@@ -50,6 +50,7 @@ def test_provider_exact_batch_encoding_ttl_and_idempotency(monkeypatch):
     assert captured["target"] == {"targetInstallationIds": "a,b"}
     assert captured["idempotency_key"] == "batch-123"
     assert captured["expiration_time"] == "10 minutes"
+    assert captured["disable_capping"] is False
     for invalid in ([], ["@ALL"], ["a", "a"], ["a,b"]):
         with pytest.raises(WonderPushError):
             asyncio.run(client.send_installations(title="T", message="M", target_url="https://x",
@@ -92,6 +93,28 @@ def test_provider_captures_rate_headers_and_retry_after(monkeypatch):
         "x-ratelimit-reset": "30", "retry-after": "2"}
     assert requests[0]["headers"] == {"X-WonderPush-Idempotency-Key": "batch-rate"}
     assert json.loads(requests[0]["data"]["notification"])["push"]["expirationTime"] == "15 minutes"
+    assert "disableCapping" not in requests[0]["data"]
+
+
+def test_t30_exact_delivery_form_encodes_capping_bypass_and_ten_minute_expiration(monkeypatch):
+    requests = []
+    class FakeAsyncClient:
+        def __init__(self, **kwargs): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): pass
+        async def post(self, url, **kwargs):
+            requests.append(kwargs)
+            return httpx.Response(202, headers={"X-Request-Id": "accepted"})
+    monkeypatch.setattr("backend.platform_services.httpx.AsyncClient", FakeAsyncClient)
+    client = WonderPushClient(access_token="secret")
+    asyncio.run(client.send_installations(title="Starting Soon", message="Demo",
+        target_url="https://staging.example/itinerary", installation_ids=["installation-a"],
+        idempotency_key="ipm-t30-single", expiration_time="10 minutes", disable_capping=True))
+    form = requests[0]["data"]
+    assert form["targetInstallationIds"] == "installation-a"
+    assert form["disableCapping"] == "true"
+    assert json.loads(form["notification"])["push"]["expirationTime"] == "10 minutes"
+    assert "targetSegmentIds" not in form
 
 
 class BatchRepository:
@@ -148,7 +171,21 @@ def test_engine_claims_individually_then_sends_one_exact_event_batch():
     assert len(provider.batches) == 1
     assert len(provider.batches[0]["installation_ids"]) == 100
     assert len(set(provider.batches[0]["installation_ids"])) == 100
+    assert provider.batches[0]["disable_capping"] is True
+    assert provider.batches[0]["expiration_time"] == "10 minutes"
     assert repository.finished[0][2]["status"] == "provider_accepted"
+
+
+def test_each_chunked_t30_batch_bypasses_capping_without_broad_targeting():
+    repository, provider = BatchRepository(5), BatchProvider()
+    engine = ItineraryReminderEngine(repository, provider, delivery_enabled=True,
+        batch_size=10000, max_targets_per_request=2, max_sends_per_second=1000)
+    result = asyncio.run(engine.run(now=datetime(2026, 9, 22, 14, tzinfo=timezone.utc)))
+    assert result["provider_requests"] == 3
+    assert [len(batch["installation_ids"]) for batch in provider.batches] == [2, 2, 1]
+    assert all(batch["disable_capping"] is True for batch in provider.batches)
+    assert all(batch["expiration_time"] == "10 minutes" for batch in provider.batches)
+    assert all("targetSegmentIds" not in batch for batch in provider.batches)
 
 
 def test_batch_429_honors_retry_after_and_records_individual_failure():
