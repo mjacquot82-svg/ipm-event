@@ -113,6 +113,16 @@ def test_physical_retest_has_new_atomic_key_and_complete_gate():
     assert "send_everyone" not in route
 
 
+def test_synthetic_status_diagnostic_is_read_only_and_redacted():
+    source = open("backend/server.py", encoding="utf-8").read()
+    route = source[source.index('synthetic-fixture-status'):source.index('@api_router.put("/itinerary-reminders/synthetic-fixture")')]
+    assert 'synthetic_fixture_status("device_isolation_t30")' in route
+    assert '"notification_sent_by_this_check": False' in route
+    assert "wonderpush_installation_id" not in route
+    assert "capability_hash" not in route
+    assert ".send(" not in route
+
+
 class FakeEngineRepository:
     def __init__(self):
         self.registration = {"id": "reg-a", "provider_deliverable": True}

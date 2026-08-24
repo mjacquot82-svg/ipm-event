@@ -239,6 +239,38 @@ class SupabaseItineraryReminderRepository:
             "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id})
         return {key: int(value or 0) for key, value in (rows[0] if rows else {}).items()}
 
+    async def synthetic_fixture_status(self, fixture_key: str) -> dict[str, Any] | None:
+        event_id = await self._event_id()
+        events = await self.client.request("GET", "/itinerary_reminder_synthetic_events", params={
+            "select": "id,fixture_key,title,starts_at,status,created_at,updated_at",
+            "event_id": f"eq.{event_id}", "fixture_key": f"eq.{fixture_key}", "limit": "1",
+        })
+        if not events: return None
+        fixture = events[0]
+        stars = await self.client.request("GET", "/itinerary_reminder_synthetic_stars", params={
+            "select": "registration_id,starred_at",
+            "synthetic_event_id": f"eq.{fixture['id']}",
+        }) or []
+        registrations = {row["id"]: row.get("test_device_label") for row in
+            await self.client.request("GET", "/itinerary_reminder_installations", params={
+                "select": "id,test_device_label", "event_id": f"eq.{event_id}"}) or []}
+        deliveries = await self.client.request("GET", "/itinerary_reminder_synthetic_deliveries", params={
+            "select": "registration_id,status,claimed_at,provider_accepted_at,provider_delivery_id",
+            "synthetic_event_id": f"eq.{fixture['id']}",
+        }) or []
+        by_label = {"A": [], "B": []}
+        for star in stars:
+            label = registrations.get(star["registration_id"])
+            if label in by_label: by_label[label].append(star["starred_at"])
+        return {key: fixture[key] for key in ("fixture_key", "title", "starts_at", "status", "created_at", "updated_at")} | {
+            "device_a_association_count": len(by_label["A"]),
+            "device_a_associated_at": min(by_label["A"]) if by_label["A"] else None,
+            "device_b_association_count": len(by_label["B"]),
+            "delivery_count": len(deliveries),
+            "delivery_statuses": sorted({row["status"] for row in deliveries}),
+            "provider_call_recorded": any(row.get("provider_delivery_id") for row in deliveries),
+        }
+
 
 def public_status(registration: dict[str, Any]) -> dict[str, Any]:
     reachability = registration.get("provider_reachability") or "unknown"

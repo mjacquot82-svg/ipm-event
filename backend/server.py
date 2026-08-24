@@ -1974,6 +1974,15 @@ async def itinerary_reminder_operations():
         "batch_size": ITINERARY_REMINDER_BATCH_SIZE,
         "concurrency": ITINERARY_REMINDER_CONCURRENCY}
 
+@api_router.get("/itinerary-reminders/synthetic-fixture-status")
+async def synthetic_reminder_fixture_status():
+    """Safe staging diagnostic: no device identifiers, secrets, provider calls, or writes."""
+    repository = require_itinerary_foundation()
+    fixture = await repository.synthetic_fixture_status("device_isolation_t30")
+    return {"fixture_exists": fixture is not None, "fixture": fixture,
+        "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
+        "scheduler_invoked": False, "notification_sent_by_this_check": False}
+
 @api_router.put("/itinerary-reminders/synthetic-fixture")
 async def set_synthetic_reminder_fixture(data: SyntheticReminderFixturePayload, request: Request):
     repository, registration = await authorize_itinerary_device(request)
