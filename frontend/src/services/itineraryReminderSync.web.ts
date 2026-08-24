@@ -139,8 +139,8 @@ export async function disableItineraryRemindersForTesting() {
   return getItineraryReminderReadiness();
 }
 
-export async function setSyntheticReminderFixtureStarred(starred: boolean) {
-  return request('/synthetic-fixture', 'PUT', { starred });
+export async function setSyntheticReminderFixtureStarred(starred: boolean, scenario: 't30' | 'late' = 't30') {
+  return request('/synthetic-fixture', 'PUT', { starred, scenario });
 }
 
 export async function reconcileItineraryReminderStars(starredScheduleIds: string[]): Promise<void> {

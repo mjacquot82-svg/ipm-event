@@ -215,10 +215,11 @@ class SupabaseItineraryReminderRepository:
             headers={"Prefer": "return=minimal"})
 
     async def prepare_synthetic_fixture(self, registration_id: str, *, starts_at: datetime,
-        starred_at: datetime, starred: bool = True) -> dict[str, Any]:
+        starred_at: datetime, starred: bool = True, fixture_key: str = "device_isolation_t30",
+        title: str = "IPM Reminder Demo Event") -> dict[str, Any]:
         event_id = await self._event_id()
         rows = await self.client.request("POST", "/itinerary_reminder_synthetic_events", json={
-            "event_id": event_id, "fixture_key": "device_isolation_t30", "title": "IPM Reminder Demo Event",
+            "event_id": event_id, "fixture_key": fixture_key, "title": title,
             "location_name": None, "starts_at": starts_at.astimezone(timezone.utc).isoformat(), "status": "published",
         }, params={"on_conflict": "event_id,fixture_key"},
             headers={"Prefer": "resolution=merge-duplicates,return=representation"})

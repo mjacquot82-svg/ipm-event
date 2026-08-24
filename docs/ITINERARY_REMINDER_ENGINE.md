@@ -38,6 +38,8 @@ requires organizer authorization. Keep delivery disabled until both devices have
 prepared and explicit send authorization has been given. Association creates the demo
 start 31 minutes ahead; after approximately one minute it enters the real 25–30 minute
 claim window without weakening the strict “starred more than 30 minutes before” rule.
+The separate late-star fixture starts 20 minutes ahead and therefore exercises the same
+worker's suppression rule without modifying a real event.
 
 Rollback removes the synthetic tables/functions and added ledger columns, then restores
 the prior claim RPC. The migration is additive and never updates Schedule records.

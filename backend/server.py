@@ -284,6 +284,7 @@ class ControlledTargetingSendPayload(BaseModel):
 
 class SyntheticReminderFixturePayload(BaseModel):
     starred: bool = True
+    scenario: str = "t30"
 
 class ScheduleImportProblem(BaseModel):
     row_number: int
@@ -1977,10 +1978,16 @@ async def itinerary_reminder_operations():
 async def set_synthetic_reminder_fixture(data: SyntheticReminderFixturePayload, request: Request):
     repository, registration = await authorize_itinerary_device(request)
     now = datetime.now(timezone.utc)
+    if data.scenario not in {"t30", "late"}:
+        raise HTTPException(status_code=400, detail="Unknown synthetic reminder scenario")
+    late = data.scenario == "late"
     fixture = await repository.prepare_synthetic_fixture(registration["id"],
-        starts_at=now + timedelta(minutes=31), starred_at=now, starred=data.starred)
-    return {"fixture": "device_isolation_t30", "title": fixture["title"],
-        "starred": data.starred, "starts_in_minutes": 31, "notification_sent": False}
+        starts_at=now + timedelta(minutes=20 if late else 31), starred_at=now, starred=data.starred,
+        fixture_key="late_star_suppression" if late else "device_isolation_t30",
+        title="IPM Late-Star Demo Event" if late else "IPM Reminder Demo Event")
+    return {"fixture": "late_star_suppression" if late else "device_isolation_t30",
+        "title": fixture["title"], "starred": data.starred,
+        "starts_in_minutes": 20 if late else 31, "notification_sent": False}
 
 @api_router.post("/admin/itinerary-reminders/run")
 async def run_itinerary_reminder_worker(

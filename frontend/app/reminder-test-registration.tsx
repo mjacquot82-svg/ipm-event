@@ -92,13 +92,13 @@ export default function ReminderTestRegistration() {
     }
   };
 
-  const prepareSyntheticFixture = async (starred: boolean) => {
+  const prepareSyntheticFixture = async (starred: boolean, scenario: 't30' | 'late' = 't30') => {
     setBusy(true);
     try {
-      await setSyntheticReminderFixtureStarred(starred);
+      await setSyntheticReminderFixtureStarred(starred, scenario);
       setMessage(starred
-        ? 'Synthetic demo event associated with Device A. The delivery kill switch remains on; no notification was sent.'
-        : 'Synthetic demo event removed from Device A. No notification was sent.');
+        ? `${scenario === 'late' ? 'Late-star' : 'T-30'} synthetic demo event associated with Device A. The delivery kill switch remains on; no notification was sent.`
+        : `${scenario === 'late' ? 'Late-star' : 'T-30'} synthetic demo event removed from Device A. No notification was sent.`);
     } catch {
       setMessage('Synthetic fixture could not be updated. No notification was sent.');
     } finally { setBusy(false); }
@@ -141,7 +141,13 @@ export default function ReminderTestRegistration() {
         <Text style={styles.secondaryText}>Associate T-30 Demo Event with Device A</Text>
       </Pressable>
       <Pressable disabled={busy} style={styles.fixtureRemove} onPress={() => prepareSyntheticFixture(false)} accessibilityRole="button">
-        <Text style={styles.fixtureRemoveText}>Remove Demo Event</Text>
+        <Text style={styles.fixtureRemoveText}>Remove T-30 Demo Event</Text>
+      </Pressable>
+      <Pressable disabled={busy} style={styles.secondary} onPress={() => prepareSyntheticFixture(true, 'late')} accessibilityRole="button">
+        <Text style={styles.secondaryText}>Associate Late-Star Suppression Fixture</Text>
+      </Pressable>
+      <Pressable disabled={busy} style={styles.fixtureRemove} onPress={() => prepareSyntheticFixture(false, 'late')} accessibilityRole="button">
+        <Text style={styles.fixtureRemoveText}>Remove Late-Star Fixture</Text>
       </Pressable>
     </View> : null}
     {diagnostic ? <View style={styles.diagnostics} accessibilityLiveRegion="polite">

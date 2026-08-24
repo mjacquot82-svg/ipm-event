@@ -12,6 +12,7 @@ const reminderUx = fs.readFileSync(new URL('../src/services/reminderUxService.we
 const schedulePage = fs.readFileSync(new URL('../app/(tabs)/schedule.tsx', import.meta.url), 'utf8');
 const itineraryPage = fs.readFileSync(new URL('../app/(tabs)/itinerary.tsx', import.meta.url), 'utf8');
 const engineMigration = fs.readFileSync(new URL('../../supabase/migrations/20260823000600_real_itinerary_reminder_engine.sql', import.meta.url), 'utf8');
+const server = fs.readFileSync(new URL('../../backend/server.py', import.meta.url), 'utf8');
 
 test('uses supported SDK installation ID and a 256-bit local capability', () => {
   assert.match(sdk, /getInstallationId/);
@@ -88,6 +89,8 @@ test('synthetic fixture uses the same readiness, timing, claim, and uniqueness r
   assert.match(engineMigration, /registration\.provider_deliverable/);
   assert.match(engineMigration, /unique\(registration_id, synthetic_event_id, reminder_type\)/);
   assert.doesNotMatch(engineMigration, /update\s+schedule_items/i);
+  assert.match(server, /"late_star_suppression"/);
+  assert.match(server, /timedelta\(minutes=20 if late else 31\)/);
 });
 
 test('first-star reminder pill is temporary, actionable, dismissible, and never attached to unstar', () => {
