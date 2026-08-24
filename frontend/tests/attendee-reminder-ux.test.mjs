@@ -128,6 +128,17 @@ test('full-set reconciliation is used for star and unstar without breaking local
   assert.match(sync, /Local favorites remain authoritative for UX/);
 });
 
+test('refresh-race recovery verifies readiness and preserves full-set reconciliation', () => {
+  assert.match(ux, /notificationState !== 'subscribed' && readiness\.client\.clientReady/);
+  assert.match(ux, /getItineraryReminderReadiness\(\{ verifyProvider: true \}\)/);
+  assert.match(sync, /schedule_ids: \[\.\.\.new Set\(starredScheduleIds\)\]/);
+  assert.match(sync, /Local favorites remain authoritative for UX/);
+  assert.doesNotMatch(ux, /Notification\.requestPermission/);
+  const statusFlow = ux.slice(ux.indexOf('export async function getAttendeeReminderStatus'),
+    ux.indexOf('export async function shouldShowReminderPromotion'));
+  assert.doesNotMatch(statusFlow, /subscribeToNotifications\(/);
+});
+
 test('attendee UI exposes no diagnostic identifiers or staging device link', () => {
   const attendee = `${schedule}\n${itinerary}\n${optIn}`;
   for (const forbidden of ['WonderPush installation', 'capability credential', 'Device A', 'Device B', 'verification code', 'Device test']) {

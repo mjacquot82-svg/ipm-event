@@ -47,6 +47,9 @@ export async function getAttendeeReminderStatus() {
   let readiness;
   try {
     readiness = await getItineraryReminderReadiness({ verifyProvider: notificationState === 'subscribed' });
+    if (notificationState !== 'subscribed' && readiness.client.clientReady) {
+      readiness = await getItineraryReminderReadiness({ verifyProvider: true });
+    }
   } catch {
     return { state: 'checking' as const, reminderReady: false, readiness: null,
       failureStage: 'authoritative_verification_temporarily_unavailable' };

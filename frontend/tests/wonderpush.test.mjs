@@ -120,6 +120,47 @@ test('subscription states cover default, granted, denied, subscribe and unsubscr
   assert.equal(await service.getNotificationState(), 'denied');
 });
 
+test('bounded read-only settling recovers a refresh-time subscription and installation race', async () => {
+  const browser = installBrowserMocks();
+  process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
+  const service = await import('../src/services/wonderPushService.web.ts?settling-race');
+  browser.notification.permission = 'granted';
+  let reads = 0;
+  let subscribeCalls = 0;
+  const initialization = service.initializeWonderPush();
+  browser.makeSdkReady({
+    isSubscribedToNotifications: async () => { reads += 1; return reads >= 2; },
+    getInstallationId: async () => reads >= 2 ? 'redacted-installation' : null,
+    subscribeToNotifications: async () => { subscribeCalls += 1; },
+  });
+  await initialization;
+
+  const snapshot = await service.readWonderPushSnapshot({ attempts: 3, retryDelayMs: 0 });
+  assert.equal(snapshot.subscribed, true);
+  assert.equal(snapshot.installationId, 'redacted-installation');
+  assert.equal(reads, 2);
+  assert.equal(subscribeCalls, 0, 'status verification must never resubscribe');
+});
+
+test('bounded read-only settling preserves a genuine missing installation', async () => {
+  const browser = installBrowserMocks();
+  process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';
+  const service = await import('../src/services/wonderPushService.web.ts?genuinely-unavailable');
+  browser.notification.permission = 'granted';
+  let reads = 0;
+  const initialization = service.initializeWonderPush();
+  browser.makeSdkReady({
+    isSubscribedToNotifications: async () => { reads += 1; return false; },
+    getInstallationId: async () => null,
+  });
+  await initialization;
+
+  const snapshot = await service.readWonderPushSnapshot({ attempts: 3, retryDelayMs: 0 });
+  assert.equal(snapshot.subscribed, false);
+  assert.equal(snapshot.installationId, null);
+  assert.equal(reads, 3);
+});
+
 test('readiness timeout returns an error state, resets initialization and permits retry', async (t) => {
   const browser = installBrowserMocks();
   process.env.EXPO_PUBLIC_WONDERPUSH_WEB_KEY = 'staging-public-key';

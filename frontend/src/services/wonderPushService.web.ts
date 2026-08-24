@@ -6,6 +6,11 @@ const SERVICE_WORKER_PATH = '/webpushr-sw.js';
 const LOADER_TIMEOUT_MS = 10_000;
 const READINESS_TIMEOUT_MS = 15_000;
 const STATUS_TIMEOUT_MS = 10_000;
+const SDK_SETTLE_TIMEOUT_MS = 3_000;
+const SDK_SETTLE_RETRY_MS = 400;
+const SDK_SETTLE_ATTEMPTS = 3;
+const WORKER_READY_TIMEOUT_MS = 2_000;
+const SESSION_READY_TIMEOUT_MS = 3_000;
 const SUBSCRIBE_TIMEOUT_MS = 45_000;
 const UNSUBSCRIBE_TIMEOUT_MS = 20_000;
 
@@ -14,6 +19,15 @@ type WonderPushQueue = unknown[] & {
   subscribeToNotifications?: () => Promise<unknown>;
   unsubscribeFromNotifications?: () => Promise<unknown>;
   getInstallationId?: () => Promise<string | null>;
+  getSessionState?: () => unknown;
+  SessionState?: { INIT_SUCCESS?: unknown };
+};
+
+type WonderPushReadSnapshot = {
+  subscribed: boolean | null;
+  installationId: string | null;
+  subscriptionFailed: boolean;
+  installationFailed: boolean;
 };
 
 declare global {
@@ -128,6 +142,67 @@ async function withSdk<T>(
   );
 }
 
+function wait(delayMs: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+}
+
+async function waitForServiceWorkerReadiness() {
+  const ready = navigator.serviceWorker?.ready;
+  if (!ready) return;
+  await withTimeout(Promise.resolve(ready).then(() => undefined), WORKER_READY_TIMEOUT_MS,
+    'Service worker readiness timed out.').catch(() => undefined);
+}
+
+async function waitForWonderPushSessionReadiness(sdk: WonderPushQueue) {
+  const readyState = sdk.SessionState?.INIT_SUCCESS;
+  if (readyState === undefined || !sdk.getSessionState || typeof window.addEventListener !== 'function') return;
+  if (sdk.getSessionState() === readyState) return;
+  let listener: ((event: Event) => void) | null = null;
+  const sessionReady = new Promise<void>((resolve) => {
+    listener = (event: Event) => {
+      const detail = (event as CustomEvent<{ name?: string; state?: unknown }>).detail;
+      if (detail?.name === 'session' && detail.state === readyState) resolve();
+    };
+    window.addEventListener('WonderPushEvent', listener);
+  });
+  await withTimeout(sessionReady, SESSION_READY_TIMEOUT_MS, 'WonderPush session readiness timed out.')
+    .catch(() => undefined);
+  if (listener) window.removeEventListener('WonderPushEvent', listener);
+}
+
+export async function readWonderPushSnapshot({ attempts = SDK_SETTLE_ATTEMPTS,
+  retryDelayMs = SDK_SETTLE_RETRY_MS, requireInstallation = true } = {}): Promise<WonderPushReadSnapshot> {
+  await initializeWonderPush();
+  await waitForServiceWorkerReadiness();
+  if (window.WonderPush) await waitForWonderPushSessionReadiness(window.WonderPush);
+  let snapshot: WonderPushReadSnapshot = { subscribed: null, installationId: null,
+    subscriptionFailed: false, installationFailed: false };
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    // Re-read the global after initialization so a loader-upgraded SDK object is never stale.
+    const sdk = window.WonderPush;
+    const [subscription, installation] = await Promise.allSettled([
+      sdk?.isSubscribedToNotifications
+        ? withTimeout(sdk.isSubscribedToNotifications(), SDK_SETTLE_TIMEOUT_MS, 'status timeout')
+        : Promise.reject(new Error('subscription API unavailable')),
+      sdk?.getInstallationId
+        ? withTimeout(sdk.getInstallationId(), SDK_SETTLE_TIMEOUT_MS, 'installation timeout')
+        : Promise.reject(new Error('installation API unavailable')),
+    ]);
+    snapshot = {
+      subscribed: subscription.status === 'fulfilled' ? subscription.value : null,
+      installationId: installation.status === 'fulfilled' ? installation.value : null,
+      subscriptionFailed: subscription.status === 'rejected',
+      installationFailed: installation.status === 'rejected',
+    };
+    if (snapshot.subscribed === true && (!requireInstallation || snapshot.installationId)) return snapshot;
+    if (attempt + 1 < attempts) {
+      if (retryDelayMs > 0) await wait(retryDelayMs);
+      else await Promise.resolve();
+    }
+  }
+  return snapshot;
+}
+
 export async function getNotificationState(): Promise<NotificationState> {
   if (!isSupported()) return 'unsupported';
   if (Notification.permission === 'denied') return 'denied';
@@ -171,11 +246,9 @@ export async function unsubscribeFromNotifications(): Promise<NotificationState>
 }
 
 export async function getSubscribedInstallationId(): Promise<string | null> {
-  if (await getNotificationState() !== 'subscribed') return null;
-  return withSdk(async (sdk) => {
-    if (!sdk.getInstallationId) throw new Error('WonderPush installation API is unavailable.');
-    return sdk.getInstallationId();
-  }, STATUS_TIMEOUT_MS, 'WonderPush installation lookup timed out.');
+  if (!isSupported() || Notification.permission !== 'granted') return null;
+  const snapshot = await readWonderPushSnapshot();
+  return snapshot.subscribed ? snapshot.installationId : null;
 }
 
 export type WonderPushDiagnostics = {
@@ -214,19 +287,15 @@ export async function getWonderPushDiagnostics(): Promise<WonderPushDiagnostics>
     browserPermission: typeof Notification === 'undefined' ? 'unavailable' : Notification.permission,
     sdk: 'unavailable', subscription: 'unavailable', installation: 'unavailable', failureStage: null,
   };
-  try { await initializeWonderPush(); result.sdk = 'ready'; }
+  let snapshot: WonderPushReadSnapshot;
+  try { snapshot = await readWonderPushSnapshot(); result.sdk = 'ready'; }
   catch { result.failureStage = 'wonderpush_sdk_initialization'; return result; }
-  try {
-    const sdk = window.WonderPush;
-    if (!sdk?.isSubscribedToNotifications) throw new Error();
-    const subscribed = await withTimeout(sdk.isSubscribedToNotifications(), STATUS_TIMEOUT_MS, 'status timeout');
-    result.subscription = subscribed ? 'subscribed' : 'not-subscribed';
-    if (!subscribed) { result.failureStage = 'wonderpush_subscription'; return result; }
-  } catch { result.failureStage = 'wonderpush_subscription_check'; return result; }
-  try {
-    const id = await window.WonderPush?.getInstallationId?.();
-    result.installation = id ? 'available' : 'unavailable';
-    if (!id) result.failureStage = 'wonderpush_installation_id';
-  } catch { result.failureStage = 'wonderpush_installation_lookup'; }
+  result.subscription = snapshot.subscribed === null ? 'unavailable'
+    : snapshot.subscribed ? 'subscribed' : 'not-subscribed';
+  result.installation = snapshot.installationId ? 'available' : 'unavailable';
+  if (snapshot.subscriptionFailed) result.failureStage = 'wonderpush_subscription_check';
+  else if (!snapshot.subscribed) result.failureStage = 'wonderpush_subscription';
+  else if (snapshot.installationFailed) result.failureStage = 'wonderpush_installation_lookup';
+  else if (!snapshot.installationId) result.failureStage = 'wonderpush_installation_id';
   return result;
 }
