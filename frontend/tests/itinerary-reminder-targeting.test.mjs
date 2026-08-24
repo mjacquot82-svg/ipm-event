@@ -40,7 +40,9 @@ test('client and backend readiness are evaluated separately', () => {
   assert.match(sync, /status-by-capability/);
   assert.match(sync, /current_installation_unavailable/);
   assert.match(sync, /installation_mismatch/);
-  assert.match(sync, /current\.provider_deliverable/);
+  assert.match(sync, /request\('\/readiness\/verify', 'POST'\)/);
+  assert.match(sync, /authoritative\.final_reminder_ready/);
+  assert.match(sync, /authoritative\.provider_fresh/);
 });
 
 test('deliberate Device A control enables, full-set syncs, and rereads readiness', () => {
@@ -52,7 +54,7 @@ test('deliberate Device A control enables, full-set syncs, and rereads readiness
   assert.match(sync, /const completeSet = \[\.\.\.new Set\(starredScheduleIds\)\]/);
   assert.match(sync, /request\('\/enabled', 'PUT', \{ enabled: true \}\)/);
   assert.match(sync, /request\('\/stars', 'PUT', \{ schedule_ids: completeSet \}\)/);
-  assert.match(sync, /return getItineraryReminderReadiness\(\)/);
+  assert.match(sync, /return getItineraryReminderReadiness\(\{ verifyProvider: true \}\)/);
   assert.doesNotMatch(sync, /send_one_installation|targetInstallationIds|\/controlled-device-a-send/);
 });
 

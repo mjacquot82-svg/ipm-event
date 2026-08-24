@@ -1948,6 +1948,50 @@ async def inspect_provider_readiness(registration):
         "provider_deliverable": reachability == "optIn" and has_push_token})
     return result
 
+async def verify_current_provider_readiness(repository, registration):
+    """Strict attendee-driven verification; transient failures never poison the mirror."""
+    try:
+        installation = await require_wonderpush_client().get_installation(
+            registration["wonderpush_installation_id"])
+    except Exception as exc:
+        raise HTTPException(status_code=503,
+            detail="Reminder readiness could not be verified temporarily") from exc
+    reachability, has_token = provider_readiness(installation)
+    return await repository.set_readiness(registration["id"], reachability=reachability,
+        has_push_token=has_token, checked_at=datetime.now(timezone.utc))
+
+def authoritative_readiness_status(registration):
+    checked_at = registration.get("provider_checked_at")
+    checked = None
+    if isinstance(checked_at, str):
+        try: checked = datetime.fromisoformat(checked_at.replace("Z", "+00:00"))
+        except ValueError: checked = None
+    elif isinstance(checked_at, datetime): checked = checked_at
+    fresh = bool(checked and checked.astimezone(timezone.utc) > datetime.now(timezone.utc)
+        - timedelta(seconds=ITINERARY_REMINDER_PROVIDER_READINESS_MAX_AGE_SECONDS))
+    deliverable = bool(registration.get("provider_deliverable"))
+    enabled = bool(registration.get("reminders_enabled"))
+    final_ready = enabled and deliverable and fresh
+    recovery_reason = None
+    if not deliverable:
+        recovery_reason = "provider_not_deliverable"
+    elif not fresh:
+        recovery_reason = "readiness_stale"
+    elif not enabled:
+        recovery_reason = "reminders_disabled"
+    return {
+        "registration_exists": True,
+        "installation_match": True,
+        "reminders_enabled": enabled,
+        "synchronized_star_count": int(registration.get("starred_count", 0)),
+        "provider_reachability": registration.get("provider_reachability") or "unknown",
+        "provider_deliverable": deliverable,
+        "provider_checked_at": checked_at,
+        "provider_fresh": fresh,
+        "final_reminder_ready": final_ready,
+        "recovery_reason": recovery_reason,
+    }
+
 @api_router.post("/itinerary-reminders/register")
 async def register_itinerary_device(request: Request):
     repository = require_itinerary_foundation()
@@ -1956,12 +2000,18 @@ async def register_itinerary_device(request: Request):
         registration = await repository.register(installation_id, capability)
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail="Invalid installation credentials") from exc
-    return public_status(await refresh_provider_readiness(repository, registration))
+    return public_status(await verify_current_provider_readiness(repository, registration))
 
 @api_router.get("/itinerary-reminders/status")
 async def itinerary_reminder_status(request: Request):
     _, registration = await authorize_itinerary_device(request)
-    return await inspect_provider_readiness(registration)
+    return {**public_status(registration), **authoritative_readiness_status(registration)}
+
+@api_router.post("/itinerary-reminders/readiness/verify")
+async def verify_itinerary_reminder_readiness(request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    verified = await verify_current_provider_readiness(repository, registration)
+    return authoritative_readiness_status(verified)
 
 @api_router.get("/itinerary-reminders/status-by-capability")
 async def itinerary_reminder_status_by_capability(request: Request):
@@ -1972,8 +2022,11 @@ async def itinerary_reminder_status_by_capability(request: Request):
     registration = await repository.get_by_capability(capability)
     if not registration:
         raise HTTPException(status_code=404, detail="No reminder registration exists for this device")
-    result = await inspect_provider_readiness(registration)
+    result = {**public_status(registration), **authoritative_readiness_status(registration)}
     result["current_installation_match"] = "unavailable"
+    result["installation_match"] = None
+    result["final_reminder_ready"] = False
+    result["recovery_reason"] = "current_installation_unverified"
     result["reminder_ready"] = False
     return result
 
@@ -1981,7 +2034,7 @@ async def itinerary_reminder_status_by_capability(request: Request):
 async def set_itinerary_reminders_enabled(data: ItineraryEnabledPayload, request: Request):
     repository, registration = await authorize_itinerary_device(request)
     if data.enabled:
-        registration = await refresh_provider_readiness(repository, registration)
+        registration = await verify_current_provider_readiness(repository, registration)
         if not registration.get("provider_deliverable"):
             raise HTTPException(status_code=409, detail="This installation is not currently provider-reachable")
     return public_status(await repository.set_enabled(registration["id"], data.enabled))

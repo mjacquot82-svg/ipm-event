@@ -56,8 +56,9 @@ export default function ItineraryScreen() {
   const [reminderMessage, setReminderMessage] = useState<string | null>(null);
 
   const refreshReminderStatus = useCallback(async () => {
+    setReminderState('checking');
     const result = await getAttendeeReminderStatus().catch(() => null);
-    setReminderState((result?.state as typeof reminderState) || (result?.reminderReady ? 'on' : 'recovery'));
+    setReminderState((result?.state as typeof reminderState) || (result?.reminderReady ? 'on' : 'checking'));
   }, []);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
@@ -123,6 +124,9 @@ export default function ItineraryScreen() {
         } else if (result.notificationState === 'denied') {
           setReminderState('blocked');
           setReminderMessage('Notifications are blocked. Allow them in browser settings to enable reminders.');
+        } else if (result.transient) {
+          setReminderState('checking');
+          setReminderMessage('Verifying event reminders… Your itinerary is still saved.');
         } else if (!result.enabled) {
           setReminderState('recovery');
           setReminderMessage('Reminders could not be enabled. Your itinerary is still saved.');
@@ -139,6 +143,7 @@ export default function ItineraryScreen() {
   const starredEvents = events.filter((event) => favorites.includes(event.id));
   const reminderReady = reminderState === 'on';
   const reminderTitle = reminderReady ? 'Event reminders on'
+    : reminderState === 'checking' ? 'Checking event reminders…'
     : reminderState === 'blocked' ? 'Notifications blocked'
       : reminderState === 'install_required' ? 'Install IPM for event reminders'
         : reminderState === 'recovery' ? 'Reconnect event reminders'
@@ -151,7 +156,9 @@ export default function ItineraryScreen() {
         ? 'On iPhone, add IPM to your Home Screen, then open the installed app to enable notifications.'
         : reminderState === 'recovery'
           ? 'This device is not currently ready for reminders. Re-enable to reconnect it safely.'
-          : "We'll remind you before eligible events in your itinerary begin.";
+          : reminderState === 'checking'
+            ? 'Verifying this device without changing your saved itinerary.'
+            : "We'll remind you before eligible events in your itinerary begin.";
 
   const handleRemove = async (eventId: string) => {
     const result = await toggleFavorite(eventId);
@@ -230,11 +237,11 @@ export default function ItineraryScreen() {
             </View>
           </View>
           <TouchableOpacity style={[styles.reminderButton, reminderReady && styles.reminderDisableButton]}
-          onPress={() => void changeReminderStatus()} disabled={reminderWorking}
+          onPress={() => void changeReminderStatus()} disabled={reminderWorking || reminderState === 'checking'}
           accessibilityRole="button" accessibilityLabel={reminderReady ? 'Disable itinerary event reminders' : reminderTitle}
-          accessibilityState={{ disabled: reminderWorking, busy: reminderWorking }}>
+          accessibilityState={{ disabled: reminderWorking || reminderState === 'checking', busy: reminderWorking || reminderState === 'checking' }}>
           <Text style={[styles.reminderButtonText, reminderReady && styles.reminderButtonTextOn]}>
-            {reminderWorking ? 'Checking…' : reminderReady ? 'Disable' : reminderState === 'recovery' ? 'Reconnect' : 'Enable'}
+            {reminderWorking || reminderState === 'checking' ? 'Checking…' : reminderReady ? 'Disable' : reminderState === 'recovery' ? 'Reconnect' : 'Enable'}
           </Text>
           </TouchableOpacity>
         </View>

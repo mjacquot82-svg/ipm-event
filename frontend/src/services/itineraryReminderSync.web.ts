@@ -5,7 +5,7 @@ const CAPABILITY_KEY = '@ipm_itinerary_reminder_capability_v1';
 const ENABLED_KEY = '@ipm_itinerary_reminders_enabled_v1';
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
-class ApiSyncError extends Error {
+export class ApiSyncError extends Error {
   constructor(public status: number) { super(`Itinerary reminder synchronization failed (${status}).`); }
 }
 
@@ -66,7 +66,7 @@ async function statusByCapability() {
   return response.json();
 }
 
-export async function getItineraryReminderReadiness() {
+export async function getItineraryReminderReadiness({ verifyProvider = false } = {}) {
   const client = await getWonderPushClientReadiness();
   const existing = await statusByCapability().catch(() => null);
   if (!client.clientReady) {
@@ -77,9 +77,15 @@ export async function getItineraryReminderReadiness() {
   const match = existing
     ? existing.registration_fingerprint === current.registration_fingerprint
     : true;
-  return { client, registration: current, currentInstallationMatch: match ? 'match' : 'mismatch',
-    reminderReady: Boolean(match && current.reminders_enabled && current.provider_deliverable),
-    staleReason: match ? (current.provider_deliverable ? null : 'provider_unreachable') : 'installation_mismatch' };
+  const authoritative = verifyProvider && match
+    ? await request('/readiness/verify', 'POST')
+    : current;
+  const reminderReady = Boolean(match && (authoritative.final_reminder_ready
+    ?? (authoritative.reminders_enabled && authoritative.provider_deliverable && authoritative.provider_fresh)));
+  return { client, registration: { ...current, ...authoritative },
+    currentInstallationMatch: match ? 'match' : 'mismatch', reminderReady,
+    staleReason: match ? (reminderReady ? null : authoritative.recovery_reason || 'readiness_unconfirmed')
+      : 'installation_mismatch' };
 }
 
 export type TestDeviceLabel = 'A' | 'B';
@@ -113,12 +119,12 @@ export async function diagnoseControlledTestRegistration(label: TestDeviceLabel)
   return diagnostic;
 }
 
-export async function configureItineraryReminderSync(starredScheduleIds: string[]): Promise<void> {
+export async function configureItineraryReminderSync(starredScheduleIds: string[]) {
   const client = await getWonderPushClientReadiness();
   if (!client.clientReady) throw new Error('The current browser is not notification-ready.');
   const existing = await statusByCapability();
   if (!existing) await request('/register', 'POST');
-  const readiness = await getItineraryReminderReadiness();
+  const readiness = await getItineraryReminderReadiness({ verifyProvider: true });
   if (readiness.currentInstallationMatch !== 'match') throw new Error('The current installation does not match its registration.');
   if (!readiness.registration?.provider_deliverable) throw new Error('The current installation is not provider-reachable.');
   const completeSet = [...new Set(starredScheduleIds)];
@@ -131,11 +137,11 @@ export async function configureItineraryReminderSync(starredScheduleIds: string[
     await AsyncStorage.setItem(ENABLED_KEY, 'false');
     throw error;
   }
+  return getItineraryReminderReadiness({ verifyProvider: true });
 }
 
 export async function enableItineraryRemindersForTesting(starredScheduleIds: string[]) {
-  await configureItineraryReminderSync(starredScheduleIds);
-  return getItineraryReminderReadiness();
+  return configureItineraryReminderSync(starredScheduleIds);
 }
 
 export async function disableItineraryReminderSync(): Promise<void> {

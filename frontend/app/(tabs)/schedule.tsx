@@ -178,6 +178,8 @@ export default function ScheduleScreen() {
       setReminderPromptMessage('On iPhone, install IPM to your Home Screen and open the installed app to enable reminders.');
     } else if (result?.notificationState === 'denied') {
       setReminderPromptMessage('Notifications are blocked. Allow them in browser settings to enable reminders.');
+    } else if (result?.transient) {
+      setReminderPromptMessage('Verifying event reminders… Your itinerary is still saved.');
     } else {
       setReminderPromptMessage('Reminders could not be enabled. Your itinerary is still saved.');
     }

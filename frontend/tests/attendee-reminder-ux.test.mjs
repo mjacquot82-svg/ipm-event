@@ -69,11 +69,31 @@ test('iPhone browser requires Home Screen while standalone uses normal enablemen
 });
 
 test('itinerary states are authoritative and disable preserves favorites', () => {
-  for (const state of ["'on'", "'off'", "'blocked'", "'install_required'", "'recovery'"]) assert.match(itinerary, new RegExp(state));
+  for (const state of ["'checking'", "'on'", "'off'", "'blocked'", "'install_required'", "'recovery'"]) assert.match(itinerary, new RegExp(state));
   assert.match(itinerary, /result\.enabled && result\.readiness\?\.reminderReady/);
   assert.match(itinerary, /disableAttendeeItineraryReminders/);
   assert.match(sync, /request\('\/enabled', 'PUT', \{ enabled: false \}\)/);
   assert.doesNotMatch(sync, /unsubscribeFromNotifications|clearFavorites|removeFavorite/);
+});
+
+test('transient checks stay neutral while confirmed failures require recovery', () => {
+  assert.match(ux, /notificationState === 'error'.*state: 'checking'/s);
+  assert.match(ux, /authoritative_verification_temporarily_unavailable/);
+  assert.match(ux, /readiness\.reminderReady.*state: 'on'/s);
+  assert.match(ux, /state: registrationExists \? 'recovery'/);
+  assert.match(itinerary, /Checking event reminders/);
+  assert.match(itinerary, /Reconnect event reminders/);
+  assert.match(itinerary, /Notifications are blocked/);
+});
+
+test('attendee diagnostics are redacted readiness facts only', () => {
+  for (const field of ['supported_context', 'browser_permission_granted', 'sdk_ready',
+    'subscribed', 'current_installation_available', 'registration_exists',
+    'installation_match', 'reminders_enabled', 'synchronized_star_count',
+    'provider_reachability', 'provider_deliverable', 'provider_checked_at',
+    'provider_fresh', 'final_reminder_ready']) assert.match(ux, new RegExp(field));
+  const diagnostics = ux.slice(ux.indexOf('const redacted ='), ux.indexOf('if (readiness.reminderReady)'));
+  assert.doesNotMatch(diagnostics, /installation_id|capability|push_token|credential/i);
 });
 
 test('full-set reconciliation is used for star and unstar without breaking local favorites', () => {

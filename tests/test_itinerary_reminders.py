@@ -2,9 +2,93 @@ from datetime import datetime, timedelta, timezone
 import asyncio
 
 import pytest
+from fastapi import HTTPException
+from starlette.requests import Request
 
+from backend import server
 from backend.itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, capability_matches, hash_capability, is_t30_eligible, provider_readiness
 from backend.platform_services import WonderPushClient, WonderPushError
+
+
+def attendee_request():
+    capability = "A" * 43
+    return Request({"type": "http", "method": "POST", "path": "/", "headers": [
+        (b"x-wonderpush-installation-id", b"installation-a"),
+        (b"x-itinerary-device-capability", capability.encode()),
+    ]})
+
+
+class VerificationRepository:
+    def __init__(self):
+        self.registration = {"id": "reg-a", "wonderpush_installation_id": "installation-a",
+            "reminders_enabled": True, "starred_count": 2, "provider_reachability": "unknown",
+            "provider_has_push_token": False, "provider_deliverable": False,
+            "provider_checked_at": None}
+        self.readiness_updates = []
+    async def authorize(self, installation_id, capability):
+        assert installation_id == "installation-a" and capability == "A" * 43
+        return self.registration
+    async def set_readiness(self, registration_id, **values):
+        self.readiness_updates.append(values)
+        self.registration.update(provider_reachability=values["reachability"],
+            provider_has_push_token=values["has_push_token"],
+            provider_deliverable=values["reachability"] == "optIn" and values["has_push_token"],
+            provider_checked_at=values["checked_at"].isoformat())
+        return self.registration
+
+
+def test_current_device_verification_refreshes_durable_mirror_and_returns_redacted_status(monkeypatch):
+    repository = VerificationRepository()
+    class Provider:
+        async def get_installation(self, installation_id):
+            return {"preferences": {"subscriptionStatus": "optIn"}, "pushToken": {"data": "secret"}}
+    monkeypatch.setattr(server, "itinerary_reminder_repository", repository)
+    monkeypatch.setattr(server, "wonderpush_client", Provider())
+    monkeypatch.setattr(server, "IS_STAGING_DEPLOYMENT", True)
+    monkeypatch.setattr(server, "ITINERARY_REMINDER_FOUNDATION_ENABLED", True)
+    result = asyncio.run(server.verify_itinerary_reminder_readiness(attendee_request()))
+    assert result["installation_match"] is True
+    assert result["reminders_enabled"] is True
+    assert result["synchronized_star_count"] == 2
+    assert result["provider_deliverable"] is True and result["provider_fresh"] is True
+    assert result["final_reminder_ready"] is True
+    assert len(repository.readiness_updates) == 1
+    assert "wonderpush_installation_id" not in result and "provider_has_push_token" not in result
+    assert "secret" not in repr(result)
+
+
+def test_transient_provider_verification_preserves_existing_mirror(monkeypatch):
+    repository = VerificationRepository()
+    repository.registration.update(provider_reachability="optIn", provider_has_push_token=True,
+        provider_deliverable=True, provider_checked_at="2026-08-24T20:00:00+00:00")
+    class Provider:
+        async def get_installation(self, installation_id): raise RuntimeError("temporary timeout")
+    monkeypatch.setattr(server, "itinerary_reminder_repository", repository)
+    monkeypatch.setattr(server, "wonderpush_client", Provider())
+    monkeypatch.setattr(server, "IS_STAGING_DEPLOYMENT", True)
+    monkeypatch.setattr(server, "ITINERARY_REMINDER_FOUNDATION_ENABLED", True)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(server.verify_itinerary_reminder_readiness(attendee_request()))
+    assert error.value.status_code == 503
+    assert repository.readiness_updates == []
+    assert repository.registration["provider_deliverable"] is True
+
+
+def test_confirmed_provider_opt_out_is_fresh_but_requires_recovery(monkeypatch):
+    repository = VerificationRepository()
+    class Provider:
+        async def get_installation(self, installation_id):
+            return {"preferences": {"subscriptionStatus": "optOut"}, "pushToken": {"data": "secret"}}
+    monkeypatch.setattr(server, "itinerary_reminder_repository", repository)
+    monkeypatch.setattr(server, "wonderpush_client", Provider())
+    monkeypatch.setattr(server, "IS_STAGING_DEPLOYMENT", True)
+    monkeypatch.setattr(server, "ITINERARY_REMINDER_FOUNDATION_ENABLED", True)
+    result = asyncio.run(server.verify_itinerary_reminder_readiness(attendee_request()))
+    assert result["provider_reachability"] == "softOptOut"
+    assert result["provider_deliverable"] is False
+    assert result["provider_fresh"] is True
+    assert result["final_reminder_ready"] is False
+    assert result["recovery_reason"] == "provider_not_deliverable"
 
 
 def test_capability_is_hashed_and_constant_time_validated():
