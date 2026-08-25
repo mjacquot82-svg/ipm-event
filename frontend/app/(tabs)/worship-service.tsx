@@ -9,7 +9,7 @@ import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import colors from '../../src/theme/colors';
 import { attendeePageContent } from '../../src/theme/attendeePageLayout';
 
-const ARTWORK_ASPECT_RATIO = 1365 / 1706;
+const ARTWORK_ASPECT_RATIO = 1364 / 3404;
 
 export default function WorshipServiceScreen() {
   usePageAnalytics('worship_service', 'home_link', 'worship_service_opened');
@@ -38,22 +38,12 @@ export default function WorshipServiceScreen() {
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
 
-          <View style={styles.artwork} accessibilityLabel="Interdenominational Worship Service event poster">
-            <Image
-              source={require('../../assets/images/worship-service-cross.jpg')}
-              style={styles.posterImage}
-              resizeMode="contain"
-              accessible
-              accessibilityLabel="Worship Service poster featuring a cross at sunrise and Sunday September 20, 2026"
-            />
-            <Image
-              source={require('../../assets/images/worship-service-join-us.jpg')}
-              style={styles.posterImage}
-              resizeMode="contain"
-              accessible
-              accessibilityLabel="Worship Service invitation with event time, speaker, and attendance details"
-            />
-          </View>
+          <Image
+            source={require('../../assets/images/worship-service.jpg')}
+            style={styles.posterImage}
+            accessible
+            accessibilityLabel="Complete 2026 IPM Interdenominational Worship Service information"
+          />
 
           <TouchableOpacity
             style={styles.pdfButton}
@@ -78,8 +68,7 @@ const styles = StyleSheet.create({
   content: { width: '100%', alignItems: 'center' },
   backButton: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginHorizontal: 20, marginBottom: 12 },
   backButtonText: { color: colors.primary, fontSize: 16, fontWeight: '700' },
-  artwork: { width: '100%', maxWidth: 720, alignSelf: 'center', overflow: 'hidden', margin: 0, padding: 0 },
-  posterImage: { width: '100%', aspectRatio: ARTWORK_ASPECT_RATIO, alignSelf: 'stretch', flexShrink: 0, margin: 0, padding: 0 },
+  posterImage: { width: '100%', maxWidth: 720, aspectRatio: ARTWORK_ASPECT_RATIO, alignSelf: 'center', margin: 0, padding: 0 },
   pdfButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: colors.field, borderRadius: 12, paddingHorizontal: 18, marginHorizontal: 20, marginTop: 18, marginBottom: 12 },
   pdfButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 });
