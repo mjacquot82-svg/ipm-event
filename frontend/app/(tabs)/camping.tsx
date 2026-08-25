@@ -72,6 +72,18 @@ export default function CampingScreen() {
             <Text style={styles.pageTitle} accessibilityRole="header">RV Park &amp; Camping Information</Text>
           </View>
 
+          <TouchableOpacity
+            style={styles.externalButton}
+            onPress={() => void openTrackedLink('camping', 'camping_information')}
+            activeOpacity={0.8}
+            accessibilityRole="link"
+            accessibilityLabel="Book or manage camping on the external Let's Camp website"
+            accessibilityHint="Opens an external website"
+          >
+            <Text style={styles.externalButtonText}>Book or Manage Camping</Text>
+            <Feather name="external-link" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+
           <View style={styles.emergencyCard} accessibilityRole="summary">
             <View style={styles.emergencyHeading}>
               <Feather name="alert-triangle" size={24} color={colors.primaryDark} />
@@ -138,17 +150,6 @@ export default function CampingScreen() {
             <Text style={styles.body}>Please be respectful of your fellow campers and help keep the campground peaceful during quiet hours.</Text>
           </Section>
 
-          <TouchableOpacity
-            style={styles.externalButton}
-            onPress={() => void openTrackedLink('camping', 'camping_information')}
-            activeOpacity={0.8}
-            accessibilityRole="link"
-            accessibilityLabel="Book or manage camping on the external Let's Camp website"
-            accessibilityHint="Opens an external website"
-          >
-            <Text style={styles.externalButtonText}>Book or Manage Camping</Text>
-            <Feather name="external-link" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

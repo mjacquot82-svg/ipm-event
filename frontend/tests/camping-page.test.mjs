@@ -53,6 +53,8 @@ test('existing camping URL remains centralized and accessible from the page', ()
   assert.match(page, /openTrackedLink\('camping', 'camping_information'\)/);
   assert.match(page, />Book or Manage Camping<\/Text>/);
   assert.match(page, /external Let's Camp website/);
+  assert.equal((page.match(/>Book or Manage Camping<\/Text>/g) || []).length, 1);
+  assert.ok(page.indexOf('>Book or Manage Camping</Text>') < page.indexOf('Important &amp; Emergency Information'));
 });
 
 test('Back handles stack navigation and direct deep links', () => {
