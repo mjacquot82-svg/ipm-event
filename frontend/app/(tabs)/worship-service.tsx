@@ -7,14 +7,13 @@ import { useRouter } from 'expo-router';
 import { openTrackedLink } from '../../src/analytics/trackedLinks';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import colors from '../../src/theme/colors';
-import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
+import { attendeePageContent } from '../../src/theme/attendeePageLayout';
 
 const ARTWORK_ASPECT_RATIO = 1365 / 1706;
 
 export default function WorshipServiceScreen() {
   usePageAnalytics('worship_service', 'home_link', 'worship_service_opened');
   const router = useRouter();
-  const { sectionStyle } = useAttendeeLayout();
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
@@ -27,7 +26,7 @@ export default function WorshipServiceScreen() {
         contentContainerStyle={[attendeePageContent, styles.scrollContent]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[sectionStyle, styles.content]}>
+        <View style={styles.content}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={goBack}
@@ -75,12 +74,12 @@ export default function WorshipServiceScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 12 },
-  content: { alignItems: 'center' },
-  backButton: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginBottom: 16 },
+  scrollContent: { paddingHorizontal: 0, paddingTop: 12 },
+  content: { width: '100%', alignItems: 'center' },
+  backButton: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginHorizontal: 20, marginBottom: 12 },
   backButtonText: { color: colors.primary, fontSize: 16, fontWeight: '700' },
-  artwork: { width: '100%', maxWidth: 720, overflow: 'hidden' },
-  posterImage: { width: '100%', aspectRatio: ARTWORK_ASPECT_RATIO, margin: 0, padding: 0 },
-  pdfButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: colors.field, borderRadius: 12, paddingHorizontal: 18, marginTop: 18, marginBottom: 12 },
+  artwork: { width: '100%', maxWidth: 720, alignSelf: 'center', overflow: 'hidden', margin: 0, padding: 0 },
+  posterImage: { width: '100%', aspectRatio: ARTWORK_ASPECT_RATIO, alignSelf: 'stretch', flexShrink: 0, margin: 0, padding: 0 },
+  pdfButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: colors.field, borderRadius: 12, paddingHorizontal: 18, marginHorizontal: 20, marginTop: 18, marginBottom: 12 },
   pdfButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 });

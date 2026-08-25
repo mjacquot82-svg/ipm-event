@@ -21,9 +21,13 @@ test('artwork uses production assets in the reviewed order', () => {
 });
 
 test('artwork is a continuous responsive stack without an intentional gap', () => {
-  assert.match(page, /artwork: { width: '100%', maxWidth: 720, overflow: 'hidden' }/);
-  assert.match(page, /posterImage: { width: '100%', aspectRatio: ARTWORK_ASPECT_RATIO, margin: 0, padding: 0 }/);
+  assert.match(page, /scrollContent: { paddingHorizontal: 0, paddingTop: 12 }/);
+  assert.match(page, /content: { width: '100%', alignItems: 'center' }/);
+  assert.match(page, /artwork: { width: '100%', maxWidth: 720, alignSelf: 'center', overflow: 'hidden', margin: 0, padding: 0 }/);
+  assert.match(page, /posterImage: { width: '100%', aspectRatio: ARTWORK_ASPECT_RATIO, alignSelf: 'stretch', flexShrink: 0, margin: 0, padding: 0 }/);
   assert.doesNotMatch(page, /posterImage:[^\n]*(gap|marginBottom|marginTop|border|borderRadius)/);
+  assert.doesNotMatch(page, /(?:artwork|posterImage):[^\n]*(?:height|minHeight|maxHeight):/);
+  assert.doesNotMatch(page, /useAttendeeLayout|sectionStyle/);
 });
 
 test('original PDF action uses the exact tracked external destination', () => {
