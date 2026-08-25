@@ -34,6 +34,7 @@ import {
   CachedApiResult,
   ScheduleEvent,
   ScheduleResponse,
+  addConnectivityRefreshListener,
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
 import { formatScheduleDate, getScheduleWeekday } from '../../src/utils/scheduleDate';
@@ -80,9 +81,7 @@ export default function ScheduleScreen() {
     }
     setEvents(result.data.events);
     setLastUpdated(result.lastSuccessfulUpdate);
-    if (result.source === 'network') {
-      setDataSource('network');
-    }
+    setDataSource(result.source);
   }, []);
 
   // Fetch schedule from API
@@ -126,6 +125,8 @@ export default function ScheduleScreen() {
   useEffect(() => {
     fetchSchedule();
   }, [fetchSchedule]);
+
+  useEffect(() => addConnectivityRefreshListener(() => void fetchSchedule(true)), [fetchSchedule]);
 
   const loadFavorites = useCallback(async () => {
     const storedFavorites = await getFavorites();
@@ -441,8 +442,8 @@ export default function ScheduleScreen() {
           </View>
           <View style={styles.stateContainer}>
             <Feather name="wifi-off" size={44} color={colors.error} />
-            <Text style={styles.emptyTitle}>{"We couldn't load the schedule."}</Text>
-            <Text style={styles.emptyText}>Please check your connection and try again.</Text>
+            <Text style={styles.emptyTitle}>{"Schedule information isn't saved yet"}</Text>
+            <Text style={styles.emptyText}>Connect to the internet once to download the Schedule to this device.</Text>
             <TouchableOpacity style={styles.retryButton} onPress={() => fetchSchedule()} activeOpacity={0.8}>
               <Feather name="refresh-cw" size={17} color="#FFFFFF" />
               <Text style={styles.retryButtonText}>Retry</Text>

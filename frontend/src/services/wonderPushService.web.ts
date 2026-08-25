@@ -46,6 +46,7 @@ export type NotificationState =
   | 'error';
 
 let initialization: Promise<void> | null = null;
+let offlineShellRegistration: Promise<ServiceWorkerRegistration> | null = null;
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(message)), timeoutMs);
@@ -77,6 +78,25 @@ export function getWonderPushWorkerUrl(webKey = getWebKey()) {
   return `${SERVICE_WORKER_PATH}?webKey=${encodeURIComponent(webKey)}`;
 }
 
+export function initializeOfflineShell(): Promise<ServiceWorkerRegistration> {
+  if (offlineShellRegistration) return offlineShellRegistration;
+  offlineShellRegistration = (async () => {
+    if (typeof navigator === 'undefined' || !navigator.serviceWorker?.register) {
+      throw new Error('Service workers are not supported in this browser.');
+    }
+    const webKey = getWebKey();
+    if (!webKey) throw new Error('EXPO_PUBLIC_WONDERPUSH_WEB_KEY is not configured.');
+    return navigator.serviceWorker.register(getWonderPushWorkerUrl(webKey), {
+      scope: '/',
+      updateViaCache: 'none',
+    });
+  })().catch((error) => {
+    offlineShellRegistration = null;
+    throw error;
+  });
+  return offlineShellRegistration;
+}
+
 export function initializeWonderPush(): Promise<void> {
   if (initialization) return initialization;
 
@@ -89,7 +109,6 @@ export function initializeWonderPush(): Promise<void> {
     if (!webKey) {
       throw new Error('EXPO_PUBLIC_WONDERPUSH_WEB_KEY is not configured.');
     }
-
     window.WonderPush = window.WonderPush || [];
     window.WonderPush.push(['init', {
       webKey,
@@ -99,6 +118,8 @@ export function initializeWonderPush(): Promise<void> {
     const ready = new Promise<void>((resolve) => {
       window.WonderPush?.push(resolve);
     });
+
+    await initializeOfflineShell();
 
     const existingScript = document.getElementById(SDK_SCRIPT_ID) as HTMLScriptElement | null;
     if (existingScript?.dataset.loaded !== 'true') {

@@ -28,6 +28,7 @@ import {
   ScheduleEvent,
   ScheduleResponse,
   getScheduleData,
+  addConnectivityRefreshListener,
 } from '../../src/services/spreadsheetDataService';
 import { formatScheduleDate } from '../../src/utils/scheduleDate';
 import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
@@ -85,9 +86,7 @@ export default function ItineraryScreen() {
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
-    if (result.source === 'network') {
-      setDataSource('network');
-    }
+    setDataSource(result.source);
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
   }, []);
 
@@ -119,6 +118,8 @@ export default function ItineraryScreen() {
     void loadFavorites().then(() => refreshReminderStatus());
     fetchSchedule();
   }, [fetchSchedule, loadFavorites, refreshReminderStatus]);
+
+  useEffect(() => addConnectivityRefreshListener(() => void fetchSchedule()), [fetchSchedule]);
 
   useFocusEffect(
     useCallback(() => {

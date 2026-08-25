@@ -24,6 +24,7 @@ import {
   CachedApiResult,
   Vendor,
   VendorsResponse,
+  addConnectivityRefreshListener,
   getVendorsData,
 } from '../../src/services/spreadsheetDataService';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
@@ -47,9 +48,7 @@ export default function VendorsScreen() {
       throw new Error('Invalid vendors response');
     }
     setVendors(result.data.vendors);
-    if (result.source === 'network') {
-      setDataSource('network');
-    }
+    setDataSource(result.source);
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
   }, []);
 
@@ -63,6 +62,7 @@ export default function VendorsScreen() {
       setError(null);
 
       const result = await getVendorsData({
+        preferCache: !isRefresh,
         onBackgroundRefresh: applyVendorsResult,
         onBackgroundRefreshError: () => setDataSource('cache'),
       });
@@ -79,6 +79,8 @@ export default function VendorsScreen() {
   useEffect(() => {
     fetchVendors();
   }, [fetchVendors]);
+
+  useEffect(() => addConnectivityRefreshListener(() => void fetchVendors(true)), [fetchVendors]);
 
   const vendorTypes = useMemo(() => {
     return Array.from(
@@ -141,15 +143,15 @@ export default function VendorsScreen() {
     );
   }
 
-  if (error) {
+  if (error && vendors.length === 0) {
     return (
       <View style={[styles.container, attendeePageContent, frameStyle]}>
         <PageHeader title="Vendors" />
         <View style={styles.center}>
           <Feather name="wifi-off" size={42} color="#B91C1C" />
-          <Text style={styles.emptyTitle}>Vendors could not be loaded</Text>
+          <Text style={styles.emptyTitle}>{"Vendor information isn't saved yet"}</Text>
           <Text style={styles.helperText}>
-            Check your connection and try again. If the problem continues, vendor listings may be temporarily unavailable.
+            Connect to the internet once to download the vendor directory to this device.
           </Text>
           <TouchableOpacity style={styles.primaryButton} onPress={() => fetchVendors()} activeOpacity={0.8}>
             <Feather name="refresh-cw" size={17} color="#FFFFFF" />

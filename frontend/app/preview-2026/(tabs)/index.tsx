@@ -623,7 +623,7 @@ export default function HomeScreen() {
                   <Text style={styles.itinerarySummary}>
                     {starredSessions.length} event{starredSessions.length > 1 ? 's' : ''} planned
                   </Text>
-                  {Object.entries(groupedStarredSessions).map(([date, dateEvents]) => (
+                  {(Object.entries(groupedStarredSessions) as [string, any[]][]).map(([date, dateEvents]) => (
                     <View key={date} style={styles.itineraryDateSection}>
                       <Text style={styles.itineraryDateHeader}>{date}</Text>
                       {dateEvents.map((event: any) => {

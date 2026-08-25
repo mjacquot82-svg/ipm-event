@@ -87,8 +87,7 @@ export default function TabLayout() {
       <View style={[styles.contentArea, { paddingTop: topInset }]}>
         <Tabs
           tabBar={() => <EmptyTabBar />}
-          screenOptions={{ headerShown: false }}
-          sceneContainerStyle={styles.scene}
+          screenOptions={{ headerShown: false, sceneStyle: styles.scene }}
         >
           <Tabs.Screen name="index" options={{ title: 'Home', href: '/' }} />
           <Tabs.Screen name="map" options={{ title: 'Map' }} />

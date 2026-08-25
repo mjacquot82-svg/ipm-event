@@ -1,10 +1,12 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isScheduleRecord, isVendorRecord, shouldAcceptReplacement } from './contentCachePolicy';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 1500;
+export const CONTENT_CACHE_SCHEMA_VERSION = 2;
 const CACHE_KEY_PREFIX = 'ipm_supabase_cache:ipm-2026-production';
 const EXISTING_SHARED_CACHE_KEY_PREFIX = 'ipm_supabase_cache:v1';
 const LEGACY_CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
@@ -22,6 +24,7 @@ type CacheEntry<T> = {
   data: T;
   lastSuccessfulUpdate: string;
   cacheAge: number;
+  schemaVersion?: number;
 };
 
 type FetchWithCacheOptions<T> = {
@@ -32,6 +35,7 @@ type FetchWithCacheOptions<T> = {
   retryDelayMs?: number;
   preferCache?: boolean;
   isCacheableResponse: (data: unknown) => data is T;
+  getItemCount?: (data: T) => number;
   onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
   onBackgroundRefreshError?: (error: unknown) => void;
 };
@@ -112,7 +116,7 @@ function getCacheAge(lastSuccessfulUpdate: string) {
   return Math.max(0, Date.now() - new Date(lastSuccessfulUpdate).getTime());
 }
 
-async function readCache<T>(cacheKey: string): Promise<CachedApiResult<T> | null> {
+async function readCache<T>(cacheKey: string, isCacheableResponse: (data: unknown) => data is T): Promise<CachedApiResult<T> | null> {
   const storageKey = getCacheKey(cacheKey);
 
   try {
@@ -130,10 +134,14 @@ async function readCache<T>(cacheKey: string): Promise<CachedApiResult<T> | null
       return null;
     }
 
+    if (!cacheEntry.lastSuccessfulUpdate || !isCacheableResponse(cacheEntry.data)) {
+      await AsyncStorage.removeItem(storageKey);
+      throw new Error('Saved API data is invalid');
+    }
     const cacheAge = getCacheAge(cacheEntry.lastSuccessfulUpdate);
     await AsyncStorage.setItem(
       storageKey,
-      JSON.stringify({ ...cacheEntry, cacheAge })
+      JSON.stringify({ ...cacheEntry, cacheAge, schemaVersion: CONTENT_CACHE_SCHEMA_VERSION })
     );
 
     return {
@@ -161,6 +169,7 @@ async function writeCache<T>(cacheKey: string, data: T, timestamp: string) {
     data,
     lastSuccessfulUpdate: timestamp,
     cacheAge: 0,
+    schemaVersion: CONTENT_CACHE_SCHEMA_VERSION,
   };
 
   await AsyncStorage.setItem(getCacheKey(cacheKey), JSON.stringify(cacheEntry));
@@ -188,6 +197,9 @@ async function fetchWithRetry<T>(
   retryDelayMs: number,
   isCacheableResponse: (data: unknown) => data is T
 ): Promise<CachedApiResult<T>> {
+  if (typeof navigator !== 'undefined' && 'onLine' in navigator && navigator.onLine === false) {
+    throw new Error('Device is offline');
+  }
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -227,11 +239,13 @@ export async function fetchCachedApiData<T>({
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   preferCache = true,
   isCacheableResponse,
+  getItemCount,
   onBackgroundRefresh,
   onBackgroundRefreshError,
 }: FetchWithCacheOptions<T>): Promise<CachedApiResult<T>> {
   await removeLegacyCache(cacheKey);
-  const cachedData = preferCache ? await readCache<T>(cacheKey) : null;
+  const lastKnownGood = await readCache<T>(cacheKey, isCacheableResponse);
+  const cachedData = preferCache ? lastKnownGood : null;
 
   const refresh = async () => {
     const result = await fetchWithRetry<T>(
@@ -241,6 +255,11 @@ export async function fetchCachedApiData<T>({
       retryDelayMs,
       isCacheableResponse
     );
+    const oldCount = lastKnownGood && getItemCount ? getItemCount(lastKnownGood.data) : 0;
+    const newCount = getItemCount ? getItemCount(result.data) : 0;
+    if (!shouldAcceptReplacement(oldCount, newCount, result.data)) {
+      throw new Error(`Refusing to replace saved ${cacheKey} data with an unverified empty response`);
+    }
     try {
       await writeCache(cacheKey, result.data, result.lastSuccessfulUpdate);
     } catch (error) {
@@ -262,16 +281,14 @@ export async function fetchCachedApiData<T>({
   return refresh();
 }
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 function isSupabaseScheduleResponse(data: unknown): data is ScheduleResponse {
   if (!data || typeof data !== 'object' || !Array.isArray((data as ScheduleResponse).events)) return false;
-  return (data as ScheduleResponse).events.every((event) => UUID_PATTERN.test(event.id));
+  return (data as ScheduleResponse).events.every(isScheduleRecord);
 }
 
 function isSupabaseVendorsResponse(data: unknown): data is VendorsResponse {
   if (!data || typeof data !== 'object' || !Array.isArray((data as VendorsResponse).vendors)) return false;
-  return (data as VendorsResponse).vendors.every((vendor) => UUID_PATTERN.test(vendor.id));
+  return (data as VendorsResponse).vendors.every(isVendorRecord);
 }
 
 function isAnnouncementsResponse(data: unknown): data is AnnouncementsResponse {
@@ -283,6 +300,7 @@ export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> 
     cacheKey: 'schedule',
     url: `${getApiBaseUrl()}/api/schedule`,
     isCacheableResponse: isSupabaseScheduleResponse,
+    getItemCount: (data) => data.events.length,
     ...options,
   });
 }
@@ -292,8 +310,17 @@ export function getVendorsData(options: SupabaseFetchOptions<VendorsResponse> = 
     cacheKey: 'vendors',
     url: `${getApiBaseUrl()}/api/vendors`,
     isCacheableResponse: isSupabaseVendorsResponse,
+    getItemCount: (data) => data.vendors.length,
     ...options,
   });
+}
+
+export function addConnectivityRefreshListener(refresh: () => void) {
+  if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') {
+    return () => undefined;
+  }
+  window.addEventListener('online', refresh);
+  return () => window.removeEventListener('online', refresh);
 }
 
 export function getAnnouncementsData(options: SupabaseFetchOptions<AnnouncementsResponse> = {}) {

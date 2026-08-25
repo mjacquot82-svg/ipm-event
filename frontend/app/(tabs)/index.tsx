@@ -33,6 +33,7 @@ import {
   ScheduleEvent,
   ScheduleResponse,
   getScheduleData,
+  addConnectivityRefreshListener,
   getAnnouncementsData,
 } from '../../src/services/spreadsheetDataService';
 
@@ -222,9 +223,7 @@ export default function HomeScreen() {
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
-    if (result.source === 'network') {
-      setDataSource('network');
-    }
+    setDataSource(result.source);
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
   }, []);
 
@@ -282,6 +281,8 @@ export default function HomeScreen() {
     fetchAnnouncements();
     loadFavorites();
   }, [fetchAnnouncements, fetchSchedule, loadFavorites]);
+
+  useEffect(() => addConnectivityRefreshListener(() => void fetchSchedule(true)), [fetchSchedule]);
 
   useFocusEffect(
     useCallback(() => {

@@ -17,7 +17,7 @@ import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
 import SplashScreen from '../src/components/SplashScreen';
 import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext';
 import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
-import { initializeWonderPush } from '../src/services/wonderPushService';
+import { initializeOfflineShell, initializeWonderPush } from '../src/services/wonderPushService';
 
 export default function RootLayout() {
   const [isInitializing, setIsInitializing] = useState(true);
@@ -29,6 +29,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'web') {
+      void initializeOfflineShell().catch((error) => {
+        console.warn('Offline shell service worker unavailable:', error);
+      });
       void initializeWonderPush().catch((error) => {
         console.warn('WonderPush initialization unavailable:', error);
       });

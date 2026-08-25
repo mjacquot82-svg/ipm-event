@@ -6,6 +6,7 @@ import vm from 'node:vm';
 
 function installBrowserMocks({ loadLoader = true } = {}) {
   let appendedScripts = 0;
+  const workerRegistrations = [];
   const scripts = new Map();
   const notification = { permission: 'default' };
   globalThis.Notification = notification;
@@ -16,7 +17,12 @@ function installBrowserMocks({ loadLoader = true } = {}) {
   };
   Object.defineProperty(globalThis, 'navigator', {
     configurable: true,
-    value: { serviceWorker: {} },
+    value: { serviceWorker: {
+      async register(url, options) {
+        workerRegistrations.push({ url, options });
+        return { scope: options.scope };
+      },
+    } },
   });
   globalThis.document = {
     head: {
@@ -32,6 +38,7 @@ function installBrowserMocks({ loadLoader = true } = {}) {
   return {
     notification,
     appendedScripts: () => appendedScripts,
+    workerRegistrations: () => workerRegistrations,
     loaderScript: () => scripts.get('wonderpush-jssdk-loader'),
     makeSdkReady(methods = {}) {
       const queued = [...window.WonderPush];
@@ -80,6 +87,10 @@ test('WonderPush web SDK initializes once with the existing root worker', async 
   await new Promise((resolve) => setImmediate(resolve));
 
   assert.equal(browser.appendedScripts(), 1);
+  assert.deepEqual(browser.workerRegistrations(), [{
+    url: '/webpushr-sw.js?webKey=staging-public-key',
+    options: { scope: '/', updateViaCache: 'none' },
+  }]);
   assert.equal(browser.loaderScript().id, 'wonderpush-jssdk-loader');
   assert.notEqual(browser.loaderScript().id, 'wonderpush-jssdk');
   assert.equal(browser.loaderScript().dataset.loaded, 'true');
@@ -268,7 +279,12 @@ test('worker uses WonderPush existing-worker integration and contains no Webpush
   assert.doesNotMatch(worker, /cdn\.webpushr\.com|sw-server\.min\.js/);
 
   const imported = [];
-  const workerSelf = { location: { href: 'https://staging.theipm.ca/webpushr-sw.js?webKey=public-key' } };
+  const registeredEvents = [];
+  const workerSelf = {
+    location: { href: 'https://staging.theipm.ca/webpushr-sw.js?webKey=public-key', origin: 'https://staging.theipm.ca' },
+    addEventListener(name) { registeredEvents.push(name); },
+    clients: { claim: async () => undefined },
+  };
   vm.runInNewContext(worker, {
     self: workerSelf,
     URL,
@@ -278,6 +294,7 @@ test('worker uses WonderPush existing-worker integration and contains no Webpush
   assert.deepEqual(imported, ['https://cdn.by.wonderpush.com/sdk/1.1/wonderpush-loader.min.js']);
   assert.equal(workerSelf.WonderPush[0][0], 'init');
   assert.equal(workerSelf.WonderPush[0][1].webKey, 'public-key');
+  assert.deepEqual(registeredEvents.sort(), ['activate', 'fetch', 'install']);
 });
 
 test('IPM owns the opt-in action and existing native/install paths remain isolated', async () => {
