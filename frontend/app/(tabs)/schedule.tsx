@@ -17,6 +17,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
+import { getScheduleCategoryStyle } from '../../src/theme/scheduleCategoryStyles';
 import {
   ATTENDEE_HORIZONTAL_MARGIN,
   ATTENDEE_DESKTOP_BREAKPOINT,
@@ -62,6 +63,9 @@ export default function ScheduleScreen() {
   const [showEventModal, setShowEventModal] = useState(false);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
+
+  const selectedCategoryStyle = getScheduleCategoryStyle(selectedCategory);
+  const selectedEventCategoryStyle = getScheduleCategoryStyle(selectedEvent?.category);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     if (!Array.isArray(result.data.events)) {
@@ -484,10 +488,15 @@ export default function ScheduleScreen() {
           >
             {categoryOptions.map((category) => {
               const isActive = selectedCategory === category;
+              const categoryStyle = getScheduleCategoryStyle(category);
               return (
                 <TouchableOpacity
                   key={category}
-                  style={[styles.filterPill, isActive && styles.filterPillActive]}
+                  style={[
+                    styles.filterPill,
+                    { backgroundColor: categoryStyle.tint, borderColor: categoryStyle.primary },
+                    isActive && { backgroundColor: categoryStyle.primary },
+                  ]}
                   onPress={() => selectCategory(isActive ? null : category)}
                   accessibilityRole="button"
                   accessibilityLabel={`Filter by ${category}`}
@@ -496,9 +505,13 @@ export default function ScheduleScreen() {
                   <Feather
                     name="tag"
                     size={14}
-                    color={isActive ? '#FFFFFF' : colors.textSecondary}
+                    color={isActive ? categoryStyle.selectedFilterForeground : categoryStyle.tintForeground}
                   />
-                  <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
+                  <Text style={[
+                    styles.filterText,
+                    { color: categoryStyle.tintForeground },
+                    isActive && { color: categoryStyle.selectedFilterForeground },
+                  ]}>
                     {category}
                   </Text>
                 </TouchableOpacity>
@@ -508,23 +521,29 @@ export default function ScheduleScreen() {
         )}
         {categoryOptions.length > 0 && !isDesktop && (
           <TouchableOpacity
-            style={[styles.categorySelectorButton, selectedCategory && styles.categorySelectorButtonActive]}
+            style={[
+              styles.categorySelectorButton,
+              selectedCategory && {
+                backgroundColor: selectedCategoryStyle.primary,
+                borderColor: selectedCategoryStyle.primary,
+              },
+            ]}
             onPress={() => setShowCategorySelector(true)}
             accessibilityRole="button"
             accessibilityLabel={`Categories, ${selectedCategory ? '1 category selected' : 'All categories'}`}
             accessibilityHint="Opens the category filter options"
             accessibilityState={{ expanded: showCategorySelector }}
           >
-            <Feather name="tag" size={18} color={selectedCategory ? '#FFFFFF' : colors.primary} />
+            <Feather name="tag" size={18} color={selectedCategory ? selectedCategoryStyle.selectedFilterForeground : colors.primary} />
             <View style={styles.categorySelectorTextContainer}>
-              <Text style={[styles.categorySelectorLabel, selectedCategory && styles.categorySelectorTextActive]}>
+              <Text style={[styles.categorySelectorLabel, selectedCategory && { color: selectedCategoryStyle.selectedFilterForeground }]}>
                 Categories
               </Text>
-              <Text style={[styles.categorySelectorStatus, selectedCategory && styles.categorySelectorTextActive]}>
+              <Text style={[styles.categorySelectorStatus, selectedCategory && { color: selectedCategoryStyle.selectedFilterForeground }]}>
                 {selectedCategory ? '1 category selected' : 'All categories'}
               </Text>
             </View>
-            <Feather name="chevron-down" size={20} color={selectedCategory ? '#FFFFFF' : colors.textSecondary} />
+            <Feather name="chevron-down" size={20} color={selectedCategory ? selectedCategoryStyle.selectedFilterForeground : colors.textSecondary} />
           </TouchableOpacity>
         )}
         {dayOptions.length > 0 && (
@@ -626,11 +645,12 @@ export default function ScheduleScreen() {
         ListFooterComponent={<AttendeeAttribution source="schedule_attribution" />}
         renderItem={({ item: event }) => {
           const isFavorite = favorites.includes(event.id);
+          const categoryStyle = getScheduleCategoryStyle(event.category);
 
           return (
             <View style={sectionStyle}>
                   <TouchableOpacity 
-                    style={styles.eventCard}
+                    style={[styles.eventCard, { backgroundColor: categoryStyle.tint }]}
                     onPress={() => {
                       void queueAnalyticsEvent('schedule_event_opened', {
                         schedule_item_id: event.id, category: event.category || 'uncategorized', source: 'schedule',
@@ -643,7 +663,7 @@ export default function ScheduleScreen() {
                     <View
                       style={[
                         styles.eventColorBar,
-                        { backgroundColor: colors.primary },
+                        { backgroundColor: categoryStyle.primary },
                       ]}
                     />
 
@@ -653,9 +673,9 @@ export default function ScheduleScreen() {
                           <Feather
                             name="clock"
                             size={14}
-                            color={colors.textMuted}
+                            color={categoryStyle.tintForeground}
                           />
-                          <Text style={styles.eventTime}>
+                          <Text style={[styles.eventTime, { color: categoryStyle.tintForeground }]}>
                             {[event.start_time, event.end_time].filter(Boolean).join(' - ')}
                           </Text>
                         </View>
@@ -677,9 +697,9 @@ export default function ScheduleScreen() {
                       <Text style={styles.eventTitle}>{event.title}</Text>
 
                       {event.location_name ? (
-                        <View style={styles.locationBadge}>
-                          <Feather name="map-pin" size={12} color={colors.primary} />
-                          <Text style={styles.locationBadgeText}>{event.location_name}</Text>
+                        <View style={[styles.locationBadge, { borderColor: categoryStyle.primary }]}>
+                          <Feather name="map-pin" size={12} color={categoryStyle.tintForeground} />
+                          <Text style={[styles.locationBadgeText, { color: categoryStyle.tintForeground }]}>{event.location_name}</Text>
                         </View>
                       ) : null}
 
@@ -743,19 +763,40 @@ export default function ScheduleScreen() {
               {[null, ...categoryOptions].map((category) => {
                 const isActive = selectedCategory === category;
                 const label = category || 'All categories';
+                const categoryStyle = getScheduleCategoryStyle(category);
                 return (
                   <TouchableOpacity
                     key={label}
-                    style={[styles.categoryOption, isActive && styles.categoryOptionActive]}
+                    style={[
+                      styles.categoryOption,
+                      {
+                        backgroundColor: category ? categoryStyle.tint : colors.surfaceHighlight,
+                        borderColor: isActive ? categoryStyle.primary : 'transparent',
+                      },
+                      isActive && styles.categoryOptionSelected,
+                    ]}
                     onPress={() => selectCategory(category)}
                     accessibilityRole="menuitem"
                     accessibilityLabel={label}
                     accessibilityState={{ selected: isActive }}
                   >
-                    <Text style={[styles.categoryOptionText, isActive && styles.categoryOptionTextActive]}>
-                      {label}
-                    </Text>
-                    {isActive && <Feather name="check" size={20} color={colors.primary} />}
+                    <View style={styles.categoryOptionLabel}>
+                      <View
+                        style={[
+                          styles.categoryColourIndicator,
+                          { backgroundColor: category ? categoryStyle.primary : colors.surface, borderColor: categoryStyle.primary },
+                        ]}
+                        accessible={false}
+                      />
+                      <Text style={[
+                        styles.categoryOptionText,
+                        { color: categoryStyle.tintForeground },
+                        isActive && { fontWeight: '700' },
+                      ]}>
+                        {label}
+                      </Text>
+                    </View>
+                    {isActive && <Feather name="check" size={20} color={categoryStyle.primary} />}
                   </TouchableOpacity>
                 );
               })}
@@ -772,13 +813,22 @@ export default function ScheduleScreen() {
         onRequestClose={() => setShowEventModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { borderTopColor: selectedEventCategoryStyle.primary }]}>
             {selectedEvent && (
               <>
                 {/* Modal Header */}
-                <View style={styles.modalHeader}>
+                <View style={[styles.modalHeader, { backgroundColor: selectedEventCategoryStyle.tint }]}>
                   <View style={styles.modalTitleContainer}>
-                    <Text style={styles.modalTitle}>{selectedEvent.title}</Text>
+                    <View style={styles.modalHeadingText}>
+                      <Text style={styles.modalTitle}>{selectedEvent.title}</Text>
+                      {selectedEvent.category ? (
+                        <View style={[styles.modalCategoryBadge, { backgroundColor: selectedEventCategoryStyle.primary }]}>
+                          <Text style={[styles.modalCategoryBadgeText, { color: selectedEventCategoryStyle.strongForeground }]}>
+                            {selectedEvent.category}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
                     <TouchableOpacity
                       onPress={() => {
                         handleToggleFavorite(selectedEvent.id);
@@ -806,7 +856,7 @@ export default function ScheduleScreen() {
                   <View style={styles.detailSection}>
                     <View style={styles.detailRow}>
                       <View style={styles.detailIcon}>
-                        <Feather name="clock" size={20} color={colors.primary} />
+                        <Feather name="clock" size={20} color={selectedEventCategoryStyle.primary} />
                       </View>
                       <View style={styles.detailTextContainer}>
                         <Text style={styles.detailLabel}>Time</Text>
@@ -818,7 +868,7 @@ export default function ScheduleScreen() {
 
                     <View style={styles.detailRow}>
                       <View style={styles.detailIcon}>
-                        <Feather name="calendar" size={20} color={colors.primary} />
+                        <Feather name="calendar" size={20} color={selectedEventCategoryStyle.primary} />
                       </View>
                       <View style={styles.detailTextContainer}>
                         <Text style={styles.detailLabel}>Date</Text>
@@ -837,7 +887,7 @@ export default function ScheduleScreen() {
                   {/* Location */}
                   {selectedEvent.location_name && (
                     <TouchableOpacity 
-                      style={[styles.detailSection, styles.locationClickable]}
+                      style={[styles.detailSection, styles.locationClickable, { borderColor: selectedEventCategoryStyle.primary }]}
                       onPress={() => {
                         console.log('Location clicked:', selectedEvent.location_name);
                         setShowEventModal(false);
@@ -850,26 +900,26 @@ export default function ScheduleScreen() {
                     >
                       <View style={styles.detailRow}>
                         <View style={styles.detailIcon}>
-                          <Feather name="map-pin" size={20} color={colors.primary} />
+                          <Feather name="map-pin" size={20} color={selectedEventCategoryStyle.primary} />
                         </View>
                         <View style={styles.detailTextContainer}>
                           <Text style={styles.detailLabel}>Location</Text>
-                          <Text style={[styles.detailValue, { color: colors.primary }]}>
+                          <Text style={[styles.detailValue, { color: selectedEventCategoryStyle.primary }]}>
                             {selectedEvent.location_name}
                           </Text>
                           <Text style={styles.tapToViewMap}>Tap to view on map</Text>
                         </View>
-                        <Feather name="chevron-right" size={20} color={colors.primary} />
+                        <Feather name="chevron-right" size={20} color={selectedEventCategoryStyle.primary} />
                       </View>
                     </TouchableOpacity>
                   )}
 
                   {/* Category */}
                   {selectedEvent.category && (
-                    <View style={styles.detailSection}>
+                    <View style={[styles.detailSection, { borderLeftWidth: 4, borderLeftColor: selectedEventCategoryStyle.primary }]}>
                       <View style={styles.detailRow}>
                         <View style={styles.detailIcon}>
-                          <Feather name="tag" size={20} color={colors.accent} />
+                          <Feather name="tag" size={20} color={selectedEventCategoryStyle.primary} />
                         </View>
                         <View style={styles.detailTextContainer}>
                           <Text style={styles.detailLabel}>Category</Text>
@@ -1091,6 +1141,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  categoryOptionSelected: {
+    borderWidth: 2,
+  },
+  categoryOptionLabel: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  categoryColourIndicator: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
   },
   categoryOptionActive: {
     backgroundColor: colors.surfaceHighlight,
@@ -1207,6 +1274,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(45, 41, 38, 0.08)',
   },
   eventColorBar: {
     width: 4,
@@ -1297,6 +1366,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     marginBottom: 6,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   locationBadgeText: {
     fontSize: 13,
@@ -1315,6 +1389,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     maxHeight: '85%',
     minHeight: '50%',
+    borderTopWidth: 6,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1330,6 +1405,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  modalHeadingText: {
+    flex: 1,
+    gap: 8,
+  },
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
@@ -1338,6 +1417,17 @@ const styles = StyleSheet.create({
   },
   modalStarButton: {
     padding: 4,
+  },
+  modalCategoryBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  modalCategoryBadgeText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '700',
   },
   modalCloseButton: {
     padding: 4,
