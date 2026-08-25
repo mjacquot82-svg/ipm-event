@@ -500,6 +500,65 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
+              onPress={() => quickAction('camping', 'internal', () => router.push('/camping' as never))}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Camping information"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
+                <Feather name="sun" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Camping</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionCard} onPress={() => quickAction('itinerary', 'internal', () => router.push('/itinerary'))} activeOpacity={0.8}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.utility }]}>
+                <Feather name="clipboard" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Personal Itinerary</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => quickAction('queen_archive', 'internal', () => router.push('/queen-of-the-furrow' as never))}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Queen of the Furrow"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.accentDark }]}>
+                <MaterialCommunityIcons name="crown-outline" size={24} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Queen of the Furrow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.sosCard]}
+              onPress={() => quickAction('sos', 'unavailable_notice', () => showUnavailableNotice('SOS'))}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#D32F2F' }]}>
+                <Feather name="alert-triangle" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={[styles.actionTitle, { color: '#D32F2F' }]}>SOS</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionUnread]}
+              onPress={() => quickAction('announcements', 'internal', () => router.push('/announcements' as never))}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.actionIcon, styles.announcementBell, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementBellUnread]}>
+                <Feather name="bell" size={22} color={unreadAnnouncementIds.size > 0 && announcementReadStateHydrated ? '#735B1B' : '#FFFFFF'} />
+                {unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && <View style={styles.bellAccent}><Feather name="star" size={9} color="#735B1B" /></View>}
+              </View>
+              <Text style={[styles.actionTitle, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionText]}>Announcements</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.sectionTitle, styles.linksTitle]}>Links</Text>
+          <View style={styles.quickActionsGrid}>
+            <TouchableOpacity
+              style={styles.actionCard}
               onPress={() => openQuickLink('sponsors', 'partners')}
               activeOpacity={0.8}
             >
@@ -544,17 +603,6 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openQuickLink('camping', 'camping')}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
-                <Feather name="sun" size={22} color="#FFFFFF" />
-              </View>
-              <Text style={styles.actionTitle}>Camping</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
               onPress={() => openQuickLink('souvenirs', 'merchandise')}
               activeOpacity={0.8}
             >
@@ -562,49 +610,6 @@ export default function HomeScreen() {
                 <Feather name="gift" size={22} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Souvenirs</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionCard} onPress={() => quickAction('itinerary', 'internal', () => router.push('/itinerary'))} activeOpacity={0.8}>
-              <View style={[styles.actionIcon, { backgroundColor: colors.utility }]}>
-                <Feather name="clipboard" size={22} color="#FFFFFF" />
-              </View>
-              <Text style={styles.actionTitle}>Personal Itinerary</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => quickAction('queen_archive', 'internal', () => router.push('/queen-of-the-furrow' as never))}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Queen of the Furrow"
-            >
-              <View style={[styles.actionIcon, { backgroundColor: colors.accentDark }]}>
-                <MaterialCommunityIcons name="crown-outline" size={24} color="#FFFFFF" />
-              </View>
-              <Text style={styles.actionTitle}>Queen of the Furrow</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionCard, styles.sosCard]}
-              onPress={() => quickAction('sos', 'unavailable_notice', () => showUnavailableNotice('SOS'))}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#D32F2F' }]}>
-                <Feather name="alert-triangle" size={22} color="#FFFFFF" />
-              </View>
-              <Text style={[styles.actionTitle, { color: '#D32F2F' }]}>SOS</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionCard, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionUnread]}
-              onPress={() => quickAction('announcements', 'internal', () => router.push('/announcements' as never))}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.actionIcon, styles.announcementBell, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementBellUnread]}>
-                <Feather name="bell" size={22} color={unreadAnnouncementIds.size > 0 && announcementReadStateHydrated ? '#735B1B' : '#FFFFFF'} />
-                {unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && <View style={styles.bellAccent}><Feather name="star" size={9} color="#735B1B" /></View>}
-              </View>
-              <Text style={[styles.actionTitle, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionText]}>Announcements</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -749,6 +754,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 16,
+  },
+  linksTitle: {
+    marginTop: 20,
   },
   seeAll: {
     fontSize: 14,
