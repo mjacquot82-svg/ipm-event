@@ -506,7 +506,7 @@ export default function HomeScreen() {
               accessibilityLabel="Camping information"
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
-                <Feather name="sun" size={22} color="#FFFFFF" />
+                <MaterialCommunityIcons name="tent" size={24} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Camping</Text>
             </TouchableOpacity>
@@ -610,6 +610,32 @@ export default function HomeScreen() {
                 <Feather name="gift" size={22} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Souvenirs</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => openQuickLink('celebration_of_excellence', 'celebration_of_excellence')}
+              activeOpacity={0.8}
+              accessibilityRole="link"
+              accessibilityLabel="Celebration of Excellence"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.accentDark }]}>
+                <Feather name="award" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Celebration of Excellence</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => quickAction('worship_service', 'internal', () => router.push('/worship-service' as never))}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Interdenominational Worship Service"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.primaryDark }]}>
+                <Feather name="book-open" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Interdenominational Worship Service</Text>
             </TouchableOpacity>
           </View>
         </View>

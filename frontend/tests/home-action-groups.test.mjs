@@ -14,10 +14,11 @@ const groupedButtons = home.slice(actionsStart, groupsEnd);
 
 const allButtons = [
   'Map', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
-  'Camping', 'Souvenirs', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements',
+  'Camping', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service',
+  'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements',
 ];
 const actionButtons = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements'];
-const linkButtons = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs'];
+const linkButtons = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service'];
 
 function occurrences(source, label) {
   return [...source.matchAll(new RegExp(`>${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}<\\/Text>`, 'g'))].length;
@@ -48,6 +49,7 @@ test('external controls are isolated under Link Buttons without URL changes', ()
     Exhibitors: ['exhibitor', 'https://www.plowingmatch.org/ipm2026/get-involved/become-an-exhibitor/'],
     Tickets: ['tickets', 'https://www.tix123.com/tickets/?code=IPMRE26'],
     Souvenirs: ['merchandise', 'https://ipm26.itemorder.com/shop/home/'],
+    'Celebration of Excellence': ['celebration_of_excellence', 'https://www.zeffy.com/en-CA/ticketing/2026-ipm-celebration-of-excellence'],
   };
   for (const [label, [destination, url]] of Object.entries(expected)) {
     assert.equal(occurrences(links, label), 1, `${label} missing from links`);
@@ -55,6 +57,20 @@ test('external controls are isolated under Link Buttons without URL changes', ()
     assert.ok(destinations.includes(`${destination}: {`));
     assert.ok(destinations.includes(`url: '${url}'`), `${label} URL changed`);
   }
+});
+
+test('Camping uses a tent icon and retains its internal route', () => {
+  const start = actions.indexOf("quickAction('camping'");
+  const card = actions.slice(start, actions.indexOf('</TouchableOpacity>', start));
+  assert.match(card, /router\.push\('\/camping' as never\)/);
+  assert.match(card, /MaterialCommunityIcons name="tent"/);
+  assert.doesNotMatch(card, /name="sun"/);
+});
+
+test('Worship Service appears once under Links and routes internally', () => {
+  assert.equal(occurrences(links, 'Interdenominational Worship Service'), 1);
+  assert.equal(occurrences(actions, 'Interdenominational Worship Service'), 0);
+  assert.match(links, /quickAction\('worship_service', 'internal', \(\) => router\.push\('\/worship-service' as never\)\)/);
 });
 
 test('Camping is an internal Quick Action and its external URL is retained by the Camping page', () => {
