@@ -1,7 +1,7 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { openTrackedLink } from '../../src/analytics/trackedLinks';
@@ -10,10 +10,14 @@ import colors from '../../src/theme/colors';
 import { attendeePageContent } from '../../src/theme/attendeePageLayout';
 
 const ARTWORK_ASPECT_RATIO = 1364 / 3404;
+const MAX_ARTWORK_WIDTH = 720;
 
 export default function WorshipServiceScreen() {
   usePageAnalytics('worship_service', 'home_link', 'worship_service_opened');
   const router = useRouter();
+  const { width: viewportWidth } = useWindowDimensions();
+  const artworkWidth = Math.min(viewportWidth, MAX_ARTWORK_WIDTH);
+  const artworkHeight = artworkWidth / ARTWORK_ASPECT_RATIO;
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
@@ -40,7 +44,8 @@ export default function WorshipServiceScreen() {
 
           <Image
             source={require('../../assets/images/worship-service.jpg')}
-            style={styles.posterImage}
+            style={[styles.posterImage, { width: artworkWidth, height: artworkHeight }]}
+            resizeMode="contain"
             accessible
             accessibilityLabel="Complete 2026 IPM Interdenominational Worship Service information"
           />
@@ -68,7 +73,7 @@ const styles = StyleSheet.create({
   content: { width: '100%', alignItems: 'center' },
   backButton: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, marginHorizontal: 20, marginBottom: 12 },
   backButtonText: { color: colors.primary, fontSize: 16, fontWeight: '700' },
-  posterImage: { width: '100%', maxWidth: 720, aspectRatio: ARTWORK_ASPECT_RATIO, alignSelf: 'center', margin: 0, padding: 0 },
+  posterImage: { alignSelf: 'center', margin: 0, padding: 0 },
   pdfButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, backgroundColor: colors.field, borderRadius: 12, paddingHorizontal: 18, marginHorizontal: 20, marginTop: 18, marginBottom: 12 },
   pdfButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 });

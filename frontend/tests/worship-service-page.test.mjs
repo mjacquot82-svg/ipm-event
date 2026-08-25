@@ -22,10 +22,27 @@ test('the combined production image is the sole Worship Service artwork', () => 
 test('the image itself determines mobile artwork height without blank layout space', () => {
   assert.match(page, /scrollContent: { paddingHorizontal: 0, paddingTop: 12 }/);
   assert.match(page, /content: { width: '100%', alignItems: 'center' }/);
-  assert.match(page, /posterImage: { width: '100%', maxWidth: 720, aspectRatio: ARTWORK_ASPECT_RATIO, alignSelf: 'center', margin: 0, padding: 0 }/);
-  assert.doesNotMatch(page, /posterImage:[^\n]*(gap|marginBottom|marginTop|border|borderRadius|height|minHeight|maxHeight|flex)/);
-  assert.doesNotMatch(page, /resizeMode="contain"|styles\.artwork|artwork:/);
+  assert.match(page, /const MAX_ARTWORK_WIDTH = 720/);
+  assert.match(page, /const artworkWidth = Math\.min\(viewportWidth, MAX_ARTWORK_WIDTH\)/);
+  assert.match(page, /const artworkHeight = artworkWidth \/ ARTWORK_ASPECT_RATIO/);
+  assert.match(page, /style=\{\[styles\.posterImage, \{ width: artworkWidth, height: artworkHeight \}\]\}/);
+  assert.match(page, /resizeMode="contain"/);
+  assert.match(page, /posterImage: { alignSelf: 'center', margin: 0, padding: 0 }/);
+  assert.doesNotMatch(page, /posterImage:[^\n]*(gap|marginBottom|marginTop|border|borderRadius|minHeight|maxHeight|flex|transform)/);
+  assert.doesNotMatch(page, /styles\.artwork|artwork:|negative|scale\(/);
   assert.doesNotMatch(page, /useAttendeeLayout|sectionStyle/);
+});
+
+test('narrow Android viewports fit the complete artwork without horizontal overflow', () => {
+  const sourceWidth = 1364;
+  const sourceHeight = 3404;
+  for (const viewportWidth of [360, 390, 430]) {
+    const renderedWidth = Math.min(viewportWidth, 720);
+    const renderedHeight = renderedWidth / (sourceWidth / sourceHeight);
+    assert.ok(renderedWidth <= viewportWidth);
+    assert.equal(renderedWidth, viewportWidth);
+    assert.ok(Math.abs((renderedHeight / renderedWidth) - (sourceHeight / sourceWidth)) < 1e-12);
+  }
 });
 
 test('original PDF action uses the exact tracked external destination', () => {
