@@ -13,7 +13,7 @@ function walk(directory) {
   });
 }
 
-const coreImage = /\/(ipm-logo|field|event-map)\.[^/]+\.(png|jpe?g)$/i;
+const coreImage = /\/(ipm-logo|field|gemini4|event-map)\.[^/]+\.(png|jpe?g)$/i;
 const coreFont = /\/(Feather|MaterialCommunityIcons)\.[^/]+\.ttf$/i;
 const essential = walk(dist).filter((path) => {
   const url = `/${relative(dist, path).split(sep).join('/')}`;

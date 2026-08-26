@@ -47,6 +47,7 @@ export type NotificationState =
 
 let initialization: Promise<void> | null = null;
 let offlineShellRegistration: Promise<ServiceWorkerRegistration> | null = null;
+let offlineShellOnlineListenerInstalled = false;
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(message)), timeoutMs);
@@ -86,10 +87,18 @@ export function initializeOfflineShell(): Promise<ServiceWorkerRegistration> {
     }
     const webKey = getWebKey();
     if (!webKey) throw new Error('EXPO_PUBLIC_WONDERPUSH_WEB_KEY is not configured.');
-    return navigator.serviceWorker.register(getWonderPushWorkerUrl(webKey), {
+    const registration = await navigator.serviceWorker.register(getWonderPushWorkerUrl(webKey), {
       scope: '/',
       updateViaCache: 'none',
     });
+    if (!offlineShellOnlineListenerInstalled && typeof window?.addEventListener === 'function') {
+      offlineShellOnlineListenerInstalled = true;
+      window.addEventListener('online', () => {
+        void navigator.serviceWorker.getRegistration('/').then((current) => current?.update()).catch(() => undefined);
+      });
+    }
+    if (navigator.onLine) void registration.update().catch(() => undefined);
+    return registration;
   })().catch((error) => {
     offlineShellRegistration = null;
     throw error;

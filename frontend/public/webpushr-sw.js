@@ -30,6 +30,15 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'IPM_GET_OFFLINE_STATUS') {
+    event.ports?.[0]?.postMessage({ shellVersion: IPM_OFFLINE_VERSION });
+  } else if (event.data?.type === 'IPM_ACTIVATE_WAITING_UPDATE') {
+    // Only an explicit attendee action may advance a fully installed waiting worker.
+    void self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;

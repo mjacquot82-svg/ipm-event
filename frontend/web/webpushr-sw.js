@@ -25,6 +25,13 @@ self.addEventListener('activate', (event) => {
     await self.clients.claim();
   })());
 });
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'IPM_GET_OFFLINE_STATUS') {
+    event.ports?.[0]?.postMessage({ shellVersion: IPM_OFFLINE_VERSION });
+  } else if (event.data?.type === 'IPM_ACTIVATE_WAITING_UPDATE') {
+    void self.skipWaiting();
+  }
+});
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;

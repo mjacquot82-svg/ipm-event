@@ -57,6 +57,43 @@ test('React owns the root after loading, so the pre-React reassurance disappears
   assert.doesNotMatch(layout, /setTimeout[\s\S]*setIsInitializing\(false\)/);
 });
 
+test('Android manifest splash is OS-owned and reassurance begins in the earliest controllable HTML', async () => {
+  const [appConfig, html] = await Promise.all([
+    readFile(new URL('../app.json', import.meta.url), 'utf8'),
+    readFile(new URL('../public/index.html', import.meta.url), 'utf8'),
+  ]);
+  const config = JSON.parse(appConfig);
+  assert.equal(config.expo.splash.image, './assets/images/ipm-logo.png');
+  assert.equal('message' in config.expo.splash, false);
+  assert.match(html, /ipm-startup-reassurance/);
+});
+
+test('staging offline diagnostic is safe, works from cached browser state, and applies once', async () => {
+  const [service, card] = await Promise.all([
+    readFile(new URL('../src/services/offlineShellStatus.web.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/StagingOfflineStatus.tsx', import.meta.url), 'utf8'),
+  ]);
+  assert.match(service, /cachedShellVersions/);
+  assert.match(service, /controllingShellVersion/);
+  assert.match(service, /bundleIdentity/);
+  assert.match(service, /registration\?\.waiting/);
+  assert.match(service, /IPM_ACTIVATE_WAITING_UPDATE/);
+  assert.match(service, /controllerchange/);
+  assert.match(service, /\{ once: true \}/);
+  assert.doesNotMatch(service + card, /installationId|webKey|permission|subscribeToNotifications/);
+  assert.match(card, /EXPO_PUBLIC_BACKEND_URL\?\.includes\('staging'\)/);
+});
+
+test('normal Home hero overlay is selected for shell precache with field fallback retained', async () => {
+  const [banner, generator] = await Promise.all([
+    readFile(new URL('../src/components/ResponsiveBanner.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../scripts/generate-offline-worker.js', import.meta.url), 'utf8'),
+  ]);
+  assert.match(banner, /field\.png/);
+  assert.match(banner, /gemini4\.png/);
+  assert.match(generator, /field\|gemini4/);
+});
+
 test('refreshed shell retains new saved-data wording and safe worker update lifecycle', async () => {
   const [banner, worker] = await Promise.all([
     readFile(new URL('../src/components/CachedDataBanner.tsx', import.meta.url), 'utf8'),
@@ -66,6 +103,8 @@ test('refreshed shell retains new saved-data wording and safe worker update life
   assert.match(banner, /saved \$\{informationLabel\}/);
   assert.match(worker, /cache\.addAll\(IPM_SHELL_ASSETS\)/);
   assert.match(worker, /addEventListener\('activate'/);
-  assert.doesNotMatch(worker, /skipWaiting/);
+  assert.match(worker, /IPM_ACTIVATE_WAITING_UPDATE[\s\S]*skipWaiting/);
+  const installHandler = worker.match(/addEventListener\('install'[\s\S]*?\n\}\);/)?.[0] || '';
+  assert.doesNotMatch(installHandler, /skipWaiting/);
   assert.doesNotMatch(worker, /addEventListener\(['"](?:push|notificationclick)['"]/);
 });

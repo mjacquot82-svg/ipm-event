@@ -71,3 +71,8 @@ test('first offline open has explicit unsaved-data states', async () => {
   assert.match(schedule, /Schedule information isn't saved yet/);
   assert.match(vendors, /Vendor information isn't saved yet/);
 });
+
+test('Home cached Schedule uses the same limited-connection explanation', async () => {
+  const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
+  assert.match(home, /isShowingCachedData[\s\S]*informationType="event"/);
+});

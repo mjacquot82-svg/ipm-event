@@ -426,7 +426,7 @@ export default function HomeScreen() {
 
         {isShowingCachedData && (
           <View style={sectionStyle}>
-            <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
+            <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} informationType="event" />
           </View>
         )}
 

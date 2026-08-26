@@ -294,7 +294,7 @@ test('worker uses WonderPush existing-worker integration and contains no Webpush
   assert.deepEqual(imported, ['https://cdn.by.wonderpush.com/sdk/1.1/wonderpush-loader.min.js']);
   assert.equal(workerSelf.WonderPush[0][0], 'init');
   assert.equal(workerSelf.WonderPush[0][1].webKey, 'public-key');
-  assert.deepEqual(registeredEvents.sort(), ['activate', 'fetch', 'install']);
+  assert.deepEqual(registeredEvents.sort(), ['activate', 'fetch', 'install', 'message']);
 });
 
 test('IPM owns the opt-in action and existing native/install paths remain isolated', async () => {

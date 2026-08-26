@@ -18,6 +18,7 @@ import { eventInfo } from '../../src/data/mockData';
 import { openTrackedLink, trackControlledOutbound } from '../../src/analytics/trackedLinks';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
+import StagingOfflineStatus from '../../src/components/StagingOfflineStatus';
 
 const OFFICIAL_IPM_CONTENT = [
   "It is the largest event of its kind in North America.\nWith so much to see and do, plan to spend more than one day!\nThe IPM is held in a different community each year, highlighting the many great things the area has to offer and attracting on average 70,000 people from across Ontario, throughout Canada, the United States and beyond.",
@@ -169,6 +170,7 @@ export default function AboutScreen() {
         </View>
 
         <AttendeeAttribution source="about_attribution" />
+        <StagingOfflineStatus />
 
       </ScrollView>
     </View>
