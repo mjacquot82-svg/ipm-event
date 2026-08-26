@@ -41,6 +41,7 @@ try:
     )
     from backend.itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, ProviderReadinessSynchronizer, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
     from backend.reminder_scale import batched_scale_report, scale_report
+    from backend.plowing_results_demo import DemoResultsPayload, demo_document, ranked_document, validated_document
 except ModuleNotFoundError:
     from analytics import (
         ANALYTICS_EVENT_SCOPE,
@@ -64,6 +65,7 @@ except ModuleNotFoundError:
     )
     from itinerary_reminders import InstallationTargetedWonderPush, ItineraryReminderEngine, ProviderReadinessSynchronizer, SupabaseItineraryReminderRepository, provider_readiness, public_status, test_device_status
     from reminder_scale import batched_scale_report, scale_report
+    from plowing_results_demo import DemoResultsPayload, demo_document, ranked_document, validated_document
 import secrets
 import base64
 import hmac
@@ -1030,6 +1032,26 @@ def require_vendor_manager_role(user: dict):
         )
 
 
+def require_plowing_demo():
+    if not IS_STAGING_DEPLOYMENT:
+        raise HTTPException(status_code=404, detail="Not found")
+    return require_mongodb()
+
+
+def require_plowing_manager_role(user: dict):
+    if user.get("role") not in ("Owner", "Schedule"):
+        raise HTTPException(status_code=403, detail="Your organizer role cannot publish plowing results")
+
+
+async def get_or_create_plowing_demo():
+    database = require_plowing_demo()
+    document = await database.plowing_results_demo.find_one({"id": "ipm-plowing-results-demo-v1"})
+    if document is None:
+        document = demo_document()
+        await database.plowing_results_demo.insert_one(document)
+    return ranked_document(document)
+
+
 def set_admin_session_cookie(response: Response, token: str, expires_at: datetime):
     cookie_expires_at = expires_at
     if cookie_expires_at.tzinfo is None:
@@ -1475,6 +1497,42 @@ async def logout_organizer(request: Request, response: Response):
 @api_router.get("/admin/auth/me", response_model=OrganizerAuthResponse)
 async def get_organizer_me(current_user: dict = Depends(get_current_organizer_user)):
     return OrganizerAuthResponse(user=public_organizer_user(current_user))
+
+
+@api_router.get("/plowing-results")
+async def get_plowing_results_demo():
+    return await get_or_create_plowing_demo()
+
+
+@api_router.get("/admin/plowing-results")
+async def get_admin_plowing_results_demo(current_user: dict = Depends(get_current_organizer_user)):
+    require_plowing_manager_role(current_user)
+    return await get_or_create_plowing_demo()
+
+
+@api_router.put("/admin/plowing-results")
+async def publish_admin_plowing_results_demo(
+    payload: DemoResultsPayload,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_plowing_manager_role(current_user)
+    database = require_plowing_demo()
+    document = validated_document(payload, str(current_user.get("username") or "organizer"))
+    await database.plowing_results_demo.replace_one(
+        {"id": "ipm-plowing-results-demo-v1"}, document, upsert=True
+    )
+    return ranked_document(document)
+
+
+@api_router.post("/admin/plowing-results/reset")
+async def reset_admin_plowing_results_demo(current_user: dict = Depends(get_current_organizer_user)):
+    require_plowing_manager_role(current_user)
+    database = require_plowing_demo()
+    document = demo_document(str(current_user.get("username") or "organizer"))
+    await database.plowing_results_demo.replace_one(
+        {"id": "ipm-plowing-results-demo-v1"}, document, upsert=True
+    )
+    return ranked_document(document)
 
 
 @api_router.get("/admin/users", response_model=OrganizerUsersResponse)

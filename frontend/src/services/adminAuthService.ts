@@ -194,6 +194,42 @@ export type CreateBroadcastPayload = {
   priority: BroadcastPriority;
 };
 
+export type DemoResultStatus = 'In Progress' | 'Provisional' | 'Final';
+
+export type DemoResultCompetitor = {
+  id: string;
+  name: string;
+  town: string;
+  points: number;
+  status: DemoResultStatus;
+  daily: Record<'Tue' | 'Wed' | 'Thu' | 'Fri', number | null>;
+  position: number;
+};
+
+export type DemoResultGroup = {
+  id: string;
+  name: string;
+  status: DemoResultStatus;
+  competitors: DemoResultCompetitor[];
+};
+
+export type DemoResultClass = {
+  id: string;
+  name: string;
+  groups: DemoResultGroup[];
+};
+
+export type DemoPlowingResults = {
+  id: 'ipm-plowing-results-demo-v1';
+  event_id: 'ipm-2026-demo';
+  demo: true;
+  source: 'manual-demo-editor';
+  ranking_rule: string;
+  last_updated: string;
+  updated_by: string;
+  classes: DemoResultClass[];
+};
+
 function getApiBaseUrl() {
   return process.env.EXPO_PUBLIC_BACKEND_URL || '';
 }
@@ -431,5 +467,22 @@ export function updateAdminVendor(vendorId: string, payload: VendorPayload) {
 export function deleteAdminVendor(vendorId: string) {
   return adminRequest<AdminVendorsResponse>(`/api/admin/vendors/${encodeURIComponent(vendorId)}`, {
     method: 'DELETE',
+  });
+}
+
+export function getAdminPlowingResults() {
+  return adminRequest<DemoPlowingResults>('/api/admin/plowing-results');
+}
+
+export function publishAdminPlowingResults(results: DemoPlowingResults) {
+  return adminRequest<DemoPlowingResults>('/api/admin/plowing-results', {
+    method: 'PUT',
+    body: JSON.stringify({ classes: results.classes }),
+  });
+}
+
+export function resetAdminPlowingResults() {
+  return adminRequest<DemoPlowingResults>('/api/admin/plowing-results/reset', {
+    method: 'POST',
   });
 }

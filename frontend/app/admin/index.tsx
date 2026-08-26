@@ -71,6 +71,9 @@ type ImportMapping = Partial<Record<PlatformFieldKey, string>>;
 
 const NAV_ITEMS: AdminNavItem[] = [
   { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
+  ...((process.env.EXPO_PUBLIC_BACKEND_URL || '').toLowerCase().includes('staging')
+    ? [{ key: 'plowing-results', label: 'Plowing Results', icon: 'award' as const }]
+    : []),
   { key: 'analytics', label: 'Analytics', icon: 'bar-chart-2' },
   { key: 'vendors', label: 'Vendors', icon: 'shopping-bag' },
   { key: 'schedule', label: 'Schedule', icon: 'calendar' },
@@ -554,7 +557,7 @@ export default function AdminDashboardScreen() {
       activeKey={activeSection}
       navItems={NAV_ITEMS}
       currentUser={currentUser}
-      onNavigate={(key) => setActiveSection(key as AdminSection)}
+      onNavigate={(key) => key === 'plowing-results' ? router.push('/admin/plowing-results' as never) : setActiveSection(key as AdminSection)}
       onLogout={handleLogout}
     >
       {activeSection === 'dashboard' && (

@@ -39,6 +39,7 @@ import {
 import { markStartupStage } from '../../src/services/startupPerformance';
 
 const EVENT_START_DATE = '2026-09-22T09:00:00';
+const SHOW_PLOWING_RESULTS_DEMO = process.env.EXPO_PUBLIC_BACKEND_URL?.includes('staging');
 
 const CATEGORY_COLORS = [
   colors.primary,
@@ -507,6 +508,13 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.actionTitle}>Schedule</Text>
             </TouchableOpacity>
+
+            {SHOW_PLOWING_RESULTS_DEMO && <TouchableOpacity style={styles.actionCard} onPress={() => quickAction('plowing_results', 'internal', () => router.push('/plowing-results' as never))} activeOpacity={0.8}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
+                <Feather name="award" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Plowing Results</Text>
+            </TouchableOpacity>}
 
             <TouchableOpacity style={styles.actionCard} onPress={() => quickAction('vendors', 'internal', () => router.push('/vendors'))} activeOpacity={0.8}>
               <View style={[styles.actionIcon, { backgroundColor: colors.vendor }]}>
