@@ -15,7 +15,8 @@
     "test:home": "node --test tests/home-action-groups.test.mjs",
     "test:camping": "node --test tests/camping-page.test.mjs",
     "test:worship": "node --test tests/worship-service-page.test.mjs",
-    "test:schedule-colours": "node --test tests/schedule-category-colours.test.mjs"
+    "test:schedule-colours": "node --test tests/schedule-category-colours.test.mjs tests/schedule-category-rendering.test.mjs",
+    "test:schedule-rendering": "node --test tests/schedule-category-rendering.test.mjs"
   },
   "dependencies": {
     "@babel/runtime": "^7.20.6",

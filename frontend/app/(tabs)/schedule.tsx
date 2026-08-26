@@ -502,11 +502,6 @@ export default function ScheduleScreen() {
                   accessibilityLabel={`Filter by ${category}`}
                   accessibilityState={{ selected: isActive }}
                 >
-                  <Feather
-                    name="tag"
-                    size={14}
-                    color={isActive ? categoryStyle.selectedFilterForeground : categoryStyle.tintForeground}
-                  />
                   <Text style={[
                     styles.filterText,
                     { color: categoryStyle.tintForeground },
@@ -534,7 +529,6 @@ export default function ScheduleScreen() {
             accessibilityHint="Opens the category filter options"
             accessibilityState={{ expanded: showCategorySelector }}
           >
-            <Feather name="tag" size={18} color={selectedCategory ? selectedCategoryStyle.selectedFilterForeground : colors.primary} />
             <View style={styles.categorySelectorTextContainer}>
               <Text style={[styles.categorySelectorLabel, selectedCategory && { color: selectedCategoryStyle.selectedFilterForeground }]}>
                 Categories
@@ -909,9 +903,6 @@ export default function ScheduleScreen() {
                   {selectedEvent.category && (
                     <View style={[styles.detailSection, { borderLeftWidth: 4, borderLeftColor: selectedEventCategoryStyle.primary }]}>
                       <View style={styles.detailRow}>
-                        <View style={styles.detailIcon}>
-                          <Feather name="tag" size={20} color={selectedEventCategoryStyle.primary} />
-                        </View>
                         <View style={styles.detailTextContainer}>
                           <Text style={styles.detailLabel}>Category</Text>
                           <Text style={styles.detailValue}>
