@@ -16,10 +16,8 @@ import colors from '../theme/colors';
 import { 
   mapLocations, 
   categoryColors, 
-  categoryIcons,
   findLocationByName,
-  MapLocation,
-  LocationCategory 
+  MapLocation
 } from '../config/mapLocations';
 import { queueAnalyticsEvent } from '../analytics/analyticsClient';
 
@@ -105,12 +103,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
         style={[
           styles.pinContainer,
           {
-            left: pinLeft - 15,
-            top: pinTop - 15,
+            left: pinLeft - 22,
+            top: pinTop - 22,
           },
         ]}
         onPress={() => handlePinPress(location)}
         activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={`${location.name}, ${location.category} map location`}
+        accessibilityState={{ selected: isSelected }}
       >
         {(isSelected || isHighlighted) && (
           <Animated.View
@@ -123,12 +124,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
             ]}
           />
         )}
-        <View
-          style={[
-            styles.pin,
-            { backgroundColor: pinColor },
-            (isSelected || isHighlighted) && styles.pinSelected,
-          ]}
+        <Feather
+          name="map-pin"
+          size={isSelected || isHighlighted ? 36 : 30}
+          color={pinColor}
+          style={styles.pinMarker}
         />
         {(isSelected || isHighlighted) && (
           <View style={styles.pinLabelContainer}>
@@ -249,29 +249,16 @@ const styles = StyleSheet.create({
   // Pin styles
   pinContainer: {
     position: 'absolute',
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
-  pin: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
-  },
-  pinSelected: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 3,
+  pinMarker: {
+    textShadowColor: '#FFFFFF',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   pinPulse: {
     position: 'absolute',

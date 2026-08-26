@@ -17,7 +17,11 @@ for (const [platform, source] of [['native', nativeMap], ['web', webMap]]) {
     assert.match(source, /maximumZoomScale=\{3\}/);
     assert.match(source, /minimumZoomScale=\{1\}/);
     assert.match(source, /\{pinsToShow\.map\(renderPin\)\}/);
-    assert.match(source, /styles\.pin,[\s\S]*backgroundColor: pinColor/);
+    assert.match(source, /name="map-pin"/);
+    assert.match(source, /color=\{pinColor\}/);
+    assert.match(source, /accessibilityLabel=\{`\$\{location\.name\}, \$\{location\.category\} map location`\}/);
+    assert.doesNotMatch(source, /styles\.pin,[\s\S]*backgroundColor: pinColor/);
+    assert.doesNotMatch(source, /pin:\s*\{[\s\S]*borderRadius:\s*15/);
     assert.match(source, /onPress=\{\(\) => handlePinPress\(location\)\}/);
     assert.match(source, /Show All Locations/);
     assert.match(source, /Pinch to zoom • Tap pins for info/);
