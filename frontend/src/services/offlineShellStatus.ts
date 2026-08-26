@@ -3,6 +3,7 @@ export type OfflineShellStatus = {
   cachedShellVersions: string[];
   controllingShellVersion: string;
   updateWaiting: boolean;
+  startupTimings: { name: string; milliseconds: number }[];
 };
 
 const unsupported: OfflineShellStatus = {
@@ -10,6 +11,7 @@ const unsupported: OfflineShellStatus = {
   cachedShellVersions: [],
   controllingShellVersion: 'native',
   updateWaiting: false,
+  startupTimings: [],
 };
 
 export async function getOfflineShellStatus() { return unsupported; }

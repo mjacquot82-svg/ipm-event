@@ -18,44 +18,52 @@ import SplashScreen from '../src/components/SplashScreen';
 import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext';
 import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
 import { initializeOfflineShell, initializeWonderPush } from '../src/services/wonderPushService';
+import { markStartupStage, runOnlineAfterFirstPaint } from '../src/services/startupPerformance';
+
+markStartupStage('react_root_module_initialized');
 
 export default function RootLayout() {
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(Platform.OS !== 'web');
   const pathname = usePathname();
 
   useEffect(() => {
-    void setAnalyticsRoute(pathname);
+    return runOnlineAfterFirstPaint(() => {
+      markStartupStage('analytics_initialization_started');
+      void setAnalyticsRoute(pathname);
+    });
   }, [pathname]);
 
   useEffect(() => {
+    markStartupStage('root_layout_mounted');
     if (Platform.OS === 'web') {
-      void initializeOfflineShell().catch((error) => {
-        console.warn('Offline shell service worker unavailable:', error);
-      });
-      void initializeWonderPush().catch((error) => {
-        console.warn('WonderPush initialization unavailable:', error);
+      return runOnlineAfterFirstPaint(() => {
+        markStartupStage('deferred_services_started');
+        void initializeOfflineShell().catch((error) => {
+          console.warn('Offline shell service worker unavailable:', error);
+        });
+        void initializeWonderPush().catch((error) => {
+          console.warn('WonderPush initialization unavailable:', error);
+        });
       });
     }
 
     let cleanupNotifications: () => void = () => undefined;
-    if (Platform.OS !== 'web') {
-      cleanupNotifications = addNotificationListeners(
-        (notification) => {
-          console.log('Notification received:', notification);
-        },
-        (response) => {
-          console.log('Notification tapped:', response);
-        }
-      );
+    cleanupNotifications = addNotificationListeners(
+      (notification) => {
+        console.log('Notification received:', notification);
+      },
+      (response) => {
+        console.log('Notification tapped:', response);
+      }
+    );
 
-      registerForPushNotificationsAsync().then((token) => {
-        if (token) {
-          console.log('Push notification token:', token);
-        }
-      }).catch((error) => {
-        console.warn('Push notification registration failed:', error);
-      });
-    }
+    registerForPushNotificationsAsync().then((token) => {
+      if (token) {
+        console.log('Push notification token:', token);
+      }
+    }).catch((error) => {
+      console.warn('Push notification registration failed:', error);
+    });
 
     setIsInitializing(false);
 

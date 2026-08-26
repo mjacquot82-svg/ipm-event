@@ -39,10 +39,21 @@
         text-align: center;
       }
       #ipm-startup-splash img { height: auto; max-width: 320px; width: min(72vw, 320px); }
-      #ipm-startup-reassurance { color: #3C3C36; margin-top: 24px; max-width: 400px; padding: 0 8px; }
+      #ipm-startup-reassurance {
+        background: #FFFFFF;
+        border: 2px solid #4E725A;
+        border-radius: 18px;
+        box-shadow: 0 4px 14px rgba(32, 32, 29, 0.12);
+        box-sizing: border-box;
+        color: #30332F;
+        margin-top: 28px;
+        max-width: 440px;
+        padding: 20px 22px;
+        width: calc(100% - 16px);
+      }
       #ipm-startup-reassurance[hidden] { display: none; }
-      #ipm-startup-reassurance strong { color: #20201D; display: block; font-size: clamp(20px, 5.5vw, 24px); font-weight: 800; line-height: 1.25; }
-      #ipm-startup-reassurance span { display: block; font-size: clamp(17px, 4.4vw, 19px); line-height: 1.45; margin-top: 12px; }
+      #ipm-startup-reassurance strong { color: #20201D; display: block; font-size: clamp(24px, 6.5vw, 28px); font-weight: 800; line-height: 1.22; }
+      #ipm-startup-reassurance span { display: block; font-size: clamp(18px, 4.8vw, 20px); line-height: 1.5; margin-top: 13px; }
     </style>
   </head>
   <body>
@@ -58,10 +69,17 @@
     </div>
     <script>
       (function () {
+        window.__IPM_STARTUP_TIMINGS__ = { cached_document_started: performance.now() };
         var reassurance = document.getElementById('ipm-startup-reassurance');
-        var reveal = function () { if (reassurance && reassurance.isConnected) reassurance.hidden = false; };
+        var reveal = function () {
+          if (reassurance && reassurance.isConnected) {
+            reassurance.hidden = false;
+            window.__IPM_STARTUP_TIMINGS__.reassurance_visible = performance.now();
+          }
+        };
         if (navigator.onLine === false) reveal();
         else window.setTimeout(reveal, 2500);
+        window.__IPM_STARTUP_TIMINGS__.bundle_requested = performance.now();
       })();
     </script>
   </body>

@@ -86,6 +86,10 @@ function lifecycleBody(clientEventId: string) {
 }
 
 async function createOrResumeSession(): Promise<boolean> {
+  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.onLine === false) {
+    recordAnalyticsDiagnostic('initializer_deferred_offline');
+    return false;
+  }
   if (!API_BASE_URL) {
     recordAnalyticsDiagnostic('initializer_skipped_unconfigured');
     return false;

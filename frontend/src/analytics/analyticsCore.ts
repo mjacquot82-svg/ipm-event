@@ -12,6 +12,7 @@ export type AnalyticsDiagnosticCode =
   | 'initializer_invoked'
   | 'initializer_skipped_excluded'
   | 'initializer_skipped_unconfigured'
+  | 'initializer_deferred_offline'
   | 'storage_fallback'
   | 'initialization_failed'
   | 'transport_confirmed'

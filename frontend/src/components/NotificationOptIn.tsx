@@ -23,13 +23,25 @@ const STATE_COPY: Record<NotificationState, string> = {
 export default function NotificationOptIn() {
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
+  const [verificationDeferred, setVerificationDeferred] = useState(false);
 
   const refresh = useCallback(async () => {
     setState(await getNotificationState());
   }, []);
 
   useEffect(() => {
-    if (Platform.OS === 'web') void refresh();
+    if (Platform.OS !== 'web') return undefined;
+    if (navigator.onLine === false) {
+      setVerificationDeferred(true);
+      const resume = () => {
+        setVerificationDeferred(false);
+        void refresh();
+      };
+      window.addEventListener('online', resume, { once: true });
+      return () => window.removeEventListener('online', resume);
+    }
+    void refresh();
+    return undefined;
   }, [refresh]);
 
   const updateSubscription = useCallback(async () => {
@@ -47,7 +59,9 @@ export default function NotificationOptIn() {
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const isIphoneSafari = /iPhone|iPad|iPod/.test(window.navigator.userAgent || '') && !standalone;
-  const stateMessage = state === 'unsupported' && isIphoneSafari
+  const stateMessage = verificationDeferred
+    ? 'Notification status will refresh when your connection improves.'
+    : state === 'unsupported' && isIphoneSafari
     ? 'On iPhone, notifications are available from the installed IPM app.'
     : STATE_COPY[state];
 
@@ -60,8 +74,8 @@ export default function NotificationOptIn() {
         {state === 'denied' ? <Text style={styles.hint}>Allow notifications for this site in browser settings to enable them.</Text> : null}
         {state === 'unsupported' && isIphoneSafari ? <Text style={styles.hint}>Install IPM to your Home Screen, then open the installed IPM app to enable notifications.</Text> : null}
       </View>
-      {state === 'loading' || working ? <ActivityIndicator color={colors.primary} /> : null}
-      {canAct && !working ? (
+      {!verificationDeferred && (state === 'loading' || working) ? <ActivityIndicator color={colors.primary} /> : null}
+      {!verificationDeferred && canAct && !working ? (
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel={state === 'subscribed' ? 'Disable IPM notifications' : 'Enable IPM notifications'}

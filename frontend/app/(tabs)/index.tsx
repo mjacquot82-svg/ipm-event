@@ -36,6 +36,7 @@ import {
   addConnectivityRefreshListener,
   getAnnouncementsData,
 } from '../../src/services/spreadsheetDataService';
+import { markStartupStage } from '../../src/services/startupPerformance';
 
 const EVENT_START_DATE = '2026-09-22T09:00:00';
 
@@ -205,6 +206,7 @@ function getTimeUntil(eventDate: Date | null) {
 }
 
 export default function HomeScreen() {
+  markStartupStage('home_render_started');
   usePageAnalytics('home', 'launch');
   const router = useRouter();
   const { sectionStyle: attendeeSectionStyle } = useAttendeeLayout();
@@ -222,6 +224,7 @@ export default function HomeScreen() {
   const { hydrated: announcementReadStateHydrated, lastReadAnnouncementId } = useAnnouncementReadState();
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
+    if (result.source === 'cache') markStartupStage('cached_home_data_available');
     setEvents(result.data.events || []);
     setDataSource(result.source);
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
@@ -277,9 +280,12 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
+    markStartupStage('home_mounted');
+    const frame = requestAnimationFrame(() => markStartupStage('home_visually_rendered'));
     fetchSchedule();
     fetchAnnouncements();
     loadFavorites();
+    return () => cancelAnimationFrame(frame);
   }, [fetchAnnouncements, fetchSchedule, loadFavorites]);
 
   useEffect(() => addConnectivityRefreshListener(() => void fetchSchedule(true)), [fetchSchedule]);

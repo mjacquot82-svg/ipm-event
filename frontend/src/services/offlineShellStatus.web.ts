@@ -1,8 +1,11 @@
+import { getStartupTimings } from './startupPerformance';
+
 export type OfflineShellStatus = {
   bundleIdentity: string;
   cachedShellVersions: string[];
   controllingShellVersion: string;
   updateWaiting: boolean;
+  startupTimings: { name: string; milliseconds: number }[];
 };
 
 const CACHE_PREFIX = 'ipm-offline-shell-';
@@ -41,6 +44,7 @@ export async function getOfflineShellStatus(): Promise<OfflineShellStatus> {
       .map((name) => name.slice(CACHE_PREFIX.length)),
     controllingShellVersion,
     updateWaiting: Boolean(registration?.waiting),
+    startupTimings: getStartupTimings(),
   };
 }
 

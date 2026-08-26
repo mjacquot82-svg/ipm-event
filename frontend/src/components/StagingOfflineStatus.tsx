@@ -40,6 +40,9 @@ export default function StagingOfflineStatus() {
       <Text style={styles.value}>Cached shell: {cached}</Text>
       <Text style={styles.value}>Bundle: {status.bundleIdentity}</Text>
       <Text style={styles.value}>Update waiting: {status.updateWaiting ? 'yes' : 'no'}</Text>
+      {status.startupTimings.map((timing) => (
+        <Text key={timing.name} style={styles.value}>Startup {timing.name}: {timing.milliseconds} ms</Text>
+      ))}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.button} onPress={() => void refresh(true)} disabled={checking}>
           <Text style={styles.buttonText}>{checking ? 'Checking…' : 'Check for update'}</Text>

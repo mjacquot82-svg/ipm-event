@@ -16,6 +16,7 @@ function runStartupScript(script, online) {
   vm.runInNewContext(script, {
     document: { getElementById: () => reassurance },
     navigator: { onLine: online },
+    performance: { now: () => 10 },
     window: { setTimeout: (callback, delay) => { timers.push({ callback, delay }); } },
   });
   return { reassurance, timers };
@@ -52,9 +53,12 @@ test('startup reassurance uses prominent, readable mobile typography in both sta
     readFile(new URL('../public/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../src/components/SplashScreen.tsx', import.meta.url), 'utf8'),
   ]);
-  assert.match(html, /font-size: clamp\(20px, 5\.5vw, 24px\)/);
-  assert.match(html, /font-size: clamp\(17px, 4\.4vw, 19px\)/);
+  assert.match(html, /font-size: clamp\(24px, 6\.5vw, 28px\)/);
+  assert.match(html, /font-size: clamp\(18px, 4\.8vw, 20px\)/);
   assert.match(html, /font-weight: 800/);
+  assert.match(html, /width: calc\(100% - 16px\)/);
+  assert.match(html, /padding: 20px 22px/);
+  assert.match(html, /border: 2px solid #4E725A/);
   assert.match(splash, /reassuranceTitle:[\s\S]*fontSize: 22[\s\S]*fontWeight: '800'/);
   assert.match(splash, /reassuranceMessage:[\s\S]*fontSize: 17[\s\S]*lineHeight: 25/);
   assert.match(splash, /We&apos;re opening saved information so you can keep using the app/);
@@ -67,6 +71,7 @@ test('React owns the root after loading, so the pre-React reassurance disappears
   ]);
   assert.match(html, /<div id="root">[\s\S]*ipm-startup-splash/);
   assert.match(layout, /isInitializing \? \([\s\S]*<SplashScreen/);
+  assert.match(layout, /useState\(Platform\.OS !== 'web'\)/);
   assert.doesNotMatch(layout, /setTimeout[\s\S]*setIsInitializing\(false\)/);
 });
 
