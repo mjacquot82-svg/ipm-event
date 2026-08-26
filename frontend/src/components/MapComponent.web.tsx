@@ -40,7 +40,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onLocationSelect 
 }) => {
   const [selectedPin, setSelectedPin] = useState<MapLocation | null>(null);
-  const [showLegend, setShowLegend] = useState(true);
   const [showAllPins, setShowAllPins] = useState(!showOnlyHighlighted);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const scrollViewRef = useRef<ScrollView>(null);
@@ -140,9 +139,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     );
   };
 
-  // Get unique categories for legend
-  const categories = [...new Set(mapLocations.map(loc => loc.category))];
-
   // Filter pins based on showOnlyHighlighted mode and showAllPins toggle
   const highlightedLocationData = highlightedLocation ? findLocationByName(highlightedLocation) : null;
   const pinsToShow = (showOnlyHighlighted && !showAllPins && highlightedLocationData)
@@ -206,36 +202,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
           )}
         </View>
       )}
-
-      {/* Collapsible Legend */}
-      <TouchableOpacity 
-        style={styles.legendContainer}
-        onPress={() => setShowLegend(!showLegend)}
-        activeOpacity={0.9}
-      >
-        <View style={styles.legendHeader}>
-          <Text style={styles.legendTitle}>IPM 2026</Text>
-          <Feather 
-            name={showLegend ? "chevron-up" : "chevron-down"} 
-            size={18} 
-            color={colors.textMuted} 
-          />
-        </View>
-        {showLegend && (
-          <>
-            <Text style={styles.legendSubtitle}>Event Grounds</Text>
-            <View style={styles.legendDivider} />
-            {categories.map((category) => (
-              <View key={category} style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: categoryColors[category] }]} />
-                <Text style={styles.legendText}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </Text>
-              </View>
-            ))}
-          </>
-        )}
-      </TouchableOpacity>
 
       {/* Show All Locations button - only visible when in filtered mode */}
       {isFilteredMode && (
@@ -383,56 +349,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 12,
     lineHeight: 20,
-  },
-  // Legend styles
-  legendContainer: {
-    position: 'absolute',
-    left: 16,
-    top: 16,
-    backgroundColor: colors.surface,
-    padding: 14,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-    minWidth: 140,
-  },
-  legendHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  legendTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  legendSubtitle: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  legendDivider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 10,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 8,
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  legendText: {
-    fontSize: 12,
-    color: colors.textSecondary,
   },
   // Zoom hint
   zoomHint: {
