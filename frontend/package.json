@@ -13,7 +13,7 @@
     "test:analytics": "node --test tests/analytics-core.test.mjs tests/analytics-dashboard.test.mjs",
     "test:install": "node --test tests/install-environment.test.mjs tests/install-flow-component.test.mjs",
     "test:notifications": "node --test tests/wonderpush.test.mjs",
-    "test:offline": "node --test tests/offline-content-cache.test.mjs tests/offline-service-worker.test.mjs",
+    "test:offline": "node --test tests/offline-content-cache.test.mjs tests/offline-service-worker.test.mjs tests/startup-reassurance.test.mjs",
     "test:pwa": "node --test tests/pwa-icons.test.mjs",
     "test:camping": "node --test tests/camping-page.test.mjs",
     "test:home": "node --test tests/home-action-groups.test.mjs",
