@@ -26,7 +26,7 @@ function formatLastUpdate(timestamp: string | null) {
 
 export default function CachedDataBanner({
   lastSuccessfulUpdate,
-  informationType = 'event',
+  informationType,
 }: CachedDataBannerProps) {
   const { sectionStyle } = useAttendeeLayout();
   const informationLabel = informationType === 'vendor' ? 'vendor information' : 'event information';
@@ -35,10 +35,16 @@ export default function CachedDataBanner({
     <View style={[styles.container, sectionStyle]}>
       <Feather name="info" size={16} color={colors.info} />
       <View style={styles.textContainer}>
-        <Text style={styles.title}>Limited internet connection</Text>
-        <Text style={styles.message}>
-          {`You're seeing saved ${informationLabel} so you can keep using IPM. We'll update it automatically when your connection improves.`}
-        </Text>
+        {informationType ? (
+          <>
+            <Text style={styles.title}>Limited internet connection</Text>
+            <Text style={styles.message}>
+              {`You're seeing saved ${informationLabel} so you can keep using IPM. We'll update it automatically when your connection improves.`}
+            </Text>
+          </>
+        ) : (
+          <Text style={styles.title}>Showing saved event information</Text>
+        )}
         <Text style={styles.timestamp}>{formatLastUpdate(lastSuccessfulUpdate)}</Text>
       </View>
     </View>

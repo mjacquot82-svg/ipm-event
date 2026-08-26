@@ -55,6 +55,8 @@ test('Schedule and Vendor cached states explain limited connectivity and retain 
   assert.match(banner, /You're seeing saved \$\{informationLabel\} so you can keep using IPM/);
   assert.match(banner, /We'll update it automatically when your connection improves/);
   assert.match(banner, /Last updated: \$\{date\.toLocaleString\(\)\}/);
+  assert.match(banner, /informationType \?/);
+  assert.match(banner, /Showing saved event information/);
   assert.match(schedule, /dataSource === 'cache'[\s\S]*CachedDataBanner/);
   assert.match(schedule, /informationType="event"/);
   assert.match(vendors, /dataSource === 'cache'[\s\S]*CachedDataBanner/);
