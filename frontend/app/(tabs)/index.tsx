@@ -477,7 +477,9 @@ export default function HomeScreen() {
         )}
 
         {announcementDataSource === 'cache' && announcements.length > 0 && (
-          <View style={sectionStyle}><CachedDataBanner lastSuccessfulUpdate={announcementLastUpdate} /></View>
+          <View style={sectionStyle}>
+            <CachedDataBanner lastSuccessfulUpdate={announcementLastUpdate} informationType="event" />
+          </View>
         )}
 
         <View style={sectionStyle}>

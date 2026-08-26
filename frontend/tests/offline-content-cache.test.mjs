@@ -75,4 +75,7 @@ test('first offline open has explicit unsaved-data states', async () => {
 test('Home cached Schedule uses the same limited-connection explanation', async () => {
   const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
   assert.match(home, /isShowingCachedData[\s\S]*informationType="event"/);
+  const homeBanners = home.match(/<CachedDataBanner[^>]+>/g) || [];
+  assert.ok(homeBanners.length >= 2);
+  assert.equal(homeBanners.every((banner) => banner.includes('informationType="event"')), true);
 });
