@@ -8,6 +8,7 @@ import { ATTENDEE_CARD_RADIUS, useAttendeeLayout } from '../theme/attendeePageLa
 
 type CachedDataBannerProps = {
   lastSuccessfulUpdate: string | null;
+  informationType?: 'event' | 'vendor';
 };
 
 function formatLastUpdate(timestamp: string | null) {
@@ -20,17 +21,24 @@ function formatLastUpdate(timestamp: string | null) {
     return 'Last update unavailable';
   }
 
-  return `Last updated ${date.toLocaleString()}`;
+  return `Last updated: ${date.toLocaleString()}`;
 }
 
-export default function CachedDataBanner({ lastSuccessfulUpdate }: CachedDataBannerProps) {
+export default function CachedDataBanner({
+  lastSuccessfulUpdate,
+  informationType = 'event',
+}: CachedDataBannerProps) {
   const { sectionStyle } = useAttendeeLayout();
+  const informationLabel = informationType === 'vendor' ? 'vendor information' : 'event information';
 
   return (
     <View style={[styles.container, sectionStyle]}>
       <Feather name="info" size={16} color={colors.info} />
       <View style={styles.textContainer}>
-        <Text style={styles.message}>Showing saved event information</Text>
+        <Text style={styles.title}>Limited internet connection</Text>
+        <Text style={styles.message}>
+          {`You're seeing saved ${informationLabel} so you can keep using IPM. We'll update it automatically when your connection improves.`}
+        </Text>
         <Text style={styles.timestamp}>{formatLastUpdate(lastSuccessfulUpdate)}</Text>
       </View>
     </View>
@@ -54,10 +62,16 @@ const styles = StyleSheet.create({
   textContainer: {
     flex: 1,
   },
-  message: {
+  title: {
     color: colors.textPrimary,
     fontSize: 13,
     fontWeight: '700',
+  },
+  message: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
   },
   timestamp: {
     color: colors.textSecondary,

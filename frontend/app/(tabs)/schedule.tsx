@@ -490,7 +490,7 @@ export default function ScheduleScreen() {
         </View>
 
               {dataSource === 'cache' && (
-                <CachedDataBanner lastSuccessfulUpdate={lastUpdated} />
+                <CachedDataBanner lastSuccessfulUpdate={lastUpdated} informationType="event" />
               )}
 
               <View style={styles.filterPanel}>

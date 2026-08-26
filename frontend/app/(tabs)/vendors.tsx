@@ -176,7 +176,7 @@ export default function VendorsScreen() {
       </View>
 
       {dataSource === 'cache' && (
-        <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
+        <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} informationType="vendor" />
       )}
 
       <View style={styles.filterPanel}>

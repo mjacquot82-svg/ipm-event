@@ -45,6 +45,24 @@ test('Schedule and Vendor screens immediately expose cached source and retain lo
   assert.match(vendors, /selectedType/);
 });
 
+test('Schedule and Vendor cached states explain limited connectivity and retain timestamps', async () => {
+  const [banner, schedule, vendors] = await Promise.all([
+    readFile(new URL('../src/components/CachedDataBanner.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/(tabs)/schedule.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/(tabs)/vendors.tsx', import.meta.url), 'utf8'),
+  ]);
+  assert.match(banner, /Limited internet connection/);
+  assert.match(banner, /You're seeing saved \$\{informationLabel\} so you can keep using IPM/);
+  assert.match(banner, /We'll update it automatically when your connection improves/);
+  assert.match(banner, /Last updated: \$\{date\.toLocaleString\(\)\}/);
+  assert.match(schedule, /dataSource === 'cache'[\s\S]*CachedDataBanner/);
+  assert.match(schedule, /informationType="event"/);
+  assert.match(vendors, /dataSource === 'cache'[\s\S]*CachedDataBanner/);
+  assert.match(vendors, /informationType="vendor"/);
+  assert.match(schedule, /setDataSource\(result\.source\)/);
+  assert.match(vendors, /setDataSource\(result\.source\)/);
+});
+
 test('first offline open has explicit unsaved-data states', async () => {
   const schedule = await readFile(new URL('../app/(tabs)/schedule.tsx', import.meta.url), 'utf8');
   const vendors = await readFile(new URL('../app/(tabs)/vendors.tsx', import.meta.url), 'utf8');
