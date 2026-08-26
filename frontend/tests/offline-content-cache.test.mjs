@@ -55,8 +55,8 @@ test('Schedule and Vendor cached states explain limited connectivity and retain 
   assert.match(banner, /You're seeing saved \$\{informationLabel\} so you can keep using IPM/);
   assert.match(banner, /We'll update it automatically when your connection improves/);
   assert.match(banner, /Last updated: \$\{date\.toLocaleString\(\)\}/);
-  assert.match(banner, /informationType \?/);
-  assert.match(banner, /Showing saved event information/);
+  assert.match(banner, /informationType = 'event'/);
+  assert.doesNotMatch(banner, /Showing saved event information/);
   assert.match(schedule, /dataSource === 'cache'[\s\S]*CachedDataBanner/);
   assert.match(schedule, /informationType="event"/);
   assert.match(vendors, /dataSource === 'cache'[\s\S]*CachedDataBanner/);
@@ -73,8 +73,19 @@ test('first offline open has explicit unsaved-data states', async () => {
 });
 
 test('Home cached Schedule uses the same limited-connection explanation', async () => {
-  const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
+  const [home, banner] = await Promise.all([
+    readFile(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/CachedDataBanner.tsx', import.meta.url), 'utf8'),
+  ]);
   assert.match(home, /isShowingCachedData[\s\S]*informationType="event"/);
+  assert.match(home, /const isShowingCachedData = dataSource === 'cache' && !loading && events\.length > 0/);
+  assert.match(home, /setDataSource\(result\.source\)/);
+  assert.match(banner, /Limited internet connection/);
+  assert.match(banner, /You're seeing saved \$\{informationLabel\} so you can keep using IPM/);
+  assert.match(banner, /We'll update it automatically when your connection improves/);
+  assert.match(banner, /Last updated: \$\{date\.toLocaleString\(\)\}/);
+  assert.doesNotMatch(banner, /Showing saved event information/);
+  assert.match(home, /<ResponsiveBanner \/>/);
   const homeBanners = home.match(/<CachedDataBanner[^>]+>/g) || [];
   assert.ok(homeBanners.length >= 2);
   assert.equal(homeBanners.every((banner) => banner.includes('informationType="event"')), true);
