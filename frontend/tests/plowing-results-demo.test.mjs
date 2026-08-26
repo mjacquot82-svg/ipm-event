@@ -28,9 +28,11 @@ test('staging attendee route is a mobile ranked results experience', () => {
 
 test('Home exposes an internal staging-only Plowing Results action', () => {
   assert.match(home, /SHOW_PLOWING_RESULTS_DEMO/);
+  assert.match(home, /window\.location\.hostname\.toLowerCase\(\) === 'staging\.theipm\.ca'/);
   assert.match(home, /Plowing Results/);
   assert.match(home, /router\.push\('\/plowing-results'/);
   assert.match(home, /name="award"/);
+  assert.match(home, /accessibilityLabel="Open Plowing Results demo"/);
 });
 
 test('organizer manager uses auth, local draft edits, validation, publish and confirmed reset', () => {
