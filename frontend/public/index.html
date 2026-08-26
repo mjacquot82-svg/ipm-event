@@ -39,10 +39,10 @@
         text-align: center;
       }
       #ipm-startup-splash img { height: auto; max-width: 320px; width: min(72vw, 320px); }
-      #ipm-startup-reassurance { color: #3C3C36; margin-top: 20px; max-width: 360px; }
+      #ipm-startup-reassurance { color: #3C3C36; margin-top: 24px; max-width: 400px; padding: 0 8px; }
       #ipm-startup-reassurance[hidden] { display: none; }
-      #ipm-startup-reassurance strong { color: #20201D; display: block; font-size: 16px; }
-      #ipm-startup-reassurance span { display: block; font-size: 14px; line-height: 1.45; margin-top: 7px; }
+      #ipm-startup-reassurance strong { color: #20201D; display: block; font-size: clamp(20px, 5.5vw, 24px); font-weight: 800; line-height: 1.25; }
+      #ipm-startup-reassurance span { display: block; font-size: clamp(17px, 4.4vw, 19px); line-height: 1.45; margin-top: 12px; }
     </style>
   </head>
   <body>
@@ -52,7 +52,7 @@
         <img src="/v2-icon.png" alt="IPM 2026" />
         <div id="ipm-startup-reassurance" role="status" aria-live="polite" hidden>
           <strong>Limited connection — IPM is still loading</strong>
-          <span>We're opening saved event information so you can keep using the app.</span>
+          <span>We're opening saved information so you can keep using the app.</span>
         </div>
       </div>
     </div>

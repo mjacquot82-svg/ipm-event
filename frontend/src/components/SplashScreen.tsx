@@ -27,7 +27,7 @@ export default function SplashScreen() {
         <View style={styles.reassurance} accessibilityLiveRegion="polite">
           <Text style={styles.reassuranceTitle}>Limited connection — IPM is still loading</Text>
           <Text style={styles.reassuranceMessage}>
-            We&apos;re opening saved event information so you can keep using the app.
+            We&apos;re opening saved information so you can keep using the app.
           </Text>
         </View>
       )}
@@ -51,21 +51,22 @@ const styles = StyleSheet.create({
   },
   reassurance: {
     alignItems: 'center',
-    marginTop: 20,
-    maxWidth: 360,
-    paddingHorizontal: 20,
+    marginTop: 24,
+    maxWidth: 400,
+    paddingHorizontal: 24,
   },
   reassuranceTitle: {
     color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 28,
     textAlign: 'center',
   },
   reassuranceMessage: {
     color: colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 7,
+    fontSize: 17,
+    lineHeight: 25,
+    marginTop: 12,
     textAlign: 'center',
   },
 });

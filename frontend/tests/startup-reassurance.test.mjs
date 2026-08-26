@@ -43,8 +43,21 @@ test('cold offline HTML shell reveals reassurance before React is ready', async 
   assert.equal(result.reassurance.hidden, false);
   assert.equal(result.timers.length, 0);
   assert.match(html, /Limited connection — IPM is still loading/);
-  assert.match(html, /We're opening saved event information so you can keep using the app/);
+  assert.match(html, /We're opening saved information so you can keep using the app/);
   assert.match(html, /role="status" aria-live="polite"/);
+});
+
+test('startup reassurance uses prominent, readable mobile typography in both startup layers', async () => {
+  const [html, splash] = await Promise.all([
+    readFile(new URL('../public/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/SplashScreen.tsx', import.meta.url), 'utf8'),
+  ]);
+  assert.match(html, /font-size: clamp\(20px, 5\.5vw, 24px\)/);
+  assert.match(html, /font-size: clamp\(17px, 4\.4vw, 19px\)/);
+  assert.match(html, /font-weight: 800/);
+  assert.match(splash, /reassuranceTitle:[\s\S]*fontSize: 22[\s\S]*fontWeight: '800'/);
+  assert.match(splash, /reassuranceMessage:[\s\S]*fontSize: 17[\s\S]*lineHeight: 25/);
+  assert.match(splash, /We&apos;re opening saved information so you can keep using the app/);
 });
 
 test('React owns the root after loading, so the pre-React reassurance disappears naturally', async () => {
