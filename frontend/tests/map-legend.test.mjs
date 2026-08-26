@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const nativeMap = await readFile(new URL('../src/components/MapComponent.tsx', import.meta.url), 'utf8');
 const webMap = await readFile(new URL('../src/components/MapComponent.web.tsx', import.meta.url), 'utf8');
+const locationData = await readFile(new URL('../src/config/mapLocations.ts', import.meta.url), 'utf8');
 
 for (const [platform, source] of [['native', nativeMap], ['web', webMap]]) {
   test(`${platform} Map renders no separate coloured-dot legend`, () => {
@@ -12,18 +13,19 @@ for (const [platform, source] of [['native', nativeMap], ['web', webMap]]) {
     assert.doesNotMatch(source, /categories\.map\(\(category\)/);
   });
 
-  test(`${platform} Map preserves artwork, pins, controls, and location interaction`, () => {
+  test(`${platform} Map preserves artwork and zoom without a location-marker overlay`, () => {
     assert.match(source, /require\('\.\.\/\.\.\/assets\/images\/event-map\.png'\)/);
     assert.match(source, /maximumZoomScale=\{3\}/);
     assert.match(source, /minimumZoomScale=\{1\}/);
-    assert.match(source, /\{pinsToShow\.map\(renderPin\)\}/);
-    assert.match(source, /name="map-pin"/);
-    assert.match(source, /color=\{pinColor\}/);
-    assert.match(source, /accessibilityLabel=\{`\$\{location\.name\}, \$\{location\.category\} map location`\}/);
-    assert.doesNotMatch(source, /styles\.pin,[\s\S]*backgroundColor: pinColor/);
-    assert.doesNotMatch(source, /pin:\s*\{[\s\S]*borderRadius:\s*15/);
-    assert.match(source, /onPress=\{\(\) => handlePinPress\(location\)\}/);
-    assert.match(source, /Show All Locations/);
-    assert.match(source, /Pinch to zoom • Tap pins for info/);
+    assert.doesNotMatch(source, /\{pinsToShow\.map\(renderPin\)\}/);
+    assert.match(source, /Location data is preserved but intentionally not overlaid for attendees/);
+    assert.match(source, />Pinch to zoom<\/Text>/);
   });
 }
+
+test('all 12 configured location records remain preserved', () => {
+  const records = [...locationData.matchAll(/\bid:\s*'[^']+'/g)];
+  assert.equal(records.length, 12);
+  assert.match(locationData, /export const mapLocations: MapLocation\[\] = \[/);
+  assert.match(locationData, /export const categoryColors:/);
+});

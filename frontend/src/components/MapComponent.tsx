@@ -169,8 +169,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             resizeMode="cover"
           />
           
-          {/* Render pins (filtered if showOnlyHighlighted) */}
-          {pinsToShow.map(renderPin)}
+          {/* Location data is preserved but intentionally not overlaid for attendees. */}
         </View>
       </ScrollView>
 
@@ -220,7 +219,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       {!isFilteredMode && (
         <View style={styles.zoomHint}>
           <Feather name="zoom-in" size={16} color={colors.textMuted} />
-          <Text style={styles.zoomHintText}>Pinch to zoom • Tap pins for info</Text>
+          <Text style={styles.zoomHintText}>Pinch to zoom</Text>
         </View>
       )}
     </View>
