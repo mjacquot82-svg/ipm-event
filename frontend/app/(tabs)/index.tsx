@@ -281,7 +281,10 @@ export default function HomeScreen() {
 
   useEffect(() => {
     markStartupStage('home_mounted');
-    const frame = requestAnimationFrame(() => markStartupStage('home_visually_rendered'));
+    const frame = requestAnimationFrame(() => {
+      markStartupStage('home_visually_rendered');
+      markStartupStage('home_usable');
+    });
     fetchSchedule();
     fetchAnnouncements();
     loadFavorites();

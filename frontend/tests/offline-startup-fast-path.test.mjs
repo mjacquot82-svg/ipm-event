@@ -45,8 +45,10 @@ test('startup timings remain local and cover cached document through visual Home
   ]);
   assert.match(html, /cached_document_started/);
   assert.match(html, /bundle_requested/);
+  assert.match(html, /first_controllable_paint/);
   assert.match(timing, /__IPM_STARTUP_TIMINGS__/);
   assert.doesNotMatch(timing, /fetch\(|XMLHttpRequest|sendBeacon/);
   assert.match(home, /home_visually_rendered/);
+  assert.match(home, /home_usable/);
   assert.match(home, /cached_home_data_available/);
 });

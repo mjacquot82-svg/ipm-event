@@ -28,7 +28,7 @@ async function loadWorker() {
   sandbox.self = {
     location: { href: 'https://staging.example/webpushr-sw.js?webKey=test-key', origin: 'https://staging.example' },
     WonderPush: [],
-    clients: { claim: async () => undefined },
+    clients: { claim: async () => undefined, get: async () => null },
     skipWaiting: async () => { skipWaitingCalls += 1; },
     addEventListener: (name, handler) => listeners.set(name, handler),
   };
@@ -89,8 +89,26 @@ test('offline navigation falls back to the cached application shell', async () =
   worker.listeners.get('fetch')({
     request: { method: 'GET', mode: 'navigate', url: 'https://staging.example/schedule' },
     respondWith: (promise) => { response = promise; },
+    waitUntil: () => undefined,
+    resultingClientId: '',
   });
   assert.equal(await (await response).text(), '<html>offline</html>');
+});
+
+test('cached navigation is selected before any network attempt', async () => {
+  const worker = await loadWorker();
+  let response;
+  let fetchCalls = 0;
+  worker.sandbox.fetch = async () => { fetchCalls += 1; throw new Error('offline'); };
+  worker.listeners.get('fetch')({
+    request: { method: 'GET', mode: 'navigate', url: 'https://staging.example/' },
+    respondWith: (promise) => { response = promise; },
+    waitUntil: () => undefined,
+    resultingClientId: '',
+  });
+  assert.equal(await (await response).text(), '<html>offline</html>');
+  assert.equal(fetchCalls, 0);
+  assert.match(worker.source, /strategy: cached \? 'versioned-cache-first'/);
 });
 
 test('worker generator selects core shell assets without large content archives', async () => {

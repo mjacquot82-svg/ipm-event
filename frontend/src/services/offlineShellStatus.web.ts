@@ -6,6 +6,20 @@ export type OfflineShellStatus = {
   controllingShellVersion: string;
   updateWaiting: boolean;
   startupTimings: { name: string; milliseconds: number }[];
+  workerStartupDiagnostic: WorkerStartupDiagnostic | null;
+};
+
+export type WorkerStartupDiagnostic = {
+  workerBootStarted?: number;
+  wonderPushImportStarted?: number;
+  wonderPushImportFinished?: number | null;
+  lastNavigation?: {
+    receivedAt: number;
+    selectedAt: number;
+    respondedAt: number;
+    strategy: string;
+    cacheHit: boolean;
+  } | null;
 };
 
 const CACHE_PREFIX = 'ipm-offline-shell-';
@@ -17,34 +31,40 @@ function getBundleIdentity() {
   return entry?.match(/entry-([a-f0-9]+)\.js/)?.[1] || 'unavailable';
 }
 
-async function getControllingShellVersion() {
+async function getControllingShellStatus() {
   const controller = navigator.serviceWorker?.controller;
-  if (!controller || typeof MessageChannel === 'undefined') return 'unavailable';
-  return new Promise<string>((resolve) => {
+  if (!controller || typeof MessageChannel === 'undefined') {
+    return { shellVersion: 'unavailable', diagnostic: null };
+  }
+  return new Promise<{ shellVersion: string; diagnostic: WorkerStartupDiagnostic | null }>((resolve) => {
     const channel = new MessageChannel();
-    const timer = setTimeout(() => resolve('unavailable'), 750);
+    const timer = setTimeout(() => resolve({ shellVersion: 'unavailable', diagnostic: null }), 750);
     channel.port1.onmessage = (event) => {
       clearTimeout(timer);
-      resolve(event.data?.shellVersion || 'unavailable');
+      resolve({
+        shellVersion: event.data?.shellVersion || 'unavailable',
+        diagnostic: event.data || null,
+      });
     };
     controller.postMessage({ type: 'IPM_GET_OFFLINE_STATUS' }, [channel.port2]);
   });
 }
 
 export async function getOfflineShellStatus(): Promise<OfflineShellStatus> {
-  const [registration, cacheNames, controllingShellVersion] = await Promise.all([
+  const [registration, cacheNames, controlling] = await Promise.all([
     navigator.serviceWorker?.getRegistration('/'),
     typeof caches === 'undefined' ? [] : caches.keys(),
-    getControllingShellVersion(),
+    getControllingShellStatus(),
   ]);
   return {
     bundleIdentity: getBundleIdentity(),
     cachedShellVersions: cacheNames
       .filter((name) => name.startsWith(CACHE_PREFIX))
       .map((name) => name.slice(CACHE_PREFIX.length)),
-    controllingShellVersion,
+    controllingShellVersion: controlling.shellVersion,
     updateWaiting: Boolean(registration?.waiting),
     startupTimings: getStartupTimings(),
+    workerStartupDiagnostic: controlling.diagnostic,
   };
 }
 

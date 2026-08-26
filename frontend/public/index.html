@@ -70,6 +70,12 @@
     <script>
       (function () {
         window.__IPM_STARTUP_TIMINGS__ = { cached_document_started: performance.now() };
+        window.__IPM_WORKER_STARTUP_DIAGNOSTIC__ = null;
+        if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', function (event) {
+          if (event.data && event.data.type === 'IPM_STARTUP_NAVIGATION_TIMING') {
+            window.__IPM_WORKER_STARTUP_DIAGNOSTIC__ = event.data;
+          }
+        });
         var reassurance = document.getElementById('ipm-startup-reassurance');
         var reveal = function () {
           if (reassurance && reassurance.isConnected) {
@@ -80,6 +86,9 @@
         if (navigator.onLine === false) reveal();
         else window.setTimeout(reveal, 2500);
         window.__IPM_STARTUP_TIMINGS__.bundle_requested = performance.now();
+        requestAnimationFrame(function () {
+          window.__IPM_STARTUP_TIMINGS__.first_controllable_paint = performance.now();
+        });
       })();
     </script>
   </body>

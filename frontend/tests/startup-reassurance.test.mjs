@@ -17,6 +17,7 @@ function runStartupScript(script, online) {
     document: { getElementById: () => reassurance },
     navigator: { onLine: online },
     performance: { now: () => 10 },
+    requestAnimationFrame: () => 1,
     window: { setTimeout: (callback, delay) => { timers.push({ callback, delay }); } },
   });
   return { reassurance, timers };

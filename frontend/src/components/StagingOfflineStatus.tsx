@@ -14,6 +14,7 @@ const isStagingWeb = Platform.OS === 'web'
 export default function StagingOfflineStatus() {
   const [status, setStatus] = useState<OfflineShellStatus | null>(null);
   const [checking, setChecking] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const refresh = useCallback(async (check = false) => {
     setChecking(check);
@@ -32,6 +33,39 @@ export default function StagingOfflineStatus() {
 
   if (!isStagingWeb || !status) return null;
   const cached = status.cachedShellVersions.join(', ') || 'none';
+  const workerNavigation = status.workerStartupDiagnostic?.lastNavigation;
+  const wonderPushImportDuration = status.workerStartupDiagnostic?.wonderPushImportStarted
+    && status.workerStartupDiagnostic?.wonderPushImportFinished
+    ? status.workerStartupDiagnostic.wonderPushImportFinished
+      - status.workerStartupDiagnostic.wonderPushImportStarted
+    : null;
+  const copyDiagnostics = async () => {
+    const worker = status.workerStartupDiagnostic;
+    const navigation = worker?.lastNavigation;
+    const report = [
+      'IPM staging startup diagnostics',
+      `Captured: ${new Date().toISOString()}`,
+      'Tap-to-worker/document time: not observable by web code',
+      `Controlling shell: ${status.controllingShellVersion}`,
+      `Cached shell: ${cached}`,
+      `Bundle: ${status.bundleIdentity}`,
+      `Update waiting: ${status.updateWaiting ? 'yes' : 'no'}`,
+      `Worker boot epoch: ${worker?.workerBootStarted ?? 'unavailable'}`,
+      `WonderPush import duration: ${worker?.wonderPushImportStarted && worker?.wonderPushImportFinished
+        ? `${worker.wonderPushImportFinished - worker.wonderPushImportStarted} ms` : 'unavailable'}`,
+      `Navigation strategy: ${navigation?.strategy ?? 'unavailable'}`,
+      `Navigation cache hit: ${navigation?.cacheHit === undefined ? 'unavailable' : navigation.cacheHit ? 'yes' : 'no'}`,
+      `Worker fetch to cache selection: ${navigation ? `${navigation.selectedAt - navigation.receivedAt} ms` : 'unavailable'}`,
+      ...status.startupTimings.map((timing) => `${timing.name}: ${timing.milliseconds} ms`),
+    ].join('\n');
+    try {
+      await navigator.clipboard.writeText(report);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
 
   return (
     <View style={styles.card}>
@@ -40,6 +74,10 @@ export default function StagingOfflineStatus() {
       <Text style={styles.value}>Cached shell: {cached}</Text>
       <Text style={styles.value}>Bundle: {status.bundleIdentity}</Text>
       <Text style={styles.value}>Update waiting: {status.updateWaiting ? 'yes' : 'no'}</Text>
+      <Text style={styles.value}>Navigation strategy: {workerNavigation?.strategy ?? 'unavailable'}</Text>
+      <Text style={styles.value}>Navigation cache hit: {workerNavigation?.cacheHit === undefined ? 'unavailable' : workerNavigation.cacheHit ? 'yes' : 'no'}</Text>
+      <Text style={styles.value}>Worker fetch to cache: {workerNavigation ? `${workerNavigation.selectedAt - workerNavigation.receivedAt} ms` : 'unavailable'}</Text>
+      <Text style={styles.value}>WonderPush worker import: {wonderPushImportDuration === null ? 'unavailable' : `${wonderPushImportDuration} ms`}</Text>
       {status.startupTimings.map((timing) => (
         <Text key={timing.name} style={styles.value}>Startup {timing.name}: {timing.milliseconds} ms</Text>
       ))}
@@ -52,8 +90,11 @@ export default function StagingOfflineStatus() {
             <Text style={styles.buttonText}>Apply ready update</Text>
           </TouchableOpacity>
         )}
+        <TouchableOpacity style={styles.button} onPress={() => void copyDiagnostics()}>
+          <Text style={styles.buttonText}>{copied ? 'Copied' : 'Copy startup diagnostics'}</Text>
+        </TouchableOpacity>
       </View>
-      <Text style={styles.hint}>Applying a ready update reloads IPM once. Saved Schedule and Vendor information is retained.</Text>
+      <Text style={styles.hint}>Android/WebAPK time before the worker or document starts cannot be observed here. Applying a ready update reloads IPM once. Saved Schedule and Vendor information is retained.</Text>
     </View>
   );
 }
