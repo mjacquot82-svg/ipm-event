@@ -1,4 +1,5 @@
 from copy import deepcopy
+import asyncio
 
 import pytest
 from pydantic import ValidationError
@@ -54,3 +55,47 @@ def test_valid_publication_remains_demo_scoped():
     assert document["updated_by"] == "meeting-organizer"
     assert document["event_id"] == "ipm-2026-demo"
     assert document["source"] == "manual-demo-editor"
+
+
+class _DemoCollection:
+    def __init__(self):
+        self.document = None
+
+    async def find_one(self, _query):
+        return deepcopy(self.document)
+
+    async def insert_one(self, document):
+        self.document = deepcopy(document)
+
+    async def replace_one(self, _query, document, upsert=False):
+        assert upsert is True
+        self.document = deepcopy(document)
+
+
+class _DemoDatabase:
+    def __init__(self):
+        self.plowing_results_demo = _DemoCollection()
+
+
+def test_publish_is_visible_to_attendee_then_reset_restores_clean_demo(monkeypatch):
+    import server
+
+    database = _DemoDatabase()
+    monkeypatch.setattr(server, "db", database)
+    monkeypatch.setattr(server, "IS_STAGING_DEPLOYMENT", True)
+    classes = deepcopy(DEMO_CLASSES)
+    classes[1]["groups"][0]["competitors"][-1]["points"] = 600
+
+    published = asyncio.run(server.publish_admin_plowing_results_demo(
+        DemoResultsPayload(classes=classes),
+        {"role": "Owner", "username": "meeting-organizer"},
+    ))
+    attendee = asyncio.run(server.get_plowing_results_demo())
+    assert published["classes"][1]["groups"][0]["competitors"][0]["id"] == "c5g1-8"
+    assert attendee["classes"][1]["groups"][0]["competitors"][0]["points"] == 600
+
+    reset = asyncio.run(server.reset_admin_plowing_results_demo(
+        {"role": "Owner", "username": "meeting-organizer"}
+    ))
+    assert reset["classes"][1]["groups"][0]["competitors"][0]["id"] == "c5g1-1"
+    assert reset["updated_by"] == "meeting-organizer"
