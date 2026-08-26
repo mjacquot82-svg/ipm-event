@@ -83,6 +83,11 @@ test('category names and non-colour selected-state cues remain visible', () => {
   assert.match(schedule, /\{selectedEvent\.category\}/);
 });
 
+test('Schedule category controls do not render decorative colour dots or a colour legend', () => {
+  assert.doesNotMatch(schedule, /categoryColourIndicator/);
+  assert.doesNotMatch(schedule, /category(?:Colour|Color)(?:Dot|Legend|Key)/);
+});
+
 test('production event fields and ordering remain read-only', () => {
   assert.doesNotMatch(schedule, /event\.(id|category|title|description|start_date|start_time|end_time|location_name|days_active)\s*=/);
   assert.match(schedule, /setEvents\(result\.data\.events\)/);

@@ -780,22 +780,13 @@ export default function ScheduleScreen() {
                     accessibilityLabel={label}
                     accessibilityState={{ selected: isActive }}
                   >
-                    <View style={styles.categoryOptionLabel}>
-                      <View
-                        style={[
-                          styles.categoryColourIndicator,
-                          { backgroundColor: category ? categoryStyle.primary : colors.surface, borderColor: categoryStyle.primary },
-                        ]}
-                        accessible={false}
-                      />
-                      <Text style={[
-                        styles.categoryOptionText,
-                        { color: categoryStyle.tintForeground },
-                        isActive && { fontWeight: '700' },
-                      ]}>
-                        {label}
-                      </Text>
-                    </View>
+                    <Text style={[
+                      styles.categoryOptionText,
+                      { color: categoryStyle.tintForeground },
+                      isActive && { fontWeight: '700' },
+                    ]}>
+                      {label}
+                    </Text>
                     {isActive && <Feather name="check" size={20} color={categoryStyle.primary} />}
                   </TouchableOpacity>
                 );
@@ -1145,18 +1136,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   categoryOptionSelected: {
-    borderWidth: 2,
-  },
-  categoryOptionLabel: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  categoryColourIndicator: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
     borderWidth: 2,
   },
   categoryOptionActive: {
