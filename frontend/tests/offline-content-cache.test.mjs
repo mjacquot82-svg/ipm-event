@@ -85,8 +85,20 @@ test('Home cached Schedule uses the same limited-connection explanation', async 
   assert.match(banner, /We'll update it automatically when your connection improves/);
   assert.match(banner, /Last updated: \$\{date\.toLocaleString\(\)\}/);
   assert.doesNotMatch(banner, /Showing saved event information/);
+  assert.match(banner, /accessibilityLiveRegion="polite"/);
+  assert.match(banner, /prominentContainer:[\s\S]*paddingHorizontal: 18[\s\S]*paddingVertical: 16/);
+  assert.match(banner, /prominentTitle:[\s\S]*fontSize: 19[\s\S]*fontWeight: '800'[\s\S]*lineHeight: 24/);
+  assert.match(banner, /prominentMessage:[\s\S]*fontSize: 16[\s\S]*lineHeight: 23[\s\S]*marginTop: 7/);
+  assert.match(banner, /prominentTimestamp:[\s\S]*fontSize: 14[\s\S]*lineHeight: 20[\s\S]*marginTop: 8/);
+  assert.match(banner, /textContainer:[\s\S]*flex: 1[\s\S]*minWidth: 0/);
   assert.match(home, /<ResponsiveBanner \/>/);
   const homeBanners = home.match(/<CachedDataBanner[^>]+>/g) || [];
   assert.ok(homeBanners.length >= 2);
   assert.equal(homeBanners.every((banner) => banner.includes('informationType="event"')), true);
+  assert.equal(homeBanners.every((banner) => banner.includes('prominent')), true);
+  for (const viewportWidth of [360, 393, 430]) {
+    const availableHomeWidth = viewportWidth - 40;
+    const readableTextWidth = availableHomeWidth - 36 - 22 - 14;
+    assert.ok(readableTextWidth >= 248, `${viewportWidth}px viewport should retain a readable wrapping width`);
+  }
 });

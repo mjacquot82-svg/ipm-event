@@ -9,6 +9,7 @@ import { ATTENDEE_CARD_RADIUS, useAttendeeLayout } from '../theme/attendeePageLa
 type CachedDataBannerProps = {
   lastSuccessfulUpdate: string | null;
   informationType?: 'event' | 'vendor';
+  prominent?: boolean;
 };
 
 function formatLastUpdate(timestamp: string | null) {
@@ -27,19 +28,23 @@ function formatLastUpdate(timestamp: string | null) {
 export default function CachedDataBanner({
   lastSuccessfulUpdate,
   informationType = 'event',
+  prominent = false,
 }: CachedDataBannerProps) {
   const { sectionStyle } = useAttendeeLayout();
   const informationLabel = informationType === 'vendor' ? 'vendor information' : 'event information';
 
   return (
-    <View style={[styles.container, sectionStyle]}>
-      <Feather name="info" size={16} color={colors.info} />
+    <View
+      style={[styles.container, prominent && styles.prominentContainer, sectionStyle]}
+      accessibilityLiveRegion="polite"
+    >
+      <Feather name="info" size={prominent ? 22 : 16} color={colors.info} />
       <View style={styles.textContainer}>
-        <Text style={styles.title}>Limited internet connection</Text>
-        <Text style={styles.message}>
+        <Text style={[styles.title, prominent && styles.prominentTitle]}>Limited internet connection</Text>
+        <Text style={[styles.message, prominent && styles.prominentMessage]}>
           {`You're seeing saved ${informationLabel} so you can keep using IPM. We'll update it automatically when your connection improves.`}
         </Text>
-        <Text style={styles.timestamp}>{formatLastUpdate(lastSuccessfulUpdate)}</Text>
+        <Text style={[styles.timestamp, prominent && styles.prominentTimestamp]}>{formatLastUpdate(lastSuccessfulUpdate)}</Text>
       </View>
     </View>
   );
@@ -61,6 +66,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
+    minWidth: 0,
   },
   title: {
     color: colors.textPrimary,
@@ -77,5 +83,25 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 12,
     marginTop: 2,
+  },
+  prominentContainer: {
+    gap: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  prominentTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+    lineHeight: 24,
+  },
+  prominentMessage: {
+    fontSize: 16,
+    lineHeight: 23,
+    marginTop: 7,
+  },
+  prominentTimestamp: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 8,
   },
 });

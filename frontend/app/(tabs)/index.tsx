@@ -435,7 +435,7 @@ export default function HomeScreen() {
 
         {isShowingCachedData && (
           <View style={sectionStyle}>
-            <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} informationType="event" />
+            <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} informationType="event" prominent />
           </View>
         )}
 
@@ -487,7 +487,7 @@ export default function HomeScreen() {
 
         {announcementDataSource === 'cache' && announcements.length > 0 && (
           <View style={sectionStyle}>
-            <CachedDataBanner lastSuccessfulUpdate={announcementLastUpdate} informationType="event" />
+            <CachedDataBanner lastSuccessfulUpdate={announcementLastUpdate} informationType="event" prominent />
           </View>
         )}
 
