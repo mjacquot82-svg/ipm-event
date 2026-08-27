@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -350,14 +349,6 @@ export default function HomeScreen() {
     quickAction(actionId, 'outbound_link', () => { void openTrackedLink(destinationId, 'home_quick_action'); });
   };
 
-  const showUnavailableNotice = (title: string) => {
-    const message =
-      title === 'SOS'
-        ? 'Emergency support information will be available during the event.'
-        : 'Event alerts will appear here when they are available.';
-    Alert.alert(title, message);
-  };
-
   const renderEventCard = (event: ScheduleEvent, index: number, showTimeUntil = false) => {
     const eventDate = parseEventDateTime(event);
     const typeColor = getCategoryColor(event.category, index);
@@ -545,17 +536,6 @@ export default function HomeScreen() {
                 <MaterialCommunityIcons name="crown-outline" size={24} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Queen of the Furrow</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionCard, styles.sosCard]}
-              onPress={() => quickAction('sos', 'unavailable_notice', () => showUnavailableNotice('SOS'))}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#D32F2F' }]}>
-                <Feather name="alert-triangle" size={22} color="#FFFFFF" />
-              </View>
-              <Text style={[styles.actionTitle, { color: '#D32F2F' }]}>SOS</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -805,10 +785,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     marginBottom: 4,
-  },
-  sosCard: {
-    borderWidth: 1,
-    borderColor: '#D32F2F',
   },
   announcementActionUnread: { backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderWidth: 1 },
   announcementBell: { backgroundColor: '#9E9E9E', position: 'relative' },

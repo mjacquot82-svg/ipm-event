@@ -4,6 +4,8 @@ import test from 'node:test';
 
 const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
 const destinations = await readFile(new URL('../src/analytics/trackedLinks.ts', import.meta.url), 'utf8');
+const previewHome = await readFile(new URL('../app/preview-2026/(tabs)/index.tsx', import.meta.url), 'utf8');
+const backend = await readFile(new URL('../../backend/server.py', import.meta.url), 'utf8');
 
 const quickActionsStart = home.indexOf('<Text style={styles.sectionTitle}>Quick Actions</Text>');
 const linksStart = home.indexOf('<Text style={[styles.sectionTitle, styles.linksTitle]}>Links</Text>', quickActionsStart);
@@ -14,10 +16,10 @@ const groupedActions = home.slice(quickActionsStart, groupsEnd);
 
 const allActions = [
   'Map', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
-  'Camping', 'Souvenirs', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements',
+  'Camping', 'Souvenirs', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements',
   'Plowing',
 ];
-const internalActions = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements'];
+const internalActions = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements'];
 const externalActions = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs'];
 
 function labelOccurrences(source, label) {
@@ -31,7 +33,7 @@ test('Home has distinct Quick Actions and Links headings in that order', () => {
 });
 
 test('every existing Home action and the Plowing link appear exactly once', () => {
-  assert.equal(allActions.length, 14);
+  assert.equal(allActions.length, 13);
   for (const action of allActions) {
     assert.equal(labelOccurrences(groupedActions, action), 1, `${action} should appear exactly once`);
   }
@@ -49,6 +51,23 @@ test('Plowing Results is absent from Home Quick Actions and Links', () => {
   assert.equal(labelOccurrences(quickActions, 'Plowing Results'), 0);
   assert.equal(labelOccurrences(links, 'Plowing Results'), 0);
   assert.doesNotMatch(home, /SHOW_PLOWING_RESULTS_DEMO|router\.push\('\/plowing-results'/);
+});
+
+test('SOS is absent from attendee Home while its underlying architecture remains', () => {
+  assert.equal(labelOccurrences(quickActions, 'SOS'), 0);
+  assert.equal(labelOccurrences(links, 'SOS'), 0);
+  assert.doesNotMatch(home, /quickAction\('sos'|showUnavailableNotice\('SOS'\)|>SOS<|sosCard/);
+  assert.match(previewHome, /submitSOSReport/);
+  assert.match(previewHome, /\/api\/sos\/report/);
+  assert.match(backend, /@api_router\.post\("\/sos\/report"/);
+  assert.match(backend, /@api_router\.get\("\/sos\/active"/);
+});
+
+test('exactly seven attendee Quick Actions remain', () => {
+  assert.deepEqual(internalActions, [
+    'Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements',
+  ]);
+  for (const action of internalActions) assert.equal(labelOccurrences(quickActions, action), 1);
 });
 
 test('Home action grids retain responsive wrapping after the removal', () => {
