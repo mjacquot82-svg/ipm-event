@@ -596,14 +596,18 @@ export default function ScheduleScreen() {
             ]}
             onPress={() => setShowCategorySelector(true)}
             accessibilityRole="button"
-            accessibilityLabel={`Categories, ${selectedCategory ? '1 category selected' : 'All categories'}`}
+            accessibilityLabel={selectedCategory || 'Categories'}
             accessibilityHint="Opens the category filter options"
             accessibilityState={{ expanded: showCategorySelector }}
           >
             <Feather name="tag" size={18} color={selectedCategory ? selectedCategoryStyle.selectedFilterForeground : colors.primary} />
             <View style={styles.categorySelectorTextContainer}>
-              <Text style={[styles.categorySelectorLabel, selectedCategory && { color: selectedCategoryStyle.selectedFilterForeground }]}>
-                Categories
+              <Text
+                style={[styles.categorySelectorLabel, selectedCategory && { color: selectedCategoryStyle.selectedFilterForeground }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {selectedCategory || 'Categories'}
               </Text>
               <Text style={[styles.categorySelectorStatus, selectedCategory && { color: selectedCategoryStyle.selectedFilterForeground }]}>
                 {selectedCategory ? '1 category selected' : 'All categories'}
@@ -1250,11 +1254,13 @@ const styles = StyleSheet.create({
   },
   categorySelectorTextContainer: {
     flex: 1,
+    minWidth: 0,
   },
   categorySelectorLabel: {
     color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
+    flexShrink: 1,
   },
   categorySelectorStatus: {
     color: colors.textSecondary,

@@ -17,8 +17,24 @@ test('desktop retains category pills while mobile uses the compact category sele
   assert.match(scheduleSource, /viewportWidth >= ATTENDEE_DESKTOP_BREAKPOINT/);
   assert.match(scheduleSource, /categoryOptions\.length > 0 && isDesktop/);
   assert.match(scheduleSource, /categoryOptions\.length > 0 && !isDesktop/);
-  assert.match(scheduleSource, />\s*Categories\s*</);
+  assert.match(scheduleSource, /\{selectedCategory \|\| 'Categories'\}/);
   assert.match(scheduleSource, /selectedCategory \? '1 category selected' : 'All categories'/);
+});
+
+test('mobile category button shows the selected official name and restores Categories when cleared', () => {
+  assert.match(scheduleSource, /\{selectedCategory \|\| 'Categories'\}/);
+  assert.match(scheduleSource, /accessibilityLabel=\{selectedCategory \|\| 'Categories'\}/);
+  assert.match(scheduleSource, /onPress=\{\(\) => setShowCategorySelector\(true\)\}/);
+  assert.match(scheduleSource, /const selectCategory = \(category: string \| null\)/);
+  assert.match(scheduleSource, /setSelectedCategory\(category\)/);
+});
+
+test('mobile category button safely truncates long names while accessibility retains the full name', () => {
+  assert.match(scheduleSource, /numberOfLines=\{1\}/);
+  assert.match(scheduleSource, /ellipsizeMode="tail"/);
+  assert.match(scheduleSource, /categorySelectorTextContainer: \{[\s\S]*?flex: 1,[\s\S]*?minWidth: 0,/);
+  assert.match(scheduleSource, /categorySelectorLabel: \{[\s\S]*?flexShrink: 1,/);
+  assert.doesNotMatch(scheduleSource, /Ontario Mutuals Main Stage - In\.\.\./);
 });
 
 test('mobile category selector exposes every full category option and supports clear and dismissal', () => {
@@ -55,6 +71,7 @@ test('start-time-only events render without a trailing separator', () => {
 test('mobile category selector derives options and therefore includes Parade Week', () => {
   assert.match(scheduleSource, /new Set\(events\.map\(\(event\) => event\.category\)\.filter\(Boolean\)\)/);
   assert.match(scheduleSource, /\[null, \.\.\.categoryOptions\]\.map/);
+  assert.match(scheduleSource, /\{selectedCategory \|\| 'Categories'\}/);
 });
 
 test('attendee schedule and itinerary use Ontario-safe date-only formatting', () => {

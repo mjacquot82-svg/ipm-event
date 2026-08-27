@@ -57,6 +57,12 @@ test('mobile sheet uses full-width light-tinted rounded rows with neutral All an
   assert.match(schedule, /\[null, \.\.\.categoryOptions\]\.map/);
 });
 
+test('mobile selected-category label keeps the existing category colour treatment', () => {
+  assert.match(schedule, /selectedCategory && \{[\s\S]*?backgroundColor: selectedCategoryStyle\.primary,[\s\S]*?borderColor: selectedCategoryStyle\.primary/);
+  assert.match(schedule, /\{selectedCategory \|\| 'Categories'\}/);
+  assert.match(schedule, /selectedCategory && \{ color: selectedCategoryStyle\.selectedFilterForeground \}/);
+});
+
 test('every approved category retains its own existing light tint in the mobile sheet', () => {
   for (const tint of ['#E5F1ED', '#F2EEE5', '#E6EDF4', '#F9E8EA', '#FFF1D9']) {
     assert.ok(categoryStyles.includes(`tint: '${tint}'`));
