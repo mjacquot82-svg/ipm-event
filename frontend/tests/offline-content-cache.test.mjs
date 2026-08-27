@@ -78,7 +78,7 @@ test('Home cached Schedule uses the same limited-connection explanation', async 
     readFile(new URL('../src/components/CachedDataBanner.tsx', import.meta.url), 'utf8'),
   ]);
   assert.match(home, /isShowingCachedData[\s\S]*informationType="event"/);
-  assert.match(home, /const isShowingCachedData = dataSource === 'cache' && !loading && events\.length > 0/);
+  assert.match(home, /const isShowingCachedData = !loading && shouldShowHomeConnectivityBanner/);
   assert.match(home, /setDataSource\(result\.source\)/);
   assert.match(banner, /Limited internet connection/);
   assert.match(banner, /You're seeing saved \$\{informationLabel\} so you can keep using IPM/);

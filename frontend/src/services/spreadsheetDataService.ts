@@ -2,6 +2,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isScheduleRecord, isVendorRecord, shouldAcceptReplacement } from './contentCachePolicy';
+import { ApiDataError } from './apiFailureClassification';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -198,7 +199,7 @@ async function fetchWithRetry<T>(
   isCacheableResponse: (data: unknown) => data is T
 ): Promise<CachedApiResult<T>> {
   if (typeof navigator !== 'undefined' && 'onLine' in navigator && navigator.onLine === false) {
-    throw new Error('Device is offline');
+    throw new ApiDataError('connectivity', 'Device is offline');
   }
   let lastError: unknown;
 
@@ -206,12 +207,17 @@ async function fetchWithRetry<T>(
     try {
       const response = await fetchWithTimeout(url, timeoutMs);
       if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
+        throw new ApiDataError('server', `Request failed with status ${response.status}`);
       }
 
-      const data: unknown = await response.json();
+      let data: unknown;
+      try {
+        data = await response.json();
+      } catch (error) {
+        throw new ApiDataError('malformed-response', 'API response is not valid JSON', { cause: error });
+      }
       if (!isCacheableResponse(data)) {
-        throw new Error('API response is not Supabase-backed data');
+        throw new ApiDataError('malformed-response', 'API response is not Supabase-backed data');
       }
 
       return {
@@ -221,7 +227,15 @@ async function fetchWithRetry<T>(
         cacheAge: 0,
       };
     } catch (error) {
-      lastError = error;
+      if (error instanceof ApiDataError) {
+        lastError = error;
+      } else if (typeof DOMException !== 'undefined' && error instanceof DOMException && error.name === 'AbortError') {
+        lastError = new ApiDataError('connectivity', 'API request timed out', { cause: error });
+      } else if (error instanceof TypeError) {
+        lastError = new ApiDataError('connectivity', 'API network request failed', { cause: error });
+      } else {
+        lastError = new ApiDataError('application', 'API request failed', { cause: error });
+      }
       if (attempt < maxAttempts) {
         await delay(retryDelayMs);
       }

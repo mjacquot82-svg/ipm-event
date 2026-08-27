@@ -16,7 +16,7 @@
     "test:offline": "node --test tests/offline-content-cache.test.mjs tests/offline-service-worker.test.mjs tests/startup-reassurance.test.mjs",
     "test:pwa": "node --test tests/pwa-icons.test.mjs",
     "test:camping": "node --test tests/camping-page.test.mjs",
-    "test:home": "node --test tests/home-action-groups.test.mjs",
+    "test:home": "node --test tests/home-action-groups.test.mjs tests/home-connectivity-banner.test.mjs",
     "test:schedule-colours": "node --test tests/schedule-category-colours.test.mjs"
   },
   "dependencies": {

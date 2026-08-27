@@ -36,6 +36,12 @@ import {
   getAnnouncementsData,
 } from '../../src/services/spreadsheetDataService';
 import { markStartupStage } from '../../src/services/startupPerformance';
+import { classifyApiFailure } from '../../src/services/apiFailureClassification';
+import {
+  HomeRefreshState,
+  refreshStateAfterFailure,
+  shouldShowHomeConnectivityBanner,
+} from '../../src/services/homeConnectivityState';
 
 const EVENT_START_DATE = '2026-09-22T09:00:00';
 const CATEGORY_COLORS = [
@@ -216,9 +222,14 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
+  const [scheduleRefreshState, setScheduleRefreshState] = useState<HomeRefreshState>('pending');
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementDataSource, setAnnouncementDataSource] = useState<CachedApiSource>('network');
   const [announcementLastUpdate, setAnnouncementLastUpdate] = useState<string | null>(null);
+  const [announcementRefreshState, setAnnouncementRefreshState] = useState<HomeRefreshState>('pending');
+  const [knownOffline, setKnownOffline] = useState(
+    () => typeof navigator !== 'undefined' && 'onLine' in navigator && navigator.onLine === false
+  );
   const { hydrated: announcementReadStateHydrated, lastReadAnnouncementId } = useAnnouncementReadState();
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
@@ -226,6 +237,10 @@ export default function HomeScreen() {
     setEvents(result.data.events || []);
     setDataSource(result.source);
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
+    if (result.source === 'network') {
+      setScheduleRefreshState('succeeded');
+      setKnownOffline(false);
+    }
   }, []);
 
   const fetchSchedule = useCallback(async (isRefresh = false) => {
@@ -240,7 +255,10 @@ export default function HomeScreen() {
       const result = await getScheduleData({
         preferCache: !isRefresh,
         onBackgroundRefresh: applyScheduleResult,
-        onBackgroundRefreshError: () => setDataSource('cache'),
+        onBackgroundRefreshError: (refreshError) => {
+          setDataSource('cache');
+          setScheduleRefreshState(refreshStateAfterFailure(classifyApiFailure(refreshError)));
+        },
       });
       applyScheduleResult(result);
     } catch (err) {
@@ -257,6 +275,10 @@ export default function HomeScreen() {
     if (result.source === 'network') setAnnouncementDataSource('network');
     else setAnnouncementDataSource('cache');
     setAnnouncementLastUpdate(result.lastSuccessfulUpdate);
+    if (result.source === 'network') {
+      setAnnouncementRefreshState('succeeded');
+      setKnownOffline(false);
+    }
   }, []);
 
   const fetchAnnouncements = useCallback(async (isRefresh = false) => {
@@ -264,7 +286,10 @@ export default function HomeScreen() {
       const result = await getAnnouncementsData({
         preferCache: !isRefresh,
         onBackgroundRefresh: applyAnnouncementsResult,
-        onBackgroundRefreshError: () => setAnnouncementDataSource('cache'),
+        onBackgroundRefreshError: (refreshError) => {
+          setAnnouncementDataSource('cache');
+          setAnnouncementRefreshState(refreshStateAfterFailure(classifyApiFailure(refreshError)));
+        },
       });
       applyAnnouncementsResult(result);
     } catch (err) {
@@ -289,7 +314,10 @@ export default function HomeScreen() {
     return () => cancelAnimationFrame(frame);
   }, [fetchAnnouncements, fetchSchedule, loadFavorites]);
 
-  useEffect(() => addConnectivityRefreshListener(() => void fetchSchedule(true)), [fetchSchedule]);
+  useEffect(() => addConnectivityRefreshListener(() => {
+    void fetchSchedule(true);
+    void fetchAnnouncements(true);
+  }), [fetchAnnouncements, fetchSchedule]);
 
   useFocusEffect(
     useCallback(() => {
@@ -385,7 +413,18 @@ export default function HomeScreen() {
   };
 
   const sectionStyle = [styles.section, attendeeSectionStyle];
-  const isShowingCachedData = dataSource === 'cache' && !loading && events.length > 0;
+  const isShowingCachedData = !loading && shouldShowHomeConnectivityBanner({
+    dataSource,
+    hasCachedContent: events.length > 0,
+    refreshState: scheduleRefreshState,
+    knownOffline,
+  });
+  const isShowingCachedAnnouncements = shouldShowHomeConnectivityBanner({
+    dataSource: announcementDataSource,
+    hasCachedContent: announcements.length > 0,
+    refreshState: announcementRefreshState,
+    knownOffline,
+  });
   const unreadAnnouncementIds = getUnreadAnnouncementIds(announcements, lastReadAnnouncementId);
   const newestUnreadAnnouncement = announcementReadStateHydrated
     ? announcements
@@ -475,7 +514,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {announcementDataSource === 'cache' && announcements.length > 0 && (
+        {isShowingCachedAnnouncements && (
           <View style={sectionStyle}>
             <CachedDataBanner lastSuccessfulUpdate={announcementLastUpdate} informationType="event" prominent />
           </View>
