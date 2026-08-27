@@ -14,10 +14,10 @@ const groupedActions = home.slice(quickActionsStart, groupsEnd);
 
 const allActions = [
   'Map', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
-  'Camping', 'Souvenirs', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements', 'Plowing Results',
+  'Camping', 'Souvenirs', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements',
   'Plowing',
 ];
-const internalActions = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements', 'Plowing Results'];
+const internalActions = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements'];
 const externalActions = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs'];
 
 function labelOccurrences(source, label) {
@@ -31,7 +31,7 @@ test('Home has distinct Quick Actions and Links headings in that order', () => {
 });
 
 test('every existing Home action and the Plowing link appear exactly once', () => {
-  assert.equal(allActions.length, 15);
+  assert.equal(allActions.length, 14);
   for (const action of allActions) {
     assert.equal(labelOccurrences(groupedActions, action), 1, `${action} should appear exactly once`);
   }
@@ -45,13 +45,18 @@ test('Plowing appears once under Links and routes internally', () => {
   assert.match(links, /accessibilityLabel="Plowing information"/);
 });
 
+test('Plowing Results is absent from Home Quick Actions and Links', () => {
+  assert.equal(labelOccurrences(quickActions, 'Plowing Results'), 0);
+  assert.equal(labelOccurrences(links, 'Plowing Results'), 0);
+  assert.doesNotMatch(home, /SHOW_PLOWING_RESULTS_DEMO|router\.push\('\/plowing-results'/);
+});
+
 test('internal actions are under Quick Actions and absent from Links', () => {
   for (const action of internalActions) {
     assert.equal(labelOccurrences(quickActions, action), 1, `${action} missing from Quick Actions`);
     assert.equal(labelOccurrences(links, action), 0, `${action} must not appear in Links`);
   }
   assert.match(quickActions, /quickAction\('camping', 'internal', \(\) => router\.push\('\/camping' as never\)\)/);
-  assert.match(quickActions, /SHOW_PLOWING_RESULTS_DEMO/);
 });
 
 test('URL-only actions are under Links and preserve tracked destinations', () => {

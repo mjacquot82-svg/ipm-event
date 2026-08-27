@@ -26,13 +26,10 @@ test('staging attendee route is a mobile ranked results experience', () => {
   assert.doesNotMatch(attendee, /<table|DataTable/);
 });
 
-test('Home exposes an internal staging-only Plowing Results action', () => {
-  assert.match(home, /SHOW_PLOWING_RESULTS_DEMO/);
-  assert.match(home, /window\.location\.hostname\.toLowerCase\(\) === 'staging\.theipm\.ca'/);
-  assert.match(home, /Plowing Results/);
-  assert.match(home, /router\.push\('\/plowing-results'/);
-  assert.match(home, /name="award"/);
-  assert.match(home, /accessibilityLabel="Open Plowing Results demo"/);
+test('demo remains available by direct route but has no Home entry point', () => {
+  assert.match(attendee, /DEMO RESULTS/);
+  assert.match(attendee, /getPlowingResults/);
+  assert.doesNotMatch(home, /SHOW_PLOWING_RESULTS_DEMO|router\.push\('\/plowing-results'|>Plowing Results<|Open Plowing Results demo/);
 });
 
 test('organizer manager uses auth, local draft edits, validation, publish and confirmed reset', () => {
