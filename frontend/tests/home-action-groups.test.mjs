@@ -51,6 +51,11 @@ test('Plowing Results is absent from Home Quick Actions and Links', () => {
   assert.doesNotMatch(home, /SHOW_PLOWING_RESULTS_DEMO|router\.push\('\/plowing-results'/);
 });
 
+test('Home action grids retain responsive wrapping after the removal', () => {
+  assert.match(home, /quickActionsGrid:\s*\{[\s\S]*?flexDirection: 'row',[\s\S]*?flexWrap: 'wrap'/);
+  assert.match(home, /actionCard:\s*\{[\s\S]*?width: '31%'/);
+});
+
 test('internal actions are under Quick Actions and absent from Links', () => {
   for (const action of internalActions) {
     assert.equal(labelOccurrences(quickActions, action), 1, `${action} missing from Quick Actions`);
