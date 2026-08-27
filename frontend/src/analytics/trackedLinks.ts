@@ -12,6 +12,8 @@ export const IPM_DESTINATIONS = {
   past_ipm_photos: { id: 'past_ipm_photos', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/visitor-info/photos-of-past-ipms/' },
   faq: { id: 'faq', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/visitor-info/faq/' },
   accessibility: { id: 'accessibility', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/visitor-info/accessibility/' },
+  plowing_rules: { id: 'plowing_rules', type: 'information', url: 'https://www.plowingmatch.org/plowing/ipm-plowing/plowing-rules-regulations-2/' },
+  plowing_daily_results: { id: 'plowing_daily_results', type: 'results', url: 'https://www.plowingmatch.org/plowing/ipm-plowing/daily-plowing-results/' },
   jds_studio: { id: 'jds_studio', type: 'developer', url: 'https://jdsstudio.ca' },
 } as const;
 

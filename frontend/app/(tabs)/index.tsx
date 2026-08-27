@@ -641,6 +641,19 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.actionTitle}>Souvenirs</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => quickAction('plowing', 'internal', () => router.push('/plowing' as never))}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Plowing information"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.field }]}>
+                <Feather name="award" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Plowing</Text>
+            </TouchableOpacity>
           </View>
         </View>
 

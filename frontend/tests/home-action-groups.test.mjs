@@ -15,6 +15,7 @@ const groupedActions = home.slice(quickActionsStart, groupsEnd);
 const allActions = [
   'Map', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
   'Camping', 'Souvenirs', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements', 'Plowing Results',
+  'Plowing',
 ];
 const internalActions = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements', 'Plowing Results'];
 const externalActions = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs'];
@@ -29,12 +30,19 @@ test('Home has distinct Quick Actions and Links headings in that order', () => {
   assert.ok(groupsEnd > linksStart);
 });
 
-test('every existing Home action appears exactly once and none are lost or duplicated', () => {
-  assert.equal(allActions.length, 14);
+test('every existing Home action and the Plowing link appear exactly once', () => {
+  assert.equal(allActions.length, 15);
   for (const action of allActions) {
     assert.equal(labelOccurrences(groupedActions, action), 1, `${action} should appear exactly once`);
   }
-  assert.equal(internalActions.length + externalActions.length, allActions.length);
+  assert.equal(internalActions.length + externalActions.length + 1, allActions.length);
+});
+
+test('Plowing appears once under Links and routes internally', () => {
+  assert.equal(labelOccurrences(links, 'Plowing'), 1);
+  assert.equal(labelOccurrences(quickActions, 'Plowing'), 0);
+  assert.match(links, /quickAction\('plowing', 'internal', \(\) => router\.push\('\/plowing' as never\)\)/);
+  assert.match(links, /accessibilityLabel="Plowing information"/);
 });
 
 test('internal actions are under Quick Actions and absent from Links', () => {
