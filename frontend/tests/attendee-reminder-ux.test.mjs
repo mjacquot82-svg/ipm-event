@@ -41,13 +41,12 @@ test('started and late-star events are not promotion eligible', () => {
   assert.equal(isReminderPromotionEligible({ start_date: '2026-09-23', start_time: '9:00 AM' }, now), true);
 });
 
-test('pill is temporary, dismissible, accessible, and enablement requires its tap', () => {
-  assert.match(schedule, /setTimeout\(\(\) => setShowReminderPrompt\(false\), 6000\)/);
+test('Schedule consolidates the pre-cutover reminder pill into truthful itinerary feedback', () => {
   assert.match(schedule, /const starSucceeded = result\.isFavorite && result\.favorites\.includes\(eventId\)/);
-  assert.match(schedule, /Dismiss event reminder offer/);
-  assert.match(schedule, /accessibilityLabel="Get event reminders/);
-  assert.match(schedule, /onPress=\{\(\) => void enableRemindersFromPrompt\(\)\}/);
-  assert.doesNotMatch(schedule.slice(schedule.indexOf('handleToggleFavorite'), schedule.indexOf('enableRemindersFromPrompt')), /subscribeToNotifications/);
+  assert.match(schedule, /Added to Personal Itinerary/);
+  assert.match(schedule, /Event reminders about 30 minutes before eligible events will also be available/);
+  assert.doesNotMatch(schedule, /enableRemindersFromPrompt|we'll remind you 30 minutes/);
+  assert.doesNotMatch(schedule.slice(schedule.indexOf('handleToggleFavorite'), schedule.indexOf('handleCalendarExport')), /subscribeToNotifications/);
 });
 
 test('Android/default and granted paths subscribe then register and full-set sync only after action', () => {
@@ -71,6 +70,9 @@ test('iPhone browser requires Home Screen while standalone uses normal enablemen
 test('itinerary states are authoritative and disable preserves favorites', () => {
   for (const state of ["'checking'", "'on'", "'off'", "'blocked'", "'install_required'", "'recovery'"]) assert.match(itinerary, new RegExp(state));
   assert.match(itinerary, /result\.enabled && result\.readiness\?\.reminderReady/);
+  assert.match(itinerary, /Event reminder setup complete/);
+  assert.match(itinerary, /when they become available/);
+  assert.doesNotMatch(itinerary, /You'll receive a reminder|We'll remind you before/);
   assert.match(itinerary, /disableAttendeeItineraryReminders/);
   assert.match(sync, /request\('\/enabled', 'PUT', \{ enabled: false \}\)/);
   assert.doesNotMatch(sync, /unsubscribeFromNotifications|clearFavorites|removeFavorite/);

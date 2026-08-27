@@ -115,12 +115,11 @@ test('one-shot workflow is organizer authorized, atomic, expiring, and synthetic
   assert.match(testPage, /Global kill switch: ON/);
 });
 
-test('first-star reminder pill is temporary, actionable, dismissible, and never attached to unstar', () => {
-  assert.match(schedulePage, /starSucceeded && starredEvent && await shouldShowReminderPromotion\(starredEvent\)/);
-  assert.match(schedulePage, /setTimeout\(\(\) => setShowReminderPrompt\(false\), 6000\)/);
-  assert.match(schedulePage, /enableRemindersFromPrompt/);
-  assert.match(schedulePage, /Dismiss event reminder offer/);
-  assert.match(schedulePage, /Enable notifications and we'll remind you 30 minutes/);
+test('first-star feedback teaches itinerary addition without promising reminder delivery', () => {
+  assert.match(schedulePage, /starSucceeded[\s\S]*setShowStarConfirmation\(true\)/);
+  assert.match(schedulePage, /Added to Personal Itinerary/);
+  assert.match(schedulePage, /Event reminders about 30 minutes before eligible events will also be available/);
+  assert.doesNotMatch(schedulePage, /enableRemindersFromPrompt|we'll remind you 30 minutes/);
 });
 
 test('no-nag policy permits at most two local displays and suppresses when ready', () => {
@@ -129,8 +128,9 @@ test('no-nag policy permits at most two local displays and suppresses when ready
 });
 
 test('personal itinerary exposes hardened reminder status and platform guidance', () => {
-  assert.match(itineraryPage, /Get 30-minute event reminders/);
-  assert.match(itineraryPage, /Event reminders on/);
+  assert.match(itineraryPage, /Set up event reminders/);
+  assert.match(itineraryPage, /Event reminder setup complete/);
+  assert.match(itineraryPage, /when they become available/);
   assert.match(itineraryPage, /result\.readiness\?\.reminderReady/);
   assert.match(itineraryPage, /install IPM to your Home Screen/);
   assert.match(itineraryPage, /Notifications are blocked/);

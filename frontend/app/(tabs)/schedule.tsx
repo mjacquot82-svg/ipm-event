@@ -16,6 +16,7 @@ import {
   Linking,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
 import { getScheduleCategoryStyle } from '../../src/theme/scheduleCategoryStyles';
@@ -43,14 +44,23 @@ import { exportScheduleEvent, getGoogleCalendarUrl } from '../../src/services/ca
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
-import { enableAttendeeItineraryReminders, shouldShowReminderPromotion } from '../../src/services/reminderUxService';
+import {
+  acknowledgeScheduleOnboarding,
+  hasAcknowledgedScheduleOnboarding,
+  resetScheduleOnboarding,
+} from '../../src/services/scheduleOnboardingState';
+
+const IS_STAGING = (process.env.EXPO_PUBLIC_BACKEND_URL || '').includes('staging');
 
 export default function ScheduleScreen() {
   const { frameStyle, sectionStyle } = useAttendeeLayout();
   const { width: viewportWidth } = useWindowDimensions();
   const isDesktop = viewportWidth >= ATTENDEE_DESKTOP_BREAKPOINT;
   const router = useRouter();
-  const { source } = useLocalSearchParams<{ source?: string }>();
+  const { source, resetScheduleOnboarding: resetOnboarding } = useLocalSearchParams<{
+    source?: string;
+    resetScheduleOnboarding?: string;
+  }>();
   usePageAnalytics('schedule', source || 'other', 'schedule_viewed');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,11 +79,29 @@ export default function ScheduleScreen() {
   const [calendarExporting, setCalendarExporting] = useState(false);
   const [calendarMessage, setCalendarMessage] = useState<string | null>(null);
   const [showCalendarChooser, setShowCalendarChooser] = useState(false);
-  const [showReminderPrompt, setShowReminderPrompt] = useState(false);
-  const [reminderPromptMessage, setReminderPromptMessage] = useState<string | null>(null);
-  const reminderPromptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showScheduleOnboarding, setShowScheduleOnboarding] = useState(false);
+  const [showStarConfirmation, setShowStarConfirmation] = useState(false);
+  const starConfirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
+
+  useEffect(() => {
+    let active = true;
+    const loadOnboardingState = async () => {
+      if (IS_STAGING && resetOnboarding === '1') {
+        await resetScheduleOnboarding(AsyncStorage);
+      }
+      const acknowledged = await hasAcknowledgedScheduleOnboarding(AsyncStorage);
+      if (active) setShowScheduleOnboarding(!acknowledged);
+    };
+    void loadOnboardingState();
+    return () => { active = false; };
+  }, [resetOnboarding]);
+
+  const dismissScheduleOnboarding = useCallback(async () => {
+    setShowScheduleOnboarding(false);
+    await acknowledgeScheduleOnboarding(AsyncStorage);
+  }, []);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     if (!Array.isArray(result.data.events)) {
@@ -155,36 +183,17 @@ export default function ScheduleScreen() {
     });
     // Sync with backend for notifications
     syncStarredEventsWithBackend(result.favorites);
-    const starredEvent = events.find((event) => event.id === eventId);
     const starSucceeded = result.isFavorite && result.favorites.includes(eventId);
-    if (starSucceeded && starredEvent && await shouldShowReminderPromotion(starredEvent)) {
-      setReminderPromptMessage(null);
-      setShowReminderPrompt(true);
-      reminderPromptTimerRef.current = setTimeout(() => setShowReminderPrompt(false), 6000);
+    if (starSucceeded) {
+      if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current);
+      setShowStarConfirmation(true);
+      starConfirmationTimerRef.current = setTimeout(() => setShowStarConfirmation(false), 2800);
     }
   };
 
   useEffect(() => () => {
-    if (reminderPromptTimerRef.current) clearTimeout(reminderPromptTimerRef.current);
+    if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current);
   }, []);
-
-  const enableRemindersFromPrompt = async () => {
-    if (reminderPromptTimerRef.current) clearTimeout(reminderPromptTimerRef.current);
-    setReminderPromptMessage('Opening notification setup…');
-    const result = await enableAttendeeItineraryReminders().catch(() => null);
-    if (result?.enabled && result.readiness?.reminderReady) {
-      setReminderPromptMessage('Event reminders are on.');
-      setTimeout(() => setShowReminderPrompt(false), 1800);
-    } else if (result?.notificationState === 'requires_install') {
-      setReminderPromptMessage('On iPhone, install IPM to your Home Screen and open the installed app to enable reminders.');
-    } else if (result?.notificationState === 'denied') {
-      setReminderPromptMessage('Notifications are blocked. Allow them in browser settings to enable reminders.');
-    } else if (result?.transient) {
-      setReminderPromptMessage('Verifying event reminders… Your itinerary is still saved.');
-    } else {
-      setReminderPromptMessage('Reminders could not be enabled. Your itinerary is still saved.');
-    }
-  };
 
   const handleCalendarExport = async (eventId: string) => {
     setShowCalendarChooser(false);
@@ -492,6 +501,40 @@ export default function ScheduleScreen() {
               {dataSource === 'cache' && (
                 <CachedDataBanner lastSuccessfulUpdate={lastUpdated} informationType="event" />
               )}
+
+              {showScheduleOnboarding ? (
+                <View style={styles.onboardingCard} accessibilityRole="summary">
+                  <View style={styles.onboardingIcon} accessible={false}>
+                    <Feather name="star" size={22} color={colors.accentDark} />
+                  </View>
+                  <View style={styles.onboardingCopy}>
+                    <Text style={styles.onboardingTitle}>Plan your day</Text>
+                    <Text style={styles.onboardingText}>
+                      Tap the ⭐ on events you don&apos;t want to miss. They&apos;ll be added to your Personal Itinerary.
+                    </Text>
+                    <Text style={styles.onboardingSecondaryText}>
+                      Event reminders about 30 minutes before eligible events will also be available with notifications enabled.
+                    </Text>
+                    <View style={styles.onboardingActions}>
+                      <TouchableOpacity
+                        onPress={() => router.push('/itinerary')}
+                        accessibilityRole="link"
+                        accessibilityLabel="View Personal Itinerary"
+                      >
+                        <Text style={styles.onboardingLink}>View Personal Itinerary</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.onboardingDismiss}
+                        onPress={() => void dismissScheduleOnboarding()}
+                        accessibilityRole="button"
+                        accessibilityLabel="Dismiss Plan your day introduction"
+                      >
+                        <Text style={styles.onboardingDismissText}>Got it</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
 
               <View style={styles.filterPanel}>
         <View style={styles.searchBox}>
@@ -1129,23 +1172,12 @@ export default function ScheduleScreen() {
           </View>
         </View>
       </Modal>
-      {showReminderPrompt ? <View style={styles.reminderPrompt} accessibilityLiveRegion="polite">
-        <TouchableOpacity style={styles.reminderPromptBody} onPress={() => void enableRemindersFromPrompt()}
-          accessibilityRole="button" accessibilityLabel="Get event reminders. Enable notifications and itinerary reminders.">
-          <Feather name="bell" size={20} color="#FFFFFF" />
-          <View style={styles.reminderPromptCopy}>
-            <Text style={styles.reminderPromptTitle}>Get event reminders</Text>
-            <Text style={styles.reminderPromptText}>{reminderPromptMessage || "Enable notifications and we'll remind you 30 minutes before events in your itinerary start."}</Text>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.reminderPromptClose} onPress={() => {
-          if (reminderPromptTimerRef.current) clearTimeout(reminderPromptTimerRef.current);
-          setShowReminderPrompt(false);
-        }}
-          accessibilityRole="button" accessibilityLabel="Dismiss event reminder offer">
-          <Feather name="x" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View> : null}
+      {showStarConfirmation ? (
+        <View style={styles.starConfirmation} accessibilityLiveRegion="polite" accessibilityRole="alert">
+          <Feather name="check-circle" size={20} color="#FFFFFF" />
+          <Text style={styles.starConfirmationText}>Added to Personal Itinerary</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -1492,6 +1524,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderColor: colors.accentDark,
   },
+  onboardingCard: {
+    flexDirection: 'row', gap: 12, marginTop: 12, padding: 16,
+    backgroundColor: colors.surfaceHighlight, borderColor: colors.border,
+    borderWidth: 1, borderRadius: 16,
+  },
+  onboardingIcon: {
+    width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.border,
+  },
+  onboardingCopy: { flex: 1, minWidth: 0 },
+  onboardingTitle: { color: colors.textPrimary, fontSize: 18, lineHeight: 23, fontWeight: '800' },
+  onboardingText: { color: colors.textPrimary, fontSize: 14, lineHeight: 20, marginTop: 5 },
+  onboardingSecondaryText: { color: colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 6 },
+  onboardingActions: {
+    flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between',
+    gap: 12, marginTop: 12,
+  },
+  onboardingLink: { color: colors.primary, fontSize: 14, lineHeight: 20, fontWeight: '700' },
+  onboardingDismiss: {
+    minHeight: 40, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center',
+    justifyContent: 'center', backgroundColor: colors.primary,
+  },
+  onboardingDismissText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
   eventTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -1812,15 +1867,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  reminderPrompt: {
+  starConfirmation: {
     position: 'absolute', left: 16, right: 16, bottom: 82, minHeight: 72,
-    flexDirection: 'row', alignItems: 'stretch', backgroundColor: '#1F2937',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    paddingHorizontal: 18, backgroundColor: '#1F2937',
     borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 }, elevation: 8,
   },
-  reminderPromptBody: { flex: 1, minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  reminderPromptCopy: { flex: 1 },
-  reminderPromptTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
-  reminderPromptText: { color: '#F3F4F6', fontSize: 13, lineHeight: 18, marginTop: 2 },
-  reminderPromptClose: { width: 48, minHeight: 72, alignItems: 'center', justifyContent: 'center' },
+  starConfirmationText: { color: '#FFFFFF', fontSize: 15, lineHeight: 20, fontWeight: '800' },
 });

@@ -134,13 +134,13 @@ export default function ItineraryScreen() {
       if (reminderState === 'on') {
         await disableAttendeeItineraryReminders();
         await refreshReminderStatus();
-        setReminderMessage('Event reminders are off. Your itinerary is unchanged.');
+      setReminderMessage('Event reminder setup is off. Your itinerary is unchanged.');
       } else {
         const result = await enableAttendeeItineraryReminders();
         const verified = await refreshReminderStatus();
         if (result.enabled && result.readiness?.reminderReady && verified?.state === 'on'
           && verified.reminderReady) {
-          setReminderMessage('Event reminders are on for this device.');
+          setReminderMessage('Event reminder setup is complete for this device.');
         } else if (verified?.state === 'install_required' || result.notificationState === 'requires_install') {
           setReminderMessage('On iPhone, install IPM to your Home Screen and open the installed app to enable reminders.');
         } else if (verified?.state === 'blocked' || result.notificationState === 'denied') {
@@ -161,14 +161,14 @@ export default function ItineraryScreen() {
 
   const starredEvents = events.filter((event) => favorites.includes(event.id));
   const reminderReady = reminderState === 'on';
-  const reminderTitle = reminderReady ? 'Event reminders on'
+  const reminderTitle = reminderReady ? 'Event reminder setup complete'
     : reminderState === 'checking' ? 'Checking event reminders…'
     : reminderState === 'blocked' ? 'Notifications blocked'
       : reminderState === 'install_required' ? 'Install IPM for event reminders'
         : reminderState === 'recovery' ? 'Reconnect event reminders'
-          : 'Get 30-minute event reminders';
+          : 'Set up event reminders';
   const reminderDescription = reminderReady
-    ? "You'll receive a reminder approximately 30 minutes before eligible events in your itinerary start."
+    ? 'This device is set up for event reminders when they become available.'
     : reminderState === 'blocked'
       ? 'Allow notifications for IPM in your browser or site settings, then try again.'
       : reminderState === 'install_required'
@@ -177,7 +177,7 @@ export default function ItineraryScreen() {
           ? 'This device is not currently ready for reminders. Re-enable to reconnect it safely.'
           : reminderState === 'checking'
             ? 'Verifying this device without changing your saved itinerary.'
-            : "We'll remind you before eligible events in your itinerary begin.";
+            : 'Event reminders about 30 minutes before eligible events will be available with notifications enabled.';
   const diagnosticRows = [
     ['Supported context', reminderDiagnostics?.supported_context],
     ['Browser notification permission', reminderDiagnostics?.browser_permission_granted],
