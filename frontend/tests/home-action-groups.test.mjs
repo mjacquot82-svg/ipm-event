@@ -15,9 +15,9 @@ const groupedButtons = home.slice(actionsStart, groupsEnd);
 const allButtons = [
   'Map', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
   'Camping', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service',
-  'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements',
+  'Personal Itinerary', 'Queen of the Furrow', 'Announcements',
 ];
-const actionButtons = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements'];
+const actionButtons = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements'];
 const linkButtons = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service'];
 
 function occurrences(source, label) {
@@ -33,6 +33,18 @@ test('Home renders Action Buttons before Link Buttons', () => {
 test('all production Home buttons remain present exactly once', () => {
   assert.equal(actionButtons.length + linkButtons.length, allButtons.length);
   for (const label of allButtons) assert.equal(occurrences(groupedButtons, label), 1, label);
+});
+
+test('SOS is absent from the production Home entry point', () => {
+  assert.equal(occurrences(actions, 'SOS'), 0);
+  assert.doesNotMatch(actions, /quickAction\('sos'/);
+  assert.doesNotMatch(home, /styles\.sosCard|sosCard:/);
+});
+
+test('Quick Actions reflow naturally without width-specific gaps', () => {
+  assert.match(home, /quickActionsGrid: \{[\s\S]*?flexDirection: 'row',[\s\S]*?flexWrap: 'wrap',[\s\S]*?justifyContent: 'flex-start',[\s\S]*?gap: 8,/);
+  assert.match(home, /actionCard: \{[\s\S]*?width: '31%',/);
+  assert.doesNotMatch(home, /(?:mobile|desktop).*SOS|SOS.*(?:mobile|desktop)/i);
 });
 
 test('internal controls are isolated under Action Buttons', () => {
