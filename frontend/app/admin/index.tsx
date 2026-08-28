@@ -656,6 +656,7 @@ export default function AdminDashboardScreen() {
           saveMessage={announcementSaveMessage}
           notificationAction={notificationAction}
           editingAnnouncement={editingAnnouncement}
+          showTestAction={currentUser?.role === 'Owner'}
           onSearchChange={setAnnouncementSearch}
           onRefresh={loadAnnouncements}
           onCreate={() => openAnnouncementEditor()}
@@ -1542,13 +1543,13 @@ function VendorEditor({
 function AnnouncementsPage({
   announcements, totalCount, loading, error, search, editorMode, form, saving,
   saveMessage, notificationAction,
-  editingAnnouncement, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
+  editingAnnouncement, showTestAction, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
   onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone,
 }: {
   announcements: Announcement[]; totalCount: number; loading: boolean; error: string | null;
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
-  editingAnnouncement: Announcement | null; onSearchChange: (value: string) => void;
+  editingAnnouncement: Announcement | null; showTestAction: boolean; onSearchChange: (value: string) => void;
   onRefresh: () => void; onCreate: () => void; onEdit: (item: Announcement) => void;
   onStatusChange: (item: Announcement, status: AnnouncementStatus) => void;
   onDelete: (item: Announcement) => void; onFormChange: (value: AnnouncementPayload) => void;
@@ -1574,6 +1575,7 @@ function AnnouncementsPage({
       {editorMode !== 'closed' && (
         <AnnouncementEditor
           mode={editorMode} form={form} saving={saving} editingAnnouncement={editingAnnouncement}
+          showTestAction={showTestAction}
           saveMessage={saveMessage} notificationAction={notificationAction}
           onChange={onFormChange} onClose={onCloseEditor} onSave={onSave}
           onSendTest={onSendTest} onNotifyEveryone={onNotifyEveryone}
@@ -1619,12 +1621,12 @@ function AnnouncementsPage({
 }
 
 function AnnouncementEditor({
-  mode, form, saving, saveMessage, notificationAction, editingAnnouncement,
+  mode, form, saving, saveMessage, notificationAction, editingAnnouncement, showTestAction,
   onChange, onClose, onSave, onSendTest, onNotifyEveryone,
 }: {
   mode: Exclude<AnnouncementEditorMode, 'closed'>; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
-  editingAnnouncement: Announcement | null; onChange: (value: AnnouncementPayload) => void;
+  editingAnnouncement: Announcement | null; showTestAction: boolean; onChange: (value: AnnouncementPayload) => void;
   onClose: () => void; onSave: (status: AnnouncementStatus) => void;
   onSendTest: () => void; onNotifyEveryone: () => void;
 }) {
@@ -1708,10 +1710,10 @@ function AnnouncementEditor({
         </Pressable>}
 
         {isPublished && <>
-          <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
+          {showTestAction && <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
             {isSending && notificationAction.audience === 'test' ? <ActivityIndicator color={colors.textPrimary} /> : <Feather name="send" size={17} color={colors.textPrimary} />}
             <Text style={styles.secondaryButtonText}>{isSending && notificationAction.audience === 'test' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'test' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'test' ? 'Failed — Try Again' : 'Send Test Notification'}</Text>
-          </Pressable>
+          </Pressable>}
           <Pressable style={[styles.dangerButton, (notificationDisabled || everyoneSentThisSession) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={notificationDisabled || everyoneSentThisSession}>
             {isSending && notificationAction.audience === 'everyone' ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
             <Text style={styles.saveButtonText}>{isSending && notificationAction.audience === 'everyone' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'everyone' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'everyone' ? 'Failed — Try Again' : 'Notify Everyone'}</Text>
