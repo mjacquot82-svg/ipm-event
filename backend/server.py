@@ -1787,14 +1787,12 @@ async def notify_announcement(
             campaign_id = await provider.send_test(
                 **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS,
                 idempotency_key=f"announcement-test-{delivery['id']}",
-                campaign_id=WONDERPUSH_ANNOUNCEMENT_CAMPAIGN_ID or None,
                 expiration_time=expiration_time,
             )
         else:
             campaign_id = await provider.send_everyone(
                 **content,
                 idempotency_key=f"announcement-{event_id}-{announcement_id}"[:64],
-                campaign_id=WONDERPUSH_ANNOUNCEMENT_CAMPAIGN_ID or None,
                 expiration_time=expiration_time,
             )
     except WonderPushError as exc:

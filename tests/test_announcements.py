@@ -256,13 +256,13 @@ class FakeWonderPush:
         self.test_installations = list(installation_ids)
         self.test_options = kwargs
         if self.fail:
-            raise WonderPushError("provider failed")
+            raise server.WonderPushError("provider failed")
         return "test-campaign"
 
     async def send_everyone(self, **kwargs):
         self.everyone_options = kwargs
         if self.fail:
-            raise WonderPushError("provider failed")
+            raise server.WonderPushError("provider failed")
         return "everyone-campaign"
 
 
@@ -328,7 +328,8 @@ def test_test_send_uses_only_configured_subscribers(monkeypatch):
         "username": "comms", "role": "Communications", "event_id": "event-a"
     }))
     assert provider.test_installations == ["test-1", "test-2"]
-    assert provider.test_options["campaign_id"] == "announcement-campaign"
+    assert "campaign_id" not in provider.test_options
+    assert provider.test_options["idempotency_key"].startswith("announcement-test-")
     assert 0 < int(provider.test_options["expiration_time"].split()[0]) <= 72 * 60 * 60
     assert result.audience == "test"
     assert deliveries.rows[0]["provider_campaign_id"] == "test-campaign"
@@ -341,7 +342,8 @@ def test_everyone_send_cannot_duplicate_after_success(monkeypatch):
     user = {"username": "owner", "role": "Owner", "event_id": "event-a"}
     first = asyncio.run(server.notify_announcement("announcement-1", "everyone", user))
     assert first.provider_campaign_id == "everyone-campaign"
-    assert provider.everyone_options["campaign_id"] == "announcement-campaign"
+    assert "campaign_id" not in provider.everyone_options
+    assert provider.everyone_options["idempotency_key"] == "announcement-event-a-announcement-1"
     assert provider.everyone_options["expiration_time"] == "259200 seconds"
     with pytest.raises(HTTPException) as duplicate:
         asyncio.run(server.notify_announcement("announcement-1", "everyone", user))
@@ -355,7 +357,7 @@ def test_announcement_send_is_independent_of_reminder_kill_switch(monkeypatch):
         "username": "comms", "role": "Communications", "event_id": "event-a"
     }))
     assert result.status == "sent"
-    assert provider.everyone_options["campaign_id"] == "announcement-campaign"
+    assert "campaign_id" not in provider.everyone_options
 
 
 def test_earlier_announcement_expiry_shortens_push_ttl(monkeypatch):
@@ -413,6 +415,8 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
         message="Message",
         target_url="https://staging.theipm.ca/announcements/announcement-1",
         installation_ids=["123", "456"],
+        idempotency_key="announcement-test-delivery-123",
+        expiration_time="72 hours",
     ))
 
     assert result == "/v1/deliveries/delivery-123"
@@ -420,7 +424,11 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
     assert captured["data"]["accessToken"] == "not-a-credential"
     assert captured["data"]["targetInstallationIds"] == "123,456"
     assert captured["data"]["filterPlatforms"] == "Web"
+    assert "campaignId" not in captured["data"]
     assert "disableCapping" not in captured["data"]
+    assert captured["headers"] == {
+        "X-WonderPush-Idempotency-Key": "announcement-test-delivery-123"
+    }
     notification = __import__("json").loads(captured["data"]["notification"])
     assert notification["alert"] == {
         "title": "IPM — Title", "text": "Message",
@@ -428,6 +436,7 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
         "web": {"icon": "https://staging.theipm.ca/ipm-icon-any-192.png"},
     }
     assert notification["push"]["custom"]["target_url"].endswith("/announcements/announcement-1")
+    assert notification["push"]["expirationTime"] == "72 hours"
 
 
 def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
@@ -448,13 +457,16 @@ def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
     client = WonderPushClient(access_token="not-a-credential")
     result = asyncio.run(client.send_everyone(
         title="Title", message="Message", target_url="https://staging.theipm.ca",
-        expiration_time="72 hours", campaign_id="announcement-campaign",
+        expiration_time="72 hours", idempotency_key="announcement-event-a-announcement-1",
     ))
     assert result == "wonderpush:accepted"
     assert captured["data"]["targetSegmentIds"] == "@ALL"
-    assert captured["data"]["campaignId"] == "announcement-campaign"
+    assert "campaignId" not in captured["data"]
     assert "targetInstallationIds" not in captured["data"]
     assert "disableCapping" not in captured["data"]
+    assert captured["headers"] == {
+        "X-WonderPush-Idempotency-Key": "announcement-event-a-announcement-1"
+    }
     assert __import__("json").loads(captured["data"]["notification"])["push"][
         "expirationTime"] == "72 hours"
 
