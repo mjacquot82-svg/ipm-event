@@ -124,15 +124,18 @@ class WonderPushClient:
         return result["provider_delivery_id"]
 
     async def send_everyone(self, *, title: str, message: str, target_url: str,
-        idempotency_key: str | None = None, campaign_id: str | None = None) -> str:
+        idempotency_key: str | None = None, campaign_id: str | None = None,
+        expiration_time: str | None = None) -> str:
         content = self.notification_content(title, message, target_url)
         result = await self._send_detailed(content=content, target={"targetSegmentIds": "@ALL"},
-            idempotency_key=idempotency_key, campaign_id=campaign_id)
+            idempotency_key=idempotency_key, campaign_id=campaign_id,
+            expiration_time=expiration_time)
         return result["provider_delivery_id"]
 
     async def send_test(
         self, *, title: str, message: str, target_url: str, installation_ids: list[str],
         idempotency_key: str | None = None, campaign_id: str | None = None,
+        expiration_time: str | None = None,
     ) -> str:
         if not installation_ids:
             raise WonderPushError("No WonderPush test installation IDs are configured")
@@ -142,6 +145,7 @@ class WonderPushClient:
             target={"targetInstallationIds": ",".join(installation_ids)},
             idempotency_key=idempotency_key,
             campaign_id=campaign_id,
+            expiration_time=expiration_time,
         )
         return result["provider_delivery_id"]
 

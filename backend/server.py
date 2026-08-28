@@ -1022,6 +1022,26 @@ def require_wonderpush_client():
     return wonderpush_client
 
 
+ANNOUNCEMENT_MAX_TTL_SECONDS = 72 * 60 * 60
+ANNOUNCEMENT_MIN_USEFUL_TTL_SECONDS = 60
+
+
+def announcement_expiration_time(announcement: dict, *, now: datetime | None = None) -> str:
+    """Return a bounded WonderPush duration, rejecting effectively stale pushes."""
+    reference = now or datetime.now(timezone.utc)
+    ttl_seconds = ANNOUNCEMENT_MAX_TTL_SECONDS
+    expires_at = announcement.get("expires_at")
+    if expires_at:
+        expiry = expires_at if isinstance(expires_at, datetime) else datetime.fromisoformat(
+            str(expires_at).replace("Z", "+00:00"))
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+        ttl_seconds = min(ttl_seconds, int((expiry - reference).total_seconds()))
+    if ttl_seconds < ANNOUNCEMENT_MIN_USEFUL_TTL_SECONDS:
+        raise HTTPException(status_code=409, detail="Announcement expires too soon to notify")
+    return f"{ttl_seconds} seconds"
+
+
 def require_schedule_manager_role(user: dict):
     if user.get("role") not in ("Owner", "Schedule"):
         raise HTTPException(
@@ -1737,6 +1757,8 @@ async def notify_announcement(
     if audience == "test" and not WONDERPUSH_TEST_INSTALLATION_IDS:
         raise HTTPException(status_code=503, detail="No WonderPush test installations are configured")
 
+    expiration_time = announcement_expiration_time(announcement)
+
     target_url = f"{PUBLIC_APP_URL}/announcements/{quote(announcement_id, safe='')}"
     content = provider.notification_content(
         announcement["title"], announcement["message"], target_url
@@ -1766,12 +1788,14 @@ async def notify_announcement(
                 **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS,
                 idempotency_key=f"announcement-test-{delivery['id']}",
                 campaign_id=WONDERPUSH_ANNOUNCEMENT_CAMPAIGN_ID or None,
+                expiration_time=expiration_time,
             )
         else:
             campaign_id = await provider.send_everyone(
                 **content,
                 idempotency_key=f"announcement-{event_id}-{announcement_id}"[:64],
                 campaign_id=WONDERPUSH_ANNOUNCEMENT_CAMPAIGN_ID or None,
+                expiration_time=expiration_time,
             )
     except WonderPushError as exc:
         await deliveries.mark_failed(delivery["id"], str(exc))
