@@ -1799,7 +1799,8 @@ async def notify_announcement(
             )
     except WonderPushError as exc:
         await deliveries.mark_failed(delivery["id"], str(exc))
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        detail = str(exc) if audience == "test" else "Notification could not be sent."
+        raise HTTPException(status_code=502, detail=detail) from exc
 
     sent = await deliveries.mark_sent(delivery["id"], campaign_id)
     return NotificationDeliveryResponse(**sent)

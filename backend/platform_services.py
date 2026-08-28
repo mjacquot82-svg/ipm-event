@@ -10,6 +10,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 import json
 import logging
+import re
 from typing import Any, Optional
 from urllib.parse import quote, urlsplit
 from zoneinfo import ZoneInfo
@@ -24,16 +25,23 @@ class WonderPushError(Exception):
     """Normalized provider error safe to expose through the admin API."""
 
     def __init__(self, message: str, *, status_code: int | None = None,
-        headers: dict[str, str] | None = None):
+        headers: dict[str, str] | None = None, provider_error_code: str | None = None,
+        provider_error_message: str | None = None, provider_request_id: str | None = None,
+        response_summary: str | None = None):
         super().__init__(message)
         self.status_code = status_code
         self.headers = headers or {}
+        self.provider_error_code = provider_error_code
+        self.provider_error_message = provider_error_message
+        self.provider_request_id = provider_request_id
+        self.response_summary = response_summary
 
 
 class WonderPushClient:
     """Small server-side client for the WonderPush Management API."""
 
     DELIVERIES_URL = "https://management-api.wonderpush.com/v1/deliveries"
+    ERROR_SUMMARY_LIMIT = 500
 
     def __init__(self, *, access_token: str, timeout: float = 10.0):
         self.access_token = access_token
@@ -52,9 +60,67 @@ class WonderPushClient:
     def _shorten(value: str, limit: int) -> str:
         return value if len(value) <= limit else f"{value[:limit - 1].rstrip()}…"
 
+    @classmethod
+    def _sanitize_provider_text(cls, value: Any, *, sensitive_values: list[str]) -> str:
+        text = re.sub(r"[\x00-\x1f\x7f]+", " ", str(value or ""))
+        text = re.sub(r"\s+", " ", text).strip()
+        for sensitive in sorted({item for item in sensitive_values if item}, key=len, reverse=True):
+            text = text.replace(sensitive, "[REDACTED]")
+        text = re.sub(
+            r"(?i)\b(authorization|access[_-]?token|api[_-]?key|password|secret|cookie)\b"
+            r"\s*[:=]\s*([^\s,;]+|\"[^\"]*\")",
+            lambda match: f"{match.group(1)}=[REDACTED]",
+            text,
+        )
+        return cls._shorten(text, cls.ERROR_SUMMARY_LIMIT)
+
+    @classmethod
+    def _provider_error_details(cls, response: httpx.Response, *,
+        sensitive_values: list[str]) -> dict[str, str | None]:
+        content_type = response.headers.get("content-type", "").lower()
+        raw = response.text or ""
+        provider_code: Any = None
+        provider_message: Any = None
+        summary: str
+        try:
+            payload = response.json()
+        except (ValueError, json.JSONDecodeError):
+            payload = None
+        if isinstance(payload, dict):
+            error = payload.get("error")
+            error_object = error if isinstance(error, dict) else {}
+            provider_code = (error_object.get("code") or payload.get("code")
+                or payload.get("errorCode") or payload.get("type"))
+            provider_message = (error_object.get("message") or payload.get("message")
+                or payload.get("error_description") or payload.get("detail")
+                or payload.get("title") or (error if isinstance(error, str) else None))
+            safe_parts = []
+            if provider_code: safe_parts.append(f"code={provider_code}")
+            if provider_message: safe_parts.append(f"message={provider_message}")
+            summary = "; ".join(safe_parts) or "WonderPush returned a JSON error without recognized fields"
+        elif not raw.strip():
+            summary = "WonderPush returned no response body"
+        elif "html" in content_type or re.search(r"<\s*(?:!doctype\s+html|html|head|body)\b", raw, re.I):
+            summary = "WonderPush returned an HTML error response"
+        else:
+            summary = raw
+            provider_message = raw
+        safe_code = cls._sanitize_provider_text(provider_code, sensitive_values=sensitive_values) if provider_code else None
+        safe_message = cls._sanitize_provider_text(provider_message,
+            sensitive_values=sensitive_values) if provider_message else None
+        safe_summary = cls._sanitize_provider_text(summary, sensitive_values=sensitive_values)
+        request_id = next((response.headers.get(name) for name in (
+            "x-wonderpush-request-id", "x-request-id", "x-correlation-id", "request-id"
+        ) if response.headers.get(name)), None)
+        safe_request_id = cls._sanitize_provider_text(request_id,
+            sensitive_values=sensitive_values)[:128] if request_id else None
+        return {"code": safe_code, "message": safe_message, "summary": safe_summary,
+            "request_id": safe_request_id}
+
     async def _send_detailed(self, *, content: dict[str, str], target: dict[str, str],
         idempotency_key: str | None = None, expiration_time: str | None = None,
-        disable_capping: bool = False, campaign_id: str | None = None) -> dict[str, Any]:
+        disable_capping: bool = False, campaign_id: str | None = None,
+        audience_classification: str = "exact_installations") -> dict[str, Any]:
         notification_target = urlsplit(content["target_url"])
         notification = {
             "alert": {
@@ -102,11 +168,29 @@ class WonderPushClient:
             "WonderPush delivery response status_code=%s",
             response.status_code,
         )
+        safe_header_names = {"x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset",
+            "retry-after", "x-wonderpush-request-id", "x-request-id", "x-correlation-id", "request-id"}
         response_headers = {key.lower(): value for key, value in response.headers.items()
-            if key.lower() in {"x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset", "retry-after"}}
+            if key.lower() in safe_header_names}
         if response.status_code != 202:
-            raise WonderPushError(f"WonderPush rejected the notification (HTTP {response.status_code})",
-                status_code=response.status_code, headers=response_headers)
+            target_value = target.get("targetInstallationIds", "")
+            target_count = len([item for item in target_value.split(",") if item]) if target_value else 0
+            details = self._provider_error_details(response, sensitive_values=[self.access_token,
+                campaign_id or "", *target_value.split(",")])
+            diagnostic = details["message"] or details["summary"]
+            message = f"WonderPush rejected the notification (HTTP {response.status_code})"
+            if diagnostic: message += f": {diagnostic}"
+            logger.warning(
+                "provider=wonderpush operation=delivery status=%s error_code=%s error_message=%s "
+                "provider_request_id=%s audience=%s target_count=%s",
+                response.status_code, details["code"] or "unavailable",
+                details["message"] or details["summary"], details["request_id"] or "unavailable",
+                audience_classification, target_count,
+            )
+            raise WonderPushError(message, status_code=response.status_code,
+                headers=response_headers, provider_error_code=details["code"],
+                provider_error_message=details["message"], provider_request_id=details["request_id"],
+                response_summary=details["summary"])
 
         reference = response.headers.get("Location") or response.headers.get("X-Request-Id")
         if not reference:
@@ -129,7 +213,7 @@ class WonderPushClient:
         content = self.notification_content(title, message, target_url)
         result = await self._send_detailed(content=content, target={"targetSegmentIds": "@ALL"},
             idempotency_key=idempotency_key, campaign_id=campaign_id,
-            expiration_time=expiration_time)
+            expiration_time=expiration_time, audience_classification="broadcast")
         return result["provider_delivery_id"]
 
     async def send_test(
@@ -146,6 +230,7 @@ class WonderPushClient:
             idempotency_key=idempotency_key,
             campaign_id=campaign_id,
             expiration_time=expiration_time,
+            audience_classification="test",
         )
         return result["provider_delivery_id"]
 

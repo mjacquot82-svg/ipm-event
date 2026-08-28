@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -458,17 +459,74 @@ def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
         "expirationTime"] == "72 hours"
 
 
-def test_wonderpush_errors_are_normalized_without_exposing_provider_body(monkeypatch):
+@pytest.mark.parametrize(("status", "content", "content_type", "expected"), [
+    (404, '{"error":{"code":"campaign_not_found","message":"Campaign does not exist"}}',
+        "application/json", "Campaign does not exist"),
+    (400, '{"code":"invalid_request","message":"Invalid delivery request"}',
+        "application/json", "Invalid delivery request"),
+    (503, "Provider temporarily unavailable", "text/plain", "Provider temporarily unavailable"),
+    (502, "", "text/plain", "WonderPush returned no response body"),
+    (404, "<html><body><h1>Proxy not found</h1></body></html>", "text/html",
+        "WonderPush returned an HTML error response"),
+])
+def test_wonderpush_errors_retain_bounded_safe_diagnostics(
+    monkeypatch, status, content, content_type, expected,
+):
     class FakeHttpClient:
         async def __aenter__(self): return self
         async def __aexit__(self, *args): return None
         async def post(self, *args, **kwargs):
-            return httpx.Response(401, text="secret provider diagnostic")
+            return httpx.Response(status, text=content, headers={
+                "Content-Type": content_type, "X-Request-Id": "provider-request-123",
+            })
 
     monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
     client = WonderPushClient(access_token="not-a-credential")
-    with pytest.raises(WonderPushError, match=r"WonderPush rejected.*HTTP 401") as error:
-        asyncio.run(client.send_everyone(
+    with pytest.raises(WonderPushError, match=rf"WonderPush rejected.*HTTP {status}") as error:
+        asyncio.run(client.send_test(
             title="Title", message="Message", target_url="https://staging.theipm.ca",
+            installation_ids=["installation-safe-test"], campaign_id="campaign-safe-test",
         ))
-    assert "secret provider diagnostic" not in str(error.value)
+    assert expected in str(error.value)
+    assert error.value.provider_request_id == "provider-request-123"
+    assert error.value.response_summary and len(error.value.response_summary) <= 500
+
+
+def test_wonderpush_error_redacts_targets_credentials_and_logs_only_safe_context(monkeypatch, caplog):
+    installation_id = "fake-installation-id-that-must-never-appear"
+    access_token = "fake-access-token-that-must-never-appear"
+    campaign_id = "fake-campaign-id-that-must-never-appear"
+    response_text = json.dumps({"error": {"code": "not_found", "message":
+        f"targetInstallationIds={installation_id} accessToken={access_token} "
+        f"api_key=another-fake-secret campaign={campaign_id}"}})
+
+    class FakeHttpClient:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): return None
+        async def post(self, *args, **kwargs):
+            return httpx.Response(404, text=response_text, headers={"Content-Type": "application/json"})
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
+    client = WonderPushClient(access_token=access_token)
+    with caplog.at_level("WARNING"), pytest.raises(WonderPushError) as caught:
+        asyncio.run(client.send_test(title="Title", message="Message",
+            target_url="https://staging.theipm.ca", installation_ids=[installation_id],
+            campaign_id=campaign_id))
+    combined = f"{caught.value} {caught.value.response_summary} {caplog.text}"
+    assert installation_id not in combined
+    assert access_token not in combined
+    assert campaign_id not in combined
+    assert "another-fake-secret" not in combined
+    assert "audience=test" in caplog.text
+    assert "target_count=1" in caplog.text
+
+
+def test_broadcast_provider_diagnostic_is_persisted_but_organizer_error_is_generic(monkeypatch):
+    provider, deliveries = configure_notification_fakes(
+        monkeypatch, announcement(), provider=FakeWonderPush(fail=True))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+            "username": "owner", "role": "Owner", "event_id": "event-a",
+        }))
+    assert error.value.detail == "Notification could not be sent."
+    assert deliveries.rows[0]["error_message"] == "provider failed"
