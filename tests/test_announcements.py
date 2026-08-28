@@ -249,7 +249,7 @@ class FakeWonderPush:
             title, message, target_url
         )
 
-    async def send_test(self, *, title, message, target_url, installation_ids):
+    async def send_test(self, *, title, message, target_url, installation_ids, **kwargs):
         self.test_installations = list(installation_ids)
         if self.fail:
             raise WonderPushError("provider failed")

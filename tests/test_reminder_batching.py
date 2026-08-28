@@ -51,6 +51,7 @@ def test_provider_exact_batch_encoding_ttl_and_idempotency(monkeypatch):
     assert captured["idempotency_key"] == "batch-123"
     assert captured["expiration_time"] == "10 minutes"
     assert captured["disable_capping"] is False
+    assert captured["campaign_id"] is None
     for invalid in ([], ["@ALL"], ["a", "a"], ["a,b"]):
         with pytest.raises(WonderPushError):
             asyncio.run(client.send_installations(title="T", message="M", target_url="https://x",
@@ -109,10 +110,12 @@ def test_t30_exact_delivery_form_encodes_capping_bypass_and_ten_minute_expiratio
     client = WonderPushClient(access_token="secret")
     asyncio.run(client.send_installations(title="Starting Soon", message="Demo",
         target_url="https://staging.example/itinerary", installation_ids=["installation-a"],
-        idempotency_key="ipm-t30-single", expiration_time="10 minutes", disable_capping=True))
+        idempotency_key="ipm-t30-single", expiration_time="10 minutes", disable_capping=True,
+        campaign_id="ipm-t30"))
     form = requests[0]["data"]
     assert form["targetInstallationIds"] == "installation-a"
     assert form["disableCapping"] == "true"
+    assert form["campaignId"] == "ipm-t30"
     assert json.loads(form["notification"])["push"]["expirationTime"] == "10 minutes"
     assert "targetSegmentIds" not in form
 

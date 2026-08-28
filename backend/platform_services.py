@@ -43,14 +43,18 @@ class WonderPushClient:
         clean_title = " ".join(title.split())
         branded_title = clean_title if clean_title.casefold().startswith("ipm") else f"IPM — {clean_title}"
         return {
-            "title": branded_title,
-            "message": " ".join(message.split()),
+            "title": self._shorten(branded_title, 100),
+            "message": self._shorten(" ".join(message.split()), 255),
             "target_url": target_url,
         }
 
+    @staticmethod
+    def _shorten(value: str, limit: int) -> str:
+        return value if len(value) <= limit else f"{value[:limit - 1].rstrip()}…"
+
     async def _send_detailed(self, *, content: dict[str, str], target: dict[str, str],
         idempotency_key: str | None = None, expiration_time: str | None = None,
-        disable_capping: bool = False) -> dict[str, Any]:
+        disable_capping: bool = False, campaign_id: str | None = None) -> dict[str, Any]:
         notification_target = urlsplit(content["target_url"])
         notification = {
             "alert": {
@@ -82,6 +86,9 @@ class WonderPushClient:
             # WonderPush's deliveries endpoint expects this as a form field, not
             # inside the JSON-encoded notification payload.
             form["disableCapping"] = "true"
+        if campaign_id:
+            # Campaign grouping is backend configuration, never organizer input.
+            form["campaignId"] = campaign_id
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 headers = {"X-WonderPush-Idempotency-Key": idempotency_key} if idempotency_key else None
@@ -116,20 +123,27 @@ class WonderPushClient:
         result = await self._send_detailed(content=content, target=target)
         return result["provider_delivery_id"]
 
-    async def send_everyone(self, *, title: str, message: str, target_url: str) -> str:
+    async def send_everyone(self, *, title: str, message: str, target_url: str,
+        idempotency_key: str | None = None, campaign_id: str | None = None) -> str:
         content = self.notification_content(title, message, target_url)
-        return await self._send(content=content, target={"targetSegmentIds": "@ALL"})
+        result = await self._send_detailed(content=content, target={"targetSegmentIds": "@ALL"},
+            idempotency_key=idempotency_key, campaign_id=campaign_id)
+        return result["provider_delivery_id"]
 
     async def send_test(
-        self, *, title: str, message: str, target_url: str, installation_ids: list[str]
+        self, *, title: str, message: str, target_url: str, installation_ids: list[str],
+        idempotency_key: str | None = None, campaign_id: str | None = None,
     ) -> str:
         if not installation_ids:
             raise WonderPushError("No WonderPush test installation IDs are configured")
         content = self.notification_content(title, message, target_url)
-        return await self._send(
+        result = await self._send_detailed(
             content=content,
             target={"targetInstallationIds": ",".join(installation_ids)},
+            idempotency_key=idempotency_key,
+            campaign_id=campaign_id,
         )
+        return result["provider_delivery_id"]
 
     async def send_one_installation(
         self, *, title: str, message: str, target_url: str, installation_id: str
@@ -146,7 +160,8 @@ class WonderPushClient:
 
     async def send_installations(self, *, title: str, message: str, target_url: str,
         installation_ids: list[str], idempotency_key: str,
-        expiration_time: str = "15 minutes", disable_capping: bool = False) -> dict[str, Any]:
+        expiration_time: str = "15 minutes", disable_capping: bool = False,
+        campaign_id: str | None = None) -> dict[str, Any]:
         """Send one payload to an exact, bounded installation set; never broadcasts."""
         targets = [value.strip() for value in installation_ids]
         if not targets or len(targets) > 10000 or len(set(targets)) != len(targets):
@@ -159,7 +174,7 @@ class WonderPushClient:
         return await self._send_detailed(content=content,
             target={"targetInstallationIds": ",".join(targets)},
             idempotency_key=idempotency_key, expiration_time=expiration_time,
-            disable_capping=disable_capping)
+            disable_capping=disable_capping, campaign_id=campaign_id)
 
     async def get_installation(self, installation_id: str) -> dict[str, Any] | None:
         url = f"https://management-api.wonderpush.com/v1/installations/{quote(installation_id, safe='')}"

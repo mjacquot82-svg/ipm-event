@@ -143,6 +143,12 @@ CONTENT_SOURCE = os.environ.get("CONTENT_SOURCE", "google_sheets").strip().lower
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 WONDERPUSH_ACCESS_TOKEN = os.environ.get("WONDERPUSH_ACCESS_TOKEN", "")
+WONDERPUSH_ANNOUNCEMENT_CAMPAIGN_ID = os.environ.get(
+    "WONDERPUSH_ANNOUNCEMENT_CAMPAIGN_ID", ""
+).strip()
+WONDERPUSH_REMINDER_CAMPAIGN_ID = os.environ.get(
+    "WONDERPUSH_REMINDER_CAMPAIGN_ID", ""
+).strip()
 WONDERPUSH_TEST_INSTALLATION_IDS = [
     installation_id.strip()
     for installation_id in os.environ.get("WONDERPUSH_TEST_INSTALLATION_IDS", "").split(",")
@@ -1757,10 +1763,16 @@ async def notify_announcement(
     try:
         if audience == "test":
             campaign_id = await provider.send_test(
-                **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS
+                **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS,
+                idempotency_key=f"announcement-test-{delivery['id']}",
+                campaign_id=WONDERPUSH_ANNOUNCEMENT_CAMPAIGN_ID or None,
             )
         else:
-            campaign_id = await provider.send_everyone(**content)
+            campaign_id = await provider.send_everyone(
+                **content,
+                idempotency_key=f"announcement-{event_id}-{announcement_id}"[:64],
+                campaign_id=WONDERPUSH_ANNOUNCEMENT_CAMPAIGN_ID or None,
+            )
     except WonderPushError as exc:
         await deliveries.mark_failed(delivery["id"], str(exc))
         raise HTTPException(status_code=502, detail=str(exc)) from exc
@@ -1962,6 +1974,7 @@ def itinerary_reminder_engine() -> ItineraryReminderEngine:
             max_sends_per_second=ITINERARY_REMINDER_MAX_SENDS_PER_SECOND,
             max_targets_per_request=ITINERARY_REMINDER_MAX_TARGETS_PER_REQUEST,
             provider_readiness_max_age_seconds=ITINERARY_REMINDER_PROVIDER_READINESS_MAX_AGE_SECONDS,
+            campaign_id=WONDERPUSH_REMINDER_CAMPAIGN_ID or None,
             target_url=f"{PUBLIC_APP_URL}/itinerary")
     return _itinerary_reminder_engine_instance
 

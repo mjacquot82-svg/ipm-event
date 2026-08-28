@@ -69,7 +69,7 @@ type NotificationActionState = {
 type PlatformFieldKey = (typeof PLATFORM_FIELDS)[number]['key'];
 type ImportMapping = Partial<Record<PlatformFieldKey, string>>;
 
-const NAV_ITEMS: AdminNavItem[] = [
+const ALL_NAV_ITEMS: AdminNavItem[] = [
   { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
   ...((process.env.EXPO_PUBLIC_BACKEND_URL || '').toLowerCase().includes('staging')
     ? [{ key: 'plowing-results', label: 'Plowing Results', icon: 'award' as const }]
@@ -170,6 +170,9 @@ export default function AdminDashboardScreen() {
   const [announcementSaveMessage, setAnnouncementSaveMessage] = useState<string | null>(null);
   const [notificationAction, setNotificationAction] = useState<NotificationActionState>(IDLE_NOTIFICATION_STATE);
   const notificationRequestInFlight = useRef(false);
+  const navItems = useMemo(() => currentUser?.role === 'Communications'
+    ? ALL_NAV_ITEMS.filter((item) => item.key === 'dashboard' || item.key === 'communications')
+    : ALL_NAV_ITEMS, [currentUser?.role]);
 
   const loadVendors = useCallback(async () => {
     setVendorsLoading(true);
@@ -338,15 +341,15 @@ export default function AdminDashboardScreen() {
     setNotificationAction({ audience, status: 'sending', message: null });
     setAnnouncementsError(null);
     try {
-      const result = audience === 'test'
-        ? await sendAnnouncementTestNotification(editingAnnouncement.id)
-        : await notifyEveryoneForAnnouncement(editingAnnouncement.id);
+      await (audience === 'test'
+        ? sendAnnouncementTestNotification(editingAnnouncement.id)
+        : notifyEveryoneForAnnouncement(editingAnnouncement.id));
       setNotificationAction({
         audience,
         status: 'sent',
         message: audience === 'test'
           ? 'Test notification sent to configured test subscribers.'
-          : `Notification sent to everyone.${result.provider_campaign_id ? ` Campaign ${result.provider_campaign_id}.` : ''}`,
+          : 'Notification sent to all subscribed attendees.',
       });
     } catch (err) {
       setNotificationAction({
@@ -555,7 +558,7 @@ export default function AdminDashboardScreen() {
   return (
     <AdminShell
       activeKey={activeSection}
-      navItems={NAV_ITEMS}
+      navItems={navItems}
       currentUser={currentUser}
       onNavigate={(key) => key === 'plowing-results' ? router.push('/admin/plowing-results' as never) : setActiveSection(key as AdminSection)}
       onLogout={handleLogout}
@@ -1719,7 +1722,7 @@ function AnnouncementEditor({
       <Modal visible={confirmEveryone} transparent animationType="fade" onRequestClose={() => { if (!isSending) setConfirmEveryone(false); }}>
         <View style={styles.modalBackdrop}>
           <View style={styles.confirmDialog} accessibilityRole="alert">
-            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Notify everyone?</Text><Text style={styles.confirmSubtitle}>This action sends a WonderPush notification immediately.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Send this notification to all subscribed attendees?</Text><Text style={styles.confirmSubtitle}>The notification will be sent immediately.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
             <View style={styles.confirmDetails}>
               <ConfirmationRow label="Announcement title" value={form.title} />
               <ConfirmationRow label="Notification title" value={notificationTitle} />
@@ -1730,7 +1733,7 @@ function AnnouncementEditor({
             <View style={styles.editorActions}>
               <Pressable style={[styles.cancelButton, isSending && styles.buttonDisabled]} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
               <Pressable style={[styles.dangerButton, isSending && styles.buttonDisabled]} disabled={isSending} onPress={() => { onNotifyEveryone(); }}>
-                {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Confirm & Notify Everyone'}</Text>
+                {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Send Notification'}</Text>
               </Pressable>
             </View>
           </View>

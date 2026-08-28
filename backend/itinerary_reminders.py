@@ -578,7 +578,7 @@ class InstallationTargetedWonderPush:
 
     async def send_claim_batch(self, *, claims: list[dict[str, Any]], title: str,
         message: str, target_url: str, idempotency_key: str,
-        expiration_time: str) -> dict[str, Any]:
+        expiration_time: str, campaign_id: str | None = None) -> dict[str, Any]:
         if not claims or len(claims) > 10000: raise ValueError("Invalid exact claim batch size")
         event_keys = {(claim["schedule_item_id"], claim["title"],
             (claim.get("location_name") or "").strip(), str(claim["starts_at"])) for claim in claims}
@@ -587,7 +587,7 @@ class InstallationTargetedWonderPush:
             raise ValueError("Exact claim batch must contain one event payload and unique installations")
         return await self.provider.send_installations(installation_ids=targets, title=title,
             message=message, target_url=target_url, idempotency_key=idempotency_key,
-            expiration_time=expiration_time, disable_capping=True)
+            expiration_time=expiration_time, disable_capping=True, campaign_id=campaign_id)
 
 
 class ItineraryReminderEngine:
@@ -596,7 +596,8 @@ class ItineraryReminderEngine:
     def __init__(self, repository: SupabaseItineraryReminderRepository, provider: Any, *,
         delivery_enabled: bool = False, batch_size: int = 250, concurrency: int = 20,
         max_sends_per_second: int = 10, max_targets_per_request: int = 10000,
-        provider_readiness_max_age_seconds: int = 900, target_url: str = ""):
+        provider_readiness_max_age_seconds: int = 900, target_url: str = "",
+        campaign_id: str | None = None):
         self.repository, self.provider = repository, provider
         self.delivery_enabled = delivery_enabled
         self.batch_size = max(1, min(batch_size, 10000))
@@ -607,6 +608,7 @@ class ItineraryReminderEngine:
         self.max_targets_per_request = max(1, min(max_targets_per_request, 10000))
         self.provider_readiness_max_age_seconds = max(60, provider_readiness_max_age_seconds)
         self.target_url = target_url
+        self.campaign_id = campaign_id
 
     async def _bounded(self, rows: list[dict[str, Any]], operation) -> None:
         for offset in range(0, len(rows), self.concurrency):
@@ -682,7 +684,8 @@ class ItineraryReminderEngine:
                     try:
                         provider_result = await targeter.send_claim_batch(claims=batch_claims,
                             title="IPM — Starting Soon", message=message, target_url=self.target_url,
-                            idempotency_key=idempotency_key, expiration_time="10 minutes")
+                            idempotency_key=idempotency_key, expiration_time="10 minutes",
+                            campaign_id=self.campaign_id)
                     except Exception as exc:
                         status, failure_kind = classify_provider_failure(exc)
                         retry_seconds = _safe_int(getattr(exc, "headers", {}).get("retry-after"))
