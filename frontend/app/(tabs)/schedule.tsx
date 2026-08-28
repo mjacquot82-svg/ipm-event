@@ -81,6 +81,7 @@ export default function ScheduleScreen() {
   const [showCalendarChooser, setShowCalendarChooser] = useState(false);
   const [showScheduleOnboarding, setShowScheduleOnboarding] = useState(false);
   const [showStarConfirmation, setShowStarConfirmation] = useState(false);
+  const onboardingDismissRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
   const starConfirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
@@ -102,6 +103,15 @@ export default function ScheduleScreen() {
     setShowScheduleOnboarding(false);
     await acknowledgeScheduleOnboarding(AsyncStorage);
   }, []);
+
+  useEffect(() => {
+    if (!showScheduleOnboarding || loading) return;
+    const focusTimer = setTimeout(() => {
+      const dismissButton = onboardingDismissRef.current as unknown as { focus?: () => void } | null;
+      dismissButton?.focus?.();
+    }, 0);
+    return () => clearTimeout(focusTimer);
+  }, [loading, showScheduleOnboarding]);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     if (!Array.isArray(result.data.events)) {
@@ -502,40 +512,6 @@ export default function ScheduleScreen() {
                 <CachedDataBanner lastSuccessfulUpdate={lastUpdated} informationType="event" />
               )}
 
-              {showScheduleOnboarding ? (
-                <View style={styles.onboardingCard} accessibilityRole="summary">
-                  <View style={styles.onboardingIcon} accessible={false}>
-                    <Feather name="star" size={22} color={colors.accentDark} />
-                  </View>
-                  <View style={styles.onboardingCopy}>
-                    <Text style={styles.onboardingTitle}>Plan your day</Text>
-                    <Text style={styles.onboardingText}>
-                      Tap the ⭐ on events you don&apos;t want to miss. They&apos;ll be added to your Personal Itinerary.
-                    </Text>
-                    <Text style={styles.onboardingSecondaryText}>
-                      Event reminders about 30 minutes before eligible events will also be available with notifications enabled.
-                    </Text>
-                    <View style={styles.onboardingActions}>
-                      <TouchableOpacity
-                        onPress={() => router.push('/itinerary')}
-                        accessibilityRole="link"
-                        accessibilityLabel="View Personal Itinerary"
-                      >
-                        <Text style={styles.onboardingLink}>View Personal Itinerary</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.onboardingDismiss}
-                        onPress={() => void dismissScheduleOnboarding()}
-                        accessibilityRole="button"
-                        accessibilityLabel="Dismiss Plan your day introduction"
-                      >
-                        <Text style={styles.onboardingDismissText}>Got it</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              ) : null}
-
               <View style={styles.filterPanel}>
         <View style={styles.searchBox}>
           <Feather name="search" size={18} color={colors.textMuted} />
@@ -846,6 +822,53 @@ export default function ScheduleScreen() {
           );
         }}
       />
+
+      {/* First-visit education overlays the loaded Schedule without delaying it. */}
+      <Modal
+        visible={showScheduleOnboarding}
+        animationType="fade"
+        transparent={true}
+        statusBarTranslucent={true}
+        onRequestClose={() => void dismissScheduleOnboarding()}
+      >
+        <View style={styles.onboardingModalOverlay}>
+          <ScrollView
+            style={styles.onboardingModalScroll}
+            contentContainerStyle={styles.onboardingModalScrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View
+              style={styles.onboardingModalCard}
+              role="dialog"
+              accessibilityViewIsModal={true}
+              accessibilityLabel="Plan your day"
+            >
+              <View style={styles.onboardingModalIcon} accessible={false}>
+                <Feather name="star" size={34} color={colors.accentDark} />
+              </View>
+              <Text nativeID="schedule-onboarding-title" style={styles.onboardingModalTitle}>
+                Plan your day
+              </Text>
+              <Text style={styles.onboardingModalText}>
+                Tap the ⭐ on events you don&apos;t want to miss. They&apos;ll be added to your Personal Itinerary.
+              </Text>
+              <Text style={styles.onboardingModalSecondaryText}>
+                Event reminders about 30 minutes before eligible events will also be available with notifications enabled.
+              </Text>
+              <TouchableOpacity
+                ref={onboardingDismissRef}
+                style={styles.onboardingModalDismiss}
+                onPress={() => void dismissScheduleOnboarding()}
+                accessibilityRole="button"
+                accessibilityLabel="Got it, close Plan your day introduction"
+              >
+                <Text style={styles.onboardingModalDismissText}>Got it</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* Compact category selector for mobile widths. */}
       <Modal
@@ -1524,29 +1547,77 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderColor: colors.accentDark,
   },
-  onboardingCard: {
-    flexDirection: 'row', gap: 12, marginTop: 12, padding: 16,
-    backgroundColor: colors.surfaceHighlight, borderColor: colors.border,
-    borderWidth: 1, borderRadius: 16,
+  onboardingModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(20, 28, 23, 0.58)',
   },
-  onboardingIcon: {
-    width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: colors.border,
+  onboardingModalScroll: { flex: 1 },
+  onboardingModalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 28,
   },
-  onboardingCopy: { flex: 1, minWidth: 0 },
-  onboardingTitle: { color: colors.textPrimary, fontSize: 18, lineHeight: 23, fontWeight: '800' },
-  onboardingText: { color: colors.textPrimary, fontSize: 14, lineHeight: 20, marginTop: 5 },
-  onboardingSecondaryText: { color: colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 6 },
-  onboardingActions: {
-    flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between',
-    gap: 12, marginTop: 12,
+  onboardingModalCard: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 440,
+    paddingHorizontal: 24,
+    paddingVertical: 26,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 22,
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+    elevation: 12,
   },
-  onboardingLink: { color: colors.primary, fontSize: 14, lineHeight: 20, fontWeight: '700' },
-  onboardingDismiss: {
-    minHeight: 40, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center',
-    justifyContent: 'center', backgroundColor: colors.primary,
+  onboardingModalIcon: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceHighlight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
   },
-  onboardingDismissText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  onboardingModalTitle: {
+    color: colors.textPrimary,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  onboardingModalText: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  onboardingModalSecondaryText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  onboardingModalDismiss: {
+    alignSelf: 'stretch',
+    minHeight: 52,
+    marginTop: 22,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+  onboardingModalDismissText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
   eventTitle: {
     fontSize: 16,
     fontWeight: '600',

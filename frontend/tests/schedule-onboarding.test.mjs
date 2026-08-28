@@ -23,13 +23,27 @@ function memoryStorage() {
   };
 }
 
-test('first meaningful Schedule visit shows compact Plan your day education', () => {
-  assert.match(schedule, /showScheduleOnboarding[\s\S]*Plan your day/);
+test('first meaningful Schedule visit overlays the already-loaded Schedule with a modal', () => {
+  const scheduleListIndex = schedule.indexOf('<SectionList');
+  const onboardingModalIndex = schedule.indexOf('visible={showScheduleOnboarding}');
+  assert.ok(scheduleListIndex >= 0 && onboardingModalIndex > scheduleListIndex);
+  assert.match(schedule, /<Modal[\s\S]*visible=\{showScheduleOnboarding\}[\s\S]*animationType="fade"[\s\S]*transparent=\{true\}/);
+  assert.match(schedule, /onboardingModalOverlay:[\s\S]*rgba\(20, 28, 23, 0\.58\)/);
+  assert.match(schedule, /role="dialog"/);
+  assert.match(schedule, /accessibilityViewIsModal=\{true\}/);
+  assert.doesNotMatch(schedule, /onboardingCard/);
   assert.match(schedule, /Tap the ⭐ on events you don&apos;t want to miss\. They&apos;ll be added to your Personal Itinerary\./);
-  assert.match(schedule, /View Personal Itinerary/);
   assert.match(schedule, />Got it</);
-  assert.match(schedule, /onboardingCard:[\s\S]*flexDirection: 'row'[\s\S]*borderRadius: 16/);
-  assert.match(schedule, /onboardingActions:[\s\S]*flexWrap: 'wrap'/);
+  assert.match(schedule, /onboardingModalCard:[\s\S]*maxWidth: 440[\s\S]*borderRadius: 22/);
+  assert.match(schedule, /onboardingModalScrollContent:[\s\S]*flexGrow: 1[\s\S]*paddingVertical: 28/);
+  assert.match(schedule, /onboardingModalDismiss:[\s\S]*minHeight: 52/);
+});
+
+test('modal blocks background interaction and supports accessible dismissal', () => {
+  assert.match(schedule, /onRequestClose=\{\(\) => void dismissScheduleOnboarding\(\)\}/);
+  assert.match(schedule, /onboardingDismissRef[\s\S]*dismissButton\?\.focus\?\.\(\)/);
+  assert.match(schedule, /accessibilityLabel="Got it, close Plan your day introduction"/);
+  assert.doesNotMatch(schedule, /onboardingModalDismissArea|Dismiss Plan your day backdrop/);
 });
 
 test('onboarding acknowledgement persists, suppresses reopening, and has a versioned reset', async () => {
