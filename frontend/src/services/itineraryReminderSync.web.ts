@@ -12,7 +12,7 @@ export class ApiSyncError extends Error {
 }
 
 export type ReadinessFailureStage = 'backend_registration_lookup'
-  | 'backend_authoritative_verification' | 'provider_verification';
+  | 'backend_registration' | 'backend_authoritative_verification' | 'provider_verification';
 
 export class ItineraryReadinessError extends Error {
   constructor(public stage: ReadinessFailureStage, public classification: string,
@@ -103,6 +103,16 @@ export async function getItineraryReminderReadiness({ verifyProvider = false } =
       diagnosticFailure: registrationLookupFailure ? {
         stage: 'backend_registration_lookup', classification: registrationLookupFailure,
       } : null };
+  }
+  // A ready, subscribed installation must be registered before the authorization-protected
+  // status endpoint can verify it. Registration is device-scoped, idempotent, leaves reminders
+  // disabled, and uses the same installation/capability credentials as deliberate setup.
+  if (registrationLookupCompleted && !existing) {
+    try { await request('/register', 'POST'); }
+    catch (error) {
+      throw new ItineraryReadinessError('backend_registration',
+        classifyDiagnosticFailure(error), client, null, true);
+    }
   }
   let current;
   try { current = await request('/status', 'GET'); }

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import asyncio
+import inspect
 
 import pytest
 from fastapi import HTTPException
@@ -37,6 +38,79 @@ class VerificationRepository:
         return self.registration
     async def with_starred_count(self, registration):
         return registration
+
+
+class PublicRegistrationRepository:
+    def __init__(self):
+        self.registration = None
+        self.register_calls = 0
+        self.readiness_updates = []
+    async def register(self, installation_id, capability):
+        self.register_calls += 1
+        if self.registration:
+            if not capability_matches(capability, self.registration["capability_hash"]):
+                raise PermissionError("Device capability does not match")
+            return self.registration
+        self.registration = {"id": "reg-new", "wonderpush_installation_id": installation_id,
+            "capability_hash": hash_capability(capability), "reminders_enabled": False,
+            "starred_count": 0, "provider_reachability": "unknown", "provider_has_push_token": False,
+            "provider_deliverable": False, "provider_checked_at": None}
+        return self.registration
+    async def set_readiness(self, registration_id, **values):
+        self.readiness_updates.append(values)
+        self.registration.update(provider_reachability=values["reachability"],
+            provider_has_push_token=values["has_push_token"],
+            provider_deliverable=values["reachability"] == "optIn" and values["has_push_token"],
+            provider_checked_at=values["checked_at"].isoformat())
+        return self.registration
+
+
+def test_public_attendee_registration_is_anonymous_device_scoped_and_idempotent(monkeypatch):
+    repository = PublicRegistrationRepository()
+    class Provider:
+        async def get_installation(self, installation_id):
+            assert installation_id == "installation-a"
+            return {"preferences": {"subscriptionStatus": "optIn"}, "pushToken": {"data": "secret"}}
+    monkeypatch.setattr(server, "itinerary_reminder_repository", repository)
+    monkeypatch.setattr(server, "wonderpush_client", Provider())
+    monkeypatch.setattr(server, "IS_STAGING_DEPLOYMENT", True)
+    monkeypatch.setattr(server, "ITINERARY_REMINDER_FOUNDATION_ENABLED", True)
+
+    first = asyncio.run(server.register_itinerary_device(attendee_request()))
+    second = asyncio.run(server.register_itinerary_device(attendee_request()))
+    assert first["registered"] is True and second["registered"] is True
+    assert first["reminders_enabled"] is False
+    assert repository.registration["wonderpush_installation_id"] == "installation-a"
+    assert repository.registration["capability_hash"] != "A" * 43
+    assert "wonderpush_installation_id" not in first and "capability_hash" not in first
+    assert "secret" not in repr(first)
+    assert len(repository.readiness_updates) == 2
+    assert "current_user" not in inspect.signature(server.register_itinerary_device).parameters
+
+
+def test_attendee_registration_rejects_invalid_credentials_and_cannot_select_event(monkeypatch):
+    repository = PublicRegistrationRepository()
+    monkeypatch.setattr(server, "itinerary_reminder_repository", repository)
+    monkeypatch.setattr(server, "IS_STAGING_DEPLOYMENT", True)
+    monkeypatch.setattr(server, "ITINERARY_REMINDER_FOUNDATION_ENABLED", True)
+    invalid = Request({"type": "http", "method": "POST", "path": "/", "headers": [
+        (b"x-wonderpush-installation-id", b"installation-a"),
+        (b"x-itinerary-device-capability", b"short"),
+        (b"x-event-id", b"another-event"),
+    ]})
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(server.register_itinerary_device(invalid))
+    assert error.value.status_code == 400
+    assert repository.register_calls == 0
+    assert "event" not in inspect.signature(server.register_itinerary_device).parameters
+
+
+def test_privileged_reminder_routes_keep_organizer_auth_and_role_guards():
+    source = open("backend/server.py", encoding="utf-8").read()
+    privileged = source[source.index('@api_router.post("/admin/itinerary-reminders/test/{installation_id}")'):]
+    assert "Depends(get_current_organizer_user)" in privileged
+    assert "require_announcement_manager_role(current_user)" in privileged
+    assert "WONDERPUSH_TEST_INSTALLATION_IDS" in privileged
 
 
 def test_registration_star_count_is_device_scoped_not_aggregate():

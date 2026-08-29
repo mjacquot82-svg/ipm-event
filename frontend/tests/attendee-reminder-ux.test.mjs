@@ -159,6 +159,16 @@ test('deliberate reconnect replaces association then preserves full local star s
   assert.doesNotMatch(configure, /\/deliveries|send_installations|send_everyone|send_one_installation/);
 });
 
+test('ready unregistered attendee registers before authorization-protected verification', () => {
+  const readiness = sync.slice(sync.indexOf('export async function getItineraryReminderReadiness'),
+    sync.indexOf('export type TestDeviceLabel'));
+  assert.match(readiness, /registrationLookupCompleted && !existing/);
+  assert.ok(readiness.indexOf("request('/register', 'POST')")
+    < readiness.indexOf("request('/status', 'GET')"));
+  assert.match(readiness, /backend_registration/);
+  assert.doesNotMatch(readiness, /credentials: 'include'|\/api\/admin\/|send_/);
+});
+
 test('reminder card cannot optimistically render on from enablement or stale diagnostics', () => {
   const changeHandler = itinerary.slice(itinerary.indexOf('const changeReminderStatus'),
     itinerary.indexOf('const starredEvents'));

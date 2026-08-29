@@ -125,6 +125,7 @@ test('itinerary preserves client diagnostics and classifies backend stages', asy
   assert.match(ux, /redactedDiagnostics\(error\.client, error\.registration/);
   assert.match(ux, /registrationLookupCompleted/);
   assert.match(sync, /backend_authoritative_verification/);
+  assert.match(sync, /backend_registration/);
   assert.match(sync, /provider_verification/);
   assert.match(sync, /classifyDiagnosticFailure/);
   assert.match(itinerary, /Backend authoritative verification/);
