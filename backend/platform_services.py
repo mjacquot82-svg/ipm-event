@@ -8,14 +8,312 @@ the providers without changing frontend API contracts.
 
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
+import json
 import logging
+import re
 from typing import Any, Optional
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 import httpx
 
 
 logger = logging.getLogger(__name__)
+
+class WonderPushError(Exception):
+    """Normalized provider error safe to expose through the admin API."""
+
+    def __init__(self, message: str, *, status_code: int | None = None,
+        headers: dict[str, str] | None = None, provider_error_code: str | None = None,
+        provider_error_message: str | None = None, provider_request_id: str | None = None,
+        response_summary: str | None = None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.headers = headers or {}
+        self.provider_error_code = provider_error_code
+        self.provider_error_message = provider_error_message
+        self.provider_request_id = provider_request_id
+        self.response_summary = response_summary
+
+
+class WonderPushClient:
+    """Small server-side client for the WonderPush Management API."""
+
+    DELIVERIES_URL = "https://management-api.wonderpush.com/v1/deliveries"
+    ERROR_SUMMARY_LIMIT = 500
+
+    def __init__(self, *, access_token: str, timeout: float = 10.0):
+        self.access_token = access_token
+        self.timeout = timeout
+
+    def notification_content(self, title: str, message: str, target_url: str) -> dict[str, str]:
+        clean_title = " ".join(title.split())
+        branded_title = clean_title if clean_title.casefold().startswith("ipm") else f"IPM — {clean_title}"
+        return {
+            "title": self._shorten(branded_title, 100),
+            "message": self._shorten(" ".join(message.split()), 255),
+            "target_url": target_url,
+        }
+
+    @staticmethod
+    def _shorten(value: str, limit: int) -> str:
+        return value if len(value) <= limit else f"{value[:limit - 1].rstrip()}…"
+
+    @classmethod
+    def _sanitize_provider_text(cls, value: Any, *, sensitive_values: list[str]) -> str:
+        text = re.sub(r"[\x00-\x1f\x7f]+", " ", str(value or ""))
+        text = re.sub(r"\s+", " ", text).strip()
+        for sensitive in sorted({item for item in sensitive_values if item}, key=len, reverse=True):
+            text = text.replace(sensitive, "[REDACTED]")
+        text = re.sub(
+            r"(?i)\b(authorization|access[_-]?token|api[_-]?key|password|secret|cookie)\b"
+            r"\s*[:=]\s*([^\s,;]+|\"[^\"]*\")",
+            lambda match: f"{match.group(1)}=[REDACTED]",
+            text,
+        )
+        return cls._shorten(text, cls.ERROR_SUMMARY_LIMIT)
+
+    @classmethod
+    def _provider_error_details(cls, response: httpx.Response, *,
+        sensitive_values: list[str]) -> dict[str, str | None]:
+        content_type = response.headers.get("content-type", "").lower()
+        raw = response.text or ""
+        provider_code: Any = None
+        provider_message: Any = None
+        summary: str
+        try:
+            payload = response.json()
+        except (ValueError, json.JSONDecodeError):
+            payload = None
+        if isinstance(payload, dict):
+            error = payload.get("error")
+            error_object = error if isinstance(error, dict) else {}
+            provider_code = (error_object.get("code") or payload.get("code")
+                or payload.get("errorCode") or payload.get("type"))
+            provider_message = (error_object.get("message") or payload.get("message")
+                or payload.get("error_description") or payload.get("detail")
+                or payload.get("title") or (error if isinstance(error, str) else None))
+            safe_parts = []
+            if provider_code: safe_parts.append(f"code={provider_code}")
+            if provider_message: safe_parts.append(f"message={provider_message}")
+            summary = "; ".join(safe_parts) or "WonderPush returned a JSON error without recognized fields"
+        elif not raw.strip():
+            summary = "WonderPush returned no response body"
+        elif "html" in content_type or re.search(r"<\s*(?:!doctype\s+html|html|head|body)\b", raw, re.I):
+            summary = "WonderPush returned an HTML error response"
+        else:
+            summary = raw
+            provider_message = raw
+        safe_code = cls._sanitize_provider_text(provider_code, sensitive_values=sensitive_values) if provider_code else None
+        safe_message = cls._sanitize_provider_text(provider_message,
+            sensitive_values=sensitive_values) if provider_message else None
+        safe_summary = cls._sanitize_provider_text(summary, sensitive_values=sensitive_values)
+        request_id = next((response.headers.get(name) for name in (
+            "x-wonderpush-request-id", "x-request-id", "x-correlation-id", "request-id"
+        ) if response.headers.get(name)), None)
+        safe_request_id = cls._sanitize_provider_text(request_id,
+            sensitive_values=sensitive_values)[:128] if request_id else None
+        return {"code": safe_code, "message": safe_message, "summary": safe_summary,
+            "request_id": safe_request_id}
+
+    async def _send_detailed(self, *, content: dict[str, str], target: dict[str, str],
+        idempotency_key: str | None = None, expiration_time: str | None = None,
+        disable_capping: bool = False, campaign_id: str | None = None,
+        audience_classification: str = "exact_installations") -> dict[str, Any]:
+        notification_target = urlsplit(content["target_url"])
+        notification = {
+            "alert": {
+                "title": content["title"],
+                "text": content["message"],
+                "targetUrl": content["target_url"],
+                "web": {
+                    "icon": (
+                        f"{notification_target.scheme}://{notification_target.netloc}"
+                        "/ipm-icon-any-192.png"
+                    ),
+                },
+            },
+            "push": {
+                "custom": {
+                    "target_url": content["target_url"],
+                },
+            },
+        }
+        if expiration_time:
+            notification["push"]["expirationTime"] = expiration_time
+        form = {
+            "accessToken": self.access_token,
+            "notification": json.dumps(notification, separators=(",", ":")),
+            "filterPlatforms": "Web",
+            **target,
+        }
+        if disable_capping:
+            # WonderPush's deliveries endpoint expects this as a form field, not
+            # inside the JSON-encoded notification payload.
+            form["disableCapping"] = "true"
+        if campaign_id:
+            # Campaign grouping is backend configuration, never organizer input.
+            form["campaignId"] = campaign_id
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                headers = {"X-WonderPush-Idempotency-Key": idempotency_key} if idempotency_key else None
+                response = await client.post(self.DELIVERIES_URL, data=form, headers=headers)
+        except httpx.TimeoutException as exc:
+            raise WonderPushError("WonderPush request timed out") from exc
+        except httpx.RequestError as exc:
+            raise WonderPushError("WonderPush could not be reached") from exc
+
+        logger.info(
+            "WonderPush delivery response status_code=%s",
+            response.status_code,
+        )
+        safe_header_names = {"x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset",
+            "retry-after", "x-wonderpush-request-id", "x-request-id", "x-correlation-id", "request-id"}
+        response_headers = {key.lower(): value for key, value in response.headers.items()
+            if key.lower() in safe_header_names}
+        if response.status_code != 202:
+            target_value = target.get("targetInstallationIds", "")
+            target_count = len([item for item in target_value.split(",") if item]) if target_value else 0
+            details = self._provider_error_details(response, sensitive_values=[self.access_token,
+                campaign_id or "", *target_value.split(",")])
+            diagnostic = details["message"] or details["summary"]
+            message = f"WonderPush rejected the notification (HTTP {response.status_code})"
+            if diagnostic: message += f": {diagnostic}"
+            logger.warning(
+                "provider=wonderpush operation=delivery status=%s error_code=%s error_message=%s "
+                "provider_request_id=%s audience=%s target_count=%s",
+                response.status_code, details["code"] or "unavailable",
+                details["message"] or details["summary"], details["request_id"] or "unavailable",
+                audience_classification, target_count,
+            )
+            raise WonderPushError(message, status_code=response.status_code,
+                headers=response_headers, provider_error_code=details["code"],
+                provider_error_message=details["message"], provider_request_id=details["request_id"],
+                response_summary=details["summary"])
+
+        reference = response.headers.get("Location") or response.headers.get("X-Request-Id")
+        if not reference:
+            try:
+                result = response.json()
+            except ValueError:
+                result = None
+            if isinstance(result, dict):
+                reference = result.get("id") or result.get("deliveryId")
+        return {"provider_delivery_id": str(reference or "wonderpush:accepted"),
+            "status_code": response.status_code, "rate_limit": response_headers}
+
+    async def _send(self, *, content: dict[str, str], target: dict[str, str]) -> str:
+        result = await self._send_detailed(content=content, target=target)
+        return result["provider_delivery_id"]
+
+    async def send_everyone(self, *, title: str, message: str, target_url: str,
+        idempotency_key: str | None = None, campaign_id: str | None = None,
+        expiration_time: str | None = None) -> str:
+        content = self.notification_content(title, message, target_url)
+        result = await self._send_detailed(content=content, target={"targetSegmentIds": "@ALL"},
+            idempotency_key=idempotency_key, campaign_id=campaign_id,
+            expiration_time=expiration_time, audience_classification="broadcast")
+        return result["provider_delivery_id"]
+
+    async def send_test(
+        self, *, title: str, message: str, target_url: str, installation_ids: list[str],
+        idempotency_key: str | None = None, campaign_id: str | None = None,
+        expiration_time: str | None = None,
+    ) -> str:
+        if not installation_ids:
+            raise WonderPushError("No WonderPush test installation IDs are configured")
+        content = self.notification_content(title, message, target_url)
+        result = await self._send_detailed(
+            content=content,
+            target={"targetInstallationIds": ",".join(installation_ids)},
+            idempotency_key=idempotency_key,
+            campaign_id=campaign_id,
+            expiration_time=expiration_time,
+            audience_classification="test",
+        )
+        return result["provider_delivery_id"]
+
+    async def send_one_installation(
+        self, *, title: str, message: str, target_url: str, installation_id: str
+    ) -> str:
+        """Send to exactly one installation; this method has no broadcast fallback."""
+        target = installation_id.strip()
+        if not target or "," in target or target == "@ALL":
+            raise WonderPushError("Exactly one WonderPush installation ID is required")
+        content = self.notification_content(title, message, target_url)
+        return await self._send(
+            content=content,
+            target={"targetInstallationIds": target},
+        )
+
+    async def send_installations(self, *, title: str, message: str, target_url: str,
+        installation_ids: list[str], idempotency_key: str,
+        expiration_time: str = "15 minutes", disable_capping: bool = False,
+        campaign_id: str | None = None) -> dict[str, Any]:
+        """Send one payload to an exact, bounded installation set; never broadcasts."""
+        targets = [value.strip() for value in installation_ids]
+        if not targets or len(targets) > 10000 or len(set(targets)) != len(targets):
+            raise WonderPushError("Between 1 and 10000 unique installation IDs are required")
+        if any(not value or value == "@ALL" or "," in value for value in targets):
+            raise WonderPushError("Exact WonderPush installation IDs are required")
+        if not idempotency_key or len(idempotency_key) > 64:
+            raise WonderPushError("A valid WonderPush idempotency key is required")
+        content = self.notification_content(title, message, target_url)
+        return await self._send_detailed(content=content,
+            target={"targetInstallationIds": ",".join(targets)},
+            idempotency_key=idempotency_key, expiration_time=expiration_time,
+            disable_capping=disable_capping, campaign_id=campaign_id)
+
+    async def get_installation(self, installation_id: str) -> dict[str, Any] | None:
+        url = f"https://management-api.wonderpush.com/v1/installations/{quote(installation_id, safe='')}"
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            response = await client.get(url, params={"accessToken": self.access_token, "userId": ""})
+        if response.status_code == 404: return None
+        if response.status_code != 200:
+            raise WonderPushError(f"WonderPush installation lookup failed (HTTP {response.status_code})")
+        result = response.json()
+        return result if isinstance(result, dict) else None
+
+    async def list_installations(self, *, updated_since: datetime | None = None,
+        page_size: int = 1000) -> tuple[list[dict[str, Any]], int]:
+        """Page through installations without exposing cursor URLs or credentials."""
+        url: str | None = "https://management-api.wonderpush.com/v1/installations"
+        params: dict[str, Any] | None = {
+            "accessToken": self.access_token,
+            "limit": max(1, min(page_size, 1000)),
+            "sort": "none",
+            "fields": "id,updateDate,preferences,pushToken,device",
+        }
+        if updated_since is not None:
+            params["updateDateFrom"] = updated_since.astimezone(timezone.utc).isoformat()
+        installations: list[dict[str, Any]] = []
+        pages = 0
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            while url:
+                try:
+                    response = await client.get(url, params=params)
+                except httpx.TimeoutException as exc:
+                    raise WonderPushError("WonderPush installation listing timed out") from exc
+                except httpx.RequestError as exc:
+                    raise WonderPushError("WonderPush installation listing could not be reached") from exc
+                if response.status_code != 200:
+                    raise WonderPushError(
+                        f"WonderPush installation listing failed (HTTP {response.status_code})",
+                        status_code=response.status_code)
+                payload = response.json()
+                data = payload.get("data") if isinstance(payload, dict) else None
+                pagination = payload.get("pagination") if isinstance(payload, dict) else None
+                if not isinstance(data, list) or not isinstance(pagination, dict):
+                    raise WonderPushError("WonderPush installation listing returned malformed data")
+                installations.extend(item for item in data if isinstance(item, dict))
+                pages += 1
+                next_url = pagination.get("next")
+                url = next_url if isinstance(next_url, str) and next_url.startswith(
+                    "https://management-api.wonderpush.com/") else None
+                params = None  # Cursor URL must be followed unchanged.
+        return installations, pages
+
+
 
 
 class WebpushrError(Exception):
@@ -822,6 +1120,7 @@ class SupabaseNotificationDeliveryService:
         target_url: str,
         notification_title: str,
         notification_message: str,
+        provider: str = "wonderpush",
     ) -> dict[str, Any]:
         resolved_event_id = await self._get_event_id(event_id)
         rows = await self.client.request(
@@ -831,7 +1130,7 @@ class SupabaseNotificationDeliveryService:
                 "event_id": resolved_event_id,
                 "announcement_id": announcement_id,
                 "audience": audience,
-                "provider": "webpushr",
+                "provider": provider,
                 "status": "requested",
                 "requested_by": requested_by,
                 "target_url": target_url,

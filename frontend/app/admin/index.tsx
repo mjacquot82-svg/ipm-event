@@ -116,7 +116,7 @@ const IDLE_NOTIFICATION_STATE: NotificationActionState = {
   message: null,
 };
 
-export function shortenWebpushrText(value: string, limit: number) {
+export function shortenNotificationText(value: string, limit: number) {
   const normalized = value.trim().split(/\s+/u).join(' ');
   const characters = Array.from(normalized);
   if (characters.length <= limit) return normalized;
@@ -650,6 +650,7 @@ export default function AdminDashboardScreen() {
           saveMessage={announcementSaveMessage}
           notificationAction={notificationAction}
           editingAnnouncement={editingAnnouncement}
+          showTestAction={currentUser?.role === 'Owner'}
           onSearchChange={setAnnouncementSearch}
           onRefresh={loadAnnouncements}
           onCreate={() => openAnnouncementEditor()}
@@ -1536,13 +1537,13 @@ function VendorEditor({
 function AnnouncementsPage({
   announcements, totalCount, loading, error, search, editorMode, form, saving,
   saveMessage, notificationAction,
-  editingAnnouncement, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
+  editingAnnouncement, showTestAction, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
   onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone,
 }: {
   announcements: Announcement[]; totalCount: number; loading: boolean; error: string | null;
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
-  editingAnnouncement: Announcement | null; onSearchChange: (value: string) => void;
+  editingAnnouncement: Announcement | null; showTestAction: boolean; onSearchChange: (value: string) => void;
   onRefresh: () => void; onCreate: () => void; onEdit: (item: Announcement) => void;
   onStatusChange: (item: Announcement, status: AnnouncementStatus) => void;
   onDelete: (item: Announcement) => void; onFormChange: (value: AnnouncementPayload) => void;
@@ -1569,6 +1570,7 @@ function AnnouncementsPage({
         <AnnouncementEditor
           mode={editorMode} form={form} saving={saving} editingAnnouncement={editingAnnouncement}
           saveMessage={saveMessage} notificationAction={notificationAction}
+          showTestAction={showTestAction}
           onChange={onFormChange} onClose={onCloseEditor} onSave={onSave}
           onSendTest={onSendTest} onNotifyEveryone={onNotifyEveryone}
         />
@@ -1613,12 +1615,12 @@ function AnnouncementsPage({
 }
 
 function AnnouncementEditor({
-  mode, form, saving, saveMessage, notificationAction, editingAnnouncement,
+  mode, form, saving, saveMessage, notificationAction, editingAnnouncement, showTestAction,
   onChange, onClose, onSave, onSendTest, onNotifyEveryone,
 }: {
   mode: Exclude<AnnouncementEditorMode, 'closed'>; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
-  editingAnnouncement: Announcement | null; onChange: (value: AnnouncementPayload) => void;
+  editingAnnouncement: Announcement | null; showTestAction: boolean; onChange: (value: AnnouncementPayload) => void;
   onClose: () => void; onSave: (status: AnnouncementStatus) => void;
   onSendTest: () => void; onNotifyEveryone: () => void;
 }) {
@@ -1639,8 +1641,8 @@ function AnnouncementEditor({
   ));
   const notificationDisabled = saving || isSending || isExpired || hasUnsavedChanges;
   const everyoneSentThisSession = notificationAction.audience === 'everyone' && notificationAction.status === 'sent';
-  const notificationTitle = shortenWebpushrText(form.title, 100);
-  const notificationMessage = shortenWebpushrText(form.message, 255);
+  const notificationTitle = shortenNotificationText(form.title, 100);
+  const notificationMessage = shortenNotificationText(form.message, 255);
 
   useEffect(() => {
     if (
@@ -1702,10 +1704,10 @@ function AnnouncementEditor({
         </Pressable>}
 
         {isPublished && <>
-          <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
+          {showTestAction && <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
             {isSending && notificationAction.audience === 'test' ? <ActivityIndicator color={colors.textPrimary} /> : <Feather name="send" size={17} color={colors.textPrimary} />}
             <Text style={styles.secondaryButtonText}>{isSending && notificationAction.audience === 'test' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'test' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'test' ? 'Failed — Try Again' : 'Send Test Notification'}</Text>
-          </Pressable>
+          </Pressable>}
           <Pressable style={[styles.dangerButton, (notificationDisabled || everyoneSentThisSession) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={notificationDisabled || everyoneSentThisSession}>
             {isSending && notificationAction.audience === 'everyone' ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
             <Text style={styles.saveButtonText}>{isSending && notificationAction.audience === 'everyone' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'everyone' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'everyone' ? 'Failed — Try Again' : 'Notify Everyone'}</Text>
@@ -1716,7 +1718,7 @@ function AnnouncementEditor({
       <Modal visible={confirmEveryone} transparent animationType="fade" onRequestClose={() => { if (!isSending) setConfirmEveryone(false); }}>
         <View style={styles.modalBackdrop}>
           <View style={styles.confirmDialog} accessibilityRole="alert">
-            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Notify everyone?</Text><Text style={styles.confirmSubtitle}>This action sends a Webpushr notification immediately.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Notify everyone?</Text><Text style={styles.confirmSubtitle}>This action sends a notification immediately.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
             <View style={styles.confirmDetails}>
               <ConfirmationRow label="Announcement title" value={form.title} />
               <ConfirmationRow label="Notification title" value={notificationTitle} />

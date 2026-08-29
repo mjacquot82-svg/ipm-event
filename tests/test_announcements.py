@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -7,7 +8,7 @@ import pytest
 from fastapi import HTTPException
 
 from backend import server
-from backend.platform_services import SupabaseAnnouncementService, WebpushrClient, WebpushrError
+from backend.platform_services import SupabaseAnnouncementService, WonderPushClient, WonderPushError
 
 
 class FakeClient:
@@ -216,7 +217,7 @@ class FakeDeliveryService:
         row = {
             "id": f"delivery-{len(self.rows) + 1}",
             **values,
-            "provider": "webpushr",
+            "provider": values.get("provider", "wonderpush"),
             "provider_campaign_id": None,
             "status": "requested",
             "requested_at": datetime.now(timezone.utc),
@@ -239,25 +240,29 @@ class FakeDeliveryService:
         return row
 
 
-class FakeWebpushr:
+class FakeWonderPush:
     def __init__(self, fail=False):
         self.fail = fail
-        self.test_subscribers = None
+        self.test_installations = None
+        self.test_options = None
+        self.everyone_options = None
 
     def notification_content(self, title, message, target_url):
-        return WebpushrClient(api_key="key", auth_token="token").notification_content(
+        return WonderPushClient(access_token="token").notification_content(
             title, message, target_url
         )
 
-    async def send_test(self, *, title, message, target_url, subscriber_ids):
-        self.test_subscribers = list(subscriber_ids)
+    async def send_test(self, *, title, message, target_url, installation_ids, **kwargs):
+        self.test_installations = list(installation_ids)
+        self.test_options = kwargs
         if self.fail:
-            raise WebpushrError("provider failed")
+            raise server.WonderPushError("provider failed")
         return "test-campaign"
 
     async def send_everyone(self, **kwargs):
+        self.everyone_options = kwargs
         if self.fail:
-            raise WebpushrError("provider failed")
+            raise server.WonderPushError("provider failed")
         return "everyone-campaign"
 
 
@@ -272,12 +277,12 @@ def announcement(status="published", *, expires_at=None):
 
 
 def configure_notification_fakes(monkeypatch, item, *, provider=None, deliveries=None):
-    provider = provider or FakeWebpushr()
+    provider = provider or FakeWonderPush()
     deliveries = deliveries or FakeDeliveryService()
     monkeypatch.setattr(server, "announcement_service", FakeAnnouncementService({("event-a", "announcement-1"): item}))
     monkeypatch.setattr(server, "notification_delivery_service", deliveries)
-    monkeypatch.setattr(server, "webpushr_client", provider)
-    monkeypatch.setattr(server, "WEBPUSHR_TEST_SUBSCRIBER_IDS", ["test-1", "test-2"])
+    monkeypatch.setattr(server, "wonderpush_client", provider)
+    monkeypatch.setattr(server, "WONDERPUSH_TEST_INSTALLATION_IDS", ["test-1", "test-2"])
     monkeypatch.setattr(server, "PUBLIC_APP_URL", "https://theipm.ca")
     return provider, deliveries
 
@@ -321,23 +326,63 @@ def test_test_send_uses_only_configured_subscribers(monkeypatch):
     result = asyncio.run(server.notify_announcement("announcement-1", "test", {
         "username": "comms", "role": "Communications", "event_id": "event-a"
     }))
-    assert provider.test_subscribers == ["test-1", "test-2"]
+    assert provider.test_installations == ["test-1", "test-2"]
+    assert "campaign_id" not in provider.test_options
+    assert provider.test_options["idempotency_key"].startswith("announcement-test-")
+    assert 0 < int(provider.test_options["expiration_time"].split()[0]) <= 72 * 60 * 60
     assert result.audience == "test"
     assert deliveries.rows[0]["provider_campaign_id"] == "test-campaign"
+    assert deliveries.rows[0]["provider"] == "wonderpush"
+    assert deliveries.rows[0]["target_url"] == "https://theipm.ca/announcements/announcement-1"
 
 
 def test_everyone_send_cannot_duplicate_after_success(monkeypatch):
-    _, deliveries = configure_notification_fakes(monkeypatch, announcement())
+    provider, deliveries = configure_notification_fakes(monkeypatch, announcement())
     user = {"username": "owner", "role": "Owner", "event_id": "event-a"}
     first = asyncio.run(server.notify_announcement("announcement-1", "everyone", user))
     assert first.provider_campaign_id == "everyone-campaign"
+    assert "campaign_id" not in provider.everyone_options
+    assert provider.everyone_options["idempotency_key"] == "announcement-event-a-announcement-1"
+    assert provider.everyone_options["expiration_time"] == "259200 seconds"
     with pytest.raises(HTTPException) as duplicate:
         asyncio.run(server.notify_announcement("announcement-1", "everyone", user))
     assert duplicate.value.status_code == 409
 
 
+def test_announcement_send_is_independent_of_reminder_kill_switch(monkeypatch):
+    provider, _ = configure_notification_fakes(monkeypatch, announcement())
+    monkeypatch.setattr(server, "ITINERARY_REMINDER_DELIVERY_ENABLED", False)
+    result = asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+        "username": "comms", "role": "Communications", "event_id": "event-a"
+    }))
+    assert result.status == "sent"
+    assert "campaign_id" not in provider.everyone_options
+
+
+def test_earlier_announcement_expiry_shortens_push_ttl(monkeypatch):
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+    provider, _ = configure_notification_fakes(monkeypatch, announcement(expires_at=expires_at))
+    asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+        "username": "comms", "role": "Communications", "event_id": "event-a"
+    }))
+    ttl = int(provider.everyone_options["expiration_time"].split()[0])
+    assert 60 <= ttl <= 2 * 60 * 60
+
+
+def test_effectively_stale_announcement_creates_no_delivery(monkeypatch):
+    expires_at = (datetime.now(timezone.utc) + timedelta(seconds=30)).isoformat()
+    provider, deliveries = configure_notification_fakes(monkeypatch, announcement(expires_at=expires_at))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+            "username": "comms", "role": "Communications", "event_id": "event-a"
+        }))
+    assert error.value.status_code == 409
+    assert deliveries.rows == []
+    assert provider.everyone_options is None
+
+
 def test_provider_failure_is_persisted(monkeypatch):
-    _, deliveries = configure_notification_fakes(monkeypatch, announcement(), provider=FakeWebpushr(fail=True))
+    _, deliveries = configure_notification_fakes(monkeypatch, announcement(), provider=FakeWonderPush(fail=True))
     with pytest.raises(HTTPException) as error:
         asyncio.run(server.notify_announcement("announcement-1", "everyone", {
             "username": "owner", "role": "Owner", "event_id": "event-a"
@@ -347,16 +392,9 @@ def test_provider_failure_is_persisted(monkeypatch):
     assert deliveries.rows[0]["error_message"] == "provider failed"
 
 
-def test_webpushr_content_is_deterministically_shortened():
-    client = WebpushrClient(api_key="key", auth_token="token")
-    content = client.notification_content("T" * 120, "M" * 300, "https://example.test/" + "x" * 300)
-    assert len(content["title"]) == 100 and content["title"].endswith("…")
-    assert len(content["message"]) == 255 and content["message"].endswith("…")
-    assert len(content["target_url"]) == 255 and content["target_url"].endswith("…")
-    assert content == client.notification_content("T" * 120, "M" * 300, "https://example.test/" + "x" * 300)
+def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkeypatch):
+    captured = {}
 
-
-def test_webpushr_subscriber_success_does_not_require_campaign_id(monkeypatch):
     class FakeHttpClient:
         async def __aenter__(self):
             return self
@@ -364,29 +402,45 @@ def test_webpushr_subscriber_success_does_not_require_campaign_id(monkeypatch):
         async def __aexit__(self, *args):
             return None
 
-        async def post(self, *args, **kwargs):
-            return httpx.Response(
-                200,
-                json={
-                    "status": "success",
-                    "description": "Notification sent successfully!",
-                },
-            )
+        async def post(self, url, **kwargs):
+            captured.update(url=url, **kwargs)
+            return httpx.Response(202, headers={"Location": "/v1/deliveries/delivery-123"})
 
     monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
-    client = WebpushrClient(api_key="key", auth_token="token")
+    client = WonderPushClient(access_token="not-a-credential")
 
     result = asyncio.run(client.send_test(
         title="Title",
         message="Message",
-        target_url="https://example.test",
-        subscriber_ids=["123", "456"],
+        target_url="https://theipm.ca/announcements/announcement-1",
+        installation_ids=["123", "456"],
+        idempotency_key="announcement-test-delivery-123",
+        expiration_time="72 hours",
     ))
 
-    assert result == "sid:123,sid:456"
+    assert result == "/v1/deliveries/delivery-123"
+    assert captured["url"] == "https://management-api.wonderpush.com/v1/deliveries"
+    assert captured["data"]["accessToken"] == "not-a-credential"
+    assert captured["data"]["targetInstallationIds"] == "123,456"
+    assert captured["data"]["filterPlatforms"] == "Web"
+    assert "campaignId" not in captured["data"]
+    assert "disableCapping" not in captured["data"]
+    assert captured["headers"] == {
+        "X-WonderPush-Idempotency-Key": "announcement-test-delivery-123"
+    }
+    notification = __import__("json").loads(captured["data"]["notification"])
+    assert notification["alert"] == {
+        "title": "IPM — Title", "text": "Message",
+        "targetUrl": "https://theipm.ca/announcements/announcement-1",
+        "web": {"icon": "https://theipm.ca/ipm-icon-any-192.png"},
+    }
+    assert notification["push"]["custom"]["target_url"].endswith("/announcements/announcement-1")
+    assert notification["push"]["expirationTime"] == "72 hours"
 
 
-def test_webpushr_everyone_success_still_requires_campaign_id(monkeypatch):
+def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
+    captured = {}
+
     class FakeHttpClient:
         async def __aenter__(self):
             return self
@@ -394,18 +448,96 @@ def test_webpushr_everyone_success_still_requires_campaign_id(monkeypatch):
         async def __aexit__(self, *args):
             return None
 
-        async def post(self, *args, **kwargs):
-            return httpx.Response(
-                200,
-                json={"status": "success", "description": "Campaign created successfully!"},
-            )
+        async def post(self, url, **kwargs):
+            captured.update(url=url, **kwargs)
+            return httpx.Response(202, text="")
 
     monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
-    client = WebpushrClient(api_key="key", auth_token="token")
+    client = WonderPushClient(access_token="not-a-credential")
+    result = asyncio.run(client.send_everyone(
+        title="Title", message="Message", target_url="https://theipm.ca",
+        expiration_time="72 hours", idempotency_key="announcement-event-a-announcement-1",
+    ))
+    assert result == "wonderpush:accepted"
+    assert captured["data"]["targetSegmentIds"] == "@ALL"
+    assert "campaignId" not in captured["data"]
+    assert "targetInstallationIds" not in captured["data"]
+    assert "disableCapping" not in captured["data"]
+    assert captured["headers"] == {
+        "X-WonderPush-Idempotency-Key": "announcement-event-a-announcement-1"
+    }
+    assert __import__("json").loads(captured["data"]["notification"])["push"][
+        "expirationTime"] == "72 hours"
 
-    with pytest.raises(WebpushrError, match="did not include a campaign ID"):
-        asyncio.run(client.send_everyone(
-            title="Title",
-            message="Message",
-            target_url="https://example.test",
+
+@pytest.mark.parametrize(("status", "content", "content_type", "expected"), [
+    (404, '{"error":{"code":"campaign_not_found","message":"Campaign does not exist"}}',
+        "application/json", "Campaign does not exist"),
+    (400, '{"code":"invalid_request","message":"Invalid delivery request"}',
+        "application/json", "Invalid delivery request"),
+    (503, "Provider temporarily unavailable", "text/plain", "Provider temporarily unavailable"),
+    (502, "", "text/plain", "WonderPush returned no response body"),
+    (404, "<html><body><h1>Proxy not found</h1></body></html>", "text/html",
+        "WonderPush returned an HTML error response"),
+])
+def test_wonderpush_errors_retain_bounded_safe_diagnostics(
+    monkeypatch, status, content, content_type, expected,
+):
+    class FakeHttpClient:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): return None
+        async def post(self, *args, **kwargs):
+            return httpx.Response(status, text=content, headers={
+                "Content-Type": content_type, "X-Request-Id": "provider-request-123",
+            })
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
+    client = WonderPushClient(access_token="not-a-credential")
+    with pytest.raises(WonderPushError, match=rf"WonderPush rejected.*HTTP {status}") as error:
+        asyncio.run(client.send_test(
+            title="Title", message="Message", target_url="https://theipm.ca",
+            installation_ids=["installation-safe-test"], campaign_id="campaign-safe-test",
         ))
+    assert expected in str(error.value)
+    assert error.value.provider_request_id == "provider-request-123"
+    assert error.value.response_summary and len(error.value.response_summary) <= 500
+
+
+def test_wonderpush_error_redacts_targets_credentials_and_logs_only_safe_context(monkeypatch, caplog):
+    installation_id = "fake-installation-id-that-must-never-appear"
+    access_token = "fake-access-token-that-must-never-appear"
+    campaign_id = "fake-campaign-id-that-must-never-appear"
+    response_text = json.dumps({"error": {"code": "not_found", "message":
+        f"targetInstallationIds={installation_id} accessToken={access_token} "
+        f"api_key=another-fake-secret campaign={campaign_id}"}})
+
+    class FakeHttpClient:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): return None
+        async def post(self, *args, **kwargs):
+            return httpx.Response(404, text=response_text, headers={"Content-Type": "application/json"})
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: FakeHttpClient())
+    client = WonderPushClient(access_token=access_token)
+    with caplog.at_level("WARNING"), pytest.raises(WonderPushError) as caught:
+        asyncio.run(client.send_test(title="Title", message="Message",
+            target_url="https://theipm.ca", installation_ids=[installation_id],
+            campaign_id=campaign_id))
+    combined = f"{caught.value} {caught.value.response_summary} {caplog.text}"
+    assert installation_id not in combined
+    assert access_token not in combined
+    assert campaign_id not in combined
+    assert "another-fake-secret" not in combined
+    assert "audience=test" in caplog.text
+    assert "target_count=1" in caplog.text
+
+
+def test_broadcast_provider_diagnostic_is_persisted_but_organizer_error_is_generic(monkeypatch):
+    provider, deliveries = configure_notification_fakes(
+        monkeypatch, announcement(), provider=FakeWonderPush(fail=True))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+            "username": "owner", "role": "Owner", "event_id": "event-a",
+        }))
+    assert error.value.detail == "Notification could not be sent."
+    assert deliveries.rows[0]["error_message"] == "provider failed"

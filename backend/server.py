@@ -77,6 +77,8 @@ try:
         SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
+        WonderPushClient,
+        WonderPushError,
         WebpushrClient,
         WebpushrError,
     )
@@ -89,8 +91,23 @@ except ImportError:
         SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
+        WonderPushClient,
+        WonderPushError,
         WebpushrClient,
         WebpushrError,
+    )
+
+try:
+    from notification_registrations import (
+        SupabaseNotificationRegistrationRepository,
+        provider_readiness,
+        public_status as public_notification_registration,
+    )
+except ImportError:
+    from backend.notification_registrations import (
+        SupabaseNotificationRegistrationRepository,
+        provider_readiness,
+        public_status as public_notification_registration,
     )
 
 
@@ -142,6 +159,15 @@ WEBPUSHR_TEST_SUBSCRIBER_IDS = [
     for subscriber_id in os.environ.get("WEBPUSHR_TEST_SUBSCRIBER_IDS", "").split(",")
     if subscriber_id.strip()
 ]
+WONDERPUSH_ACCESS_TOKEN = os.environ.get("WONDERPUSH_ACCESS_TOKEN", "")
+WONDERPUSH_TEST_INSTALLATION_IDS = [
+    installation_id.strip()
+    for installation_id in os.environ.get("WONDERPUSH_TEST_INSTALLATION_IDS", "").split(",")
+    if installation_id.strip()
+]
+# T-30 delivery is deliberately unavailable during the announcement cutover.
+ITINERARY_REMINDER_DELIVERY_ENABLED = False
+ITINERARY_REMINDER_SCHEDULER_ENABLED = False
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
 ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
 ADMIN_SESSION_DAYS = int(os.environ.get("ADMIN_SESSION_DAYS", "7"))
@@ -383,7 +409,7 @@ class NotificationDeliveryResponse(BaseModel):
     event_id: str
     announcement_id: str
     audience: Literal["test", "everyone"]
-    provider: Literal["webpushr"]
+    provider: Literal["webpushr", "wonderpush"]
     provider_campaign_id: Optional[str] = None
     status: Literal["requested", "sent", "failed"]
     requested_by: str
@@ -780,6 +806,7 @@ else:
 
 announcement_service = None
 notification_delivery_service = None
+notification_registration_repository = None
 if CONTENT_SOURCE == "supabase":
     announcement_service = SupabaseAnnouncementService(
         supabase_url=SUPABASE_URL,
@@ -791,6 +818,9 @@ if CONTENT_SOURCE == "supabase":
         service_role_key=SUPABASE_SERVICE_ROLE_KEY,
         event_slug=event_service.get_public_event_id(),
     )
+    notification_registration_repository = SupabaseNotificationRegistrationRepository(
+        schedule_service.client, event_service.get_public_event_id()
+    )
 
 webpushr_client = None
 if WEBPUSHR_API_KEY and WEBPUSHR_AUTH_TOKEN:
@@ -798,6 +828,10 @@ if WEBPUSHR_API_KEY and WEBPUSHR_AUTH_TOKEN:
         api_key=WEBPUSHR_API_KEY,
         auth_token=WEBPUSHR_AUTH_TOKEN,
     )
+
+wonderpush_client = WonderPushClient(
+    access_token=WONDERPUSH_ACCESS_TOKEN
+) if WONDERPUSH_ACCESS_TOKEN else None
 
 
 def normalize_username(username: str) -> str:
@@ -951,6 +985,37 @@ def require_webpushr_client():
     if webpushr_client is None:
         raise HTTPException(status_code=503, detail="Webpushr is not configured")
     return webpushr_client
+
+
+def require_wonderpush_client():
+    if wonderpush_client is None:
+        raise HTTPException(status_code=503, detail="Notification delivery is not configured")
+    return wonderpush_client
+
+
+def require_notification_registration_repository():
+    if notification_registration_repository is None:
+        raise HTTPException(status_code=503, detail="Notification registration is unavailable")
+    return notification_registration_repository
+
+
+ANNOUNCEMENT_MAX_TTL_SECONDS = 72 * 60 * 60
+ANNOUNCEMENT_MIN_USEFUL_TTL_SECONDS = 60
+
+
+def announcement_expiration_time(announcement: dict, *, now: datetime | None = None) -> str:
+    reference = now or datetime.now(timezone.utc)
+    ttl_seconds = ANNOUNCEMENT_MAX_TTL_SECONDS
+    expires_at = announcement.get("expires_at")
+    if expires_at:
+        expiry = expires_at if isinstance(expires_at, datetime) else datetime.fromisoformat(
+            str(expires_at).replace("Z", "+00:00"))
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+        ttl_seconds = min(ttl_seconds, int((expiry - reference).total_seconds()))
+    if ttl_seconds < ANNOUNCEMENT_MIN_USEFUL_TTL_SECONDS:
+        raise HTTPException(status_code=409, detail="Announcement expires too soon to notify")
+    return f"{ttl_seconds} seconds"
 
 
 def require_schedule_manager_role(user: dict):
@@ -1599,7 +1664,7 @@ async def notify_announcement(
     require_announcement_manager_role(current_user)
     announcements = require_announcement_service()
     deliveries = require_notification_delivery_service()
-    provider = require_webpushr_client()
+    provider = require_wonderpush_client()
     event_id = get_admin_event_id(current_user)
 
     announcement = await announcements.get(announcement_id, event_id, public=True)
@@ -1608,8 +1673,10 @@ async def notify_announcement(
             status_code=409,
             detail="Only published, unexpired announcements can be notified",
         )
-    if audience == "test" and not WEBPUSHR_TEST_SUBSCRIBER_IDS:
-        raise HTTPException(status_code=503, detail="No Webpushr test subscribers are configured")
+    if audience == "test" and not WONDERPUSH_TEST_INSTALLATION_IDS:
+        raise HTTPException(status_code=503, detail="No controlled test installation is configured")
+
+    expiration_time = announcement_expiration_time(announcement)
 
     target_url = f"{PUBLIC_APP_URL}/announcements/{quote(announcement_id, safe='')}"
     content = provider.notification_content(
@@ -1624,6 +1691,7 @@ async def notify_announcement(
             target_url=content["target_url"],
             notification_title=content["title"],
             notification_message=content["message"],
+            provider="wonderpush",
         )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 409 and audience == "everyone":
@@ -1636,13 +1704,20 @@ async def notify_announcement(
     try:
         if audience == "test":
             campaign_id = await provider.send_test(
-                **content, subscriber_ids=WEBPUSHR_TEST_SUBSCRIBER_IDS
+                **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS,
+                idempotency_key=f"announcement-test-{delivery['id']}",
+                expiration_time=expiration_time,
             )
         else:
-            campaign_id = await provider.send_everyone(**content)
-    except WebpushrError as exc:
+            campaign_id = await provider.send_everyone(
+                **content,
+                idempotency_key=f"announcement-{event_id}-{announcement_id}"[:64],
+                expiration_time=expiration_time,
+            )
+    except WonderPushError as exc:
         await deliveries.mark_failed(delivery["id"], str(exc))
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        detail = str(exc) if audience == "test" else "Notification could not be sent."
+        raise HTTPException(status_code=502, detail=detail) from exc
 
     sent = await deliveries.mark_sent(delivery["id"], campaign_id)
     return NotificationDeliveryResponse(**sent)
@@ -1668,6 +1743,79 @@ async def notify_announcement_everyone(
     current_user: dict = Depends(get_current_organizer_user),
 ):
     return await notify_announcement(announcement_id, "everyone", current_user)
+
+
+def notification_device_headers(request: Request) -> tuple[str, str]:
+    installation_id = request.headers.get("X-WonderPush-Installation-Id", "").strip()
+    capability = request.headers.get("X-Notification-Device-Capability", "").strip()
+    if not installation_id or len(installation_id) > 500:
+        raise HTTPException(status_code=400, detail="A WonderPush installation ID is required")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    return installation_id, capability
+
+
+async def authorize_notification_device(request: Request):
+    repository = require_notification_registration_repository()
+    installation_id, capability = notification_device_headers(request)
+    try:
+        registration = await repository.authorize(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid installation credentials") from exc
+    return repository, registration
+
+
+@api_router.post("/notification-registrations/register")
+async def register_notification_device(request: Request):
+    repository = require_notification_registration_repository()
+    installation_id, capability = notification_device_headers(request)
+    try:
+        registration = await repository.register(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid installation credentials") from exc
+    return public_notification_registration(registration)
+
+
+@api_router.get("/notification-registrations/status")
+async def notification_registration_status(request: Request):
+    _, registration = await authorize_notification_device(request)
+    return public_notification_registration(registration)
+
+
+@api_router.get("/notification-registrations/status-by-capability")
+async def notification_registration_status_by_capability(request: Request):
+    repository = require_notification_registration_repository()
+    capability = request.headers.get("X-Notification-Device-Capability", "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    registration = await repository.get_by_capability(capability)
+    if not registration:
+        raise HTTPException(status_code=404, detail="No notification registration exists for this device")
+    return public_notification_registration(registration)
+
+
+@api_router.post("/notification-registrations/readiness/verify")
+async def verify_notification_readiness(request: Request):
+    repository, registration = await authorize_notification_device(request)
+    try:
+        installation = await require_wonderpush_client().get_installation(
+            registration["wonderpush_installation_id"])
+    except WonderPushError as exc:
+        raise HTTPException(status_code=503, detail="Notification readiness is temporarily unavailable") from exc
+    reachability, has_push_token = provider_readiness(installation)
+    verified = await repository.set_readiness(registration["id"],
+        reachability=reachability, has_push_token=has_push_token)
+    return public_notification_registration(verified)
+
+
+@api_router.get("/notification-registrations/operations")
+async def notification_registration_operations():
+    return {
+        "provider_configured": wonderpush_client is not None,
+        "controlled_test_allowlist_count": len(WONDERPUSH_TEST_INSTALLATION_IDS),
+        "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
+        "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
+    }
 
 
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)

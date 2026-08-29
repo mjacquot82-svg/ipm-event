@@ -20,7 +20,6 @@
     
     <link rel="manifest" href="/manifest.json" />
     
-    <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('setup',{'key':'BHu0qiKGpRuMKicoL7MFSj-Oe58Dio-M9vYxksU4IIoY3hHXYU6TE9yigTRSu2Ws0AbuWnOwFglijaBsajGbPKk' });</script>
     <title>IPM 2026</title>
     
     <style id="expo-reset">
@@ -28,7 +27,7 @@
       body { overflow: hidden; }
       #root { display: flex; height: 100%; }
 
-      /* Keep Webpushr delivery active without its floating bell covering navigation. */
+      /* Preserve the production rollback guard: a retained Webpushr SDK cannot restore its bell. */
       #webpushr-bell-optin {
         display: none !important;
         pointer-events: none !important;

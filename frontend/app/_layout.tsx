@@ -1,7 +1,7 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useEffect, useState } from 'react';
-import { Stack, usePathname } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -17,70 +17,50 @@ import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
 import SplashScreen from '../src/components/SplashScreen';
 import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext';
 import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
-
-// Initialize Webpushr for web platform
-const initWebpushr = () => {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    // @ts-ignore
-    if (typeof window.webpushr !== 'undefined') return;
-    
-    // @ts-ignore
-    window.webpushr = window.webpushr || function() {
-      // @ts-ignore
-      (window.webpushr.q = window.webpushr.q || []).push(arguments);
-    };
-    
-    const script = document.createElement('script');
-    script.id = 'webpushr-jssdk';
-    script.async = true;
-    script.src = 'https://cdn.webpushr.com/app.min.js';
-    
-    const firstScript = document.getElementsByTagName('script')[0];
-    if (firstScript && firstScript.parentNode) {
-      firstScript.parentNode.insertBefore(script, firstScript);
-    } else {
-      document.head.appendChild(script);
-    }
-    
-    script.onload = () => {
-      // @ts-ignore
-      window.webpushr('setup', {
-        'key': 'BHu0qiKGpRuMKicoL7MFSj-Oe58Dio-M9vYxksU4IIoY3hHXYU6TE9yigTRSu2Ws0AbuWnOwFglijaBsajGbPKk'
-      });
-    };
-  }
-};
+import { initializeOfflineShell, initializeWonderPush } from '../src/services/wonderPushService';
+import { listenForWonderPushNotificationDeepLinks } from '../src/services/notificationDeepLink';
 
 export default function RootLayout() {
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(Platform.OS !== 'web');
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => listenForWonderPushNotificationDeepLinks((destination) => {
+    router.replace(destination as never);
+  }), [router]);
 
   useEffect(() => {
     void setAnalyticsRoute(pathname);
   }, [pathname]);
 
   useEffect(() => {
-    initWebpushr();
+    if (Platform.OS === 'web') {
+      void initializeOfflineShell().catch((error) => {
+        console.warn('Offline shell service worker unavailable:', error);
+      });
+      void initializeWonderPush().catch((error) => {
+        console.warn('WonderPush initialization unavailable:', error);
+      });
+      return undefined;
+    }
 
     let cleanupNotifications: () => void = () => undefined;
-    if (Platform.OS !== 'web') {
-      cleanupNotifications = addNotificationListeners(
+    cleanupNotifications = addNotificationListeners(
         (notification) => {
           console.log('Notification received:', notification);
         },
         (response) => {
           console.log('Notification tapped:', response);
         }
-      );
+    );
 
-      registerForPushNotificationsAsync().then((token) => {
+    registerForPushNotificationsAsync().then((token) => {
         if (token) {
           console.log('Push notification token:', token);
         }
       }).catch((error) => {
         console.warn('Push notification registration failed:', error);
-      });
-    }
+    });
 
     setIsInitializing(false);
 

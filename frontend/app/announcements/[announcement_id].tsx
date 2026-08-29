@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AnnouncementCard from '../../src/components/AnnouncementCard';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import { Announcement, getAnnouncementById } from '../../src/services/spreadsheetDataService';
@@ -23,6 +24,11 @@ export default function AnnouncementDetailScreen() {
   const { markAnnouncementRead } = useAnnouncementReadState();
   usePageAnalytics('announcement_detail', source || 'other');
   const trackedOpenId = React.useRef<string | null>(null);
+
+  const goBack = () => {
+    if (source && router.canGoBack()) router.back();
+    else router.replace('/announcements' as never);
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,14 +62,15 @@ export default function AnnouncementDetailScreen() {
   useEffect(() => { void load(); }, [load]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={attendeePageContent}>
         <View style={[styles.content, frameStyle]}>
           <View style={[styles.header, sectionStyle]}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/announcements' as never)} accessibilityLabel="Back to announcements">
+            <TouchableOpacity style={styles.backButton} onPress={goBack}
+              accessibilityRole="button" accessibilityLabel="Back to announcements">
               <Feather name="arrow-left" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
-            <View><Text style={styles.heading}>Announcement</Text><Text style={styles.subtitle}>Event update</Text></View>
+            <View style={styles.headerText}><Text style={styles.heading} accessibilityRole="header">Announcement</Text><Text style={styles.subtitle}>Event update</Text></View>
           </View>
 
           {loading ? (
@@ -78,7 +85,7 @@ export default function AnnouncementDetailScreen() {
         </View>
         <AttendeeAttribution source="announcement_detail_attribution" />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -101,7 +108,8 @@ const styles = StyleSheet.create({
   container: { backgroundColor: colors.background, flex: 1 },
   content: { flex: 1 },
   header: { alignItems: 'center', flexDirection: 'row', gap: 12, paddingBottom: 18, paddingTop: 14 },
-  backButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 10, borderWidth: 1, height: 42, justifyContent: 'center', width: 42 },
+  backButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 10, borderWidth: 1, flexShrink: 0, minHeight: 44, minWidth: 44, justifyContent: 'center' },
+  headerText: { flex: 1, minWidth: 0 },
   heading: { color: colors.textPrimary, fontSize: 26, fontWeight: '800' },
   subtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   state: { alignItems: 'center', gap: 12, justifyContent: 'center', minHeight: 320, paddingHorizontal: 28 },

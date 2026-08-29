@@ -16,6 +16,7 @@ import colors from '../theme/colors';
 import { 
   mapLocations, 
   categoryColors, 
+  categoryIcons,
   findLocationByName,
   MapLocation
 } from '../config/mapLocations';
