@@ -8,7 +8,10 @@ import {
   subscribeToNotifications,
   unsubscribeFromNotifications,
 } from '../services/wonderPushService';
-import { ensureNotificationRegistration } from '../services/notificationRegistration';
+import {
+  ensureNotificationRegistration,
+  NotificationRegistrationStage,
+} from '../services/notificationRegistration';
 import { colors } from '../theme/colors';
 
 const STATE_COPY: Record<NotificationState, string> = {
@@ -25,14 +28,32 @@ export default function NotificationOptIn() {
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
   const [verificationDeferred, setVerificationDeferred] = useState(false);
+  const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'failed'>('idle');
+  const [failureStage, setFailureStage] = useState<NotificationRegistrationStage | null>(null);
+
+  const completeSetup = useCallback(async () => {
+    setSetupState('pending');
+    setFailureStage(null);
+    try {
+      await ensureNotificationRegistration();
+      setSetupState('ready');
+    } catch (error) {
+      const safeStage = (error as { stage?: NotificationRegistrationStage }).stage;
+      setFailureStage(safeStage || 'installation_retrieval');
+      setSetupState('failed');
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     const nextState = await getNotificationState();
     setState(nextState);
     if (nextState === 'subscribed') {
-      void ensureNotificationRegistration().catch(() => undefined);
+      await completeSetup();
+    } else {
+      setSetupState('idle');
+      setFailureStage(null);
     }
-  }, []);
+  }, [completeSetup]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return undefined;
@@ -56,11 +77,12 @@ export default function NotificationOptIn() {
         ? await unsubscribeFromNotifications()
         : await subscribeToNotifications();
       setState(nextState);
-      if (nextState === 'subscribed') await ensureNotificationRegistration();
+      if (nextState === 'subscribed') await completeSetup();
+      else setSetupState('idle');
     } finally {
       setWorking(false);
     }
-  }, [state]);
+  }, [completeSetup, state]);
 
   if (Platform.OS !== 'web') return null;
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
@@ -68,16 +90,36 @@ export default function NotificationOptIn() {
   const isIphoneSafari = /iPhone|iPad|iPod/.test(window.navigator.userAgent || '') && !standalone;
   const stateMessage = verificationDeferred
     ? 'Notification status will refresh when your connection improves.'
+    : state === 'subscribed' && setupState === 'pending'
+    ? 'Notifications are enabled. Finishing setup…'
+    : state === 'subscribed' && setupState === 'failed'
+    ? 'Notifications are enabled, but setup could not be completed. Tap to try again.'
+    : state === 'subscribed' && setupState !== 'ready'
+    ? 'Notifications are enabled. Finishing setup…'
     : state === 'unsupported' && isIphoneSafari
     ? 'On iPhone, notifications are available from the installed IPM app.'
     : STATE_COPY[state];
 
   return (
-    <View style={styles.card} accessibilityLabel="IPM notification settings">
+    <View
+      style={styles.card}
+      accessibilityLabel="IPM notification settings"
+      testID={`notification-setup-${setupState === 'failed' ? failureStage : setupState}`}
+    >
       <View style={styles.icon}><Feather name="bell" size={22} color="#FFFFFF" /></View>
       <View style={styles.copy}>
         <Text style={styles.title}>IPM Notifications</Text>
         <Text style={styles.message}>{stateMessage}</Text>
+        {state === 'subscribed' && setupState === 'failed' ? (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Try notification setup again"
+            onPress={() => { void completeSetup(); }}
+            style={styles.retryButton}
+          >
+            <Text style={styles.retryButtonText}>Try again</Text>
+          </TouchableOpacity>
+        ) : null}
         {state === 'denied' ? <Text style={styles.hint}>Allow notifications for this site in browser settings to enable them.</Text> : null}
         {state === 'unsupported' && isIphoneSafari ? <Text style={styles.hint}>Install IPM to your Home Screen, then open the installed IPM app to enable notifications.</Text> : null}
       </View>
@@ -109,4 +151,6 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', textAlign: 'center' },
   disableButton: { backgroundColor: '#FFFFFF', borderColor: colors.primary, borderWidth: 1 },
   disableButtonText: { color: colors.primary },
+  retryButton: { alignSelf: 'flex-start', marginTop: 6, minHeight: 44, justifyContent: 'center' },
+  retryButtonText: { color: colors.primary, fontSize: 13, fontWeight: '800' },
 });

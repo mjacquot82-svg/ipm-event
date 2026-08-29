@@ -3,6 +3,30 @@ import { getSubscribedInstallationId } from './wonderPushService.web';
 
 const CAPABILITY_KEY = '@ipm_notification_capability_v1';
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const REQUEST_TIMEOUT_MS = 12_000;
+const RETRY_DELAYS_MS = [2_500, 5_000] as const;
+
+export type NotificationRegistrationStage =
+  | 'installation_retrieval' | 'capability_lookup' | 'backend_registration'
+  | 'backend_status' | 'provider_verification' | 'success';
+export type NotificationRegistrationFailure =
+  | 'installation_unavailable' | 'invalid_credentials' | 'http_error' | 'timeout'
+  | 'network_failure' | 'malformed_response' | 'other';
+export type NotificationRegistrationResult = {
+  stage: 'success'; status: Record<string, unknown>; attempts: number;
+};
+
+export class NotificationRegistrationError extends Error {
+  constructor(
+    public stage: Exclude<NotificationRegistrationStage, 'success'>,
+    public classification: NotificationRegistrationFailure,
+    public retryable: boolean,
+    public status: number | null = null,
+  ) {
+    super(`Notification setup failed at ${stage}: ${classification}${status ? ` (${status})` : ''}`);
+    this.name = 'NotificationRegistrationError';
+  }
+}
 
 function base64Url(bytes: Uint8Array): string {
   let binary = '';
@@ -11,42 +35,108 @@ function base64Url(bytes: Uint8Array): string {
 }
 
 async function capability(): Promise<string> {
-  const stored = await AsyncStorage.getItem(CAPABILITY_KEY);
-  if (stored) return stored;
-  if (!globalThis.crypto?.getRandomValues) throw new Error('Secure random generation is unavailable.');
-  const created = base64Url(globalThis.crypto.getRandomValues(new Uint8Array(32)));
-  await AsyncStorage.setItem(CAPABILITY_KEY, created);
-  return created;
-}
-
-async function request(path: string, method = 'GET', includeInstallation = true) {
-  const deviceCapability = await capability();
-  const installationId = includeInstallation ? await getSubscribedInstallationId() : null;
-  if (includeInstallation && !installationId) throw new Error('A subscribed installation is required.');
-  const response = await fetch(`${API_BASE_URL}/api/notification-registrations${path}`, {
-    method,
-    headers: {
-      'X-Notification-Device-Capability': deviceCapability,
-      ...(installationId ? { 'X-WonderPush-Installation-Id': installationId } : {}),
-    },
-  });
-  if (!response.ok) {
-    const error = new Error(`Notification registration failed (${response.status}).`);
-    Object.assign(error, { status: response.status });
-    throw error;
-  }
-  return response.json();
-}
-
-export async function ensureNotificationRegistration() {
-  let existing = null;
   try {
-    existing = await request('/status-by-capability', 'GET', false);
-  } catch (error) {
-    if ((error as { status?: number }).status !== 404) throw error;
+    const stored = await AsyncStorage.getItem(CAPABILITY_KEY);
+    if (stored) return stored;
+    if (!globalThis.crypto?.getRandomValues) throw new Error('Secure random generation is unavailable.');
+    const created = base64Url(globalThis.crypto.getRandomValues(new Uint8Array(32)));
+    await AsyncStorage.setItem(CAPABILITY_KEY, created);
+    return created;
+  } catch {
+    throw new NotificationRegistrationError('capability_lookup', 'other', false);
   }
-  // Preserve the staging-proven lifecycle: only a conclusive absence can create.
-  if (!existing) await request('/register', 'POST');
-  await request('/status');
-  return request('/readiness/verify', 'POST');
+}
+
+function safeRequestError(stage: Exclude<NotificationRegistrationStage, 'success'>,
+  error: unknown): NotificationRegistrationError {
+  if (error instanceof NotificationRegistrationError) return error;
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return new NotificationRegistrationError(stage, 'timeout', true);
+  }
+  if (error instanceof TypeError) {
+    return new NotificationRegistrationError(stage, 'network_failure', true);
+  }
+  return new NotificationRegistrationError(stage, 'other', false);
+}
+
+async function request(path: string, method: string,
+  stage: Exclude<NotificationRegistrationStage, 'success'>,
+  deviceCapability: string, installationId: string | null) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/notification-registrations${path}`, {
+      method, signal: controller.signal,
+      headers: {
+        'X-Notification-Device-Capability': deviceCapability,
+        ...(installationId ? { 'X-WonderPush-Installation-Id': installationId } : {}),
+      },
+    });
+  } catch (error) {
+    throw safeRequestError(stage, error);
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!response.ok) {
+    const invalidCredentials = response.status === 400 || response.status === 401
+      || response.status === 403 || response.status === 409;
+    const retryable = response.status === 408 || response.status === 425
+      || response.status === 429 || response.status >= 500;
+    throw new NotificationRegistrationError(stage,
+      invalidCredentials ? 'invalid_credentials' : 'http_error', retryable, response.status);
+  }
+  try {
+    const body = await response.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Malformed response');
+    return body as Record<string, unknown>;
+  } catch {
+    throw new NotificationRegistrationError(stage, 'malformed_response', true);
+  }
+}
+
+export async function runNotificationRegistrationAttempt(): Promise<Record<string, unknown>> {
+  let installationId: string | null;
+  try { installationId = await getSubscribedInstallationId(); }
+  catch { throw new NotificationRegistrationError('installation_retrieval', 'other', true); }
+  if (!installationId) {
+    throw new NotificationRegistrationError('installation_retrieval', 'installation_unavailable', true);
+  }
+  const deviceCapability = await capability();
+  let existing: Record<string, unknown> | null = null;
+  try {
+    existing = await request('/status-by-capability', 'GET', 'capability_lookup', deviceCapability, null);
+  } catch (error) {
+    if (!(error instanceof NotificationRegistrationError) || error.status !== 404) throw error;
+  }
+  // Only a conclusive absence can create; registration remains idempotent and device-scoped.
+  if (!existing) {
+    await request('/register', 'POST', 'backend_registration', deviceCapability, installationId);
+  }
+  await request('/status', 'GET', 'backend_status', deviceCapability, installationId);
+  const readiness = await request('/readiness/verify', 'POST', 'provider_verification',
+    deviceCapability, installationId);
+  if (readiness.registered !== true || readiness.provider_deliverable !== true) {
+    throw new NotificationRegistrationError('provider_verification', 'other', true);
+  }
+  return readiness;
+}
+
+function wait(delayMs: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+}
+
+export async function ensureNotificationRegistration(): Promise<NotificationRegistrationResult> {
+  let lastError: NotificationRegistrationError | null = null;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      const status = await runNotificationRegistrationAttempt();
+      return { stage: 'success', status, attempts: attempt + 1 };
+    } catch (error) {
+      lastError = safeRequestError('installation_retrieval', error);
+      if (!lastError.retryable || attempt === RETRY_DELAYS_MS.length) throw lastError;
+      await wait(RETRY_DELAYS_MS[attempt]);
+    }
+  }
+  throw lastError || new NotificationRegistrationError('installation_retrieval', 'other', false);
 }

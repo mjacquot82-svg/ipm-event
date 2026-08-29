@@ -36,11 +36,12 @@ test('exact-device tests cannot degrade to broadcast and remain Owner-only in UI
 });
 
 test('ordinary registration preserves register-before-status lifecycle', () => {
-  const absent = registration.indexOf("if (!existing) await request('/register', 'POST')");
-  const status = registration.indexOf("await request('/status')");
-  const verify = registration.indexOf("request('/readiness/verify', 'POST')");
+  const absent = registration.indexOf("request('/register', 'POST'");
+  const status = registration.indexOf("await request('/status', 'GET'");
+  const verify = registration.indexOf("request('/readiness/verify', 'POST'");
   assert.ok(absent > 0 && absent < status && status < verify);
-  assert.match(registration, /status !== 404/);
+  assert.match(registration, /error\.status !== 404/);
+  assert.match(registration, /if \(!existing\)/);
 });
 
 test('T-30 delivery and scheduling are hard-disabled by the cutover', () => {
