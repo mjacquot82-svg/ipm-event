@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCurrentInstallationFingerprint, getSubscribedInstallationId,
   getWonderPushClientReadiness } from './wonderPushService.web';
+import { classifyDiagnosticFailure } from './notificationContextDiagnosticCore';
 
 const CAPABILITY_KEY = '@ipm_itinerary_reminder_capability_v1';
 const ENABLED_KEY = '@ipm_itinerary_reminders_enabled_v1';
@@ -8,6 +9,18 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 export class ApiSyncError extends Error {
   constructor(public status: number) { super(`Itinerary reminder synchronization failed (${status}).`); }
+}
+
+export type ReadinessFailureStage = 'backend_registration_lookup'
+  | 'backend_authoritative_verification' | 'provider_verification';
+
+export class ItineraryReadinessError extends Error {
+  constructor(public stage: ReadinessFailureStage, public classification: string,
+    public client: Awaited<ReturnType<typeof getWonderPushClientReadiness>>,
+    public registration: Record<string, unknown> | null = null,
+    public registrationLookupCompleted = false) {
+    super(`${stage}: ${classification}`);
+  }
 }
 
 function base64Url(bytes: Uint8Array): string {
@@ -69,7 +82,13 @@ async function statusByCapability() {
 
 export async function getItineraryReminderReadiness({ verifyProvider = false } = {}) {
   const client = await getWonderPushClientReadiness();
-  const existing = await statusByCapability().catch(() => null);
+  let existing = null;
+  let registrationLookupFailure: string | null = null;
+  let registrationLookupCompleted = false;
+  try { existing = await statusByCapability(); registrationLookupCompleted = true; }
+  catch (error) {
+    registrationLookupFailure = classifyDiagnosticFailure(error);
+  }
   if (!client.clientReady) {
     const currentFingerprint = client.installation === 'available'
       ? await getCurrentInstallationFingerprint().catch(() => null) : null;
@@ -80,15 +99,27 @@ export async function getItineraryReminderReadiness({ verifyProvider = false } =
         : client.installation !== 'available' ? 'current_installation_unavailable'
           : 'current_installation_unverified';
     return { client, registration: existing, currentInstallationMatch, reminderReady: false,
-      staleReason: existing?.registered ? staleReason : null };
+      staleReason: existing?.registered ? staleReason : null,
+      diagnosticFailure: registrationLookupFailure ? {
+        stage: 'backend_registration_lookup', classification: registrationLookupFailure,
+      } : null };
   }
-  const current = await request('/status', 'GET');
+  let current;
+  try { current = await request('/status', 'GET'); }
+  catch (error) {
+    throw new ItineraryReadinessError('backend_authoritative_verification',
+      classifyDiagnosticFailure(error), client, existing, registrationLookupCompleted);
+  }
   const match = existing
     ? existing.registration_fingerprint === current.registration_fingerprint
     : true;
-  const authoritative = verifyProvider && match
-    ? await request('/readiness/verify', 'POST')
-    : current;
+  let authoritative = current;
+  if (verifyProvider && match) {
+    try { authoritative = await request('/readiness/verify', 'POST'); }
+    catch (error) {
+      throw new ItineraryReadinessError('provider_verification', classifyDiagnosticFailure(error), client, current, true);
+    }
+  }
   const reminderReady = Boolean(match && (authoritative.final_reminder_ready
     ?? (authoritative.reminders_enabled && authoritative.provider_deliverable && authoritative.provider_fresh)));
   return { client, registration: { ...current, ...authoritative },

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import colors from '../theme/colors';
+import { getNotificationContextDiagnostic, NotificationContextDiagnostic,
+  formatNotificationContextReport } from '../services/notificationContextDiagnostics';
 import {
   applyWaitingOfflineShellUpdate,
   checkForOfflineShellUpdate,
@@ -15,6 +17,8 @@ export default function StagingOfflineStatus() {
   const [status, setStatus] = useState<OfflineShellStatus | null>(null);
   const [checking, setChecking] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [notificationContext, setNotificationContext] = useState<NotificationContextDiagnostic | null>(null);
+  const [notificationChecking, setNotificationChecking] = useState(false);
 
   const refresh = useCallback(async (check = false) => {
     setChecking(check);
@@ -28,7 +32,13 @@ export default function StagingOfflineStatus() {
   }, []);
 
   useEffect(() => {
-    if (isStagingWeb) void refresh(false);
+    if (isStagingWeb) {
+      void refresh(false);
+      setNotificationChecking(true);
+      void getNotificationContextDiagnostic()
+        .then(setNotificationContext)
+        .finally(() => setNotificationChecking(false));
+    }
   }, [refresh]);
 
   if (!isStagingWeb || !status) return null;
@@ -66,6 +76,42 @@ export default function StagingOfflineStatus() {
       setCopied(false);
     }
   };
+  const refreshNotificationContext = async () => {
+    setNotificationChecking(true);
+    try { setNotificationContext(await getNotificationContextDiagnostic()); }
+    finally { setNotificationChecking(false); }
+  };
+  const notificationRows = notificationContext ? [
+    ['Platform / iOS detected', notificationContext.raw.iosDetected],
+    ['User agent family', notificationContext.raw.userAgentFamily],
+    ['display-mode standalone', notificationContext.raw.displayModeStandalone],
+    ['navigator.standalone', notificationContext.raw.navigatorStandalone],
+    ['window.Notification available', notificationContext.raw.notificationAvailable],
+    ['Notification.permission', notificationContext.raw.notificationPermission],
+    ['navigator.serviceWorker available', notificationContext.raw.serviceWorkerAvailable],
+    ['window.PushManager available', notificationContext.raw.pushManagerAvailable],
+    ['Service-worker registration available', notificationContext.raw.serviceWorkerRegistrationAvailable],
+    ['Current controlling service worker', notificationContext.raw.controllingServiceWorker],
+    ['WonderPush SDK loaded', notificationContext.raw.wonderPushSdkLoaded],
+    ['Installed-context interpretation', notificationContext.derived.installedContext],
+    ['WonderPush SDK ready', notificationContext.derived.wonderPushSdkReady],
+    ['WonderPush subscribed', notificationContext.derived.wonderPushSubscribed],
+    ['Current WonderPush installation available', notificationContext.derived.currentInstallationAvailable],
+    ['IPM backend registration exists', notificationContext.derived.backendRegistrationExists],
+    ['Current installation matches registration', notificationContext.derived.installationMatchesRegistration],
+    ['Provider readiness verification', notificationContext.derived.providerReadiness],
+    ['Failure stage', notificationContext.derived.failureStage],
+    ['Backend authoritative verification', notificationContext.derived.backendFailure],
+  ] : [];
+  const copyNotificationContext = async () => {
+    if (!notificationContext) return;
+    const report = formatNotificationContextReport(notificationContext, new Date().toISOString());
+    try {
+      await navigator.clipboard.writeText(report);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { setCopied(false); }
+  };
 
   return (
     <View style={styles.card}>
@@ -95,6 +141,30 @@ export default function StagingOfflineStatus() {
         </TouchableOpacity>
       </View>
       <Text style={styles.hint}>Android/WebAPK time before the worker or document starts cannot be observed here. Applying a ready update reloads IPM once. Saved Schedule and Vendor information is retained.</Text>
+      <View style={styles.divider} />
+      <Text style={styles.title}>iPhone notification context</Text>
+      {!notificationContext && notificationChecking
+        ? <Text style={styles.value}>WonderPush SDK ready: UNKNOWN — initializing</Text> : null}
+      <Text style={styles.groupTitle}>RAW browser/runtime observations</Text>
+      {notificationRows.slice(0, 11).map(([label, value]) => (
+        <Text key={label} style={styles.value}>{label}: {value}</Text>
+      ))}
+      <Text style={styles.groupTitle}>DERIVED IPM interpretations</Text>
+      {notificationRows.slice(11).map(([label, value]) => (
+        <Text key={label} style={styles.value}>{label}: {value}</Text>
+      ))}
+      {notificationChecking ? <Text style={styles.hint}>Checking notification context…</Text> : null}
+      <View style={styles.actions}>
+        <TouchableOpacity style={styles.button} onPress={() => void refreshNotificationContext()}
+          disabled={notificationChecking}>
+          <Text style={styles.buttonText}>{notificationChecking ? 'Checking…' : 'Refresh context'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => void copyNotificationContext()}
+          disabled={!notificationContext}>
+          <Text style={styles.buttonText}>{copied ? 'Copied' : 'Copy notification context'}</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.hint}>Staging-only, read-only diagnostics. No installation ID, push token, credential, cookie, or user identifier is displayed.</Text>
     </View>
   );
 }
@@ -109,4 +179,6 @@ const styles = StyleSheet.create({
   button: { backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9 },
   buttonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   hint: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginTop: 10 },
+  divider: { borderTopColor: colors.border, borderTopWidth: 1, marginTop: 18, paddingTop: 16 },
+  groupTitle: { color: colors.textPrimary, fontSize: 12, fontWeight: '700', marginTop: 9 },
 });

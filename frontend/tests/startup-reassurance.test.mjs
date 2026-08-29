@@ -99,7 +99,7 @@ test('staging offline diagnostic is safe, works from cached browser state, and a
   assert.match(service, /IPM_ACTIVATE_WAITING_UPDATE/);
   assert.match(service, /controllerchange/);
   assert.match(service, /\{ once: true \}/);
-  assert.doesNotMatch(service + card, /installationId|webKey|permission|subscribeToNotifications/);
+  assert.doesNotMatch(service + card, /installationId|webKey|subscribeToNotifications/);
   assert.match(card, /EXPO_PUBLIC_BACKEND_URL\?\.includes\('staging'\)/);
 });
 

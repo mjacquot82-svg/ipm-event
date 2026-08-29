@@ -89,7 +89,8 @@ test('transient checks stay neutral while confirmed failures require recovery', 
 });
 
 test('attendee diagnostics are redacted readiness facts only', () => {
-  for (const field of ['supported_context', 'browser_permission_granted', 'sdk_ready',
+  for (const field of ['installed_context', 'notification_api_available', 'service_worker_available',
+    'push_manager_available', 'supported_context', 'browser_permission_granted', 'sdk_ready',
     'subscribed', 'current_installation_available', 'registration_exists',
     'installation_match', 'reminders_enabled', 'local_reminder_sync_enabled', 'synchronized_star_count',
     'provider_reachability', 'provider_deliverable', 'provider_checked_at',
@@ -146,7 +147,7 @@ test('installation diagnostics distinguish unknown, mismatch, and subscription f
   assert.match(sync, /existing\.registration_fingerprint === currentFingerprint \? 'match' : 'mismatch'/);
   assert.match(sync, /currentInstallationMatch === 'mismatch' \? 'installation_mismatch'/);
   assert.match(sync, /client\.subscription !== 'subscribed' \? 'wonderpush_subscription'/);
-  assert.match(ux, /currentInstallationMatch === 'unavailable'[\s\S]*\? null/);
+  assert.match(ux, /installationMatch === 'unavailable' \? null/);
 });
 
 test('deliberate reconnect replaces association then preserves full local star set without sending', () => {
@@ -169,8 +170,8 @@ test('reminder card cannot optimistically render on from enablement or stale dia
 });
 
 test('authoritative on requires subscription, fresh provider readiness, and exact star count', () => {
-  assert.match(ux, /subscribed: readiness\.client\.subscription === 'subscribed'/);
-  assert.match(ux, /provider_fresh: Boolean\(readiness\.registration\?\.provider_fresh\)/);
+  assert.match(ux, /subscribed: client\.subscription === 'subscribed'/);
+  assert.match(ux, /provider_fresh: registration \? Boolean\(registration\.provider_fresh\) : null/);
   assert.match(ux, /if \(readiness\.reminderReady && fullySynchronized\) return \{ state: 'on'/);
   assert.match(sync, /Number\(synchronized\.starred_count\) !== completeSet\.length/);
   assert.match(sync, /!finalReadiness\.reminderReady \|\| synchronizedCount !== completeSet\.length/);

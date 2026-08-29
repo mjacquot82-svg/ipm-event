@@ -69,6 +69,7 @@ export default function ItineraryScreen() {
   const [reminderMessage, setReminderMessage] = useState<string | null>(null);
   const [reminderDiagnostics, setReminderDiagnostics] = useState<ReminderDiagnostics | null>(null);
   const [reminderFailureStage, setReminderFailureStage] = useState<string | null>(null);
+  const [reminderBackendFailure, setReminderBackendFailure] = useState<string | null>(null);
   const [showReminderDiagnostics, setShowReminderDiagnostics] = useState(false);
   const [diagnosticsCopyMessage, setDiagnosticsCopyMessage] = useState<string | null>(null);
   const reminderRefreshSequence = useRef(0);
@@ -81,6 +82,7 @@ export default function ItineraryScreen() {
     setReminderState((result?.state as typeof reminderState) || (result?.reminderReady ? 'on' : 'checking'));
     setReminderDiagnostics(result?.diagnostics || null);
     setReminderFailureStage(result?.failureStage || null);
+    setReminderBackendFailure(result?.backendFailure || null);
     return result;
   }, []);
 
@@ -179,6 +181,10 @@ export default function ItineraryScreen() {
             ? 'Verifying this device without changing your saved itinerary.'
             : 'Event reminders about 30 minutes before eligible events will be available with notifications enabled.';
   const diagnosticRows = [
+    ['Installed context', reminderDiagnostics?.installed_context],
+    ['Notification API available', reminderDiagnostics?.notification_api_available],
+    ['Service worker available', reminderDiagnostics?.service_worker_available],
+    ['PushManager available', reminderDiagnostics?.push_manager_available],
     ['Supported context', reminderDiagnostics?.supported_context],
     ['Browser notification permission', reminderDiagnostics?.browser_permission_granted],
     ['WonderPush SDK ready', reminderDiagnostics?.sdk_ready],
@@ -194,6 +200,7 @@ export default function ItineraryScreen() {
     ['Provider readiness fresh', reminderDiagnostics?.provider_fresh],
     ['Final reminder readiness', reminderDiagnostics?.final_reminder_ready],
     ['Failure / recovery stage', reminderFailureStage || (reminderReady ? 'none' : null)],
+    ['Backend authoritative verification', reminderBackendFailure],
   ] as const;
 
   const copyReminderDiagnostics = async () => {

@@ -4,8 +4,9 @@ import {
   configureItineraryReminderSync,
   disableItineraryReminderSync,
   getItineraryReminderReadiness,
+  ItineraryReadinessError,
 } from './itineraryReminderSync.web';
-import { getNotificationState, subscribeToNotifications } from './wonderPushService.web';
+import { getNotificationState, subscribeToNotifications, WonderPushClientReadiness } from './wonderPushService.web';
 import { detectInstallEnvironment, detectStandaloneSignals } from '../utils/installEnvironment';
 import { isReminderPromotionEligible, mayShowReminderPromotion } from './reminderUxPolicy';
 
@@ -13,6 +14,34 @@ const PROMPT_COUNT_KEY = '@ipm_itinerary_reminder_prompt_count_v1';
 const REMINDER_SYNC_ENABLED_KEY = '@ipm_itinerary_reminders_enabled_v1';
 
 export type AttendeeReminderUiState = 'checking' | 'on' | 'off' | 'blocked' | 'install_required' | 'recovery';
+
+function redactedDiagnostics(client: WonderPushClientReadiness,
+  registration: Record<string, any> | null = null, installationMatch: string = 'unavailable',
+  registrationLookupCompleted = registration !== null, localReminderSyncEnabled: boolean | null = null) {
+  return {
+    installed_context: isStandalone(),
+    notification_api_available: typeof Notification !== 'undefined',
+    service_worker_available: Boolean(navigator.serviceWorker),
+    push_manager_available: typeof PushManager !== 'undefined',
+    supported_context: client.supportedContext,
+    browser_permission_granted: client.browserPermission === 'granted',
+    sdk_ready: client.sdk === 'ready',
+    subscribed: client.subscription === 'subscribed',
+    current_installation_available: client.installation === 'available',
+    registration_exists: registrationLookupCompleted
+      ? Boolean(registration?.registered || registration?.registration_exists) : null,
+    installation_match: installationMatch === 'unavailable' ? null : installationMatch === 'match',
+    reminders_enabled: registration ? Boolean(registration.reminders_enabled) : null,
+    local_reminder_sync_enabled: localReminderSyncEnabled,
+    synchronized_star_count: registration
+      ? Number(registration.synchronized_star_count ?? registration.starred_count ?? 0) : null,
+    provider_reachability: registration?.provider_reachability || null,
+    provider_deliverable: registration ? Boolean(registration.provider_deliverable) : null,
+    provider_checked_at: registration?.provider_checked_at || null,
+    provider_fresh: registration ? Boolean(registration.provider_fresh) : null,
+    final_reminder_ready: registration ? Boolean(registration.final_reminder_ready) : null,
+  };
+}
 
 function isStandalone() {
   return detectStandaloneSignals({
@@ -30,7 +59,7 @@ export function requiresIphoneHomeScreenInstall() {
   return environment.platform === 'ios' && environment.installState !== 'installed';
 }
 
-export async function getAttendeeReminderStatus() {
+export async function getAttendeeReminderStatus({ verifyProvider = true } = {}) {
   if (requiresIphoneHomeScreenInstall()) {
     return { state: 'install_required' as const, reminderReady: false, readiness: null,
       failureStage: 'iphone_home_screen_required' };
@@ -46,13 +75,24 @@ export async function getAttendeeReminderStatus() {
   }
   let readiness;
   try {
-    readiness = await getItineraryReminderReadiness({ verifyProvider: notificationState === 'subscribed' });
-    if (notificationState !== 'subscribed' && readiness.client.clientReady) {
+    readiness = await getItineraryReminderReadiness({
+      verifyProvider: verifyProvider && notificationState === 'subscribed',
+    });
+    if (verifyProvider && notificationState !== 'subscribed' && readiness.client.clientReady) {
       readiness = await getItineraryReminderReadiness({ verifyProvider: true });
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof ItineraryReadinessError) {
+      let localReminderSyncEnabled: boolean | null = null;
+      try { localReminderSyncEnabled = await AsyncStorage.getItem(REMINDER_SYNC_ENABLED_KEY) === 'true'; }
+      catch { /* Preserve other locally known diagnostics when storage is unavailable. */ }
+      return { state: 'checking' as const, reminderReady: false, readiness: null,
+        diagnostics: redactedDiagnostics(error.client, error.registration, 'unavailable',
+          error.registrationLookupCompleted, localReminderSyncEnabled),
+        failureStage: error.stage, backendFailure: error.classification };
+    }
     return { state: 'checking' as const, reminderReady: false, readiness: null,
-      failureStage: 'authoritative_verification_temporarily_unavailable' };
+      failureStage: 'authoritative_verification_temporarily_unavailable', backendFailure: 'UNKNOWN ERROR' };
   }
   let localReminderSyncEnabled: boolean | null = null;
   try {
@@ -64,24 +104,10 @@ export async function getAttendeeReminderStatus() {
   const synchronizedStarCount = Number(readiness.registration?.synchronized_star_count
     ?? readiness.registration?.starred_count ?? 0);
   const fullySynchronized = synchronizedStarCount === localStarCount;
-  const redacted = {
-    supported_context: readiness.client.supportedContext,
-    browser_permission_granted: readiness.client.browserPermission === 'granted',
-    sdk_ready: readiness.client.sdk === 'ready',
-    subscribed: readiness.client.subscription === 'subscribed',
-    current_installation_available: readiness.client.installation === 'available',
-    registration_exists: Boolean(readiness.registration?.registered || readiness.registration?.registration_exists),
-    installation_match: readiness.currentInstallationMatch === 'unavailable'
-      ? null : readiness.currentInstallationMatch === 'match',
-    reminders_enabled: Boolean(readiness.registration?.reminders_enabled),
-    local_reminder_sync_enabled: localReminderSyncEnabled,
+  const redacted = { ...redactedDiagnostics(readiness.client, readiness.registration,
+    readiness.currentInstallationMatch, true, localReminderSyncEnabled),
     synchronized_star_count: synchronizedStarCount,
-    provider_reachability: readiness.registration?.provider_reachability || 'unknown',
-    provider_deliverable: Boolean(readiness.registration?.provider_deliverable),
-    provider_checked_at: readiness.registration?.provider_checked_at || null,
-    provider_fresh: Boolean(readiness.registration?.provider_fresh),
-    final_reminder_ready: readiness.reminderReady && fullySynchronized,
-  };
+    final_reminder_ready: readiness.reminderReady && fullySynchronized };
   if (readiness.reminderReady && fullySynchronized) return { state: 'on' as const, reminderReady: true, readiness,
     diagnostics: redacted, failureStage: null };
   const registrationExists = Boolean(readiness?.registration?.registered
