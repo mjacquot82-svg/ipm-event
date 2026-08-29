@@ -1,7 +1,7 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useEffect, useState } from 'react';
-import { Stack, usePathname } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -19,12 +19,18 @@ import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext
 import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
 import { initializeOfflineShell, initializeWonderPush } from '../src/services/wonderPushService';
 import { markStartupStage, runOnlineAfterFirstPaint } from '../src/services/startupPerformance';
+import { listenForWonderPushNotificationDeepLinks } from '../src/services/notificationDeepLink';
 
 markStartupStage('react_root_module_initialized');
 
 export default function RootLayout() {
   const [isInitializing, setIsInitializing] = useState(Platform.OS !== 'web');
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => listenForWonderPushNotificationDeepLinks((destination) => {
+    router.replace(destination as never);
+  }), [router]);
 
   useEffect(() => {
     return runOnlineAfterFirstPaint(() => {
