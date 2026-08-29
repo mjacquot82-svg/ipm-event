@@ -27,6 +27,12 @@
       html, body { height: 100%; }
       body { overflow: hidden; }
       #root { display: flex; height: 100%; }
+
+      /* Keep Webpushr delivery active without its floating bell covering navigation. */
+      #webpushr-bell-optin {
+        display: none !important;
+        pointer-events: none !important;
+      }
     </style>
   </head>
   <body>

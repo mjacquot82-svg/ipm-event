@@ -13,6 +13,7 @@
     "test:install": "node --test tests/install-environment.test.mjs tests/install-flow-component.test.mjs",
     "test:pwa": "node --test tests/pwa-icons.test.mjs",
     "test:home": "node --test tests/home-action-groups.test.mjs",
+    "test:webpushr": "node --test tests/webpushr-bell.test.mjs",
     "test:camping": "node --test tests/camping-page.test.mjs",
     "test:map": "node --test tests/map-legend.test.mjs",
     "test:worship": "node --test tests/worship-service-page.test.mjs",
