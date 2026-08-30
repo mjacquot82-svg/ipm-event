@@ -15,6 +15,10 @@ export async function initializeOfflineShell(): Promise<null> {
   return null;
 }
 
+export async function waitForWonderPushSessionReady(): Promise<void> {
+  return undefined;
+}
+
 export async function getNotificationState(): Promise<NotificationState> {
   return 'unsupported';
 }

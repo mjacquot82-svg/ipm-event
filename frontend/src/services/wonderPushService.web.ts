@@ -14,6 +14,7 @@ const INSTALLATION_RECOVERY_RETRY_MS = 750;
 const LEGACY_SUBSCRIPTION_REPLACED_KEY = '@ipm_wonderpush_legacy_subscription_replaced_v1';
 const WORKER_READY_TIMEOUT_MS = 2_000;
 const SESSION_READY_TIMEOUT_MS = 3_000;
+const SESSION_RECOVERY_TIMEOUT_MS = 45_000;
 const SUBSCRIBE_TIMEOUT_MS = 45_000;
 const UNSUBSCRIBE_TIMEOUT_MS = 20_000;
 
@@ -232,6 +233,33 @@ async function waitForWonderPushSessionReadiness(sdk: WonderPushQueue) {
   await withTimeout(sessionReady, SESSION_READY_TIMEOUT_MS, 'WonderPush session readiness timed out.')
     .catch(() => undefined);
   if (listener) window.removeEventListener('WonderPushEvent', listener);
+}
+
+export async function waitForWonderPushSessionReady(): Promise<void> {
+  await initializeWonderPush();
+  const sdk = window.WonderPush;
+  const readyState = sdk?.SessionState?.INIT_SUCCESS;
+  if (readyState === undefined || !sdk?.getSessionState || typeof window.addEventListener !== 'function') {
+    throw new Error('WonderPush session readiness is unavailable.');
+  }
+  if (sdk.getSessionState() === readyState) return;
+
+  let listener: ((event: Event) => void) | null = null;
+  const sessionReady = new Promise<void>((resolve) => {
+    listener = (event: Event) => {
+      const detail = (event as CustomEvent<{ name?: string; state?: unknown }>).detail;
+      if (detail?.name === 'session' && detail.state === readyState) resolve();
+    };
+    window.addEventListener('WonderPushEvent', listener);
+    // Close the race between the first state read and listener installation.
+    if (sdk.getSessionState?.() === readyState) resolve();
+  });
+  try {
+    await withTimeout(sessionReady, SESSION_RECOVERY_TIMEOUT_MS,
+      'WonderPush session recovery timed out.');
+  } finally {
+    if (listener) window.removeEventListener('WonderPushEvent', listener);
+  }
 }
 
 function legacySubscriptionWasReplaced() {

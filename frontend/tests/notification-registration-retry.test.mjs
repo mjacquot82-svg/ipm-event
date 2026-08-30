@@ -168,6 +168,35 @@ test('Home distinguishes subscribed, pending, ready and failed setup', () => {
   assert.match(component, /notification-setup-\$\{setupState/);
 });
 
+test('session initialization remains pending and automatically resumes setup', () => {
+  assert.match(wonderPush, /SESSION_RECOVERY_TIMEOUT_MS = 45_000/);
+  assert.match(wonderPush, /export async function waitForWonderPushSessionReady/);
+  assert.match(wonderPush, /window\.addEventListener\('WonderPushEvent', listener\)/);
+  assert.match(wonderPush, /detail\?\.name === 'session' && detail\.state === readyState/);
+  assert.match(wonderPush, /sdk\.getSessionState\?\.\(\) === readyState/);
+  assert.match(wonderPush, /window\.removeEventListener\('WonderPushEvent', listener\)/);
+
+  const setup = component.slice(component.indexOf('const completeSetup'),
+    component.indexOf('const refresh'));
+  assert.match(setup, /wonderpush_registration_in_progress_session_not_ready/);
+  assert.match(setup, /await waitForWonderPushSessionReady\(\)/);
+  assert.equal((setup.match(/await ensureNotificationRegistration\(\)/g) || []).length, 2);
+  assert.ok(setup.indexOf('await waitForWonderPushSessionReady()')
+    < setup.lastIndexOf('await ensureNotificationRegistration()'));
+  assert.match(setup, /setSetupState\('ready'\)/);
+  assert.match(setup, /setSetupState\('failed'\)/);
+  assert.doesNotMatch(setup, /subscribeToNotifications|unsubscribeFromNotifications|requestPermission|send/);
+});
+
+test('pending startup hides actions while genuine failures retain recovery UI', () => {
+  assert.match(component, /canAct && !working && setupState !== 'pending'/);
+  assert.match(component, /setupState === 'failed'[\s\S]*Try again/);
+  assert.match(component, /state === 'subscribed'[\s\S]*unsubscribeFromNotifications\(\)/);
+  assert.match(component, /state === 'denied'/);
+  assert.match(component, /Notifications are enabled\. Finishing setup…/);
+  assert.match(component, /Notifications are enabled, but setup could not be completed/);
+});
+
 test('safe UI and diagnostics do not render sensitive device material', () => {
   assert.match(component, /Setup reference: \{failureClassification \|\| 'other'\}/);
   for (const safeStage of ['sdk_unavailable', 'installation_still_unavailable',

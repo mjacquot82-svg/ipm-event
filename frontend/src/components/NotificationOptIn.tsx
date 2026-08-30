@@ -7,6 +7,7 @@ import {
   NotificationState,
   subscribeToNotifications,
   unsubscribeFromNotifications,
+  waitForWonderPushSessionReady,
 } from '../services/wonderPushService';
 import {
   ensureNotificationRegistration,
@@ -41,8 +42,28 @@ export default function NotificationOptIn() {
       await ensureNotificationRegistration();
       setSetupState('ready');
     } catch (error) {
-      const safeStage = (error as { stage?: NotificationRegistrationStage }).stage;
-      const safeClassification = (error as { classification?: NotificationRegistrationFailure }).classification;
+      let finalError = error;
+      const classification = (error as { classification?: NotificationRegistrationFailure }).classification;
+      if (classification === 'wonderpush_registration_in_progress_session_not_ready') {
+        try {
+          // RegistrationInProgress with a non-ready session is a startup state,
+          // not a completed failure. Stay pending until the SDK reports that its
+          // session is ready, then rerun the existing idempotent setup path.
+          await waitForWonderPushSessionReady();
+          await ensureNotificationRegistration();
+          setSetupState('ready');
+          return;
+        } catch (recoveryError) {
+          // A later registration/backend/provider failure is authoritative. If
+          // only the bounded session wait expired, preserve the original safe
+          // classification for the recoverable failure UI.
+          if ((recoveryError as { classification?: NotificationRegistrationFailure }).classification) {
+            finalError = recoveryError;
+          }
+        }
+      }
+      const safeStage = (finalError as { stage?: NotificationRegistrationStage }).stage;
+      const safeClassification = (finalError as { classification?: NotificationRegistrationFailure }).classification;
       setFailureStage(safeStage || 'installation_retrieval');
       setFailureClassification(safeClassification || 'other');
       setSetupState('failed');
@@ -134,7 +155,7 @@ export default function NotificationOptIn() {
         {state === 'unsupported' && isIphoneSafari ? <Text style={styles.hint}>Install IPM to your Home Screen, then open the installed IPM app to enable notifications.</Text> : null}
       </View>
       {!verificationDeferred && (state === 'loading' || working) ? <ActivityIndicator color={colors.primary} /> : null}
-      {!verificationDeferred && canAct && !working ? (
+      {!verificationDeferred && canAct && !working && setupState !== 'pending' ? (
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityLabel={state === 'subscribed' ? 'Disable IPM notifications' : 'Enable IPM notifications'}
