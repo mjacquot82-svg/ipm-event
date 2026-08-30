@@ -56,6 +56,7 @@ class MnpScheduleImportTests(unittest.TestCase):
             "2026-09-22-foodland-b28": ("Wellness", "The Space Between\nAlicia Gibbons"),
             "2026-09-22-foodland-b30": ("Nature Babes", "Amanada Butchart"),
             "2026-09-22-foodland-b32": ("The WOMB", "Rebecca Grubb & Jess Connor"),
+            "2026-09-22-harleys-c7": ("DK Salon", "DK Salon is a locally owned hair salon, operated by Jenna Freiburger, offering professional hairstyling in a welcoming, personalized setting."),
             "2026-09-22-harleys-c19": ("Charcuterie Sampling Harley's", None),
             "2026-09-22-quality-homes-d18": ("MakeUp Artist", "Hayley Wilhelm"),
             "2026-09-22-quality-homes-d22": ("Pilates Demo", "Chelsea\nAll Bodies"),
@@ -85,6 +86,7 @@ class MnpScheduleImportTests(unittest.TestCase):
             "2026-09-25-foodland-k7": ("Food and Drink", "Fire Cider & Honey"),
             "2026-09-25-foodland-k11": ("Hormones and Food", "Jennifer Dunsmoor"),
             "2026-09-25-foodland-k14": ("Fashion", "Forrest Maiden"),
+            "2026-09-25-foodland-k16": ("Shop by Grace", "Modern women’s fashion boutique in downtown Walkerton, offering trendy, yet timeless clothing, denim, footwear, jewelry and lifestyle pieces."),
             "2026-09-25-foodland-k21": ("Wellness", "Freezer Fitness\nJackie West, Dianne Zettle, Conor Fischer"),
             "2026-09-25-foodland-k31": ("Home and Garden", "Carrie Lynn Floral"),
             "2026-09-25-foodland-k33": ("Angela - Up stage Design", None),
@@ -92,7 +94,7 @@ class MnpScheduleImportTests(unittest.TestCase):
             "2026-09-25-quality-homes-m10": ("All things honey -Jody", None),
             "2026-09-25-quality-homes-m15": ("The perfect Christmas Trees", "Flowers by Uss"),
         }
-        self.assertEqual(44, len(expected))
+        self.assertEqual(46, len(expected))
         for identity, content in expected.items():
             row = events[identity]
             self.assertEqual(content, (row["title"], row["description"]), identity)
