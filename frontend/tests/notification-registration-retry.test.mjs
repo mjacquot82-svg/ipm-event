@@ -58,7 +58,9 @@ test('missing legacy installation performs bounded provider recovery before targ
   assert.equal((getter.match(/sdk\.subscribeToNotifications\(\)/g) || []).length, 3);
   assert.equal((getter.match(/readWonderPushSnapshot\(/g) || []).length, 4);
   assert.doesNotMatch(getter, /Notification\.requestPermission/);
-  assert.match(getter, /session_recovery_failed/);
+  assert.match(getter, /wonderpush_recovery_subscribe_rejected/);
+  assert.match(getter, /wonderpush_recovery_subscribe_timed_out/);
+  assert.match(getter, /wonderpush_recovery_snapshot_failed/);
   assert.match(getter, /replaceOrphanedPushSubscription/);
   assert.ok(getter.indexOf('replaceOrphanedPushSubscription')
     > getter.indexOf('attempts: INSTALLATION_RECOVERY_ATTEMPTS'));
@@ -100,6 +102,13 @@ test('completed replacement resynchronizes through documented WonderPush lifecyc
   assert.match(markerBranch, /sdk\.subscribeToNotifications\(\)/);
   assert.ok(markerBranch.indexOf('sdk.unsubscribeFromNotifications()')
     < markerBranch.indexOf('sdk.subscribeToNotifications()'));
+  assert.match(markerBranch, /sdk\.isSubscribedToNotifications\(\)/);
+  assert.match(markerBranch, /wonderpush_association_unsubscribe_rejected/);
+  assert.match(markerBranch, /wonderpush_association_unsubscribe_timed_out/);
+  assert.match(markerBranch, /wonderpush_association_unsubscribe_state_still_subscribed/);
+  assert.match(markerBranch, /wonderpush_association_subscribe_rejected/);
+  assert.match(markerBranch, /wonderpush_association_subscribe_timed_out/);
+  assert.match(markerBranch, /wonderpush_association_snapshot_failed/);
   assert.match(markerBranch, /if \(snapshot\.subscribed && snapshot\.installationId\) return snapshot\.installationId/);
   assert.match(wonderPush, /sessionInitSuccess/);
   assert.doesNotMatch(markerBranch, /Notification\.requestPermission|localStorage\.clear|indexedDB|caches|serviceWorker\.unregister/);
@@ -126,7 +135,9 @@ test('Home distinguishes subscribed, pending, ready and failed setup', () => {
 
 test('safe UI and diagnostics do not render sensitive device material', () => {
   assert.match(component, /Setup reference: \{failureClassification \|\| 'other'\}/);
-  for (const safeStage of ['sdk_unavailable', 'session_recovery_failed', 'installation_still_unavailable',
+  for (const safeStage of ['sdk_unavailable', 'installation_still_unavailable',
+    'wonderpush_recovery_subscribe_rejected', 'wonderpush_recovery_subscribe_timed_out',
+    'wonderpush_recovery_snapshot_failed',
     'legacy_push_subscription_absent', 'legacy_subscription_replacement_failed',
     'wonderpush_session_initialization_failed',
     'legacy_unsubscribe_succeeded_wonderpush_resubscribe_rejected',
@@ -134,13 +145,20 @@ test('safe UI and diagnostics do not render sensitive device material', () => {
     'legacy_unsubscribe_succeeded_wonderpush_resubscribe_resolved_recovery_check_failed',
     'legacy_replacement_completed_subscription_present_installation_unavailable',
     'legacy_replacement_completed_subscription_absent_installation_unavailable',
-    'legacy_association_recovery_failed',
+    'wonderpush_association_unsubscribe_rejected',
+    'wonderpush_association_unsubscribe_timed_out',
+    'wonderpush_association_unsubscribe_state_unavailable',
+    'wonderpush_association_unsubscribe_state_still_subscribed',
+    'wonderpush_association_subscribe_rejected',
+    'wonderpush_association_subscribe_timed_out',
+    'wonderpush_association_snapshot_failed',
     'legacy_association_recovery_subscribed_session_ready_installation_unavailable',
     'legacy_association_recovery_subscribed_session_not_ready_installation_unavailable',
     'legacy_association_recovery_not_subscribed_installation_unavailable']) {
     assert.match(service + wonderPush, new RegExp(safeStage));
   }
   assert.doesNotMatch(component, /installationId|deviceCapability|pushToken|accessToken/);
+  assert.doesNotMatch(service + wonderPush, /session_recovery_failed|legacy_association_recovery_failed/);
   assert.doesNotMatch(service, /console\.(?:log|warn|error)/);
   assert.doesNotMatch(service, /response\.text\(\)/);
 });

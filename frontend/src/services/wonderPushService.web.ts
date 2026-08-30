@@ -374,12 +374,20 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
       }
       await sdk.subscribeToNotifications();
     }, SUBSCRIBE_TIMEOUT_MS, 'WonderPush installation recovery timed out.');
+  } catch (error) {
+    const timedOut = error instanceof Error
+      && error.message === 'WonderPush installation recovery timed out.';
+    throw new WonderPushInstallationRecoveryError(timedOut
+      ? 'wonderpush_recovery_subscribe_timed_out'
+      : 'wonderpush_recovery_subscribe_rejected');
+  }
+  try {
     snapshot = await readWonderPushSnapshot({
       attempts: INSTALLATION_RECOVERY_ATTEMPTS,
       retryDelayMs: INSTALLATION_RECOVERY_RETRY_MS,
     });
   } catch {
-    throw new WonderPushInstallationRecoveryError('session_recovery_failed');
+    throw new WonderPushInstallationRecoveryError('wonderpush_recovery_snapshot_failed');
   }
   if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
 
@@ -396,18 +404,57 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
     if (subscriptionState === 'present' && snapshot.subscribed === true) {
       try {
         await withSdk(async (sdk) => {
-          if (!sdk.unsubscribeFromNotifications || !sdk.subscribeToNotifications) {
-            throw new Error('WonderPush subscription recovery APIs are unavailable.');
+          if (!sdk.unsubscribeFromNotifications) {
+            throw new Error('WonderPush unsubscribe recovery API is unavailable.');
           }
           await sdk.unsubscribeFromNotifications();
+        }, UNSUBSCRIBE_TIMEOUT_MS, 'WonderPush association unsubscribe timed out.');
+      } catch (error) {
+        const timedOut = error instanceof Error
+          && error.message === 'WonderPush association unsubscribe timed out.';
+        throw new WonderPushInstallationRecoveryError(timedOut
+          ? 'wonderpush_association_unsubscribe_timed_out'
+          : 'wonderpush_association_unsubscribe_rejected');
+      }
+      let subscribedAfterUnsubscribe: boolean;
+      try {
+        subscribedAfterUnsubscribe = await withSdk(async (sdk) => {
+          if (!sdk.isSubscribedToNotifications) {
+            throw new Error('WonderPush subscription status API is unavailable.');
+          }
+          return sdk.isSubscribedToNotifications();
+        }, STATUS_TIMEOUT_MS, 'WonderPush post-unsubscribe status timed out.');
+      } catch {
+        throw new WonderPushInstallationRecoveryError(
+          'wonderpush_association_unsubscribe_state_unavailable'
+        );
+      }
+      if (subscribedAfterUnsubscribe) {
+        throw new WonderPushInstallationRecoveryError(
+          'wonderpush_association_unsubscribe_state_still_subscribed'
+        );
+      }
+      try {
+        await withSdk(async (sdk) => {
+          if (!sdk.subscribeToNotifications) {
+            throw new Error('WonderPush subscribe recovery API is unavailable.');
+          }
           await sdk.subscribeToNotifications();
-        }, SUBSCRIBE_TIMEOUT_MS, 'WonderPush association recovery timed out.');
+        }, SUBSCRIBE_TIMEOUT_MS, 'WonderPush association subscribe timed out.');
+      } catch (error) {
+        const timedOut = error instanceof Error
+          && error.message === 'WonderPush association subscribe timed out.';
+        throw new WonderPushInstallationRecoveryError(timedOut
+          ? 'wonderpush_association_subscribe_timed_out'
+          : 'wonderpush_association_subscribe_rejected');
+      }
+      try {
         snapshot = await readWonderPushSnapshot({
           attempts: INSTALLATION_RECOVERY_ATTEMPTS,
           retryDelayMs: INSTALLATION_RECOVERY_RETRY_MS,
         });
       } catch {
-        throw new WonderPushInstallationRecoveryError('legacy_association_recovery_failed');
+        throw new WonderPushInstallationRecoveryError('wonderpush_association_snapshot_failed');
       }
       if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
       if (snapshot.subscribed === true) {
@@ -474,7 +521,9 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
 }
 
 export type WonderPushInstallationFailureStage =
-  | 'sdk_unavailable' | 'session_recovery_failed' | 'installation_still_unavailable'
+  | 'sdk_unavailable' | 'installation_still_unavailable'
+  | 'wonderpush_recovery_subscribe_rejected' | 'wonderpush_recovery_subscribe_timed_out'
+  | 'wonderpush_recovery_snapshot_failed'
   | 'legacy_push_subscription_absent' | 'legacy_subscription_replacement_failed'
   | 'wonderpush_session_initialization_failed'
   | 'legacy_unsubscribe_succeeded_wonderpush_resubscribe_rejected'
@@ -483,7 +532,13 @@ export type WonderPushInstallationFailureStage =
   | 'legacy_replacement_completed_subscription_present_installation_unavailable'
   | 'legacy_replacement_completed_subscription_absent_installation_unavailable'
   | 'legacy_replacement_completed_subscription_state_unavailable_installation_unavailable'
-  | 'legacy_association_recovery_failed'
+  | 'wonderpush_association_unsubscribe_rejected'
+  | 'wonderpush_association_unsubscribe_timed_out'
+  | 'wonderpush_association_unsubscribe_state_unavailable'
+  | 'wonderpush_association_unsubscribe_state_still_subscribed'
+  | 'wonderpush_association_subscribe_rejected'
+  | 'wonderpush_association_subscribe_timed_out'
+  | 'wonderpush_association_snapshot_failed'
   | 'legacy_association_recovery_subscribed_session_ready_installation_unavailable'
   | 'legacy_association_recovery_subscribed_session_not_ready_installation_unavailable'
   | 'legacy_association_recovery_not_subscribed_installation_unavailable'
