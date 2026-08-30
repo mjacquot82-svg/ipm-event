@@ -396,6 +396,7 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
   // no current WonderPush installation or stable WonderPush subscription
   // snapshot. Reassert once, then allow the documented asynchronous session
   // creation a bounded settle window. The clean path returns above unchanged.
+  let registrationAlreadyInProgress = false;
   try {
     await withSdk(async (sdk) => {
       if (!sdk.subscribeToNotifications) {
@@ -406,9 +407,18 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
   } catch (error) {
     const timedOut = error instanceof Error
       && error.message === 'WonderPush installation recovery timed out.';
-    throw new WonderPushInstallationRecoveryError(timedOut
+    const rejectionStage = timedOut
       ? 'wonderpush_recovery_subscribe_timed_out'
-      : safeSubscribeRejectionStage(error));
+      : safeSubscribeRejectionStage(error);
+    if (rejectionStage === 'wonderpush_recovery_subscribe_registration_in_progress') {
+      // WonderPush is already performing the supported registration pipeline.
+      // Do not race it with another subscribe or unsubscribe operation; observe
+      // the documented session/installation state through the bounded snapshot
+      // window below.
+      registrationAlreadyInProgress = true;
+    } else {
+      throw new WonderPushInstallationRecoveryError(rejectionStage);
+    }
   }
   try {
     snapshot = await readWonderPushSnapshot({
@@ -419,6 +429,11 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
     throw new WonderPushInstallationRecoveryError('wonderpush_recovery_snapshot_failed');
   }
   if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
+  if (registrationAlreadyInProgress) {
+    throw new WonderPushInstallationRecoveryError(
+      'wonderpush_registration_in_progress_installation_unavailable'
+    );
+  }
 
   // A completed replacement marker is only written after unsubscribe() returns
   // true. Normal SDK recovery above still runs on every later attempt/lifecycle.
@@ -554,6 +569,7 @@ export type WonderPushInstallationFailureStage =
   | 'wonderpush_recovery_subscribe_timed_out'
   | 'wonderpush_recovery_snapshot_failed'
   | 'wonderpush_recovery_subscribe_registration_in_progress'
+  | 'wonderpush_registration_in_progress_installation_unavailable'
   | 'wonderpush_recovery_subscribe_permission_rejected'
   | 'wonderpush_recovery_subscribe_push_not_supported'
   | 'wonderpush_recovery_subscribe_subscription_state_rejected'

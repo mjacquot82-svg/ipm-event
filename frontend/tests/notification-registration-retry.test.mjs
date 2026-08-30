@@ -71,6 +71,22 @@ test('missing legacy installation performs bounded provider recovery before targ
     > getter.indexOf('attempts: INSTALLATION_RECOVERY_ATTEMPTS'));
 });
 
+test('registration already in progress is observed without another provider mutation', () => {
+  const getter = wonderPush.slice(wonderPush.indexOf('export async function getSubscribedInstallationId'),
+    wonderPush.indexOf('export async function getCurrentInstallationFingerprint'));
+  const recovery = getter.slice(getter.indexOf('let registrationAlreadyInProgress'),
+    getter.indexOf('// A completed replacement marker'));
+  assert.match(recovery, /wonderpush_recovery_subscribe_registration_in_progress/);
+  assert.match(recovery, /registrationAlreadyInProgress = true/);
+  assert.match(recovery, /attempts: INSTALLATION_RECOVERY_ATTEMPTS/);
+  assert.match(recovery, /if \(snapshot\.subscribed && snapshot\.installationId\) return snapshot\.installationId/);
+  assert.match(recovery, /wonderpush_registration_in_progress_installation_unavailable/);
+  assert.equal((recovery.match(/sdk\.subscribeToNotifications\(\)/g) || []).length, 1);
+  assert.doesNotMatch(recovery, /unsubscribeFromNotifications|Notification\.requestPermission/);
+  assert.ok(recovery.indexOf('wonderpush_registration_in_progress_installation_unavailable')
+    < getter.indexOf('if (legacySubscriptionWasReplaced())'));
+});
+
 test('legacy replacement is narrow, permission-safe, idempotent, and bounded', () => {
   const replacement = wonderPush.slice(wonderPush.indexOf('function legacySubscriptionWasReplaced'),
     wonderPush.indexOf('export async function readWonderPushSnapshot'));
@@ -143,6 +159,7 @@ test('safe UI and diagnostics do not render sensitive device material', () => {
   for (const safeStage of ['sdk_unavailable', 'installation_still_unavailable',
     'wonderpush_recovery_subscribe_timed_out',
     'wonderpush_recovery_snapshot_failed',
+    'wonderpush_registration_in_progress_installation_unavailable',
     'legacy_push_subscription_absent', 'legacy_subscription_replacement_failed',
     'wonderpush_session_initialization_failed',
     'legacy_unsubscribe_succeeded_wonderpush_resubscribe_rejected',

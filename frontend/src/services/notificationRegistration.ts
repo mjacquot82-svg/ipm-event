@@ -9,6 +9,7 @@ export type NotificationRegistrationFailure =
   | 'wonderpush_recovery_subscribe_timed_out'
   | 'wonderpush_recovery_snapshot_failed'
   | 'wonderpush_recovery_subscribe_registration_in_progress'
+  | 'wonderpush_registration_in_progress_installation_unavailable'
   | 'wonderpush_recovery_subscribe_permission_rejected'
   | 'wonderpush_recovery_subscribe_push_not_supported'
   | 'wonderpush_recovery_subscribe_subscription_state_rejected'
