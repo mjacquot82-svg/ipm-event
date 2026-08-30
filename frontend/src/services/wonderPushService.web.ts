@@ -29,6 +29,7 @@ type WonderPushQueue = unknown[] & {
 type WonderPushReadSnapshot = {
   subscribed: boolean | null;
   installationId: string | null;
+  sessionInitSuccess: boolean | null;
   subscriptionFailed: boolean;
   installationFailed: boolean;
 };
@@ -281,7 +282,7 @@ export async function readWonderPushSnapshot({ attempts = SDK_SETTLE_ATTEMPTS,
   await waitForServiceWorkerReadiness();
   if (window.WonderPush) await waitForWonderPushSessionReadiness(window.WonderPush);
   let snapshot: WonderPushReadSnapshot = { subscribed: null, installationId: null,
-    subscriptionFailed: false, installationFailed: false };
+    sessionInitSuccess: null, subscriptionFailed: false, installationFailed: false };
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     // Re-read the global after initialization so a loader-upgraded SDK object is never stale.
     const sdk = window.WonderPush;
@@ -296,6 +297,8 @@ export async function readWonderPushSnapshot({ attempts = SDK_SETTLE_ATTEMPTS,
     snapshot = {
       subscribed: subscription.status === 'fulfilled' ? subscription.value : null,
       installationId: installation.status === 'fulfilled' ? installation.value : null,
+      sessionInitSuccess: sdk?.getSessionState && sdk.SessionState?.INIT_SUCCESS !== undefined
+        ? sdk.getSessionState() === sdk.SessionState.INIT_SUCCESS : null,
       subscriptionFailed: subscription.status === 'rejected',
       installationFailed: installation.status === 'rejected',
     };
@@ -382,10 +385,42 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
 
   // A completed replacement marker is only written after unsubscribe() returns
   // true. Normal SDK recovery above still runs on every later attempt/lifecycle.
-  // Report the current browser subscription state without exposing its material.
+  // A legacy browser subscription made the SDK cache SUBSCRIBED before IPM
+  // removed that subscription directly. The SDK then treats later subscribe
+  // calls as successful no-ops. Move through its documented unsubscribe and
+  // subscribe operations so WonderPush owns the state transition and executes
+  // its push-token/installation association pipeline. SDK unsubscribe preserves
+  // browser permission and healthy installations return above unchanged.
   if (legacySubscriptionWasReplaced()) {
+    const subscriptionState = await currentPushSubscriptionState();
+    if (subscriptionState === 'present' && snapshot.subscribed === true) {
+      try {
+        await withSdk(async (sdk) => {
+          if (!sdk.unsubscribeFromNotifications || !sdk.subscribeToNotifications) {
+            throw new Error('WonderPush subscription recovery APIs are unavailable.');
+          }
+          await sdk.unsubscribeFromNotifications();
+          await sdk.subscribeToNotifications();
+        }, SUBSCRIBE_TIMEOUT_MS, 'WonderPush association recovery timed out.');
+        snapshot = await readWonderPushSnapshot({
+          attempts: INSTALLATION_RECOVERY_ATTEMPTS,
+          retryDelayMs: INSTALLATION_RECOVERY_RETRY_MS,
+        });
+      } catch {
+        throw new WonderPushInstallationRecoveryError('legacy_association_recovery_failed');
+      }
+      if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
+      if (snapshot.subscribed === true) {
+        throw new WonderPushInstallationRecoveryError(snapshot.sessionInitSuccess
+          ? 'legacy_association_recovery_subscribed_session_ready_installation_unavailable'
+          : 'legacy_association_recovery_subscribed_session_not_ready_installation_unavailable');
+      }
+      throw new WonderPushInstallationRecoveryError(snapshot.subscribed === false
+        ? 'legacy_association_recovery_not_subscribed_installation_unavailable'
+        : 'legacy_association_recovery_subscription_state_unavailable');
+    }
     throw new WonderPushInstallationRecoveryError(
-      unavailableAfterCompletedReplacement(await currentPushSubscriptionState())
+      unavailableAfterCompletedReplacement(subscriptionState)
     );
   }
 
@@ -447,7 +482,12 @@ export type WonderPushInstallationFailureStage =
   | 'legacy_unsubscribe_succeeded_wonderpush_resubscribe_resolved_recovery_check_failed'
   | 'legacy_replacement_completed_subscription_present_installation_unavailable'
   | 'legacy_replacement_completed_subscription_absent_installation_unavailable'
-  | 'legacy_replacement_completed_subscription_state_unavailable_installation_unavailable';
+  | 'legacy_replacement_completed_subscription_state_unavailable_installation_unavailable'
+  | 'legacy_association_recovery_failed'
+  | 'legacy_association_recovery_subscribed_session_ready_installation_unavailable'
+  | 'legacy_association_recovery_subscribed_session_not_ready_installation_unavailable'
+  | 'legacy_association_recovery_not_subscribed_installation_unavailable'
+  | 'legacy_association_recovery_subscription_state_unavailable';
 
 export class WonderPushInstallationRecoveryError extends Error {
   constructor(public failureStage: WonderPushInstallationFailureStage) {

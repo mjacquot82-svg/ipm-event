@@ -14,6 +14,11 @@ export type NotificationRegistrationFailure =
   | 'legacy_replacement_completed_subscription_present_installation_unavailable'
   | 'legacy_replacement_completed_subscription_absent_installation_unavailable'
   | 'legacy_replacement_completed_subscription_state_unavailable_installation_unavailable'
+  | 'legacy_association_recovery_failed'
+  | 'legacy_association_recovery_subscribed_session_ready_installation_unavailable'
+  | 'legacy_association_recovery_subscribed_session_not_ready_installation_unavailable'
+  | 'legacy_association_recovery_not_subscribed_installation_unavailable'
+  | 'legacy_association_recovery_subscription_state_unavailable'
   | 'other';
 
 export type NotificationRegistrationResult = {
