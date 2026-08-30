@@ -20,6 +20,8 @@ This roadmap separates implemented functionality from planned work. It is not a 
 
 ## In Progress
 
+- Correcting cache-first PWA frontend updates so installed production apps cannot remain on a
+  stale JavaScript bundle after a deployment; required before event rollout.
 - Organizer Portal expansion beyond authentication and communications.
 - Moving organizer workflows away from direct Google Sheets editing.
 - Stabilizing deployment documentation and long-term architecture references.

@@ -58,9 +58,14 @@ test('missing legacy installation performs bounded provider recovery before targ
   assert.equal((getter.match(/sdk\.subscribeToNotifications\(\)/g) || []).length, 3);
   assert.equal((getter.match(/readWonderPushSnapshot\(/g) || []).length, 4);
   assert.doesNotMatch(getter, /Notification\.requestPermission/);
-  assert.match(getter, /wonderpush_recovery_subscribe_rejected/);
   assert.match(getter, /wonderpush_recovery_subscribe_timed_out/);
   assert.match(getter, /wonderpush_recovery_snapshot_failed/);
+  assert.match(wonderPush, /safeSubscribeRejectionStage/);
+  for (const classification of ['registration_in_progress', 'permission_rejected',
+    'push_not_supported', 'subscription_state_rejected', 'wrong_context', 'storage_failed',
+    'dom_invalid_state', 'dom_abort', 'dom_network', 'provider_rejected', 'unknown_rejection']) {
+    assert.match(wonderPush, new RegExp(`wonderpush_recovery_subscribe_${classification}`));
+  }
   assert.match(getter, /replaceOrphanedPushSubscription/);
   assert.ok(getter.indexOf('replaceOrphanedPushSubscription')
     > getter.indexOf('attempts: INSTALLATION_RECOVERY_ATTEMPTS'));
@@ -136,7 +141,7 @@ test('Home distinguishes subscribed, pending, ready and failed setup', () => {
 test('safe UI and diagnostics do not render sensitive device material', () => {
   assert.match(component, /Setup reference: \{failureClassification \|\| 'other'\}/);
   for (const safeStage of ['sdk_unavailable', 'installation_still_unavailable',
-    'wonderpush_recovery_subscribe_rejected', 'wonderpush_recovery_subscribe_timed_out',
+    'wonderpush_recovery_subscribe_timed_out',
     'wonderpush_recovery_snapshot_failed',
     'legacy_push_subscription_absent', 'legacy_subscription_replacement_failed',
     'wonderpush_session_initialization_failed',
@@ -158,7 +163,11 @@ test('safe UI and diagnostics do not render sensitive device material', () => {
     assert.match(service + wonderPush, new RegExp(safeStage));
   }
   assert.doesNotMatch(component, /installationId|deviceCapability|pushToken|accessToken/);
-  assert.doesNotMatch(service + wonderPush, /session_recovery_failed|legacy_association_recovery_failed/);
+  assert.doesNotMatch(service + wonderPush,
+    /session_recovery_failed|legacy_association_recovery_failed|wonderpush_recovery_subscribe_rejected/);
+  const classifier = wonderPush.slice(wonderPush.indexOf('function safeSubscribeRejectionStage'),
+    wonderPush.indexOf('function isSupported'));
+  assert.doesNotMatch(classifier, /\.message|\.stack|JSON\.stringify|endpoint|installationId|pushToken/);
   assert.doesNotMatch(service, /console\.(?:log|warn|error)/);
   assert.doesNotMatch(service, /response\.text\(\)/);
 });

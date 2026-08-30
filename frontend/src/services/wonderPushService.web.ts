@@ -69,6 +69,35 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
   });
 }
 
+function safeSubscribeRejectionStage(error: unknown): WonderPushInstallationFailureStage {
+  const name = error instanceof Error ? error.name : '';
+  if (name.endsWith('.RegistrationInProgressError')) {
+    return 'wonderpush_recovery_subscribe_registration_in_progress';
+  }
+  if (name.endsWith('.PermissionError') || name === 'NotAllowedError') {
+    return 'wonderpush_recovery_subscribe_permission_rejected';
+  }
+  if (name.endsWith('.PushNotificationsNotSupportedError') || name === 'NotSupportedError') {
+    return 'wonderpush_recovery_subscribe_push_not_supported';
+  }
+  if (name.endsWith('.SubscriptionStateError')) {
+    return 'wonderpush_recovery_subscribe_subscription_state_rejected';
+  }
+  if (name.endsWith('.InternalWrongDomainError') || name.endsWith('.InternalWrongTargetError')) {
+    return 'wonderpush_recovery_subscribe_wrong_context';
+  }
+  if (name.endsWith('.InternalStorageError')) {
+    return 'wonderpush_recovery_subscribe_storage_failed';
+  }
+  if (name === 'InvalidStateError') return 'wonderpush_recovery_subscribe_dom_invalid_state';
+  if (name === 'AbortError') return 'wonderpush_recovery_subscribe_dom_abort';
+  if (name === 'NetworkError') return 'wonderpush_recovery_subscribe_dom_network';
+  if (name.startsWith('WonderPushSDK.Errors.')) {
+    return 'wonderpush_recovery_subscribe_provider_rejected';
+  }
+  return 'wonderpush_recovery_subscribe_unknown_rejection';
+}
+
 function isSupported() {
   return typeof window !== 'undefined'
     && 'Notification' in window
@@ -379,7 +408,7 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
       && error.message === 'WonderPush installation recovery timed out.';
     throw new WonderPushInstallationRecoveryError(timedOut
       ? 'wonderpush_recovery_subscribe_timed_out'
-      : 'wonderpush_recovery_subscribe_rejected');
+      : safeSubscribeRejectionStage(error));
   }
   try {
     snapshot = await readWonderPushSnapshot({
@@ -522,8 +551,19 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
 
 export type WonderPushInstallationFailureStage =
   | 'sdk_unavailable' | 'installation_still_unavailable'
-  | 'wonderpush_recovery_subscribe_rejected' | 'wonderpush_recovery_subscribe_timed_out'
+  | 'wonderpush_recovery_subscribe_timed_out'
   | 'wonderpush_recovery_snapshot_failed'
+  | 'wonderpush_recovery_subscribe_registration_in_progress'
+  | 'wonderpush_recovery_subscribe_permission_rejected'
+  | 'wonderpush_recovery_subscribe_push_not_supported'
+  | 'wonderpush_recovery_subscribe_subscription_state_rejected'
+  | 'wonderpush_recovery_subscribe_wrong_context'
+  | 'wonderpush_recovery_subscribe_storage_failed'
+  | 'wonderpush_recovery_subscribe_dom_invalid_state'
+  | 'wonderpush_recovery_subscribe_dom_abort'
+  | 'wonderpush_recovery_subscribe_dom_network'
+  | 'wonderpush_recovery_subscribe_provider_rejected'
+  | 'wonderpush_recovery_subscribe_unknown_rejection'
   | 'legacy_push_subscription_absent' | 'legacy_subscription_replacement_failed'
   | 'wonderpush_session_initialization_failed'
   | 'legacy_unsubscribe_succeeded_wonderpush_resubscribe_rejected'
