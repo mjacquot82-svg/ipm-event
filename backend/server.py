@@ -950,6 +950,14 @@ def require_announcement_manager_role(user: dict):
         )
 
 
+def require_owner_role(user: dict):
+    if user.get("role") != "Owner":
+        raise HTTPException(
+            status_code=403,
+            detail="Your organizer role cannot manage organizer users",
+        )
+
+
 def validate_announcement_payload(data: AnnouncementPayload):
     if not data.title.strip():
         raise HTTPException(status_code=400, detail="Title is required")
@@ -1482,6 +1490,7 @@ async def get_organizer_me(current_user: dict = Depends(get_current_organizer_us
 
 @api_router.get("/admin/users", response_model=OrganizerUsersResponse)
 async def list_organizer_users(current_user: dict = Depends(get_current_organizer_user)):
+    require_owner_role(current_user)
     database = require_mongodb()
     users = await database.organizer_users.find({
         "event_id": get_admin_event_id(current_user)
@@ -1495,6 +1504,7 @@ async def create_organizer_user(
     data: OrganizerCreateUserRequest,
     current_user: dict = Depends(get_current_organizer_user),
 ):
+    require_owner_role(current_user)
     database = require_mongodb()
     event_id = get_admin_event_id(current_user, data.event_id)
     username = normalize_username(data.username)
