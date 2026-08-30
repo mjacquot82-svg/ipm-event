@@ -76,6 +76,20 @@ test('legacy replacement is narrow, permission-safe, idempotent, and bounded', (
   assert.doesNotMatch(wonderPush, /endpoint|applicationServerKey|pushToken/);
 });
 
+test('completed legacy replacement reports only safe browser and provider lifecycle state', () => {
+  assert.match(wonderPush, /currentPushSubscriptionState/);
+  assert.match(wonderPush, /legacy_replacement_completed_subscription_present_installation_unavailable/);
+  assert.match(wonderPush, /legacy_replacement_completed_subscription_absent_installation_unavailable/);
+  assert.match(wonderPush, /legacy_unsubscribe_succeeded_wonderpush_resubscribe_rejected/);
+  assert.match(wonderPush, /legacy_unsubscribe_succeeded_wonderpush_resubscribe_timed_out/);
+  assert.match(wonderPush, /legacy_unsubscribe_succeeded_wonderpush_resubscribe_resolved_recovery_check_failed/);
+  const getter = wonderPush.slice(wonderPush.indexOf('export async function getSubscribedInstallationId'),
+    wonderPush.indexOf('export type WonderPushInstallationFailureStage'));
+  assert.ok(getter.indexOf('if (legacySubscriptionWasReplaced())')
+    > getter.indexOf('WonderPush installation recovery timed out.'));
+  assert.doesNotMatch(wonderPush, /subscription\.endpoint|subscription\.options|subscription\.toJSON/);
+});
+
 test('invalid credentials and takeover responses do not retry', () => {
   assert.match(service, /response\.status === 400/);
   assert.match(service, /response\.status === 401/);
@@ -99,7 +113,12 @@ test('safe UI and diagnostics do not render sensitive device material', () => {
   assert.match(component, /Setup reference: \{failureClassification \|\| 'other'\}/);
   for (const safeStage of ['sdk_unavailable', 'session_recovery_failed', 'installation_still_unavailable',
     'legacy_push_subscription_absent', 'legacy_subscription_replacement_failed',
-    'wonderpush_session_initialization_failed']) {
+    'wonderpush_session_initialization_failed',
+    'legacy_unsubscribe_succeeded_wonderpush_resubscribe_rejected',
+    'legacy_unsubscribe_succeeded_wonderpush_resubscribe_timed_out',
+    'legacy_unsubscribe_succeeded_wonderpush_resubscribe_resolved_recovery_check_failed',
+    'legacy_replacement_completed_subscription_present_installation_unavailable',
+    'legacy_replacement_completed_subscription_absent_installation_unavailable']) {
     assert.match(service + wonderPush, new RegExp(safeStage));
   }
   assert.doesNotMatch(component, /installationId|deviceCapability|pushToken|accessToken/);
