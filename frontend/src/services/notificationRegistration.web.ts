@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSubscribedInstallationId } from './wonderPushService.web';
+import {
+  getSubscribedInstallationId,
+  WonderPushInstallationRecoveryError,
+} from './wonderPushService.web';
 
 const CAPABILITY_KEY = '@ipm_notification_capability_v1';
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
@@ -11,7 +14,8 @@ export type NotificationRegistrationStage =
   | 'backend_status' | 'provider_verification' | 'success';
 export type NotificationRegistrationFailure =
   | 'installation_unavailable' | 'invalid_credentials' | 'http_error' | 'timeout'
-  | 'network_failure' | 'malformed_response' | 'other';
+  | 'network_failure' | 'malformed_response' | 'sdk_unavailable'
+  | 'session_recovery_failed' | 'installation_still_unavailable' | 'other';
 export type NotificationRegistrationResult = {
   stage: 'success'; status: Record<string, unknown>; attempts: number;
 };
@@ -98,7 +102,12 @@ async function request(path: string, method: string,
 export async function runNotificationRegistrationAttempt(): Promise<Record<string, unknown>> {
   let installationId: string | null;
   try { installationId = await getSubscribedInstallationId(); }
-  catch { throw new NotificationRegistrationError('installation_retrieval', 'other', true); }
+  catch (error) {
+    if (error instanceof WonderPushInstallationRecoveryError) {
+      throw new NotificationRegistrationError('installation_retrieval', error.failureStage, true);
+    }
+    throw new NotificationRegistrationError('installation_retrieval', 'other', true);
+  }
   if (!installationId) {
     throw new NotificationRegistrationError('installation_retrieval', 'installation_unavailable', true);
   }

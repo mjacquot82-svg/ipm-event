@@ -35,17 +35,30 @@ test('registration order preserves conclusive lookup and idempotent create', () 
   assert.match(service, /readiness\.provider_deliverable !== true/);
 });
 
-test('subscribed state without an installation performs one bounded provider recovery', () => {
+test('clean installation returns before migration recovery', () => {
   const getter = wonderPush.slice(wonderPush.indexOf('export async function getSubscribedInstallationId'),
     wonderPush.indexOf('export async function getCurrentInstallationFingerprint'));
   assert.match(getter, /Notification\.permission !== 'granted'/);
-  assert.match(getter, /if \(!snapshot\.subscribed\) return null/);
-  assert.match(getter, /if \(snapshot\.installationId\) return snapshot\.installationId/);
+  assert.match(getter, /if \(snapshot\.subscribed && snapshot\.installationId\) return snapshot\.installationId/);
+  assert.ok(getter.indexOf('if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId')
+    < getter.indexOf('sdk.subscribeToNotifications()'));
+});
+
+test('missing legacy installation performs one bounded provider recovery', () => {
+  const getter = wonderPush.slice(wonderPush.indexOf('export async function getSubscribedInstallationId'),
+    wonderPush.indexOf('export async function getCurrentInstallationFingerprint'));
+  assert.doesNotMatch(getter, /if \(!snapshot\.subscribed\) return null/);
   assert.match(getter, /sdk\.subscribeToNotifications\(\)/);
   assert.match(getter, /SUBSCRIBE_TIMEOUT_MS/);
+  assert.match(getter, /attempts: INSTALLATION_RECOVERY_ATTEMPTS/);
+  assert.match(getter, /retryDelayMs: INSTALLATION_RECOVERY_RETRY_MS/);
+  assert.match(wonderPush, /INSTALLATION_RECOVERY_ATTEMPTS = 12/);
+  assert.match(wonderPush, /INSTALLATION_RECOVERY_RETRY_MS = 750/);
   assert.equal((getter.match(/sdk\.subscribeToNotifications\(\)/g) || []).length, 1);
-  assert.equal((getter.match(/readWonderPushSnapshot\(\)/g) || []).length, 2);
+  assert.equal((getter.match(/readWonderPushSnapshot\(/g) || []).length, 2);
   assert.doesNotMatch(getter, /unsubscribeFromNotifications|Notification\.requestPermission/);
+  assert.match(getter, /session_recovery_failed/);
+  assert.match(getter, /installation_still_unavailable/);
 });
 
 test('invalid credentials and takeover responses do not retry', () => {
@@ -68,6 +81,10 @@ test('Home distinguishes subscribed, pending, ready and failed setup', () => {
 });
 
 test('safe UI and diagnostics do not render sensitive device material', () => {
+  assert.match(component, /Setup reference: \{failureClassification \|\| 'other'\}/);
+  for (const safeStage of ['sdk_unavailable', 'session_recovery_failed', 'installation_still_unavailable']) {
+    assert.match(service + wonderPush, new RegExp(safeStage));
+  }
   assert.doesNotMatch(component, /installationId|deviceCapability|pushToken|accessToken/);
   assert.doesNotMatch(service, /console\.(?:log|warn|error)/);
   assert.doesNotMatch(service, /response\.text\(\)/);

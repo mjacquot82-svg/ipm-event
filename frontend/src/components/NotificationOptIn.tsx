@@ -10,6 +10,7 @@ import {
 } from '../services/wonderPushService';
 import {
   ensureNotificationRegistration,
+  NotificationRegistrationFailure,
   NotificationRegistrationStage,
 } from '../services/notificationRegistration';
 import { colors } from '../theme/colors';
@@ -30,16 +31,20 @@ export default function NotificationOptIn() {
   const [verificationDeferred, setVerificationDeferred] = useState(false);
   const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'failed'>('idle');
   const [failureStage, setFailureStage] = useState<NotificationRegistrationStage | null>(null);
+  const [failureClassification, setFailureClassification] = useState<NotificationRegistrationFailure | null>(null);
 
   const completeSetup = useCallback(async () => {
     setSetupState('pending');
     setFailureStage(null);
+    setFailureClassification(null);
     try {
       await ensureNotificationRegistration();
       setSetupState('ready');
     } catch (error) {
       const safeStage = (error as { stage?: NotificationRegistrationStage }).stage;
+      const safeClassification = (error as { classification?: NotificationRegistrationFailure }).classification;
       setFailureStage(safeStage || 'installation_retrieval');
+      setFailureClassification(safeClassification || 'other');
       setSetupState('failed');
     }
   }, []);
@@ -52,6 +57,7 @@ export default function NotificationOptIn() {
     } else {
       setSetupState('idle');
       setFailureStage(null);
+      setFailureClassification(null);
     }
   }, [completeSetup]);
 
@@ -104,12 +110,16 @@ export default function NotificationOptIn() {
     <View
       style={styles.card}
       accessibilityLabel="IPM notification settings"
-      testID={`notification-setup-${setupState === 'failed' ? failureStage : setupState}`}
+      testID={`notification-setup-${setupState === 'failed'
+        ? `${failureStage}-${failureClassification}` : setupState}`}
     >
       <View style={styles.icon}><Feather name="bell" size={22} color="#FFFFFF" /></View>
       <View style={styles.copy}>
         <Text style={styles.title}>IPM Notifications</Text>
         <Text style={styles.message}>{stateMessage}</Text>
+        {state === 'subscribed' && setupState === 'failed' ? (
+          <Text style={styles.diagnostic}>Setup reference: {failureClassification || 'other'}</Text>
+        ) : null}
         {state === 'subscribed' && setupState === 'failed' ? (
           <TouchableOpacity
             accessibilityRole="button"
@@ -147,6 +157,7 @@ const styles = StyleSheet.create({
   title: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
   message: { color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 3 },
   hint: { color: colors.textMuted, fontSize: 12, lineHeight: 16, marginTop: 4 },
+  diagnostic: { color: colors.textMuted, fontSize: 11, lineHeight: 15, marginTop: 4 },
   button: { backgroundColor: colors.primary, borderRadius: 10, minWidth: 76, paddingHorizontal: 13, paddingVertical: 11 },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', textAlign: 'center' },
   disableButton: { backgroundColor: '#FFFFFF', borderColor: colors.primary, borderWidth: 1 },

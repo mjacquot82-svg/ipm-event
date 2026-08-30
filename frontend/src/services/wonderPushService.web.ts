@@ -9,6 +9,8 @@ const STATUS_TIMEOUT_MS = 10_000;
 const SDK_SETTLE_TIMEOUT_MS = 3_000;
 const SDK_SETTLE_RETRY_MS = 400;
 const SDK_SETTLE_ATTEMPTS = 3;
+const INSTALLATION_RECOVERY_ATTEMPTS = 12;
+const INSTALLATION_RECOVERY_RETRY_MS = 750;
 const WORKER_READY_TIMEOUT_MS = 2_000;
 const SESSION_READY_TIMEOUT_MS = 3_000;
 const SUBSCRIBE_TIMEOUT_MS = 45_000;
@@ -277,23 +279,44 @@ export async function unsubscribeFromNotifications(): Promise<NotificationState>
 
 export async function getSubscribedInstallationId(): Promise<string | null> {
   if (!isSupported() || Notification.permission !== 'granted') return null;
-  let snapshot = await readWonderPushSnapshot();
-  if (!snapshot.subscribed) return null;
-  if (snapshot.installationId) return snapshot.installationId;
+  let snapshot: WonderPushReadSnapshot;
+  try {
+    snapshot = await readWonderPushSnapshot();
+  } catch {
+    throw new WonderPushInstallationRecoveryError('sdk_unavailable');
+  }
+  if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
 
-  // WonderPush's subscribed flag is the locally enabled preference. It can
-  // survive while the current provider session/installation is unavailable,
-  // notably after changing push providers. Reasserting an already-granted
-  // subscription is idempotent and gives the SDK one bounded opportunity to
-  // recreate its session before readiness verification gives up pre-fetch.
-  await withSdk(async (sdk) => {
-    if (!sdk.subscribeToNotifications) {
-      throw new Error('WonderPush subscribe API is unavailable.');
-    }
-    await sdk.subscribeToNotifications();
-  }, SUBSCRIBE_TIMEOUT_MS, 'WonderPush installation recovery timed out.');
-  snapshot = await readWonderPushSnapshot();
-  return snapshot.subscribed ? snapshot.installationId : null;
+  // A Webpushr-era browser can retain granted browser permission while having
+  // no current WonderPush installation or stable WonderPush subscription
+  // snapshot. Reassert once, then allow the documented asynchronous session
+  // creation a bounded settle window. The clean path returns above unchanged.
+  try {
+    await withSdk(async (sdk) => {
+      if (!sdk.subscribeToNotifications) {
+        throw new Error('WonderPush subscribe API is unavailable.');
+      }
+      await sdk.subscribeToNotifications();
+    }, SUBSCRIBE_TIMEOUT_MS, 'WonderPush installation recovery timed out.');
+    snapshot = await readWonderPushSnapshot({
+      attempts: INSTALLATION_RECOVERY_ATTEMPTS,
+      retryDelayMs: INSTALLATION_RECOVERY_RETRY_MS,
+    });
+  } catch {
+    throw new WonderPushInstallationRecoveryError('session_recovery_failed');
+  }
+  if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
+  throw new WonderPushInstallationRecoveryError('installation_still_unavailable');
+}
+
+export type WonderPushInstallationFailureStage =
+  | 'sdk_unavailable' | 'session_recovery_failed' | 'installation_still_unavailable';
+
+export class WonderPushInstallationRecoveryError extends Error {
+  constructor(public failureStage: WonderPushInstallationFailureStage) {
+    super(`WonderPush installation recovery failed: ${failureStage}`);
+    this.name = 'WonderPushInstallationRecoveryError';
+  }
 }
 
 export async function getCurrentInstallationFingerprint(): Promise<string | null> {
