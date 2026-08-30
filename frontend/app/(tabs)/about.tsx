@@ -1,6 +1,6 @@
 // © 2026 Jacquot Digital Solutions. All Rights Reserved.
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -18,10 +18,6 @@ import { eventInfo } from '../../src/data/mockData';
 import { openTrackedLink, trackControlledOutbound } from '../../src/analytics/trackedLinks';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
-import {
-  readWonderPushRuntimeDiagnostic,
-} from '../../src/services/wonderPushRuntimeDiagnostic';
-import type { WonderPushRuntimeDiagnostic } from '../../src/services/wonderPushRuntimeDiagnostic';
 
 const OFFICIAL_IPM_CONTENT = [
   "It is the largest event of its kind in North America.\nWith so much to see and do, plan to spend more than one day!\nThe IPM is held in a different community each year, highlighting the many great things the area has to offer and attracting on average 70,000 people from across Ontario, throughout Canada, the United States and beyond.",
@@ -41,20 +37,6 @@ const EVENT_HISTORY = [
 export default function AboutScreen() {
   usePageAnalytics('about', 'bottom_nav');
   const { frameStyle } = useAttendeeLayout();
-  const [wonderPushDiagnostic, setWonderPushDiagnostic] = useState<WonderPushRuntimeDiagnostic | null>(null);
-  const [diagnosticRefreshing, setDiagnosticRefreshing] = useState(false);
-  const refreshWonderPushDiagnostic = useCallback(async () => {
-    setDiagnosticRefreshing(true);
-    try {
-      setWonderPushDiagnostic(await readWonderPushRuntimeDiagnostic());
-    } finally {
-      setDiagnosticRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS === 'web') void refreshWonderPushDiagnostic();
-  }, [refreshWonderPushDiagnostic]);
   const openMaps = () => {
     const { lat, lng } = eventInfo.coordinates;
     const url = Platform.select({
@@ -185,64 +167,6 @@ export default function AboutScreen() {
             ))}
           </View>
         </View>
-
-        {Platform.OS === 'web' ? (
-          <View style={styles.section} testID="wonderpush-runtime-diagnostic">
-            <Text style={styles.sectionTitle}>WonderPush runtime session</Text>
-            <View style={styles.diagnosticCard}>
-              {wonderPushDiagnostic ? (
-                <>
-                  <Text style={styles.diagnosticLine}>SDK loaded: {wonderPushDiagnostic.sdkLoaded}</Text>
-                  <Text style={styles.diagnosticLine}>SDK ready: {wonderPushDiagnostic.sdkReady}</Text>
-                  <Text style={styles.diagnosticLine}>Session raw state: {wonderPushDiagnostic.sessionRawState}</Text>
-                  <Text style={styles.diagnosticLine}>Session interpreted state: {wonderPushDiagnostic.sessionInterpretedState}</Text>
-                  <Text style={styles.diagnosticLine}>Session state observed at: {wonderPushDiagnostic.observedAt}</Text>
-                  <Text style={styles.diagnosticLine}>Current installation available: {wonderPushDiagnostic.installationAvailable}</Text>
-                  <Text style={styles.diagnosticLine}>WonderPush subscribed: {wonderPushDiagnostic.subscribed}</Text>
-                  <Text style={styles.diagnosticLine}>Browser PushSubscription present: {wonderPushDiagnostic.pushSubscriptionPresent}</Text>
-                  <Text style={styles.diagnosticLine}>Notification permission: {wonderPushDiagnostic.notificationPermission}</Text>
-                  <Text style={styles.diagnosticLine}>Registration workflow state: {wonderPushDiagnostic.registrationWorkflowState}</Text>
-                  <Text style={styles.diagnosticLine}>Home classification: {wonderPushDiagnostic.homeClassification}</Text>
-                  <View style={styles.workflowDiagnostic}>
-                    <Text style={styles.diagnosticHistoryTitle}>IPM notification registration workflow</Text>
-                    <Text style={styles.diagnosticLine}>Current registration stage: {wonderPushDiagnostic.registrationWorkflow.currentStage}</Text>
-                    <Text style={styles.diagnosticLine}>Attempt number: {wonderPushDiagnostic.registrationWorkflow.attemptNumber ?? 'none'}</Text>
-                    <Text style={styles.diagnosticLine}>Stage started at: {wonderPushDiagnostic.registrationWorkflow.stageStartedAt ?? 'none'}</Text>
-                    <Text style={styles.diagnosticLine}>Stage completed at: {wonderPushDiagnostic.registrationWorkflow.stageCompletedAt ?? 'none'}</Text>
-                    <Text style={styles.diagnosticLine}>Last HTTP status: {wonderPushDiagnostic.registrationWorkflow.lastHttpStatus ?? 'none'}</Text>
-                    <Text style={styles.diagnosticLine}>Last operation outcome: {wonderPushDiagnostic.registrationWorkflow.lastOperationOutcome}</Text>
-                    <Text style={styles.diagnosticLine}>Last completed stage: {wonderPushDiagnostic.registrationWorkflow.lastCompletedStage}</Text>
-                    <Text style={styles.diagnosticLine}>Elapsed time in current stage: {wonderPushDiagnostic.registrationWorkflow.elapsedTimeMs ?? 'none'} ms</Text>
-                    <Text style={styles.diagnosticLine}>Headers received at: {wonderPushDiagnostic.registrationWorkflow.headersReceivedAt ?? 'none'}</Text>
-                    <Text style={styles.diagnosticLine}>Response parse started at: {wonderPushDiagnostic.registrationWorkflow.responseParseStartedAt ?? 'none'}</Text>
-                    <Text style={styles.diagnosticLine}>Response parse completed at: {wonderPushDiagnostic.registrationWorkflow.responseParseCompletedAt ?? 'none'}</Text>
-                  </View>
-                  {wonderPushDiagnostic.transitionHistory.length ? (
-                    <View style={styles.transitionHistory}>
-                      <Text style={styles.diagnosticHistoryTitle}>Session transitions this app session</Text>
-                      {wonderPushDiagnostic.transitionHistory.map((transition, index) => (
-                        <Text key={`${transition.observedAt}-${index}`} style={styles.diagnosticLine}>
-                          {transition.observedAt} — {transition.interpretedState} ({transition.rawState})
-                        </Text>
-                      ))}
-                    </View>
-                  ) : null}
-                </>
-              ) : <Text style={styles.diagnosticLine}>Diagnostic not read yet.</Text>}
-              <TouchableOpacity
-                style={styles.diagnosticRefreshButton}
-                onPress={() => { void refreshWonderPushDiagnostic(); }}
-                disabled={diagnosticRefreshing}
-                accessibilityRole="button"
-                accessibilityLabel="Refresh WonderPush diagnostic"
-              >
-                <Text style={styles.diagnosticRefreshText}>
-                  {diagnosticRefreshing ? 'Reading…' : 'Refresh WonderPush diagnostic'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : null}
 
         <AttendeeAttribution source="about_attribution" />
 
@@ -388,50 +312,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 24,
     marginBottom: 16,
-  },
-  diagnosticCard: {
-    width: '100%',
-    maxWidth: 760,
-    alignSelf: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  diagnosticLine: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  diagnosticHistoryTitle: {
-    color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  transitionHistory: {
-    marginTop: 12,
-  },
-  workflowDiagnostic: {
-    marginTop: 16,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  diagnosticRefreshButton: {
-    minHeight: 44,
-    marginTop: 16,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  diagnosticRefreshText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   resourceItem: {
     width: '100%',

@@ -40,13 +40,13 @@ test('stage instrumentation does not add or reorder network requests', () => {
   assert.match(registration, /RETRY_DELAYS_MS = \[2_500, 5_000\]/);
 });
 
-test('About renders only safe registration workflow metadata', () => {
+test('production About renders no registration workflow engineering metadata', () => {
   for (const label of ['IPM notification registration workflow', 'Current registration stage',
     'Attempt number', 'Stage started at', 'Stage completed at', 'Last HTTP status',
     'Last operation outcome', 'Last completed stage', 'Elapsed time in current stage',
     'Headers received at', 'Response parse started at', 'Response parse completed at']) {
-    assert.match(about, new RegExp(label));
+    assert.doesNotMatch(about, new RegExp(label));
   }
-  assert.doesNotMatch(about, /installationId|capability|pushToken|accessToken|authorization|responseBody/i);
+  assert.doesNotMatch(about, /wonderPushDiagnostic|readWonderPushRuntimeDiagnostic|Refresh WonderPush diagnostic/);
   assert.doesNotMatch(diagnostic, /console\.|localStorage|sessionStorage|responseBody|fetch\(/i);
 });

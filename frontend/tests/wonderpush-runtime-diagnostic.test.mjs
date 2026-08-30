@@ -30,13 +30,13 @@ test('diagnostic refresh performs only read operations', () => {
   assert.doesNotMatch(reader, /initializeWonderPush|subscribeToNotifications|unsubscribeFromNotifications|requestPermission|ensureNotificationRegistration|fetch\(|request\(/);
 });
 
-test('diagnostic renders state only and never sensitive provider or device material', () => {
+test('production About does not render temporary WonderPush engineering state', () => {
   for (const label of ['SDK loaded', 'SDK ready', 'Session raw state', 'Session interpreted state',
     'Current installation available', 'WonderPush subscribed', 'Browser PushSubscription present',
     'Notification permission', 'Registration workflow state', 'Home classification']) {
-    assert.match(about, new RegExp(label));
+    assert.doesNotMatch(about, new RegExp(label));
   }
-  assert.doesNotMatch(about, /installationId|pushToken|accessToken|webKey|capability|authorization/i);
+  assert.doesNotMatch(about, /wonderPushDiagnostic|readWonderPushRuntimeDiagnostic|Refresh WonderPush diagnostic/);
   assert.doesNotMatch(diagnostic, /endpoint|toJSON|applicationServerKey|localStorage|indexedDB|fetch\(/);
 });
 
