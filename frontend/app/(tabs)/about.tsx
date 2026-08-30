@@ -203,6 +203,20 @@ export default function AboutScreen() {
                   <Text style={styles.diagnosticLine}>Notification permission: {wonderPushDiagnostic.notificationPermission}</Text>
                   <Text style={styles.diagnosticLine}>Registration workflow state: {wonderPushDiagnostic.registrationWorkflowState}</Text>
                   <Text style={styles.diagnosticLine}>Home classification: {wonderPushDiagnostic.homeClassification}</Text>
+                  <View style={styles.workflowDiagnostic}>
+                    <Text style={styles.diagnosticHistoryTitle}>IPM notification registration workflow</Text>
+                    <Text style={styles.diagnosticLine}>Current registration stage: {wonderPushDiagnostic.registrationWorkflow.currentStage}</Text>
+                    <Text style={styles.diagnosticLine}>Attempt number: {wonderPushDiagnostic.registrationWorkflow.attemptNumber ?? 'none'}</Text>
+                    <Text style={styles.diagnosticLine}>Stage started at: {wonderPushDiagnostic.registrationWorkflow.stageStartedAt ?? 'none'}</Text>
+                    <Text style={styles.diagnosticLine}>Stage completed at: {wonderPushDiagnostic.registrationWorkflow.stageCompletedAt ?? 'none'}</Text>
+                    <Text style={styles.diagnosticLine}>Last HTTP status: {wonderPushDiagnostic.registrationWorkflow.lastHttpStatus ?? 'none'}</Text>
+                    <Text style={styles.diagnosticLine}>Last operation outcome: {wonderPushDiagnostic.registrationWorkflow.lastOperationOutcome}</Text>
+                    <Text style={styles.diagnosticLine}>Last completed stage: {wonderPushDiagnostic.registrationWorkflow.lastCompletedStage}</Text>
+                    <Text style={styles.diagnosticLine}>Elapsed time in current stage: {wonderPushDiagnostic.registrationWorkflow.elapsedTimeMs ?? 'none'} ms</Text>
+                    <Text style={styles.diagnosticLine}>Headers received at: {wonderPushDiagnostic.registrationWorkflow.headersReceivedAt ?? 'none'}</Text>
+                    <Text style={styles.diagnosticLine}>Response parse started at: {wonderPushDiagnostic.registrationWorkflow.responseParseStartedAt ?? 'none'}</Text>
+                    <Text style={styles.diagnosticLine}>Response parse completed at: {wonderPushDiagnostic.registrationWorkflow.responseParseCompletedAt ?? 'none'}</Text>
+                  </View>
                   {wonderPushDiagnostic.transitionHistory.length ? (
                     <View style={styles.transitionHistory}>
                       <Text style={styles.diagnosticHistoryTitle}>Session transitions this app session</Text>
@@ -398,6 +412,12 @@ const styles = StyleSheet.create({
   },
   transitionHistory: {
     marginTop: 12,
+  },
+  workflowDiagnostic: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   diagnosticRefreshButton: {
     minHeight: 44,

@@ -3,7 +3,12 @@ import {
   safeWonderPushRawState,
   WonderPushSessionName,
 } from './wonderPushRuntimeDiagnosticCore';
-import type { WonderPushRuntimeDiagnostic } from './wonderPushRuntimeDiagnostic';
+import type {
+  NotificationRegistrationDiagnosticOutcome,
+  NotificationRegistrationDiagnosticStage,
+  NotificationRegistrationWorkflowDiagnostic,
+  WonderPushRuntimeDiagnostic,
+} from './wonderPushRuntimeDiagnostic';
 
 type DiagnosticSdk = unknown[] & {
   getSessionState?: () => unknown;
@@ -20,6 +25,12 @@ const transitions: Transition[] = [];
 let observerStarted = false;
 let workflowState: WorkflowState = 'UNKNOWN';
 let homeClassification = 'none';
+let registrationWorkflow: NotificationRegistrationWorkflowDiagnostic = {
+  currentStage: 'none', attemptNumber: null, stageStartedAt: null, stageCompletedAt: null,
+  lastHttpStatus: null, lastOperationOutcome: 'none', lastCompletedStage: 'none',
+  elapsedTimeMs: null, headersReceivedAt: null, responseParseStartedAt: null,
+  responseParseCompletedAt: null,
+};
 
 function appendTransition(rawState: unknown, sessionStates?: Record<string, unknown>) {
   const transition = {
@@ -55,6 +66,61 @@ export function recordNotificationWorkflowDiagnostic(
 ) {
   workflowState = state;
   homeClassification = classification || 'none';
+}
+
+export function beginNotificationRegistrationStage(
+  stage: NotificationRegistrationDiagnosticStage,
+  attemptNumber: 1 | 2 | 3,
+) {
+  const preserveLastHttpObservation = stage === 'final_validation' || stage === 'complete';
+  registrationWorkflow = {
+    ...registrationWorkflow,
+    currentStage: stage,
+    attemptNumber,
+    stageStartedAt: new Date().toISOString(),
+    stageCompletedAt: null,
+    lastHttpStatus: preserveLastHttpObservation ? registrationWorkflow.lastHttpStatus : null,
+    lastOperationOutcome: 'pending',
+    elapsedTimeMs: 0,
+    headersReceivedAt: preserveLastHttpObservation ? registrationWorkflow.headersReceivedAt : null,
+    responseParseStartedAt: preserveLastHttpObservation
+      ? registrationWorkflow.responseParseStartedAt : null,
+    responseParseCompletedAt: preserveLastHttpObservation
+      ? registrationWorkflow.responseParseCompletedAt : null,
+  };
+}
+
+export function recordNotificationRegistrationHeaders(status: number) {
+  registrationWorkflow = {
+    ...registrationWorkflow,
+    lastHttpStatus: Number.isInteger(status) ? status : null,
+    headersReceivedAt: new Date().toISOString(),
+  };
+}
+
+export function recordNotificationRegistrationParseStarted() {
+  registrationWorkflow = { ...registrationWorkflow, responseParseStartedAt: new Date().toISOString() };
+}
+
+export function recordNotificationRegistrationParseCompleted() {
+  registrationWorkflow = { ...registrationWorkflow, responseParseCompletedAt: new Date().toISOString() };
+}
+
+export function completeNotificationRegistrationStage() {
+  registrationWorkflow = {
+    ...registrationWorkflow,
+    stageCompletedAt: new Date().toISOString(),
+    lastOperationOutcome: 'success',
+    lastCompletedStage: registrationWorkflow.currentStage,
+  };
+}
+
+export function failNotificationRegistrationStage(outcome: NotificationRegistrationDiagnosticOutcome) {
+  registrationWorkflow = {
+    ...registrationWorkflow,
+    stageCompletedAt: new Date().toISOString(),
+    lastOperationOutcome: outcome,
+  };
 }
 
 function yesNoUnknown(result: PromiseSettledResult<unknown>): 'YES' | 'NO' | 'UNKNOWN' {
@@ -106,5 +172,14 @@ export async function readWonderPushRuntimeDiagnostic(): Promise<WonderPushRunti
     registrationWorkflowState: workflowState,
     homeClassification,
     transitionHistory: [...transitions],
+    registrationWorkflow: {
+      ...registrationWorkflow,
+      elapsedTimeMs: registrationWorkflow.stageStartedAt && !registrationWorkflow.stageCompletedAt
+        ? Math.max(0, Date.now() - Date.parse(registrationWorkflow.stageStartedAt))
+        : registrationWorkflow.stageStartedAt && registrationWorkflow.stageCompletedAt
+        ? Math.max(0, Date.parse(registrationWorkflow.stageCompletedAt)
+          - Date.parse(registrationWorkflow.stageStartedAt))
+        : null,
+    },
   };
 }

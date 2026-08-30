@@ -3,6 +3,18 @@ import {
   getSubscribedInstallationId,
   WonderPushInstallationRecoveryError,
 } from './wonderPushService.web';
+import {
+  beginNotificationRegistrationStage,
+  completeNotificationRegistrationStage,
+  failNotificationRegistrationStage,
+  recordNotificationRegistrationHeaders,
+  recordNotificationRegistrationParseCompleted,
+  recordNotificationRegistrationParseStarted,
+} from './wonderPushRuntimeDiagnostic';
+import type {
+  NotificationRegistrationDiagnosticOutcome,
+  NotificationRegistrationDiagnosticStage,
+} from './wonderPushRuntimeDiagnostic';
 
 const CAPABILITY_KEY = '@ipm_notification_capability_v1';
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
@@ -104,6 +116,13 @@ function safeRequestError(stage: Exclude<NotificationRegistrationStage, 'success
   return new NotificationRegistrationError(stage, 'other', false);
 }
 
+function diagnosticOutcome(error: NotificationRegistrationError): NotificationRegistrationDiagnosticOutcome {
+  if (error.classification === 'timeout') return 'timeout';
+  if (error.classification === 'network_failure') return 'network_failure';
+  if (error.classification === 'malformed_response') return 'malformed_response';
+  return 'failure';
+}
+
 async function request(path: string, method: string,
   stage: Exclude<NotificationRegistrationStage, 'success'>,
   deviceCapability: string, installationId: string | null) {
@@ -119,28 +138,44 @@ async function request(path: string, method: string,
       },
     });
   } catch (error) {
-    throw safeRequestError(stage, error);
+    const safeError = safeRequestError(stage, error);
+    failNotificationRegistrationStage(diagnosticOutcome(safeError));
+    throw safeError;
   } finally {
     clearTimeout(timer);
   }
+  recordNotificationRegistrationHeaders(response.status);
   if (!response.ok) {
     const invalidCredentials = response.status === 400 || response.status === 401
       || response.status === 403 || response.status === 409;
     const retryable = response.status === 408 || response.status === 425
       || response.status === 429 || response.status >= 500;
-    throw new NotificationRegistrationError(stage,
+    const requestError = new NotificationRegistrationError(stage,
       invalidCredentials ? 'invalid_credentials' : 'http_error', retryable, response.status);
+    failNotificationRegistrationStage(diagnosticOutcome(requestError));
+    throw requestError;
   }
+  recordNotificationRegistrationParseStarted();
   try {
     const body = await response.json();
+    recordNotificationRegistrationParseCompleted();
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Malformed response');
+    completeNotificationRegistrationStage();
     return body as Record<string, unknown>;
   } catch {
-    throw new NotificationRegistrationError(stage, 'malformed_response', true);
+    const parseError = new NotificationRegistrationError(stage, 'malformed_response', true);
+    failNotificationRegistrationStage('malformed_response');
+    throw parseError;
   }
 }
 
-export async function runNotificationRegistrationAttempt(): Promise<Record<string, unknown>> {
+function beginStage(stage: NotificationRegistrationDiagnosticStage, attemptNumber: 1 | 2 | 3) {
+  beginNotificationRegistrationStage(stage, attemptNumber);
+}
+
+export async function runNotificationRegistrationAttempt(
+  attemptNumber: 1 | 2 | 3 = 1,
+): Promise<Record<string, unknown>> {
   let installationId: string | null;
   try { installationId = await getSubscribedInstallationId(); }
   catch (error) {
@@ -152,22 +187,41 @@ export async function runNotificationRegistrationAttempt(): Promise<Record<strin
   if (!installationId) {
     throw new NotificationRegistrationError('installation_retrieval', 'installation_unavailable', true);
   }
-  const deviceCapability = await capability();
+  beginStage('capability', attemptNumber);
+  let deviceCapability: string;
+  try {
+    deviceCapability = await capability();
+  } catch (error) {
+    failNotificationRegistrationStage('failure');
+    throw error;
+  }
+  completeNotificationRegistrationStage();
+  beginStage('status_by_capability', attemptNumber);
   try {
     await request('/status-by-capability', 'GET', 'capability_lookup', deviceCapability, null);
   } catch (error) {
     if (!(error instanceof NotificationRegistrationError) || error.status !== 404) throw error;
+    completeNotificationRegistrationStage();
   }
   // Register is capability-scoped and idempotent. Calling it for an existing
   // capability safely rebinds a migrated browser to its replacement WonderPush
   // installation; an installation owned by another capability remains rejected.
+  beginStage('register', attemptNumber);
   await request('/register', 'POST', 'backend_registration', deviceCapability, installationId);
+  beginStage('status', attemptNumber);
   await request('/status', 'GET', 'backend_status', deviceCapability, installationId);
+  beginStage('readiness_verify', attemptNumber);
   const readiness = await request('/readiness/verify', 'POST', 'provider_verification',
     deviceCapability, installationId);
+  beginStage('final_validation', attemptNumber);
   if (readiness.registered !== true || readiness.provider_deliverable !== true) {
-    throw new NotificationRegistrationError('provider_verification', 'other', true);
+    const validationError = new NotificationRegistrationError('provider_verification', 'other', true);
+    failNotificationRegistrationStage('failure');
+    throw validationError;
   }
+  completeNotificationRegistrationStage();
+  beginStage('complete', attemptNumber);
+  completeNotificationRegistrationStage();
   return readiness;
 }
 
@@ -179,7 +233,8 @@ export async function ensureNotificationRegistration(): Promise<NotificationRegi
   let lastError: NotificationRegistrationError | null = null;
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
     try {
-      const status = await runNotificationRegistrationAttempt();
+      const attemptNumber = (attempt + 1) as 1 | 2 | 3;
+      const status = await runNotificationRegistrationAttempt(attemptNumber);
       return { stage: 'success', status, attempts: attempt + 1 };
     } catch (error) {
       lastError = safeRequestError('installation_retrieval', error);
