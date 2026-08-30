@@ -14,6 +14,7 @@ import {
   NotificationRegistrationFailure,
   NotificationRegistrationStage,
 } from '../services/notificationRegistration';
+import { recordNotificationWorkflowDiagnostic } from '../services/wonderPushRuntimeDiagnostic';
 import { colors } from '../theme/colors';
 
 const STATE_COPY: Record<NotificationState, string> = {
@@ -35,11 +36,13 @@ export default function NotificationOptIn() {
   const [failureClassification, setFailureClassification] = useState<NotificationRegistrationFailure | null>(null);
 
   const completeSetup = useCallback(async () => {
+    recordNotificationWorkflowDiagnostic('PENDING');
     setSetupState('pending');
     setFailureStage(null);
     setFailureClassification(null);
     try {
       await ensureNotificationRegistration();
+      recordNotificationWorkflowDiagnostic('SUCCESS');
       setSetupState('ready');
     } catch (error) {
       let finalError = error;
@@ -51,6 +54,7 @@ export default function NotificationOptIn() {
           // session is ready, then rerun the existing idempotent setup path.
           await waitForWonderPushSessionReady();
           await ensureNotificationRegistration();
+          recordNotificationWorkflowDiagnostic('SUCCESS');
           setSetupState('ready');
           return;
         } catch (recoveryError) {
@@ -66,6 +70,7 @@ export default function NotificationOptIn() {
       const safeClassification = (finalError as { classification?: NotificationRegistrationFailure }).classification;
       setFailureStage(safeStage || 'installation_retrieval');
       setFailureClassification(safeClassification || 'other');
+      recordNotificationWorkflowDiagnostic('FAILED', safeClassification || 'other');
       setSetupState('failed');
     }
   }, []);
@@ -76,6 +81,7 @@ export default function NotificationOptIn() {
     if (nextState === 'subscribed') {
       await completeSetup();
     } else {
+      recordNotificationWorkflowDiagnostic('IDLE');
       setSetupState('idle');
       setFailureStage(null);
       setFailureClassification(null);
@@ -105,7 +111,10 @@ export default function NotificationOptIn() {
         : await subscribeToNotifications();
       setState(nextState);
       if (nextState === 'subscribed') await completeSetup();
-      else setSetupState('idle');
+      else {
+        recordNotificationWorkflowDiagnostic('IDLE');
+        setSetupState('idle');
+      }
     } finally {
       setWorking(false);
     }

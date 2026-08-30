@@ -1,3 +1,5 @@
+import { startWonderPushRuntimeObservation } from './wonderPushRuntimeDiagnostic';
+
 const SDK_URL = 'https://cdn.by.wonderpush.com/sdk/1.1/wonderpush-loader.min.js';
 const SDK_SCRIPT_ID = 'wonderpush-jssdk-loader';
 const SERVICE_WORKER_PATH = '/webpushr-sw.js';
@@ -154,6 +156,7 @@ export function initializeWonderPush(): Promise<void> {
       throw new Error('EXPO_PUBLIC_WONDERPUSH_WEB_KEY is not configured.');
     }
     window.WonderPush = window.WonderPush || [];
+    startWonderPushRuntimeObservation();
     window.WonderPush.push(['init', {
       webKey,
       serviceWorkerUrl: getWonderPushWorkerUrl(webKey),
