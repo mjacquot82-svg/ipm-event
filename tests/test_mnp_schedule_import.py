@@ -61,17 +61,23 @@ class MnpScheduleImportTests(unittest.TestCase):
             "2026-09-22-quality-homes-d18": ("MakeUp Artist", "Hayley Wilhelm"),
             "2026-09-22-quality-homes-d22": ("Pilates Demo", "Chelsea\nAll Bodies"),
             "2026-09-22-quality-homes-d30": ("Shroom Soda", "West Shore"),
+            "2026-09-22-quality-homes-d7": ("Bombshell", "Locally owned hair and beauty salon downtown Walkerton, offering hair and nail services."),
             "2026-09-23-foodland-e7": ("Wellness", "Essential Wellness\nLiza Weltz"),
             "2026-09-23-foodland-e9": ("Evergreen Connections", "Rachel Stroeder"),
             "2026-09-23-foodland-e12": ("Art Studio", "Susan Seitz"),
             "2026-09-23-foodland-e14": ("Home and Garden", "Ruth Montgomery (Energy in the Home)"),
             "2026-09-23-foodland-e21": ("furniture refresh", "Willow Home"),
             "2026-09-23-foodland-e28": ("Fashion", "J&H Womens Fashions"),
+            "2026-09-23-foodland-e30": ("Flossy May", "“Lets create TOGETHER. Your own UNIQUE hat, choose a color/finish/style. Create a MEMORY. Tell your STORY, and hold it close. Then wear it PROUDLY.”"),
+            "2026-09-23-harleys-f10": ("Cheryl McNair", "Independent beauty consultant providing personalized beauty and skin care guidance."),
+            "2026-09-23-harleys-f16": ("Flossy May", "“Lets create TOGETHER. Your own UNIQUE hat, choose a color/finish/style. Create a MEMORY. Tell your STORY, and hold it close. Then wear it PROUDLY.”"),
             "2026-09-23-harleys-f7": ("Wood Working", "Mark Grubb"),
             "2026-09-23-harleys-f21": ("Simply Potts", "by Lauriss"),
             "2026-09-23-quality-homes-g13": ("cupcake decorating", "Labour of Love"),
+            "2026-09-23-quality-homes-g22": ("Bombshell", "Locally owned hair and beauty salon downtown Walkerton, offering hair and nail services."),
             "2026-09-24-foodland-h6": ("Start of Day Movement", "Definition Fitness"),
             "2026-09-24-foodland-h7": ("Fashion", "Pure Elegance"),
+            "2026-09-24-foodland-h9": ("His Style", "Locally owned men’s clothing boutique in downtown Walkerton, offering quality clothing for casual, business casual, and formal occasions."),
             "2026-09-24-foodland-h14": ("Wellness", "Hannah Grieg"),
             "2026-09-24-foodland-h16": ("Tobermory Hyperbaric Chamber", "George Harpur"),
             "2026-09-24-foodland-h18": ("Soul Purpose", "Ashley Grant"),
@@ -79,9 +85,11 @@ class MnpScheduleImportTests(unittest.TestCase):
             "2026-09-24-foodland-h25": ("Food and Drink", "Southampton Olive Oil"),
             "2026-09-24-foodland-h31": ("all things canning", "Greenock Collective"),
             "2026-09-24-harleys-i7": ("Christmas Urns", "Brenda Kreamer"),
+            "2026-09-24-harleys-i24": ("Cheryl McNair", "Independent beauty consultant providing personalized beauty and skin care guidance."),
             "2026-09-24-harleys-i16": ("Doterra w Jodi", None),
             "2026-09-24-quality-homes-j12": ("replanting house plants", "Guest House"),
             "2026-09-24-quality-homes-j14": ("sampling cold brew", "Guest House"),
+            "2026-09-24-quality-homes-j7": ("Bombshell", "Locally owned hair and beauty salon downtown Walkerton, offering hair and nail services."),
             "2026-09-25-foodland-k6": ("Start of Day Movement", "Freezer Fitness"),
             "2026-09-25-foodland-k7": ("Food and Drink", "Fire Cider & Honey"),
             "2026-09-25-foodland-k11": ("Hormones and Food", "Jennifer Dunsmoor"),
@@ -93,8 +101,9 @@ class MnpScheduleImportTests(unittest.TestCase):
             "2026-09-25-harleys-l22": ("Organic Facial", "Sara Porter\nRemind Wellness"),
             "2026-09-25-quality-homes-m10": ("All things honey -Jody", None),
             "2026-09-25-quality-homes-m15": ("The perfect Christmas Trees", "Flowers by Uss"),
+            "2026-09-25-quality-homes-m23": ("Forest Maiden", "Offering goddess inspired facials, facial waxing, and makeup artistry. A natural, feminine, peaceful, beauty studio with a strong connection to nature."),
         }
-        self.assertEqual(46, len(expected))
+        self.assertEqual(55, len(expected))
         for identity, content in expected.items():
             row = events[identity]
             self.assertEqual(content, (row["title"], row["description"]), identity)
