@@ -189,12 +189,22 @@ test('session initialization remains pending and automatically resumes setup', (
 });
 
 test('pending startup hides actions while genuine failures retain recovery UI', () => {
-  assert.match(component, /canAct && !working && setupState !== 'pending'/);
+  assert.match(component, /state === 'loading' \|\| \(state === 'subscribed' && setupState !== 'failed'\)\) return null/);
   assert.match(component, /setupState === 'failed'[\s\S]*Try again/);
   assert.match(component, /state === 'subscribed'[\s\S]*unsubscribeFromNotifications\(\)/);
   assert.match(component, /state === 'denied'/);
   assert.match(component, /Notifications are enabled\. Finishing setup…/);
   assert.match(component, /Notifications are enabled, but setup could not be completed/);
+});
+
+test('healthy and initializing subscribers do not render the Home card or Disable action', () => {
+  const hidden = component.indexOf("if (state === 'loading' || (state === 'subscribed' && setupState !== 'failed')) return null");
+  const card = component.indexOf('accessibilityLabel="IPM notification settings"');
+  assert.ok(hidden > 0 && hidden < card);
+  assert.match(component, /style=\{\[styles\.card, containerStyle\]\}/);
+  assert.match(component, /state === 'default' \|\| state === 'unsubscribed'/);
+  assert.match(component, /state === 'denied'/);
+  assert.match(component, /state === 'unsupported' && isIphoneSafari/);
 });
 
 test('safe UI and diagnostics do not render sensitive device material', () => {

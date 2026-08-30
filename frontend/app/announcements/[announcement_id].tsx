@@ -21,13 +21,19 @@ export default function AnnouncementDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState(false);
-  const { markAnnouncementRead } = useAnnouncementReadState();
+  const { dismissAnnouncement, markAnnouncementRead } = useAnnouncementReadState();
   usePageAnalytics('announcement_detail', source || 'other');
   const trackedOpenId = React.useRef<string | null>(null);
 
   const goBack = () => {
     if (source && router.canGoBack()) router.back();
     else router.replace('/announcements' as never);
+  };
+
+  const dismiss = async () => {
+    if (!announcementId) return;
+    await dismissAnnouncement(announcementId);
+    goBack();
   };
 
   const load = useCallback(async () => {
@@ -71,6 +77,12 @@ export default function AnnouncementDetailScreen() {
               <Feather name="arrow-left" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
             <View style={styles.headerText}><Text style={styles.heading} accessibilityRole="header">Announcement</Text><Text style={styles.subtitle}>Event update</Text></View>
+            {announcement ? (
+              <TouchableOpacity style={styles.dismissButton} onPress={() => { void dismiss(); }}
+                accessibilityRole="button" accessibilityLabel="Dismiss announcement">
+                <Feather name="x" size={22} color={colors.textPrimary} />
+              </TouchableOpacity>
+            ) : null}
           </View>
 
           {loading ? (
@@ -110,6 +122,7 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', flexDirection: 'row', gap: 12, paddingBottom: 18, paddingTop: 14 },
   backButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 10, borderWidth: 1, flexShrink: 0, minHeight: 44, minWidth: 44, justifyContent: 'center' },
   headerText: { flex: 1, minWidth: 0 },
+  dismissButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 10, borderWidth: 1, flexShrink: 0, minHeight: 44, minWidth: 44, justifyContent: 'center' },
   heading: { color: colors.textPrimary, fontSize: 26, fontWeight: '800' },
   subtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   state: { alignItems: 'center', gap: 12, justifyContent: 'center', minHeight: 320, paddingHorizontal: 28 },

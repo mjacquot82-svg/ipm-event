@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 import {
   getNotificationState,
@@ -27,7 +27,7 @@ const STATE_COPY: Record<NotificationState, string> = {
   error: 'Notifications are temporarily unavailable. The IPM app will continue to work.',
 };
 
-export default function NotificationOptIn() {
+export default function NotificationOptIn({ containerStyle }: { containerStyle?: StyleProp<ViewStyle> }) {
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
   const [verificationDeferred, setVerificationDeferred] = useState(false);
@@ -121,6 +121,9 @@ export default function NotificationOptIn() {
   }, [completeSetup, state]);
 
   if (Platform.OS !== 'web') return null;
+  // The healthy and transient returning-subscriber states require no Home
+  // action. Keep setup running, but avoid a persistent card or startup flash.
+  if (state === 'loading' || (state === 'subscribed' && setupState !== 'failed')) return null;
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const isIphoneSafari = /iPhone|iPad|iPod/.test(window.navigator.userAgent || '') && !standalone;
@@ -138,7 +141,7 @@ export default function NotificationOptIn() {
 
   return (
     <View
-      style={styles.card}
+      style={[styles.card, containerStyle]}
       accessibilityLabel="IPM notification settings"
       testID={`notification-setup-${setupState === 'failed'
         ? `${failureStage}-${failureClassification}` : setupState}`}
@@ -163,7 +166,7 @@ export default function NotificationOptIn() {
         {state === 'denied' ? <Text style={styles.hint}>Allow notifications for this site in browser settings to enable them.</Text> : null}
         {state === 'unsupported' && isIphoneSafari ? <Text style={styles.hint}>Install IPM to your Home Screen, then open the installed IPM app to enable notifications.</Text> : null}
       </View>
-      {!verificationDeferred && (state === 'loading' || working) ? <ActivityIndicator color={colors.primary} /> : null}
+      {!verificationDeferred && working ? <ActivityIndicator color={colors.primary} /> : null}
       {!verificationDeferred && canAct && !working && setupState !== 'pending' ? (
         <TouchableOpacity
           accessibilityRole="button"

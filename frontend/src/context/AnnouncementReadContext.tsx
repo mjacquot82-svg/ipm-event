@@ -4,11 +4,14 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { Announcement } from '../services/spreadsheetDataService';
 
 const LAST_READ_ANNOUNCEMENT_KEY = 'lastReadAnnouncementId';
+const DISMISSED_ANNOUNCEMENTS_KEY = 'dismissedAnnouncementIds';
 
 type AnnouncementReadContextValue = {
   hydrated: boolean;
   lastReadAnnouncementId: string | null;
+  dismissedAnnouncementIds: Set<string>;
   markAnnouncementRead: (announcementId: string) => Promise<void>;
+  dismissAnnouncement: (announcementId: string) => Promise<void>;
 };
 
 const AnnouncementReadContext = createContext<AnnouncementReadContextValue | null>(null);
@@ -16,12 +19,23 @@ const AnnouncementReadContext = createContext<AnnouncementReadContextValue | nul
 export function AnnouncementReadProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [lastReadAnnouncementId, setLastReadAnnouncementId] = useState<string | null>(null);
+  const [dismissedAnnouncementIds, setDismissedAnnouncementIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
-    AsyncStorage.getItem(LAST_READ_ANNOUNCEMENT_KEY)
-      .then((storedId) => {
-        if (active) setLastReadAnnouncementId(storedId);
+    Promise.all([
+      AsyncStorage.getItem(LAST_READ_ANNOUNCEMENT_KEY),
+      AsyncStorage.getItem(DISMISSED_ANNOUNCEMENTS_KEY),
+    ])
+      .then(([storedId, storedDismissedIds]) => {
+        if (!active) return;
+        setLastReadAnnouncementId(storedId);
+        if (storedDismissedIds) {
+          const parsed = JSON.parse(storedDismissedIds);
+          if (Array.isArray(parsed)) {
+            setDismissedAnnouncementIds(new Set(parsed.filter((id): id is string => typeof id === 'string')));
+          }
+        }
       })
       .catch((error) => console.warn('Unable to load announcement read state:', error))
       .finally(() => {
@@ -39,8 +53,29 @@ export function AnnouncementReadProvider({ children }: { children: React.ReactNo
     }
   }, []);
 
-  const value = useMemo(() => ({ hydrated, lastReadAnnouncementId, markAnnouncementRead }), [hydrated, lastReadAnnouncementId, markAnnouncementRead]);
+  const dismissAnnouncement = useCallback(async (announcementId: string) => {
+    const next = new Set(dismissedAnnouncementIds);
+    next.add(announcementId);
+    setDismissedAnnouncementIds(next);
+    try {
+      await AsyncStorage.setItem(DISMISSED_ANNOUNCEMENTS_KEY, JSON.stringify([...next]));
+    } catch (error) {
+      console.warn('Unable to save dismissed announcement state:', error);
+    }
+  }, [dismissedAnnouncementIds]);
+
+  const value = useMemo(() => ({
+    hydrated,
+    lastReadAnnouncementId,
+    dismissedAnnouncementIds,
+    markAnnouncementRead,
+    dismissAnnouncement,
+  }), [dismissAnnouncement, dismissedAnnouncementIds, hydrated, lastReadAnnouncementId, markAnnouncementRead]);
   return <AnnouncementReadContext.Provider value={value}>{children}</AnnouncementReadContext.Provider>;
+}
+
+export function excludeDismissedAnnouncements(announcements: Announcement[], dismissedIds: Set<string>) {
+  return announcements.filter((announcement) => !dismissedIds.has(announcement.id));
 }
 
 export function useAnnouncementReadState() {

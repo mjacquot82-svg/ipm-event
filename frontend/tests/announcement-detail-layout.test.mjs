@@ -22,6 +22,13 @@ test('header stays readable and its Back control has an accessible touch target'
   assert.match(detail, /accessibilityRole="header"/);
 });
 
+test('announcement detail has an accessible safe-area dismiss control', () => {
+  assert.match(detail, /accessibilityLabel="Dismiss announcement"/);
+  assert.match(detail, /<Feather name="x"/);
+  assert.match(detail, /dismissButton: \{[^}]*flexShrink: 0[^}]*minHeight: 44[^}]*minWidth: 44/);
+  assert.match(detail, /await dismissAnnouncement\(announcementId\)/);
+});
+
 test('known in-app entries use history and direct entries fall back to Announcements', () => {
   assert.match(detail, /if \(source && router\.canGoBack\(\)\) router\.back\(\)/);
   assert.match(detail, /else router\.replace\('\/announcements' as never\)/);

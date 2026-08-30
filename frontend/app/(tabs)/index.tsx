@@ -23,7 +23,7 @@ import { openTrackedLink, IpmDestinationId } from '../../src/analytics/trackedLi
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { getFavorites } from '../../src/utils/favoritesStorage';
-import { getUnreadAnnouncementIds, useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
+import { excludeDismissedAnnouncements, getUnreadAnnouncementIds, useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
 import {
   CachedApiSource,
   CachedApiResult,
@@ -217,7 +217,7 @@ export default function HomeScreen() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementDataSource, setAnnouncementDataSource] = useState<CachedApiSource>('network');
   const [announcementLastUpdate, setAnnouncementLastUpdate] = useState<string | null>(null);
-  const { hydrated: announcementReadStateHydrated, lastReadAnnouncementId } = useAnnouncementReadState();
+  const { hydrated: announcementReadStateHydrated, lastReadAnnouncementId, dismissedAnnouncementIds } = useAnnouncementReadState();
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
@@ -377,9 +377,10 @@ export default function HomeScreen() {
 
   const sectionStyle = [styles.section, attendeeSectionStyle];
   const isShowingCachedData = dataSource === 'cache' && !loading && events.length > 0;
-  const unreadAnnouncementIds = getUnreadAnnouncementIds(announcements, lastReadAnnouncementId);
+  const attendeeAnnouncements = excludeDismissedAnnouncements(announcements, dismissedAnnouncementIds);
+  const unreadAnnouncementIds = getUnreadAnnouncementIds(attendeeAnnouncements, lastReadAnnouncementId);
   const newestUnreadAnnouncement = announcementReadStateHydrated
-    ? announcements
+    ? attendeeAnnouncements
       .filter((announcement) => unreadAnnouncementIds.has(announcement.id))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null
     : null;
@@ -410,9 +411,7 @@ export default function HomeScreen() {
       >
         <ResponsiveBanner />
 
-        <View style={sectionStyle}>
-          <NotificationOptIn />
-        </View>
+        <NotificationOptIn containerStyle={sectionStyle} />
 
         {isShowingCachedData && (
           <View style={sectionStyle}>

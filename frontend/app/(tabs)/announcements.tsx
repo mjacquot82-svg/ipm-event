@@ -8,7 +8,7 @@ import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { Announcement, AnnouncementsResponse, CachedApiResult, CachedApiSource, getAnnouncementsData } from '../../src/services/spreadsheetDataService';
-import { getUnreadAnnouncementIds, useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
+import { excludeDismissedAnnouncements, getUnreadAnnouncementIds, useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 
 export default function AnnouncementsScreen() {
@@ -20,8 +20,11 @@ export default function AnnouncementsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
-  const { hydrated, lastReadAnnouncementId } = useAnnouncementReadState();
-  const unreadIds = getUnreadAnnouncementIds(announcements, lastReadAnnouncementId);
+  const { hydrated, lastReadAnnouncementId, dismissedAnnouncementIds } = useAnnouncementReadState();
+  const visibleAnnouncements = hydrated
+    ? excludeDismissedAnnouncements(announcements, dismissedAnnouncementIds)
+    : [];
+  const unreadIds = getUnreadAnnouncementIds(visibleAnnouncements, lastReadAnnouncementId);
   usePageAnalytics('announcements', 'home_quick_action', 'announcement_list_viewed', { unread_count: unreadIds.size });
 
   const applyResult = useCallback((result: CachedApiResult<AnnouncementsResponse>) => {
@@ -67,7 +70,7 @@ export default function AnnouncementsScreen() {
             <View><Text style={styles.title}>Announcements</Text><Text style={styles.subtitle}>Latest event updates</Text></View>
           </View>
 
-          {dataSource === 'cache' && announcements.length > 0 && <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />}
+          {dataSource === 'cache' && visibleAnnouncements.length > 0 && <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />}
 
           {loading ? (
             <View style={styles.state}><ActivityIndicator size="large" color={colors.primary} /><Text style={styles.stateText}>Loading announcements...</Text></View>
@@ -78,11 +81,11 @@ export default function AnnouncementsScreen() {
               <Text style={styles.stateText}>{error}</Text>
               <TouchableOpacity style={styles.retryButton} onPress={() => loadAnnouncements()}><Feather name="refresh-cw" size={16} color="#FFFFFF" /><Text style={styles.retryText}>Try Again</Text></TouchableOpacity>
             </View>
-          ) : announcements.length === 0 ? (
+          ) : visibleAnnouncements.length === 0 ? (
             <View style={styles.state}><Feather name="message-square" size={42} color={colors.textMuted} /><Text style={styles.stateTitle}>No published announcements</Text><Text style={styles.stateText}>Event updates will appear here when available.</Text></View>
           ) : (
             <View style={[styles.list, sectionStyle]}>
-              {announcements.map((announcement) => (
+              {visibleAnnouncements.map((announcement) => (
                 <AnnouncementCard
                   key={announcement.id}
                   announcement={announcement}
