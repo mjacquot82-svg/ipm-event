@@ -41,7 +41,8 @@ test('ordinary registration preserves register-before-status lifecycle', () => {
   const verify = registration.indexOf("request('/readiness/verify', 'POST'");
   assert.ok(absent > 0 && absent < status && status < verify);
   assert.match(registration, /error\.status !== 404/);
-  assert.match(registration, /if \(!existing\)/);
+  assert.doesNotMatch(registration, /if \(!existing\)/);
+  assert.match(registration, /capability-scoped and idempotent/);
 });
 
 test('T-30 delivery and scheduling are hard-disabled by the cutover', () => {

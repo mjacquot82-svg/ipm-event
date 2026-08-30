@@ -11,6 +11,7 @@ const SDK_SETTLE_RETRY_MS = 400;
 const SDK_SETTLE_ATTEMPTS = 3;
 const INSTALLATION_RECOVERY_ATTEMPTS = 12;
 const INSTALLATION_RECOVERY_RETRY_MS = 750;
+const LEGACY_SUBSCRIPTION_REPLACED_KEY = '@ipm_wonderpush_legacy_subscription_replaced_v1';
 const WORKER_READY_TIMEOUT_MS = 2_000;
 const SESSION_READY_TIMEOUT_MS = 3_000;
 const SUBSCRIBE_TIMEOUT_MS = 45_000;
@@ -50,6 +51,7 @@ export type NotificationState =
 let initialization: Promise<void> | null = null;
 let offlineShellRegistration: Promise<ServiceWorkerRegistration> | null = null;
 let offlineShellOnlineListenerInstalled = false;
+let legacySubscriptionReplacementAttempted = false;
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(message)), timeoutMs);
@@ -202,6 +204,47 @@ async function waitForWonderPushSessionReadiness(sdk: WonderPushQueue) {
   if (listener) window.removeEventListener('WonderPushEvent', listener);
 }
 
+function legacySubscriptionWasReplaced() {
+  if (legacySubscriptionReplacementAttempted) return true;
+  try {
+    return window.localStorage?.getItem(LEGACY_SUBSCRIPTION_REPLACED_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function rememberLegacySubscriptionReplacement() {
+  legacySubscriptionReplacementAttempted = true;
+  try {
+    window.localStorage?.setItem(LEGACY_SUBSCRIPTION_REPLACED_KEY, 'true');
+  } catch {
+    // The in-memory guard still prevents repeated replacement in this session.
+  }
+}
+
+async function replaceOrphanedPushSubscription(): Promise<boolean> {
+  if (legacySubscriptionWasReplaced()) return false;
+  const registration = await withTimeout(
+    Promise.resolve(navigator.serviceWorker.ready),
+    WORKER_READY_TIMEOUT_MS,
+    'Current service worker registration was unavailable.'
+  );
+  const subscription = await withTimeout(
+    registration.pushManager.getSubscription(),
+    STATUS_TIMEOUT_MS,
+    'Current push subscription lookup timed out.'
+  );
+  if (!subscription) return false;
+  const removed = await withTimeout(
+    subscription.unsubscribe(),
+    UNSUBSCRIBE_TIMEOUT_MS,
+    'Legacy push subscription replacement timed out.'
+  );
+  if (!removed) throw new Error('Legacy push subscription could not be removed.');
+  rememberLegacySubscriptionReplacement();
+  return true;
+}
+
 export async function readWonderPushSnapshot({ attempts = SDK_SETTLE_ATTEMPTS,
   retryDelayMs = SDK_SETTLE_RETRY_MS, requireInstallation = true } = {}): Promise<WonderPushReadSnapshot> {
   await initializeWonderPush();
@@ -306,11 +349,52 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
     throw new WonderPushInstallationRecoveryError('session_recovery_failed');
   }
   if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
-  throw new WonderPushInstallationRecoveryError('installation_still_unavailable');
+
+  // Push subscriptions are scoped to a service-worker registration and retain
+  // their original application-server key. A root-scope Webpushr subscription
+  // can therefore survive the worker-script cutover but cannot become a
+  // WonderPush installation. Only after the normal SDK recovery has exhausted,
+  // and only when the active registration proves that an orphaned subscription
+  // exists, replace that single PushSubscription. Browser permission, the
+  // worker registration, caches, IndexedDB, favorites and itinerary are untouched.
+  let replaced = false;
+  try {
+    replaced = await replaceOrphanedPushSubscription();
+  } catch {
+    throw new WonderPushInstallationRecoveryError('legacy_subscription_replacement_failed');
+  }
+  if (!replaced) {
+    throw new WonderPushInstallationRecoveryError(
+      legacySubscriptionWasReplaced()
+        ? 'wonderpush_session_initialization_failed'
+        : 'legacy_push_subscription_absent'
+    );
+  }
+  if (Notification.permission !== 'granted') {
+    throw new WonderPushInstallationRecoveryError('wonderpush_session_initialization_failed');
+  }
+  try {
+    await withSdk(async (sdk) => {
+      if (!sdk.subscribeToNotifications) {
+        throw new Error('WonderPush subscribe API is unavailable.');
+      }
+      await sdk.subscribeToNotifications();
+    }, SUBSCRIBE_TIMEOUT_MS, 'WonderPush migration subscription timed out.');
+    snapshot = await readWonderPushSnapshot({
+      attempts: INSTALLATION_RECOVERY_ATTEMPTS,
+      retryDelayMs: INSTALLATION_RECOVERY_RETRY_MS,
+    });
+  } catch {
+    throw new WonderPushInstallationRecoveryError('wonderpush_session_initialization_failed');
+  }
+  if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
+  throw new WonderPushInstallationRecoveryError('wonderpush_session_initialization_failed');
 }
 
 export type WonderPushInstallationFailureStage =
-  | 'sdk_unavailable' | 'session_recovery_failed' | 'installation_still_unavailable';
+  | 'sdk_unavailable' | 'session_recovery_failed' | 'installation_still_unavailable'
+  | 'legacy_push_subscription_absent' | 'legacy_subscription_replacement_failed'
+  | 'wonderpush_session_initialization_failed';
 
 export class WonderPushInstallationRecoveryError extends Error {
   constructor(public failureStage: WonderPushInstallationFailureStage) {

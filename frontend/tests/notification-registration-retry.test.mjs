@@ -21,7 +21,7 @@ test('registration stages are explicit and safely bounded', () => {
   assert.match(service, /!lastError\.retryable/);
 });
 
-test('registration order preserves conclusive lookup and idempotent create', () => {
+test('registration order preserves lookup and capability-scoped migration rebind', () => {
   const installation = service.indexOf("'installation_retrieval'");
   const lookup = service.indexOf("request('/status-by-capability'");
   const register = service.indexOf("request('/register'");
@@ -30,7 +30,8 @@ test('registration order preserves conclusive lookup and idempotent create', () 
   assert.ok(installation >= 0 && installation < lookup);
   assert.ok(lookup < register && register < status && status < readiness);
   assert.match(service, /error\.status !== 404/);
-  assert.match(service, /if \(!existing\)/);
+  assert.doesNotMatch(service, /if \(!existing\)/);
+  assert.match(service, /safely rebinds a migrated browser/);
   assert.match(service, /readiness\.registered !== true/);
   assert.match(service, /readiness\.provider_deliverable !== true/);
 });
@@ -44,7 +45,7 @@ test('clean installation returns before migration recovery', () => {
     < getter.indexOf('sdk.subscribeToNotifications()'));
 });
 
-test('missing legacy installation performs one bounded provider recovery', () => {
+test('missing legacy installation performs bounded provider recovery before targeted replacement', () => {
   const getter = wonderPush.slice(wonderPush.indexOf('export async function getSubscribedInstallationId'),
     wonderPush.indexOf('export async function getCurrentInstallationFingerprint'));
   assert.doesNotMatch(getter, /if \(!snapshot\.subscribed\) return null/);
@@ -54,11 +55,25 @@ test('missing legacy installation performs one bounded provider recovery', () =>
   assert.match(getter, /retryDelayMs: INSTALLATION_RECOVERY_RETRY_MS/);
   assert.match(wonderPush, /INSTALLATION_RECOVERY_ATTEMPTS = 12/);
   assert.match(wonderPush, /INSTALLATION_RECOVERY_RETRY_MS = 750/);
-  assert.equal((getter.match(/sdk\.subscribeToNotifications\(\)/g) || []).length, 1);
-  assert.equal((getter.match(/readWonderPushSnapshot\(/g) || []).length, 2);
+  assert.equal((getter.match(/sdk\.subscribeToNotifications\(\)/g) || []).length, 2);
+  assert.equal((getter.match(/readWonderPushSnapshot\(/g) || []).length, 3);
   assert.doesNotMatch(getter, /unsubscribeFromNotifications|Notification\.requestPermission/);
   assert.match(getter, /session_recovery_failed/);
-  assert.match(getter, /installation_still_unavailable/);
+  assert.match(getter, /replaceOrphanedPushSubscription/);
+  assert.ok(getter.indexOf('replaceOrphanedPushSubscription')
+    > getter.indexOf('attempts: INSTALLATION_RECOVERY_ATTEMPTS'));
+});
+
+test('legacy replacement is narrow, permission-safe, idempotent, and bounded', () => {
+  const replacement = wonderPush.slice(wonderPush.indexOf('function legacySubscriptionWasReplaced'),
+    wonderPush.indexOf('export async function readWonderPushSnapshot'));
+  assert.match(replacement, /registration\.pushManager\.getSubscription\(\)/);
+  assert.match(replacement, /subscription\.unsubscribe\(\)/);
+  assert.match(replacement, /LEGACY_SUBSCRIPTION_REPLACED_KEY/);
+  assert.match(replacement, /legacySubscriptionReplacementAttempted/);
+  assert.match(replacement, /UNSUBSCRIBE_TIMEOUT_MS/);
+  assert.doesNotMatch(replacement, /Notification\.requestPermission|localStorage\.clear|indexedDB\.deleteDatabase|caches\.delete|serviceWorker\.getRegistrations/);
+  assert.doesNotMatch(wonderPush, /endpoint|applicationServerKey|pushToken/);
 });
 
 test('invalid credentials and takeover responses do not retry', () => {
@@ -82,7 +97,9 @@ test('Home distinguishes subscribed, pending, ready and failed setup', () => {
 
 test('safe UI and diagnostics do not render sensitive device material', () => {
   assert.match(component, /Setup reference: \{failureClassification \|\| 'other'\}/);
-  for (const safeStage of ['sdk_unavailable', 'session_recovery_failed', 'installation_still_unavailable']) {
+  for (const safeStage of ['sdk_unavailable', 'session_recovery_failed', 'installation_still_unavailable',
+    'legacy_push_subscription_absent', 'legacy_subscription_replacement_failed',
+    'wonderpush_session_initialization_failed']) {
     assert.match(service + wonderPush, new RegExp(safeStage));
   }
   assert.doesNotMatch(component, /installationId|deviceCapability|pushToken|accessToken/);

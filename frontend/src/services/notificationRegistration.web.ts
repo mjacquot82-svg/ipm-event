@@ -15,7 +15,9 @@ export type NotificationRegistrationStage =
 export type NotificationRegistrationFailure =
   | 'installation_unavailable' | 'invalid_credentials' | 'http_error' | 'timeout'
   | 'network_failure' | 'malformed_response' | 'sdk_unavailable'
-  | 'session_recovery_failed' | 'installation_still_unavailable' | 'other';
+  | 'session_recovery_failed' | 'installation_still_unavailable'
+  | 'legacy_push_subscription_absent' | 'legacy_subscription_replacement_failed'
+  | 'wonderpush_session_initialization_failed' | 'other';
 export type NotificationRegistrationResult = {
   stage: 'success'; status: Record<string, unknown>; attempts: number;
 };
@@ -112,16 +114,15 @@ export async function runNotificationRegistrationAttempt(): Promise<Record<strin
     throw new NotificationRegistrationError('installation_retrieval', 'installation_unavailable', true);
   }
   const deviceCapability = await capability();
-  let existing: Record<string, unknown> | null = null;
   try {
-    existing = await request('/status-by-capability', 'GET', 'capability_lookup', deviceCapability, null);
+    await request('/status-by-capability', 'GET', 'capability_lookup', deviceCapability, null);
   } catch (error) {
     if (!(error instanceof NotificationRegistrationError) || error.status !== 404) throw error;
   }
-  // Only a conclusive absence can create; registration remains idempotent and device-scoped.
-  if (!existing) {
-    await request('/register', 'POST', 'backend_registration', deviceCapability, installationId);
-  }
+  // Register is capability-scoped and idempotent. Calling it for an existing
+  // capability safely rebinds a migrated browser to its replacement WonderPush
+  // installation; an installation owned by another capability remains rejected.
+  await request('/register', 'POST', 'backend_registration', deviceCapability, installationId);
   await request('/status', 'GET', 'backend_status', deviceCapability, installationId);
   const readiness = await request('/readiness/verify', 'POST', 'provider_verification',
     deviceCapability, installationId);
