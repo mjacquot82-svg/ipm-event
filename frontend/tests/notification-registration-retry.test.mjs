@@ -80,11 +80,25 @@ test('registration already in progress is observed without another provider muta
   assert.match(recovery, /registrationAlreadyInProgress = true/);
   assert.match(recovery, /attempts: INSTALLATION_RECOVERY_ATTEMPTS/);
   assert.match(recovery, /if \(snapshot\.subscribed && snapshot\.installationId\) return snapshot\.installationId/);
-  assert.match(recovery, /wonderpush_registration_in_progress_installation_unavailable/);
+  assert.match(recovery, /registrationInProgressUnavailableStage/);
   assert.equal((recovery.match(/sdk\.subscribeToNotifications\(\)/g) || []).length, 1);
   assert.doesNotMatch(recovery, /unsubscribeFromNotifications|Notification\.requestPermission/);
-  assert.ok(recovery.indexOf('wonderpush_registration_in_progress_installation_unavailable')
+  assert.ok(recovery.indexOf('registrationInProgressUnavailableStage')
     < getter.indexOf('if (legacySubscriptionWasReplaced())'));
+});
+
+test('stuck provider registration reports only bounded boolean lifecycle state', () => {
+  const classifier = wonderPush.slice(wonderPush.indexOf('function registrationInProgressUnavailableStage'),
+    wonderPush.indexOf('export async function readWonderPushSnapshot'));
+  for (const state of ['installation_lookup_rejected', 'service_worker_or_push_state_unavailable',
+    'push_subscription_absent', 'subscribed_state_unavailable', 'wonderpush_not_subscribed',
+    'session_state_unavailable', 'session_not_ready',
+    'session_ready_push_present_subscribed_installation_null']) {
+    assert.match(classifier, new RegExp(`wonderpush_registration_in_progress_${state}`));
+  }
+  assert.match(classifier, /snapshot\.installationFailed/);
+  assert.match(classifier, /snapshot\.subscriptionFailed/);
+  assert.doesNotMatch(classifier, /endpoint|applicationServerKey|installationId|pushToken|\.message|\.stack/);
 });
 
 test('legacy replacement is narrow, permission-safe, idempotent, and bounded', () => {
@@ -159,7 +173,14 @@ test('safe UI and diagnostics do not render sensitive device material', () => {
   for (const safeStage of ['sdk_unavailable', 'installation_still_unavailable',
     'wonderpush_recovery_subscribe_timed_out',
     'wonderpush_recovery_snapshot_failed',
-    'wonderpush_registration_in_progress_installation_unavailable',
+    'wonderpush_registration_in_progress_installation_lookup_rejected',
+    'wonderpush_registration_in_progress_service_worker_or_push_state_unavailable',
+    'wonderpush_registration_in_progress_push_subscription_absent',
+    'wonderpush_registration_in_progress_subscribed_state_unavailable',
+    'wonderpush_registration_in_progress_wonderpush_not_subscribed',
+    'wonderpush_registration_in_progress_session_state_unavailable',
+    'wonderpush_registration_in_progress_session_not_ready',
+    'wonderpush_registration_in_progress_session_ready_push_present_subscribed_installation_null',
     'legacy_push_subscription_absent', 'legacy_subscription_replacement_failed',
     'wonderpush_session_initialization_failed',
     'legacy_unsubscribe_succeeded_wonderpush_resubscribe_rejected',
@@ -181,7 +202,7 @@ test('safe UI and diagnostics do not render sensitive device material', () => {
   }
   assert.doesNotMatch(component, /installationId|deviceCapability|pushToken|accessToken/);
   assert.doesNotMatch(service + wonderPush,
-    /session_recovery_failed|legacy_association_recovery_failed|wonderpush_recovery_subscribe_rejected/);
+    /session_recovery_failed|legacy_association_recovery_failed|wonderpush_recovery_subscribe_rejected|wonderpush_registration_in_progress_installation_unavailable/);
   const classifier = wonderPush.slice(wonderPush.indexOf('function safeSubscribeRejectionStage'),
     wonderPush.indexOf('function isSupported'));
   assert.doesNotMatch(classifier, /\.message|\.stack|JSON\.stringify|endpoint|installationId|pushToken/);

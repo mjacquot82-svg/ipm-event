@@ -305,6 +305,34 @@ function unavailableAfterCompletedReplacement(
   return 'legacy_replacement_completed_subscription_state_unavailable_installation_unavailable';
 }
 
+function registrationInProgressUnavailableStage(
+  snapshot: WonderPushReadSnapshot,
+  subscriptionState: 'present' | 'absent' | 'unavailable'
+): WonderPushInstallationFailureStage {
+  if (snapshot.installationFailed) {
+    return 'wonderpush_registration_in_progress_installation_lookup_rejected';
+  }
+  if (subscriptionState === 'unavailable') {
+    return 'wonderpush_registration_in_progress_service_worker_or_push_state_unavailable';
+  }
+  if (subscriptionState === 'absent') {
+    return 'wonderpush_registration_in_progress_push_subscription_absent';
+  }
+  if (snapshot.subscriptionFailed || snapshot.subscribed === null) {
+    return 'wonderpush_registration_in_progress_subscribed_state_unavailable';
+  }
+  if (snapshot.subscribed === false) {
+    return 'wonderpush_registration_in_progress_wonderpush_not_subscribed';
+  }
+  if (snapshot.sessionInitSuccess === null) {
+    return 'wonderpush_registration_in_progress_session_state_unavailable';
+  }
+  if (snapshot.sessionInitSuccess === false) {
+    return 'wonderpush_registration_in_progress_session_not_ready';
+  }
+  return 'wonderpush_registration_in_progress_session_ready_push_present_subscribed_installation_null';
+}
+
 export async function readWonderPushSnapshot({ attempts = SDK_SETTLE_ATTEMPTS,
   retryDelayMs = SDK_SETTLE_RETRY_MS, requireInstallation = true } = {}): Promise<WonderPushReadSnapshot> {
   await initializeWonderPush();
@@ -431,7 +459,7 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
   if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
   if (registrationAlreadyInProgress) {
     throw new WonderPushInstallationRecoveryError(
-      'wonderpush_registration_in_progress_installation_unavailable'
+      registrationInProgressUnavailableStage(snapshot, await currentPushSubscriptionState())
     );
   }
 
@@ -569,7 +597,14 @@ export type WonderPushInstallationFailureStage =
   | 'wonderpush_recovery_subscribe_timed_out'
   | 'wonderpush_recovery_snapshot_failed'
   | 'wonderpush_recovery_subscribe_registration_in_progress'
-  | 'wonderpush_registration_in_progress_installation_unavailable'
+  | 'wonderpush_registration_in_progress_installation_lookup_rejected'
+  | 'wonderpush_registration_in_progress_service_worker_or_push_state_unavailable'
+  | 'wonderpush_registration_in_progress_push_subscription_absent'
+  | 'wonderpush_registration_in_progress_subscribed_state_unavailable'
+  | 'wonderpush_registration_in_progress_wonderpush_not_subscribed'
+  | 'wonderpush_registration_in_progress_session_state_unavailable'
+  | 'wonderpush_registration_in_progress_session_not_ready'
+  | 'wonderpush_registration_in_progress_session_ready_push_present_subscribed_installation_null'
   | 'wonderpush_recovery_subscribe_permission_rejected'
   | 'wonderpush_recovery_subscribe_push_not_supported'
   | 'wonderpush_recovery_subscribe_subscription_state_rejected'
