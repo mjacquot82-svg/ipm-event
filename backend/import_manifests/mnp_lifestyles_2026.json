@@ -17,7 +17,7 @@
       "title": "Start of Day Movement",
       "description": "Definition Fitness",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "Overall B6; Tuesday B6"
@@ -30,7 +30,7 @@
       "title": "Home and Garden",
       "description": "Aaniin Collective",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "Overall B7:B8; Tuesday B7:B8"
@@ -43,7 +43,7 @@
       "title": "Davis Hill Nursery",
       "description": "(1050-1120)",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "Overall Schedule B9:B10; merged bounds; `(1050-1120)`"
@@ -56,7 +56,7 @@
       "title": "Sleepers Bed Gallery",
       "description": "(1125-1145)",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "Overall Schedule B11:B12; merged bounds; `(1125-1145)`"
@@ -69,7 +69,7 @@
       "title": "Food and Drink",
       "description": "Greenock Collective",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "B14:B15"
@@ -82,7 +82,7 @@
       "title": "Harley's Charcuterie",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "B16:B17"
@@ -95,7 +95,7 @@
       "title": "meat smoking",
       "description": "Liesemer Home Hardware",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "B18:B19"
@@ -108,7 +108,7 @@
       "title": "Photography Bietz Studio",
       "description": "Fashion",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "B21:B22"
@@ -121,7 +121,7 @@
       "title": "MakeUp Artist",
       "description": "Hayley Wilhem",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "B23:B24"
@@ -134,7 +134,7 @@
       "title": "West Shore",
       "description": "1510-Makeover",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "Overall Schedule B25:B26; merged bounds; `1510-Makeover`"
@@ -147,7 +147,7 @@
       "title": "Wellness",
       "description": "The Space Between\nAlicia Gibbons",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "B28:B29"
@@ -160,7 +160,7 @@
       "title": "Nature Babes",
       "description": "Amanada Butchart",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "B30:B31"
@@ -173,7 +173,7 @@
       "title": "The WOMB",
       "description": "Rebecca Grubb & Jess Connor",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Tuesday",
       "timezone": "America/Toronto",
       "source_context": "B32:B33"
@@ -381,7 +381,7 @@
       "title": "Start of Day Movement",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E6"
@@ -394,7 +394,7 @@
       "title": "Wellness",
       "description": "Essential Wellness\nLiza Weltz",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E7:E8"
@@ -407,7 +407,7 @@
       "title": "Evergreen Connections",
       "description": "Rachel Stroeder",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E9:E10"
@@ -420,7 +420,7 @@
       "title": "Art Studio",
       "description": "Susan Seitz",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E12"
@@ -433,7 +433,7 @@
       "title": "Home and Garden",
       "description": "Ruth Montgomery (Energy in the Home)",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E14:E15"
@@ -446,7 +446,7 @@
       "title": "Laurie Convay (Enjo)",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E16:E17"
@@ -459,7 +459,7 @@
       "title": "UpStage Design",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E18:E19"
@@ -472,7 +472,7 @@
       "title": "furniture refresh",
       "description": "Willow Home",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E21:E23"
@@ -485,7 +485,7 @@
       "title": "Cody's Egg Shack",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E24:E25"
@@ -498,7 +498,7 @@
       "title": "Lake Huron Home",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E26:E27"
@@ -511,7 +511,7 @@
       "title": "Fashion",
       "description": "J&H Womens Fashions",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E28:E29"
@@ -524,7 +524,7 @@
       "title": "Flossy May",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "E30:E31"
@@ -537,7 +537,7 @@
       "title": "Mary Kay / Cheryl McNair",
       "description": "1655-Makeover",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Wednesday",
       "timezone": "America/Toronto",
       "source_context": "Overall Schedule E32:E33; merged bounds; `1655-Makeover`"
@@ -732,7 +732,7 @@
       "title": "Start of Day Movement",
       "description": "Definition Fitness",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H6"
@@ -745,7 +745,7 @@
       "title": "Fashion",
       "description": "Pure Elegance",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H7:H8"
@@ -758,7 +758,7 @@
       "title": "His Style",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H9:H10"
@@ -771,7 +771,7 @@
       "title": "Elgin Jewelers",
       "description": "1140-Makeover",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "Overall Schedule H11:H12; merged bounds; `1140-Makeover`"
@@ -784,7 +784,7 @@
       "title": "Wellness",
       "description": "Hannah Grieg",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H14:H15"
@@ -797,7 +797,7 @@
       "title": "Tobermory Hyperbaric Chamber",
       "description": "George Harpur",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H16:H17"
@@ -810,7 +810,7 @@
       "title": "Soul Purpose",
       "description": "Ashley Grant",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H18:H19"
@@ -823,7 +823,7 @@
       "title": "The Feeling of Home - Designing Beyond the Trend",
       "description": "Home and Garden",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H20:H22"
@@ -836,7 +836,7 @@
       "title": "Ruth Montgomery (organization)",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H23:H24"
@@ -849,7 +849,7 @@
       "title": "Food and Drink",
       "description": "Southampton Olive Oil",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H25:H26"
@@ -862,7 +862,7 @@
       "title": "Essentially Lavender",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H27"
@@ -875,7 +875,7 @@
       "title": "MNP Succession Planning",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H28:H30"
@@ -888,7 +888,7 @@
       "title": "all things canning",
       "description": "Greenock Collective",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Thursday",
       "timezone": "America/Toronto",
       "source_context": "H31:H33"
@@ -1083,7 +1083,7 @@
       "title": "Start of Day Movement",
       "description": "Freezer Fitness",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "K6"
@@ -1096,7 +1096,7 @@
       "title": "Food and Drink",
       "description": "Fire Cider & Honey",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "K7:K8"
@@ -1109,7 +1109,7 @@
       "title": "Harley's Pub and Perk",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "K9:K10"
@@ -1122,7 +1122,7 @@
       "title": "Hormones and Food",
       "description": "Jennifer Dunsmoor",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "K11:K13"
@@ -1135,7 +1135,7 @@
       "title": "Fashion",
       "description": "Forrest Maiden",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "K14:K15"
@@ -1148,7 +1148,7 @@
       "title": "Shop by Grace",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "K16:K17"
@@ -1161,7 +1161,7 @@
       "title": "His Style",
       "description": "1325-Makeover",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "Overall Schedule K18:K19; merged bounds; `1325-Makeover`"
@@ -1174,7 +1174,7 @@
       "title": "Wellness",
       "description": "Freezer Fitness\nJackie West, Dianne Zettle, Conor Fischer",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "K21:K26"
@@ -1187,7 +1187,7 @@
       "title": "MNP Succession Planning",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "K28:K30"
@@ -1200,7 +1200,7 @@
       "title": "Home and Garden",
       "description": "Carrie Lynn Floral",
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "K31:K32"
@@ -1213,7 +1213,7 @@
       "title": "Angela - Up stage Design",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Friday",
       "timezone": "America/Toronto",
       "source_context": "K33:K34"
@@ -1382,7 +1382,7 @@
       "title": "GINA LIVY",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Saturday",
       "timezone": "America/Toronto",
       "source_context": "Overall O8:O11"
@@ -1395,7 +1395,7 @@
       "title": "GINA LIVY",
       "description": null,
       "category": "MNP Lifestyles Tent Events",
-      "location_name": "Foodland - Stage",
+      "location_name": "The Beyond Wireless Stage",
       "days_active": "Saturday",
       "timezone": "America/Toronto",
       "source_context": "Overall O18:O21"
