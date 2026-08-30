@@ -12,7 +12,7 @@ import json
 import logging
 import re
 from typing import Any, Optional
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -266,13 +266,39 @@ class WonderPushClient:
 
     async def get_installation(self, installation_id: str) -> dict[str, Any] | None:
         url = f"https://management-api.wonderpush.com/v1/installations/{quote(installation_id, safe='')}"
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.get(url, params={"accessToken": self.access_token, "userId": ""})
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(
+                    url, params={"accessToken": self.access_token, "userId": ""})
+        except httpx.TimeoutException as exc:
+            raise WonderPushError("WonderPush installation lookup timed out") from exc
+        except httpx.RequestError as exc:
+            raise WonderPushError("WonderPush installation lookup could not be reached") from exc
         if response.status_code == 404: return None
         if response.status_code != 200:
-            raise WonderPushError(f"WonderPush installation lookup failed (HTTP {response.status_code})")
-        result = response.json()
-        return result if isinstance(result, dict) else None
+            details = self._provider_error_details(
+                response, sensitive_values=[self.access_token, installation_id])
+            raise WonderPushError(
+                f"WonderPush installation lookup failed (HTTP {response.status_code})",
+                status_code=response.status_code,
+                provider_error_code=details["code"],
+                provider_error_message=details["message"],
+                provider_request_id=details["request_id"],
+                response_summary=details["summary"],
+            )
+        try:
+            result = response.json()
+        except (ValueError, json.JSONDecodeError) as exc:
+            raise WonderPushError(
+                "WonderPush installation lookup returned malformed data",
+                status_code=response.status_code,
+            ) from exc
+        if not isinstance(result, dict):
+            raise WonderPushError(
+                "WonderPush installation lookup returned malformed data",
+                status_code=response.status_code,
+            )
+        return result
 
     async def list_installations(self, *, updated_since: datetime | None = None,
         page_size: int = 1000) -> tuple[list[dict[str, Any]], int]:
