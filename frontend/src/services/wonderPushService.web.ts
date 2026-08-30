@@ -277,7 +277,22 @@ export async function unsubscribeFromNotifications(): Promise<NotificationState>
 
 export async function getSubscribedInstallationId(): Promise<string | null> {
   if (!isSupported() || Notification.permission !== 'granted') return null;
-  const snapshot = await readWonderPushSnapshot();
+  let snapshot = await readWonderPushSnapshot();
+  if (!snapshot.subscribed) return null;
+  if (snapshot.installationId) return snapshot.installationId;
+
+  // WonderPush's subscribed flag is the locally enabled preference. It can
+  // survive while the current provider session/installation is unavailable,
+  // notably after changing push providers. Reasserting an already-granted
+  // subscription is idempotent and gives the SDK one bounded opportunity to
+  // recreate its session before readiness verification gives up pre-fetch.
+  await withSdk(async (sdk) => {
+    if (!sdk.subscribeToNotifications) {
+      throw new Error('WonderPush subscribe API is unavailable.');
+    }
+    await sdk.subscribeToNotifications();
+  }, SUBSCRIBE_TIMEOUT_MS, 'WonderPush installation recovery timed out.');
+  snapshot = await readWonderPushSnapshot();
   return snapshot.subscribed ? snapshot.installationId : null;
 }
 

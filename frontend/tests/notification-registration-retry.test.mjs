@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const service = await readFile(new URL('../src/services/notificationRegistration.web.ts', import.meta.url), 'utf8');
+const wonderPush = await readFile(new URL('../src/services/wonderPushService.web.ts', import.meta.url), 'utf8');
 const component = await readFile(new URL('../src/components/NotificationOptIn.tsx', import.meta.url), 'utf8');
 const server = await readFile(new URL('../../backend/server.py', import.meta.url), 'utf8');
 
@@ -32,6 +33,19 @@ test('registration order preserves conclusive lookup and idempotent create', () 
   assert.match(service, /if \(!existing\)/);
   assert.match(service, /readiness\.registered !== true/);
   assert.match(service, /readiness\.provider_deliverable !== true/);
+});
+
+test('subscribed state without an installation performs one bounded provider recovery', () => {
+  const getter = wonderPush.slice(wonderPush.indexOf('export async function getSubscribedInstallationId'),
+    wonderPush.indexOf('export async function getCurrentInstallationFingerprint'));
+  assert.match(getter, /Notification\.permission !== 'granted'/);
+  assert.match(getter, /if \(!snapshot\.subscribed\) return null/);
+  assert.match(getter, /if \(snapshot\.installationId\) return snapshot\.installationId/);
+  assert.match(getter, /sdk\.subscribeToNotifications\(\)/);
+  assert.match(getter, /SUBSCRIBE_TIMEOUT_MS/);
+  assert.equal((getter.match(/sdk\.subscribeToNotifications\(\)/g) || []).length, 1);
+  assert.equal((getter.match(/readWonderPushSnapshot\(\)/g) || []).length, 2);
+  assert.doesNotMatch(getter, /unsubscribeFromNotifications|Notification\.requestPermission/);
 });
 
 test('invalid credentials and takeover responses do not retry', () => {
