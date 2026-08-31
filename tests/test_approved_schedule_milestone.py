@@ -37,6 +37,9 @@ class ApprovedScheduleMilestoneTests(unittest.TestCase):
         manifest = json.loads(open("backend/import_manifests/mnp_lifestyles_2026.json", encoding="utf-8").read())
         self.assertEqual(0, sum(row.get("location_name") == "Foodland - Stage" for row in manifest["events"]))
         self.assertEqual(0, sum(row.get("location_name") == "Foodland - Main Stage" for row in manifest["events"]))
+        self.assertEqual(EXPECTED_FOODLAND_COUNT, sum(
+            row.get("location_name") == "The Beyond Wireless Stage" for row in manifest["events"]
+        ))
 
 
 if __name__ == "__main__":
