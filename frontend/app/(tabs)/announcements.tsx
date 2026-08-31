@@ -20,11 +20,11 @@ export default function AnnouncementsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
-  const { hydrated, lastReadAnnouncementId, dismissedAnnouncementIds } = useAnnouncementReadState();
+  const { hydrated, lastReadAnnouncementId, readAnnouncementIds, dismissedAnnouncementIds } = useAnnouncementReadState();
   const visibleAnnouncements = hydrated
     ? excludeDismissedAnnouncements(announcements, dismissedAnnouncementIds)
     : [];
-  const unreadIds = getUnreadAnnouncementIds(visibleAnnouncements, lastReadAnnouncementId);
+  const unreadIds = getUnreadAnnouncementIds(visibleAnnouncements, readAnnouncementIds, lastReadAnnouncementId);
   usePageAnalytics('announcements', 'home_quick_action', 'announcement_list_viewed', { unread_count: unreadIds.size });
 
   const applyResult = useCallback((result: CachedApiResult<AnnouncementsResponse>) => {

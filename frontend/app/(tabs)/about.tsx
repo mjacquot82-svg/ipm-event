@@ -19,6 +19,9 @@ import { openTrackedLink, trackControlledOutbound } from '../../src/analytics/tr
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 
+const BUILD_NUMBER = process.env.EXPO_PUBLIC_IPM_BUILD_NUMBER || 'development';
+const APP_LABEL = process.env.EXPO_PUBLIC_IPM_APP_LABEL === 'staging' ? 'IPM Staging' : 'IPM App';
+
 const OFFICIAL_IPM_CONTENT = [
   "It is the largest event of its kind in North America.\nWith so much to see and do, plan to spend more than one day!\nThe IPM is held in a different community each year, highlighting the many great things the area has to offer and attracting on average 70,000 people from across Ontario, throughout Canada, the United States and beyond.",
   'Activities and entertainment offerings are a little different each year, as the Local Committee puts its own stamp on the IPM, showcasing important local contributions to agriculture and the rural lifestyle. The 2026 event will be held in Bruce County, Ontario from September 22nd to 26th. A team of dedicated local volunteers is hard at work planning and organizing to make this an exceptional IPM.',
@@ -170,6 +173,10 @@ export default function AboutScreen() {
 
         <AttendeeAttribution source="about_attribution" />
 
+        <Text style={styles.buildNumber} accessibilityLabel={`${APP_LABEL}, build ${BUILD_NUMBER}`}>
+          {APP_LABEL} • Build {BUILD_NUMBER}
+        </Text>
+
       </ScrollView>
     </View>
   );
@@ -183,6 +190,7 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  buildNumber: { color: colors.textMuted, fontSize: 11, marginBottom: 24, marginTop: 18, textAlign: 'center' },
   heroLogoCard: {
     width: '92%',
     maxWidth: 600,

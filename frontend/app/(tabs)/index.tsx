@@ -217,7 +217,7 @@ export default function HomeScreen() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementDataSource, setAnnouncementDataSource] = useState<CachedApiSource>('network');
   const [announcementLastUpdate, setAnnouncementLastUpdate] = useState<string | null>(null);
-  const { hydrated: announcementReadStateHydrated, lastReadAnnouncementId, dismissedAnnouncementIds } = useAnnouncementReadState();
+  const { hydrated: announcementReadStateHydrated, lastReadAnnouncementId, readAnnouncementIds, dismissedAnnouncementIds } = useAnnouncementReadState();
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
@@ -378,7 +378,8 @@ export default function HomeScreen() {
   const sectionStyle = [styles.section, attendeeSectionStyle];
   const isShowingCachedData = dataSource === 'cache' && !loading && events.length > 0;
   const attendeeAnnouncements = excludeDismissedAnnouncements(announcements, dismissedAnnouncementIds);
-  const unreadAnnouncementIds = getUnreadAnnouncementIds(attendeeAnnouncements, lastReadAnnouncementId);
+  const unreadAnnouncementIds = getUnreadAnnouncementIds(attendeeAnnouncements, readAnnouncementIds, lastReadAnnouncementId);
+  const unreadAnnouncementCount = announcementReadStateHydrated ? unreadAnnouncementIds.size : 0;
   const newestUnreadAnnouncement = announcementReadStateHydrated
     ? attendeeAnnouncements
       .filter((announcement) => unreadAnnouncementIds.has(announcement.id))
@@ -530,11 +531,18 @@ export default function HomeScreen() {
               style={[styles.actionCard, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionUnread]}
               onPress={() => quickAction('announcements', 'internal', () => router.push('/announcements' as never))}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={unreadAnnouncementCount > 0 ? `Announcements, ${unreadAnnouncementCount} unread` : 'Announcements'}
             >
               <View style={[styles.actionIcon, styles.announcementBell, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementBellUnread]}>
                 <Feather name="bell" size={22} color={unreadAnnouncementIds.size > 0 && announcementReadStateHydrated ? '#735B1B' : '#FFFFFF'} />
                 {unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && <View style={styles.bellAccent}><Feather name="star" size={9} color="#735B1B" /></View>}
               </View>
+              {unreadAnnouncementCount > 0 && (
+                <View style={styles.announcementBadge} accessibilityElementsHidden>
+                  <Text style={styles.announcementBadgeText}>{unreadAnnouncementCount > 9 ? '9+' : unreadAnnouncementCount}</Text>
+                </View>
+              )}
               <Text style={[styles.actionTitle, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionText]}>Announcements</Text>
             </TouchableOpacity>
           </View>
@@ -786,7 +794,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     marginBottom: 4,
+    position: 'relative',
   },
+  announcementBadge: { alignItems: 'center', backgroundColor: colors.error, borderColor: '#FFFFFF', borderRadius: 12, borderWidth: 2, justifyContent: 'center', minHeight: 24, minWidth: 24, paddingHorizontal: 5, position: 'absolute', right: 7, top: 7 },
+  announcementBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', lineHeight: 14 },
   announcementActionUnread: { backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderWidth: 1 },
   announcementBell: { backgroundColor: '#9E9E9E', position: 'relative' },
   announcementBellUnread: { backgroundColor: '#F3E5B9', borderColor: '#D8B866', borderWidth: 1 },
