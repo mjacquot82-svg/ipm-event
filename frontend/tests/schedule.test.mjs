@@ -4,6 +4,17 @@ import test from 'node:test';
 
 const scheduleSource = await readFile(new URL('../app/(tabs)/schedule.tsx', import.meta.url), 'utf8');
 const itinerarySource = await readFile(new URL('../app/(tabs)/itinerary.tsx', import.meta.url), 'utf8');
+const scheduleManifest = JSON.parse(await readFile(
+  new URL('../../backend/import_manifests/mnp_lifestyles_2026.json', import.meta.url),
+  'utf8',
+));
+
+test('authoritative Schedule uses the final Beyond Wireless stage name', () => {
+  const locations = scheduleManifest.events.map((event) => event.location_name);
+  assert.equal(locations.filter((location) => location === 'The Beyond Wireless Stage').length, 52);
+  assert.equal(locations.includes('Foodland - Stage'), false);
+  assert.equal(locations.includes('Foodland - Main Stage'), false);
+});
 
 test('attendee schedule derives real category filters and combines them with day, search, and Starred', () => {
   assert.match(scheduleSource, /new Set\(events\.map\(\(event\) => event\.category\)\.filter\(Boolean\)\)/);
