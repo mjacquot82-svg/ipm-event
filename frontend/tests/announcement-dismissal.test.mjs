@@ -7,6 +7,7 @@ const list = await readFile(new URL('../app/(tabs)/announcements.tsx', import.me
 const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
 const detail = await readFile(new URL('../app/announcements/[announcement_id].tsx', import.meta.url), 'utf8');
 const admin = await readFile(new URL('../app/admin/index.tsx', import.meta.url), 'utf8');
+const card = await readFile(new URL('../src/components/AnnouncementCard.tsx', import.meta.url), 'utf8');
 
 test('dismissal is local, persistent, and keyed only by stable announcement ID', () => {
   assert.match(context, /DISMISSED_ANNOUNCEMENTS_KEY = 'dismissedAnnouncementIds'/);
@@ -29,4 +30,11 @@ test('dismiss action makes no backend request and organizer views are unchanged'
   assert.match(detail, /goBack\(\)/);
   assert.doesNotMatch(detail, /deleteAnnouncement|setAnnouncementStatus|fetch\(|axios/);
   assert.doesNotMatch(admin, /dismissedAnnouncementIds|excludeDismissedAnnouncements|dismissAnnouncement/);
+});
+
+test('each list card has a separate accessible 44px dismissal control', () => {
+  assert.match(list, /onDismiss=\{\(\) => \{ void dismissAnnouncement\(announcement\.id\); \}\}/);
+  assert.match(card, /accessibilityLabel="Dismiss announcement"/);
+  assert.match(card, /dismissButton: \{[^}]*height: 44[^}]*position: 'absolute'[^}]*width: 44/);
+  assert.match(card, /<View style=\{styles\.cardWrapper\}>[\s\S]*<TouchableOpacity style=\{cardStyle\}[\s\S]*<TouchableOpacity[\s\S]*style=\{styles\.dismissButton\}/);
 });

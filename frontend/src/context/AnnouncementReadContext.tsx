@@ -13,6 +13,7 @@ type AnnouncementReadContextValue = {
   readAnnouncementIds: Set<string>;
   dismissedAnnouncementIds: Set<string>;
   markAnnouncementRead: (announcementId: string) => Promise<void>;
+  markAnnouncementsRead: (announcementIds: string[]) => Promise<void>;
   dismissAnnouncement: (announcementId: string) => Promise<void>;
 };
 
@@ -73,6 +74,19 @@ export function AnnouncementReadProvider({ children }: { children: React.ReactNo
     }
   }, []);
 
+  const markAnnouncementsRead = useCallback(async (announcementIds: string[]) => {
+    if (announcementIds.length === 0) return;
+    const next = new Set(readAnnouncementIdsRef.current);
+    announcementIds.forEach((announcementId) => next.add(announcementId));
+    readAnnouncementIdsRef.current = next;
+    setReadAnnouncementIds(next);
+    try {
+      await AsyncStorage.setItem(READ_ANNOUNCEMENTS_KEY, JSON.stringify([...next]));
+    } catch (error) {
+      console.warn('Unable to save announcement read state:', error);
+    }
+  }, []);
+
   const dismissAnnouncement = useCallback(async (announcementId: string) => {
     const next = new Set(dismissedAnnouncementIds);
     next.add(announcementId);
@@ -90,8 +104,9 @@ export function AnnouncementReadProvider({ children }: { children: React.ReactNo
     readAnnouncementIds,
     dismissedAnnouncementIds,
     markAnnouncementRead,
+    markAnnouncementsRead,
     dismissAnnouncement,
-  }), [dismissAnnouncement, dismissedAnnouncementIds, hydrated, lastReadAnnouncementId, markAnnouncementRead, readAnnouncementIds]);
+  }), [dismissAnnouncement, dismissedAnnouncementIds, hydrated, lastReadAnnouncementId, markAnnouncementRead, markAnnouncementsRead, readAnnouncementIds]);
   return <AnnouncementReadContext.Provider value={value}>{children}</AnnouncementReadContext.Provider>;
 }
 

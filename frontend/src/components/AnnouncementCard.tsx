@@ -43,18 +43,20 @@ export default function AnnouncementCard({
   announcement,
   preview = false,
   onPress,
+  onDismiss,
   unread = false,
 }: {
   announcement: Announcement;
   preview?: boolean;
   onPress?: () => void;
+  onDismiss?: () => void;
   unread?: boolean;
 }) {
   const isEmergency = announcement.priority === 'Emergency';
   const isImportant = announcement.priority === 'Important';
   const content = (
     <>
-      <View style={styles.headingRow}>
+      <View style={[styles.headingRow, onDismiss && styles.dismissSpacing]}>
         <View style={styles.badgeGroup}>
           {unread && <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>}
           <View style={[styles.badge, isEmergency && styles.emergencyBadge, isImportant && styles.importantBadge]}>
@@ -64,22 +66,41 @@ export default function AnnouncementCard({
         </View>
         <Text style={styles.posted}>{formatAnnouncementTime(announcement.created_at, !preview)}</Text>
       </View>
-      <Text style={styles.title}>{announcement.title}</Text>
+      <Text style={[styles.title, onDismiss && styles.dismissSpacing]}>{announcement.title}</Text>
       <Text style={styles.message} numberOfLines={preview ? 3 : undefined}>{announcement.message}</Text>
       {preview && <Feather name="chevron-right" size={20} color={colors.textMuted} style={styles.chevron} />}
     </>
   );
 
   const cardStyle = [styles.card, unread && styles.unreadCard, isEmergency && styles.emergencyCard, isImportant && styles.importantCard];
-  return onPress ? <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.8}>{content}</TouchableOpacity> : <View style={cardStyle}>{content}</View>;
+  if (!onDismiss) {
+    return onPress ? <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.8}>{content}</TouchableOpacity> : <View style={cardStyle}>{content}</View>;
+  }
+
+  return (
+    <View style={styles.cardWrapper}>
+      {onPress ? <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.8}>{content}</TouchableOpacity> : <View style={cardStyle}>{content}</View>}
+      <TouchableOpacity
+        style={styles.dismissButton}
+        onPress={onDismiss}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss announcement"
+      >
+        <Feather name="x" size={21} color={colors.textPrimary} />
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: ATTENDEE_CARD_RADIUS, borderWidth: 1, padding: 16, position: 'relative' },
+  cardWrapper: { position: 'relative' },
+  dismissButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 10, borderWidth: 1, height: 44, justifyContent: 'center', position: 'absolute', right: 8, top: 8, width: 44, zIndex: 2 },
   unreadCard: { backgroundColor: '#FFFCF3', borderColor: '#D8B866' },
   emergencyCard: { backgroundColor: '#FFF5F5', borderColor: colors.error, borderLeftWidth: 5 },
   importantCard: { backgroundColor: '#FFFBEB', borderColor: '#D97706', borderLeftWidth: 4 },
   headingRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  dismissSpacing: { paddingRight: 48 },
   badgeGroup: { alignItems: 'center', flexDirection: 'row', flexShrink: 1, gap: 7 },
   newBadge: { backgroundColor: '#EFE4C3', borderColor: '#D8B866', borderRadius: 999, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
   newBadgeText: { color: '#735B1B', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },

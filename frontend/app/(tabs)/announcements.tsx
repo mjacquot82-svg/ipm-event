@@ -20,7 +20,7 @@ export default function AnnouncementsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
-  const { hydrated, lastReadAnnouncementId, readAnnouncementIds, dismissedAnnouncementIds } = useAnnouncementReadState();
+  const { hydrated, lastReadAnnouncementId, readAnnouncementIds, dismissedAnnouncementIds, dismissAnnouncement, markAnnouncementsRead } = useAnnouncementReadState();
   const visibleAnnouncements = hydrated
     ? excludeDismissedAnnouncements(announcements, dismissedAnnouncementIds)
     : [];
@@ -55,6 +55,13 @@ export default function AnnouncementsScreen() {
   }, [applyResult]);
 
   useEffect(() => { void loadAnnouncements(); }, [loadAnnouncements]);
+
+  const visibleAnnouncementIds = visibleAnnouncements.map((announcement) => announcement.id).join('|');
+  useEffect(() => {
+    if (!loading && hydrated && visibleAnnouncementIds) {
+      void markAnnouncementsRead(visibleAnnouncementIds.split('|'));
+    }
+  }, [hydrated, loading, markAnnouncementsRead, visibleAnnouncementIds]);
 
   return (
     <View style={styles.container}>
@@ -93,6 +100,7 @@ export default function AnnouncementsScreen() {
                   onPress={() => {
                     router.push(`/announcements/${announcement.id}?source=list` as never);
                   }}
+                  onDismiss={() => { void dismissAnnouncement(announcement.id); }}
                 />
               ))}
             </View>

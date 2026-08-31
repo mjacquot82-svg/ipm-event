@@ -20,14 +20,15 @@ test('unread derives from the current visible, non-dismissed announcement IDs', 
   assert.match(home, /getUnreadAnnouncementIds\(attendeeAnnouncements, readAnnouncementIds, lastReadAnnouncementId\)/);
   assert.match(context, /!readAnnouncementIds\.has\(announcement\.id\)/);
   assert.match(list, /excludeDismissedAnnouncements\(announcements, dismissedAnnouncementIds\)/);
-  assert.doesNotMatch(list, /markAnnouncementRead/);
+  assert.match(list, /markAnnouncementsRead\(visibleAnnouncementIds\.split\('\|'\)\)/);
+  assert.match(list, /!loading && hydrated && visibleAnnouncementIds/);
 });
 
-test('opening an individual detail through any route marks only that announcement read', () => {
+test('opening an individual detail through any route still marks only that announcement read', () => {
   assert.match(detail, /await markAnnouncementRead\(result\.id\)/);
   assert.match(detail, /useLocalSearchParams/);
   assert.match(detail, /source \|\| 'other'/);
-  assert.doesNotMatch(list, /markAnnouncementRead/);
+  assert.doesNotMatch(list, /markAnnouncementRead\(/);
 });
 
 test('Quick Action badge is capped at 9+ without layout shift and exposes an accessible count', () => {
