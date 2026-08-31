@@ -155,6 +155,10 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
         hasFocusedRef.current = true;
         return;
       }
+      if (navigator.onLine === false) {
+        setOptionalPromptVisible(false);
+        return;
+      }
       void getNotificationState()
         .then(evaluateOptionalPrompt)
         .catch(() => setOptionalPromptVisible(false));
