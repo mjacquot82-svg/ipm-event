@@ -30,7 +30,7 @@ test('narrow-mobile category rendering keeps labels, tints, and checkmark withou
   const mobileControl = schedule.slice(mobileStart, mobileEnd);
   const mobileSheet = schedule.slice(sheetStart, sheetEnd);
   assert.match(mobileControl, /selectedCategoryStyle\.primary/);
-  assert.match(mobileControl, />\s*Categories\s*</);
+  assert.match(mobileControl, /\{selectedCategory \|\| 'Categories'\}/);
   assert.doesNotMatch(mobileControl, /name="tag"|categoryColourIndicator|categoryColorIndicator/);
   assert.match(mobileSheet, /backgroundColor: category \? categoryStyle\.tint/);
   assert.match(mobileSheet, /accessibilityState=\{\{ selected: isActive \}\}/);

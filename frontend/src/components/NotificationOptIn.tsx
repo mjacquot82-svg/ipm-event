@@ -1,5 +1,7 @@
 import { Feather } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 import {
@@ -16,6 +18,13 @@ import {
 } from '../services/notificationRegistration';
 import { recordNotificationWorkflowDiagnostic } from '../services/wonderPushRuntimeDiagnostic';
 import { colors } from '../theme/colors';
+import {
+  isNotificationPromptEligible,
+  nextNotificationPromptDailyState,
+  NOTIFICATION_PROMPT_DAILY_STATE_KEY,
+  NOTIFICATION_PROMPT_DISMISSED_AT_KEY,
+  parseNotificationPromptDailyState,
+} from '../utils/notificationPromptEligibility';
 
 const STATE_COPY: Record<NotificationState, string> = {
   loading: 'Checking notification status…',
@@ -34,6 +43,55 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'failed'>('idle');
   const [failureStage, setFailureStage] = useState<NotificationRegistrationStage | null>(null);
   const [failureClassification, setFailureClassification] = useState<NotificationRegistrationFailure | null>(null);
+  const [optionalPromptVisible, setOptionalPromptVisible] = useState(false);
+  const promptRecordedRef = useRef(false);
+  const promptDailyStateRef = useRef<ReturnType<typeof parseNotificationPromptDailyState>>(null);
+  const hasFocusedRef = useRef(false);
+
+  const evaluateOptionalPrompt = useCallback(async (nextState: NotificationState) => {
+    if (nextState !== 'default' && nextState !== 'unsubscribed') {
+      setOptionalPromptVisible(false);
+      if (nextState === 'subscribed') {
+        void AsyncStorage.multiRemove([
+          NOTIFICATION_PROMPT_DISMISSED_AT_KEY,
+          NOTIFICATION_PROMPT_DAILY_STATE_KEY,
+        ]).catch(() => undefined);
+      }
+      return;
+    }
+    try {
+      const [dismissedAt, storedDailyState] = await Promise.all([
+        AsyncStorage.getItem(NOTIFICATION_PROMPT_DISMISSED_AT_KEY),
+        AsyncStorage.getItem(NOTIFICATION_PROMPT_DAILY_STATE_KEY),
+      ]);
+      const dailyState = parseNotificationPromptDailyState(storedDailyState);
+      const eligible = isNotificationPromptEligible({ now: Date.now(), dismissedAt, dailyState });
+      promptDailyStateRef.current = dailyState;
+      setOptionalPromptVisible(eligible);
+    } catch (error) {
+      console.warn('Unable to load notification prompt preference:', error);
+      setOptionalPromptVisible(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!optionalPromptVisible || promptRecordedRef.current) return;
+    promptRecordedRef.current = true;
+    void AsyncStorage.setItem(
+      NOTIFICATION_PROMPT_DAILY_STATE_KEY,
+      JSON.stringify(nextNotificationPromptDailyState(Date.now(), promptDailyStateRef.current)),
+    ).catch((error) => console.warn('Unable to save notification prompt frequency:', error));
+  }, [optionalPromptVisible]);
+
+  const dismissOptionalPrompt = useCallback(async () => {
+    setOptionalPromptVisible(false);
+    promptRecordedRef.current = false;
+    try {
+      await AsyncStorage.setItem(NOTIFICATION_PROMPT_DISMISSED_AT_KEY, String(Date.now()));
+    } catch (error) {
+      console.warn('Unable to save notification prompt preference:', error);
+    }
+  }, []);
 
   const completeSetup = useCallback(async () => {
     recordNotificationWorkflowDiagnostic('PENDING');
@@ -78,6 +136,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   const refresh = useCallback(async () => {
     const nextState = await getNotificationState();
     setState(nextState);
+    await evaluateOptionalPrompt(nextState);
     if (nextState === 'subscribed') {
       await completeSetup();
     } else {
@@ -86,7 +145,21 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
       setFailureStage(null);
       setFailureClassification(null);
     }
-  }, [completeSetup]);
+  }, [completeSetup, evaluateOptionalPrompt]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // The mount refresh handles the first visit. Later Home visits only
+      // re-evaluate optional prompt eligibility; they do not rerun setup.
+      if (!hasFocusedRef.current) {
+        hasFocusedRef.current = true;
+        return;
+      }
+      void getNotificationState()
+        .then(evaluateOptionalPrompt)
+        .catch(() => setOptionalPromptVisible(false));
+    }, [evaluateOptionalPrompt]),
+  );
 
   useEffect(() => {
     if (Platform.OS !== 'web') return undefined;
@@ -110,6 +183,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
         ? await unsubscribeFromNotifications()
         : await subscribeToNotifications();
       setState(nextState);
+      await evaluateOptionalPrompt(nextState);
       if (nextState === 'subscribed') await completeSetup();
       else {
         recordNotificationWorkflowDiagnostic('IDLE');
@@ -118,12 +192,13 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
     } finally {
       setWorking(false);
     }
-  }, [completeSetup, state]);
+  }, [completeSetup, evaluateOptionalPrompt, state]);
 
   if (Platform.OS !== 'web') return null;
   // The healthy and transient returning-subscriber states require no Home
   // action. Keep setup running, but avoid a persistent card or startup flash.
   if (state === 'loading' || (state === 'subscribed' && setupState !== 'failed')) return null;
+  if ((state === 'default' || state === 'unsubscribed') && !optionalPromptVisible) return null;
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const isIphoneSafari = /iPhone|iPad|iPod/.test(window.navigator.userAgent || '') && !standalone;
@@ -168,16 +243,28 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
       </View>
       {!verificationDeferred && working ? <ActivityIndicator color={colors.primary} /> : null}
       {!verificationDeferred && canAct && !working && setupState !== 'pending' ? (
-        <TouchableOpacity
-          accessibilityRole="button"
-          accessibilityLabel={state === 'subscribed' ? 'Disable IPM notifications' : 'Enable IPM notifications'}
-          onPress={updateSubscription}
-          style={[styles.button, state === 'subscribed' && styles.disableButton]}
-        >
-          <Text style={[styles.buttonText, state === 'subscribed' && styles.disableButtonText]}>
-            {state === 'subscribed' ? 'Disable' : 'Enable'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.actions}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={state === 'subscribed' ? 'Disable IPM notifications' : 'Enable IPM notifications'}
+            onPress={updateSubscription}
+            style={[styles.button, state === 'subscribed' && styles.disableButton]}
+          >
+            <Text style={[styles.buttonText, state === 'subscribed' && styles.disableButtonText]}>
+              {state === 'subscribed' ? 'Disable' : 'Enable'}
+            </Text>
+          </TouchableOpacity>
+          {(state === 'default' || state === 'unsubscribed') ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Not now"
+              onPress={() => { void dismissOptionalPrompt(); }}
+              style={styles.notNowButton}
+            >
+              <Text style={styles.notNowButtonText}>Not now</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
@@ -192,9 +279,12 @@ const styles = StyleSheet.create({
   hint: { color: colors.textMuted, fontSize: 12, lineHeight: 16, marginTop: 4 },
   diagnostic: { color: colors.textMuted, fontSize: 11, lineHeight: 15, marginTop: 4 },
   button: { backgroundColor: colors.primary, borderRadius: 10, minWidth: 76, paddingHorizontal: 13, paddingVertical: 11 },
+  actions: { alignItems: 'center', gap: 2 },
   buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', textAlign: 'center' },
   disableButton: { backgroundColor: '#FFFFFF', borderColor: colors.primary, borderWidth: 1 },
   disableButtonText: { color: colors.primary },
+  notNowButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 76, paddingHorizontal: 8 },
+  notNowButtonText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
   retryButton: { alignSelf: 'flex-start', marginTop: 6, minHeight: 44, justifyContent: 'center' },
   retryButtonText: { color: colors.primary, fontSize: 13, fontWeight: '800' },
 });

@@ -83,6 +83,12 @@ test('category names and non-colour selected-state cues remain visible', () => {
   assert.match(schedule, /\{selectedEvent\.category\}/);
 });
 
+test('mobile selected-category label keeps the existing category colour treatment', () => {
+  assert.match(schedule, /selectedCategory && \{[\s\S]*?backgroundColor: selectedCategoryStyle\.primary,[\s\S]*?borderColor: selectedCategoryStyle\.primary/);
+  assert.match(schedule, /\{selectedCategory \|\| 'Categories'\}/);
+  assert.match(schedule, /selectedCategory && \{ color: selectedCategoryStyle\.selectedFilterForeground \}/);
+});
+
 test('Schedule category controls do not render decorative colour dots or a colour legend', () => {
   assert.doesNotMatch(schedule, /categoryColourIndicator/);
   assert.doesNotMatch(schedule, /category(?:Colour|Color)(?:Dot|Legend|Key)/);
