@@ -42,7 +42,7 @@ class MnpScheduleImportTests(unittest.TestCase):
             self.assertEqual(values, (row["title"], row["start_time"], row["end_time"], row["description"]))
         self.assertEqual("4:00 PM", events["2026-09-22-quality-homes-d30"]["start_time"])
         saturday = [row for row in events.values() if row["date"] == "2026-09-26"]
-        self.assertTrue(all(row["title"] == "GINA LIVY" and row["location_name"] == "Foodland - Main Stage" for row in saturday))
+        self.assertTrue(all(row["title"] == "GINA LIVY" and row["location_name"] == "The Beyond Wireless Stage" for row in saturday))
 
     def test_multiline_workbook_content_is_preserved_exactly(self):
         events = {row["external_id"]: row for row in load_manifest()["events"]}

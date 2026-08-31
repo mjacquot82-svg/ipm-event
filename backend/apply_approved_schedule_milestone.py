@@ -17,8 +17,8 @@ except ModuleNotFoundError:  # Direct execution from the backend directory.
 PROJECT_REF = "hppboivlpqkfhhzfftuu"
 EVENT_SLUG = "ipm-2026"
 MANIFEST_PATH = Path(__file__).parent / "import_manifests" / "mnp_lifestyles_2026.json"
-FOODLAND_OLD = "Foodland - Stage"
-FOODLAND_NEW = "Foodland - Main Stage"
+FOODLAND_OLD = "Foodland - Main Stage"
+FOODLAND_NEW = "The Beyond Wireless Stage"
 EXPECTED_FOODLAND_COUNT = 52
 APPROVED_BLURB_IDS = {
     "2026-09-22-harleys-c7",
