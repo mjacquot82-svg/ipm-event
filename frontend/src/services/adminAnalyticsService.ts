@@ -81,6 +81,17 @@ export type AnalyticsContentResponse = {
   };
 };
 
+export type NotificationAdoptionResponse = {
+  registered_devices: number;
+  enabled_devices: number;
+  deliverable_devices: number;
+  stale_deliverable_devices: number;
+  never_checked_devices: number;
+  oldest_provider_check_at: string | null;
+  newest_provider_check_at: string | null;
+  snapshot_at: string;
+};
+
 const rangedPath = (path: string, range: AnalyticsRange) => `${path}?range=${encodeURIComponent(range)}`;
 
 export function getAnalyticsSummary(range: AnalyticsRange) {
@@ -97,4 +108,8 @@ export function getAnalyticsTraffic(range: AnalyticsRange) {
 
 export function getAnalyticsContent(range: AnalyticsRange) {
   return adminRequest<AnalyticsContentResponse>(rangedPath('/api/admin/analytics/content', range));
+}
+
+export function getNotificationAdoption() {
+  return adminRequest<NotificationAdoptionResponse>('/api/admin/analytics/notifications');
 }

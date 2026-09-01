@@ -94,6 +94,19 @@ export type NotificationDelivery = {
   notification_message: string;
 };
 
+export type AnnouncementDeliveryStats = {
+  announcement_id: string;
+  status: 'requested' | 'sent' | 'failed';
+  sent_at: string | null;
+  audience_device_count: number | null;
+  audience_count_basis: 'verified_deliverable_registrations' | null;
+  audience_snapshot_at: string | null;
+  audience_stale_device_count: number | null;
+  provider_accepted: boolean;
+};
+
+export type AnnouncementDeliveryStatsResponse = { deliveries: AnnouncementDeliveryStats[] };
+
 export type AdminScheduleEvent = {
   id: string;
   row_number: number;
@@ -319,6 +332,10 @@ export function createBroadcast(payload: CreateBroadcastPayload) {
 
 export function listAnnouncements() {
   return adminRequest<AnnouncementsResponse>('/api/admin/announcements');
+}
+
+export function listAnnouncementDeliveryStats() {
+  return adminRequest<AnnouncementDeliveryStatsResponse>('/api/admin/announcements/delivery-stats');
 }
 
 export function createAnnouncement(payload: AnnouncementPayload) {

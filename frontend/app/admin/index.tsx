@@ -28,6 +28,7 @@ import {
 } from '../../src/components/admin/ContentScaffold';
 import {
   Announcement,
+  AnnouncementDeliveryStats,
   AnnouncementPayload,
   AnnouncementStatus,
   AdminScheduleEvent,
@@ -46,6 +47,7 @@ import {
   importSchedule,
   listAdminVendors,
   listAnnouncements,
+  listAnnouncementDeliveryStats,
   listScheduleEvents,
   logoutOrganizer,
   notifyEveryoneForAnnouncement,
@@ -159,6 +161,7 @@ export default function AdminDashboardScreen() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
   const [announcementsError, setAnnouncementsError] = useState<string | null>(null);
+  const [announcementDeliveryStats, setAnnouncementDeliveryStats] = useState<Record<string, AnnouncementDeliveryStats>>({});
   const [announcementSearch, setAnnouncementSearch] = useState('');
   const [announcementEditorMode, setAnnouncementEditorMode] = useState<AnnouncementEditorMode>('closed');
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
@@ -198,8 +201,9 @@ export default function AdminDashboardScreen() {
     setAnnouncementsLoading(true);
     setAnnouncementsError(null);
     try {
-      const result = await listAnnouncements();
+      const [result, stats] = await Promise.all([listAnnouncements(), listAnnouncementDeliveryStats()]);
       setAnnouncements(result.announcements);
+      setAnnouncementDeliveryStats(Object.fromEntries(stats.deliveries.map((delivery) => [delivery.announcement_id, delivery])));
     } catch (err) {
       setAnnouncementsError(err instanceof Error ? err.message : 'Unable to load announcements');
     } finally {
@@ -335,16 +339,17 @@ export default function AdminDashboardScreen() {
     setNotificationAction({ audience, status: 'sending', message: null });
     setAnnouncementsError(null);
     try {
-      const result = audience === 'test'
-        ? await sendAnnouncementTestNotification(editingAnnouncement.id)
-        : await notifyEveryoneForAnnouncement(editingAnnouncement.id);
+      await (audience === 'test'
+        ? sendAnnouncementTestNotification(editingAnnouncement.id)
+        : notifyEveryoneForAnnouncement(editingAnnouncement.id));
       setNotificationAction({
         audience,
         status: 'sent',
         message: audience === 'test'
           ? 'Test notification sent to configured test subscribers.'
-          : `Notification sent to everyone.${result.provider_campaign_id ? ` Campaign ${result.provider_campaign_id}.` : ''}`,
+          : 'Notification accepted by WonderPush.',
       });
+      if (audience === 'everyone') await loadAnnouncements();
     } catch (err) {
       setNotificationAction({
         audience,
@@ -649,6 +654,7 @@ export default function AdminDashboardScreen() {
           saving={announcementSaving}
           saveMessage={announcementSaveMessage}
           notificationAction={notificationAction}
+          deliveryStats={announcementDeliveryStats}
           editingAnnouncement={editingAnnouncement}
           showTestAction={currentUser?.role === 'Owner'}
           onSearchChange={setAnnouncementSearch}
@@ -1536,13 +1542,14 @@ function VendorEditor({
 
 function AnnouncementsPage({
   announcements, totalCount, loading, error, search, editorMode, form, saving,
-  saveMessage, notificationAction,
+  saveMessage, notificationAction, deliveryStats,
   editingAnnouncement, showTestAction, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
   onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone,
 }: {
   announcements: Announcement[]; totalCount: number; loading: boolean; error: string | null;
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
+  deliveryStats: Record<string, AnnouncementDeliveryStats>;
   editingAnnouncement: Announcement | null; showTestAction: boolean; onSearchChange: (value: string) => void;
   onRefresh: () => void; onCreate: () => void; onEdit: (item: Announcement) => void;
   onStatusChange: (item: Announcement, status: AnnouncementStatus) => void;
@@ -1597,6 +1604,15 @@ function AnnouncementsPage({
                   {`Created by ${item.created_by} · ${new Date(item.created_at).toLocaleString()}`}
                   {item.expires_at ? ` · Expires ${new Date(item.expires_at).toLocaleString()}` : ''}
                 </Text>
+                {deliveryStats[item.id] ? <Text style={styles.deliveryMeta}>
+                  {deliveryStats[item.id].sent_at
+                    ? `Notification sent ${new Date(deliveryStats[item.id].sent_at as string).toLocaleString()}`
+                    : `Notification ${deliveryStats[item.id].status}`}
+                  {deliveryStats[item.id].audience_device_count === null
+                    ? ' · Audience at send: Not available'
+                    : ` · Known deliverable devices at send: ${deliveryStats[item.id].audience_device_count}`}
+                  {deliveryStats[item.id].provider_accepted ? ' · Provider accepted: Yes' : ''}
+                </Text> : null}
               </View>
               <View style={[styles.announcementActions, isMobile && styles.announcementActionsMobile]}>
                 <Pressable style={styles.iconButton} onPress={() => onEdit(item)}><Feather name="edit-2" size={16} color={colors.textSecondary} /></Pressable>
@@ -1911,6 +1927,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
   },
+  deliveryMeta: { fontSize: 12, lineHeight: 18, color: colors.textSecondary, fontWeight: '600' },
   iconButton: {
     width: 36,
     height: 36,

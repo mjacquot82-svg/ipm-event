@@ -420,6 +420,29 @@ class NotificationDeliveryResponse(BaseModel):
     notification_title: str
     notification_message: str
 
+class NotificationAdoptionResponse(BaseModel):
+    registered_devices: int
+    enabled_devices: int
+    deliverable_devices: int
+    stale_deliverable_devices: int
+    never_checked_devices: int
+    oldest_provider_check_at: Optional[datetime] = None
+    newest_provider_check_at: Optional[datetime] = None
+    snapshot_at: datetime
+
+class AnnouncementDeliveryStats(BaseModel):
+    announcement_id: str
+    status: Literal["requested", "sent", "failed"]
+    sent_at: Optional[datetime] = None
+    audience_device_count: Optional[int] = None
+    audience_count_basis: Optional[Literal["verified_deliverable_registrations"]] = None
+    audience_snapshot_at: Optional[datetime] = None
+    audience_stale_device_count: Optional[int] = None
+    provider_accepted: bool
+
+class AnnouncementDeliveryStatsResponse(BaseModel):
+    deliveries: List[AnnouncementDeliveryStats]
+
 SCHEDULE_TITLE_FIELDS = ("Name", "Title", "Event Title", "Event Name", "Activity", "Program")
 SCHEDULE_FIELD_ALIASES = {
     "Name": SCHEDULE_TITLE_FIELDS,
@@ -1423,6 +1446,14 @@ async def admin_analytics_content(
     return await run_ranged_analytics_report(get_analytics_content_report, range, current_user)
 
 
+@api_router.get("/admin/analytics/notifications", response_model=NotificationAdoptionResponse)
+async def admin_notification_adoption(
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_analytics_reporting_repository(current_user)
+    return await require_notification_registration_repository().adoption_summary()
+
+
 @api_router.post("/admin/bootstrap", response_model=OrganizerAuthResponse)
 async def bootstrap_organizer_owner(data: OrganizerBootstrapRequest, response: Response):
     database = require_mongodb()
@@ -1592,6 +1623,25 @@ async def list_admin_announcements(current_user: dict = Depends(get_current_orga
     return AnnouncementsResponse(announcements=announcements, total_count=len(announcements))
 
 
+@api_router.get(
+    "/admin/announcements/delivery-stats",
+    response_model=AnnouncementDeliveryStatsResponse,
+)
+async def list_announcement_delivery_stats(
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_announcement_manager_role(current_user)
+    rows = await require_notification_delivery_service().list_announcement_stats(
+        event_id=get_admin_event_id(current_user)
+    )
+    return AnnouncementDeliveryStatsResponse(deliveries=[
+        AnnouncementDeliveryStats(
+            **row,
+            provider_accepted=row.get("status") == "sent",
+        ) for row in rows
+    ])
+
+
 @api_router.post("/admin/announcements", response_model=AnnouncementResponse, status_code=201)
 async def create_admin_announcement(
     data: AnnouncementPayload,
@@ -1692,6 +1742,13 @@ async def notify_announcement(
     content = provider.notification_content(
         announcement["title"], announcement["message"], target_url
     )
+    adoption = None
+    if audience == "everyone":
+        try:
+            adoption = await require_notification_registration_repository().adoption_summary()
+        except (HTTPException, httpx.HTTPError, ValueError) as exc:
+            # Analytics enrichment must never change or block announcement delivery.
+            logger.warning("notification audience snapshot unavailable: %s", type(exc).__name__)
     try:
         delivery = await deliveries.create_requested(
             event_id=event_id,
@@ -1702,6 +1759,9 @@ async def notify_announcement(
             notification_title=content["title"],
             notification_message=content["message"],
             provider="wonderpush",
+            audience_device_count=(adoption["deliverable_devices"] if adoption else None),
+            audience_stale_device_count=(adoption["stale_deliverable_devices"] if adoption else None),
+            audience_snapshot_at=(adoption["snapshot_at"] if adoption else None),
         )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 409 and audience == "everyone":

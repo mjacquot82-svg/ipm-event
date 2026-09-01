@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 from typing import Any
@@ -83,6 +83,38 @@ class SupabaseNotificationRegistrationRepository:
                 "provider_checked_at": datetime.now(timezone.utc).isoformat(),
             }, headers={"Prefer": "return=representation"})
         return rows[0]
+
+    async def adoption_summary(self, *, now: datetime | None = None) -> dict[str, Any]:
+        event_id = await self._event_id()
+        rows = await self.client.request("GET", "/notification_installations", params={
+            "select": "provider_reachability,provider_has_push_token,provider_deliverable,provider_checked_at",
+            "event_id": f"eq.{event_id}",
+        })
+        current = now or datetime.now(timezone.utc)
+        stale_before = current - timedelta(hours=24)
+        checked_at = []
+        for row in rows:
+            value = row.get("provider_checked_at")
+            if value:
+                parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+                checked_at.append(parsed.astimezone(timezone.utc))
+        deliverable = [row for row in rows if row.get("provider_deliverable") is True]
+        stale_deliverable = 0
+        for row in deliverable:
+            value = row.get("provider_checked_at")
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(timezone.utc) if value else None
+            if parsed is None or parsed < stale_before:
+                stale_deliverable += 1
+        return {
+            "registered_devices": len(rows),
+            "enabled_devices": sum(row.get("provider_reachability") == "optIn" for row in rows),
+            "deliverable_devices": len(deliverable),
+            "stale_deliverable_devices": stale_deliverable,
+            "never_checked_devices": sum(not row.get("provider_checked_at") for row in rows),
+            "oldest_provider_check_at": min(checked_at).isoformat() if checked_at else None,
+            "newest_provider_check_at": max(checked_at).isoformat() if checked_at else None,
+            "snapshot_at": current.isoformat(),
+        }
 
 
 def provider_readiness(installation: dict[str, Any] | None) -> tuple[str, bool]:

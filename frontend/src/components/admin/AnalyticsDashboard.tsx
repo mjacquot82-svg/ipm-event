@@ -6,7 +6,8 @@ import { AdminRequestError } from '../../services/adminAuthService';
 import {
   AnalyticsContentResponse, AnalyticsLiveResponse, AnalyticsRange,
   AnalyticsSummaryResponse, AnalyticsTrafficResponse, RankedMetric,
-  getAnalyticsContent, getAnalyticsLive, getAnalyticsSummary, getAnalyticsTraffic,
+  NotificationAdoptionResponse, getAnalyticsContent, getAnalyticsLive, getAnalyticsSummary,
+  getAnalyticsTraffic, getNotificationAdoption,
 } from '../../services/adminAnalyticsService';
 import { ContentPage, EmptyState, ErrorState, LoadingState } from './ContentScaffold';
 
@@ -128,6 +129,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
   const [traffic, setTraffic] = useState<AnalyticsTrafficResponse | null>(null);
   const [content, setContent] = useState<AnalyticsContentResponse | null>(null);
   const [live, setLive] = useState<AnalyticsLiveResponse | null>(null);
+  const [notifications, setNotifications] = useState<NotificationAdoptionResponse | null>(null);
   const [aggregateLoading, setAggregateLoading] = useState(true);
   const [aggregateErrors, setAggregateErrors] = useState<string[]>([]);
   const [liveError, setLiveError] = useState<string | null>(null);
@@ -145,12 +147,14 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
     if (manual) setRefreshing(true); else setAggregateLoading(true);
     const results = await Promise.allSettled([
       getAnalyticsSummary(selectedRange), getAnalyticsTraffic(selectedRange), getAnalyticsContent(selectedRange),
+      getNotificationAdoption(),
     ]);
     if (request !== aggregateRequest.current) return;
     const errors: string[] = [];
     if (results[0].status === 'fulfilled') setSummary(results[0].value); else { setSummary(null); errors.push(`Overview: ${handleError(results[0].reason)}`); }
     if (results[1].status === 'fulfilled') setTraffic(results[1].value); else { setTraffic(null); errors.push(`Traffic: ${handleError(results[1].reason)}`); }
     if (results[2].status === 'fulfilled') setContent(results[2].value); else { setContent(null); errors.push(`Engagement: ${handleError(results[2].reason)}`); }
+    if (results[3].status === 'fulfilled') setNotifications(results[3].value); else { setNotifications(null); errors.push(`Notifications: ${handleError(results[3].reason)}`); }
     setAggregateErrors(errors); setAggregateLoading(false); setRefreshing(false);
   }, [handleError]);
 
@@ -206,6 +210,17 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
         <MetricCard label="Browser Visitors" value={overview.browserOnlyVisitors} icon="globe" />
         <MetricCard label="Average Session" value={formatDuration(overview.averageSessionDurationSeconds)} icon="activity" help={overview.sessionDurationSampleSize ? `Based on ${overview.sessionDurationSampleSize.toLocaleString()} completed sessions.` : 'Shown when reliable completed-session data exists.'} />
       </MetricGrid>
+    </Section> : null}
+
+    {notifications ? <Section title="Notification Adoption" subtitle="Aggregate device readiness; no installation identifiers are exposed." initiallyOpen>
+      <MetricGrid>
+        <MetricCard label="Notifications Enabled" value={notifications.deliverable_devices} icon="bell" help="Registered devices last verified as WonderPush opt-in with a push token." />
+      </MetricGrid>
+      <Text style={styles.collectionStart}>
+        {notifications.stale_deliverable_devices > 0
+          ? `${notifications.stale_deliverable_devices.toLocaleString()} enabled device check${notifications.stale_deliverable_devices === 1 ? ' is' : 's are'} older than 24 hours; this is a readiness mirror, not a real-time provider count.`
+          : `All enabled device checks are within 24 hours. Readiness mirror updated ${formatTime(notifications.newest_provider_check_at)}.`}
+      </Text>
     </Section> : null}
 
     <Section title="Live Activity" subtitle="Aggregate recent activity; refreshes every 30 seconds." initiallyOpen>
