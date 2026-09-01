@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import tentedCityVendors from '../../src/data/tentedCityVendors.json';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
@@ -275,12 +274,7 @@ export default function VendorsScreen() {
               <TouchableOpacity
                 style={styles.mapLink}
                 onPress={() => {
-                  const fromSheet = item.location;
-                  const fromGuide = (tentedCityVendors as { name: string }[]).find((v) =>
-                    v.name.toLowerCase().includes(item.name.toLowerCase()) ||
-                    item.name.toLowerCase().includes(v.name.toLowerCase().slice(0, 18))
-                  )?.name;
-                  const loc = fromSheet || fromGuide || item.name;
+                  const loc = item.location || item.name;
                   router.push({ pathname: '/(tabs)/map', params: { location: loc, showOnly: 'true', source: 'vendors' } });
                 }}
               >
