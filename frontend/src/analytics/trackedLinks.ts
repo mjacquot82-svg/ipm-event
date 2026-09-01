@@ -11,6 +11,7 @@ export const IPM_DESTINATIONS = {
   merchandise: { id: 'merchandise', type: 'shopping', url: 'https://ipm26.itemorder.com/shop/home/' },
   celebration_of_excellence: { id: 'celebration_of_excellence', type: 'ticketing', url: 'https://www.zeffy.com/en-CA/ticketing/2026-ipm-celebration-of-excellence' },
   worship_service_pdf: { id: 'worship_service_pdf', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/wp-content/uploads/2026/03/IPM-2026-Worship-Service.pdf' },
+  show_guide: { id: 'show_guide', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/wp-content/uploads/2026/08/IPM-2026-Show-Guide.pdf' },
   past_ipm_photos: { id: 'past_ipm_photos', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/visitor-info/photos-of-past-ipms/' },
   faq: { id: 'faq', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/visitor-info/faq/' },
   accessibility: { id: 'accessibility', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/visitor-info/accessibility/' },

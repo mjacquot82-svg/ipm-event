@@ -15,10 +15,10 @@ const groupedButtons = home.slice(actionsStart, groupsEnd);
 const allButtons = [
   'Map', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
   'Camping', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service',
-  'Personal Itinerary', 'Queen of the Furrow', 'Announcements',
+  'Personal Itinerary', 'Queen of the Furrow', 'Announcements', '2026 Show Guide',
 ];
 const actionButtons = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements'];
-const linkButtons = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service'];
+const linkButtons = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service', '2026 Show Guide'];
 
 function occurrences(source, label) {
   return [...source.matchAll(new RegExp(`>${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}<\\/Text>`, 'g'))].length;
@@ -62,6 +62,7 @@ test('external controls are isolated under Link Buttons without URL changes', ()
     Tickets: ['tickets', 'https://www.tix123.com/tickets/?code=IPMRE26'],
     Souvenirs: ['merchandise', 'https://ipm26.itemorder.com/shop/home/'],
     'Celebration of Excellence': ['celebration_of_excellence', 'https://www.zeffy.com/en-CA/ticketing/2026-ipm-celebration-of-excellence'],
+    '2026 Show Guide': ['show_guide', 'https://www.plowingmatch.org/ipm2026/wp-content/uploads/2026/08/IPM-2026-Show-Guide.pdf'],
   };
   for (const [label, [destination, url]] of Object.entries(expected)) {
     assert.equal(occurrences(links, label), 1, `${label} missing from links`);
@@ -98,4 +99,11 @@ test('unrelated Home content remains present', () => {
   assert.match(home, /Happening Now/);
   assert.match(home, /Coming Up Next/);
   assert.match(home, /<AttendeeAttribution source="home_attribution" \/>/);
+});
+
+test('Links feature the 2026 Show Guide PDF card', () => {
+  assert.match(links, /styles\.showGuideCard/);
+  assert.match(links, /openQuickLink\('show_guide', 'show_guide'\)/);
+  assert.ok(destinations.includes("show_guide: {"));
+  assert.ok(destinations.includes("url: 'https://www.plowingmatch.org/ipm2026/wp-content/uploads/2026/08/IPM-2026-Show-Guide.pdf'"));
 });
