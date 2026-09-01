@@ -548,6 +548,22 @@ export default function HomeScreen() {
           </View>
 
           <Text style={[styles.sectionTitle, styles.linksTitle]}>Links</Text>
+            <TouchableOpacity
+              style={styles.showGuideCard}
+              onPress={() => openQuickLink('show_guide', 'show_guide')}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="2026 Show Guide PDF"
+            >
+              <View style={styles.showGuideIcon}>
+                <Feather name="book-open" size={22} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.showGuideTitle}>2026 Show Guide</Text>
+                <Text style={styles.showGuideMeta}>Official PDF</Text>
+              </View>
+              <Feather name="external-link" size={18} color={colors.primary} />
+            </TouchableOpacity>
           <View style={styles.quickActionsGrid}>
             <TouchableOpacity
               style={styles.actionCard}
@@ -796,6 +812,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     position: 'relative',
   },
+  showGuideCard: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFF9E8',
+    borderColor: '#D8B866',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+  },
+  showGuideIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  showGuideTitle: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  showGuideMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2, fontWeight: '600' },
   announcementBadge: { alignItems: 'center', backgroundColor: colors.error, borderColor: '#FFFFFF', borderRadius: 12, borderWidth: 2, justifyContent: 'center', minHeight: 24, minWidth: 24, paddingHorizontal: 5, position: 'absolute', right: 7, top: 7 },
   announcementBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', lineHeight: 14 },
   announcementActionUnread: { backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderWidth: 1 },
