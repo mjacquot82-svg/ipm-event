@@ -404,6 +404,7 @@ export default function ScheduleScreen() {
         style={styles.content}
         contentContainerStyle={styles.listContent}
         sections={scheduleSections}
+        extraData={selectedCategory}
         keyExtractor={(event) => event.id}
         stickySectionHeadersEnabled={false}
         showsVerticalScrollIndicator={false}

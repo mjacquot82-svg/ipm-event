@@ -50,6 +50,7 @@ test('Schedule composes category with source and applies it through existing fil
   assert.match(scheduleSource, /setSelectedCategory\(resolveScheduleCategory\(category, categoryOptions\)\)/);
   assert.match(scheduleSource, /appliedCategoryQueryRef\.current === category/);
   assert.match(scheduleSource, /event\.category !== selectedCategory/);
+  assert.match(scheduleSource, /sections=\{scheduleSections\}[\s\S]*?extraData=\{selectedCategory\}/);
   assert.match(scheduleSource, /setSelectedCategory\(null\)/);
   assert.match(scheduleSource, /const selectCategory = \(category: string \| null\)/);
 });
