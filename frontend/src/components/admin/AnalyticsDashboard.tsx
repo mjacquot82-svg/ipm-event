@@ -26,11 +26,13 @@ const ACTION_LABELS: Record<string, string> = {
   volunteer: 'Volunteer', exhibitors: 'Exhibitors', tickets: 'Tickets', camping: 'Camping',
   souvenirs: 'Souvenirs', itinerary: 'My Itinerary', queen_archive: 'Queen of the Furrow',
   announcements: 'Announcements', sos: 'SOS',
+  show_guide: '2026 Show Guide',
 };
 const DESTINATION_LABELS: Record<string, string> = {
   partners: 'Partners & Sponsors', volunteer: 'Volunteer Registration', exhibitor: 'Exhibitor Registration',
   tickets: 'Tickets', camping: 'Camping', merchandise: 'Souvenirs', past_ipm_photos: 'Past IPM Photos',
   faq: 'Frequently Asked Questions', accessibility: 'Accessibility', jds_studio: 'JDS Studio',
+  show_guide: '2026 Show Guide',
 };
 
 type Props = { onAuthenticationExpired: () => void };
