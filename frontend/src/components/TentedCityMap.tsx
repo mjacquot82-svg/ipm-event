@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import colors from '../theme/colors';
-import tentedCityVendors from '../data/tentedCityVendors.json';
 import { findTentedCityVenue, tentedCityVenues, TentedCityVenue } from '../config/tentedCityVenues';
 import { getScheduleData, ScheduleEvent } from '../services/spreadsheetDataService';
 
@@ -28,8 +27,6 @@ type VendorHit = {
 type Hit =
   | { kind: 'vendor'; vendor: VendorHit }
   | { kind: 'stage'; venue: TentedCityVenue };
-
-const vendors = tentedCityVendors as VendorHit[];
 
 function norm(s: string) {
   return s.toLowerCase().replace(/[’']/g, "'").replace(/[^a-z0-9]+/g, ' ').trim();
@@ -51,19 +48,33 @@ export default function TentedCityMap({
   const [query, setQuery] = useState(initialQuery || '');
   const [selected, setSelected] = useState<Hit | null>(null);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const [vendors, setVendors] = useState<VendorHit[]>([]);
 
   useEffect(() => {
-    if (initialQuery) {
-      const venue = findTentedCityVenue(initialQuery);
-      if (venue) {
-        setSelected({ kind: 'stage', venue });
-        setQuery(venue.label);
-        return;
-      }
-      const vendor = vendors.find((v) => tokensMatch(v.name, initialQuery) || tokensMatch(v.locationLabel, initialQuery));
-      if (vendor) setSelected({ kind: 'vendor', vendor });
+    let alive = true;
+    void fetch('https://raw.githubusercontent.com/mjacquot82-svg/ipm-event/add-tented-city-map/tented-city/vendors.json')
+      .then((r) => r.json())
+      .then((data) => {
+        if (alive && Array.isArray(data)) setVendors(data as VendorHit[]);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!initialQuery) return;
+    const venue = findTentedCityVenue(initialQuery);
+    if (venue) {
+      setSelected({ kind: 'stage', venue });
+      setQuery(venue.label);
+      return;
     }
-  }, [initialQuery]);
+    if (!vendors.length) return;
+    const vendor = vendors.find((v) => tokensMatch(v.name, initialQuery) || tokensMatch(v.locationLabel, initialQuery));
+    if (vendor) setSelected({ kind: 'vendor', vendor });
+  }, [initialQuery, vendors]);
 
   useEffect(() => {
     let alive = true;
@@ -91,7 +102,7 @@ export default function TentedCityMap({
       }
     }
     return hits.slice(0, 40);
-  }, [query]);
+  }, [query, vendors]);
 
   const highlightRect =
     selected?.kind === 'vendor'
