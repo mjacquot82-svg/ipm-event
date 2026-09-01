@@ -26,3 +26,8 @@ test('analytics contracts expose no installation IDs, tokens, hashes, or provide
   const statsType = service.slice(service.indexOf('export type AnnouncementDeliveryStats ='), service.indexOf('export type AnnouncementDeliveryStatsResponse'));
   assert.doesNotMatch(statsType, /installation_id|push.token|capability_hash|provider_campaign_id/i);
 });
+
+test('notification analytics remains additive when production backend is older', () => {
+  assert.match(admin, /Delivery analytics is additive; an older backend must not block Announcements/);
+  assert.match(dashboard, /results\[3\]\.reason instanceof AdminRequestError && results\[3\]\.reason\.status === 404/);
+});

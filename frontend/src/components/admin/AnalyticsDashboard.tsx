@@ -154,7 +154,13 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
     if (results[0].status === 'fulfilled') setSummary(results[0].value); else { setSummary(null); errors.push(`Overview: ${handleError(results[0].reason)}`); }
     if (results[1].status === 'fulfilled') setTraffic(results[1].value); else { setTraffic(null); errors.push(`Traffic: ${handleError(results[1].reason)}`); }
     if (results[2].status === 'fulfilled') setContent(results[2].value); else { setContent(null); errors.push(`Engagement: ${handleError(results[2].reason)}`); }
-    if (results[3].status === 'fulfilled') setNotifications(results[3].value); else { setNotifications(null); errors.push(`Notifications: ${handleError(results[3].reason)}`); }
+    if (results[3].status === 'fulfilled') setNotifications(results[3].value);
+    else {
+      setNotifications(null);
+      if (!(results[3].reason instanceof AdminRequestError && results[3].reason.status === 404)) {
+        errors.push(`Notifications: ${handleError(results[3].reason)}`);
+      }
+    }
     setAggregateErrors(errors); setAggregateLoading(false); setRefreshing(false);
   }, [handleError]);
 

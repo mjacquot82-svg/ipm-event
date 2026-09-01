@@ -201,9 +201,15 @@ export default function AdminDashboardScreen() {
     setAnnouncementsLoading(true);
     setAnnouncementsError(null);
     try {
-      const [result, stats] = await Promise.all([listAnnouncements(), listAnnouncementDeliveryStats()]);
+      const result = await listAnnouncements();
       setAnnouncements(result.announcements);
-      setAnnouncementDeliveryStats(Object.fromEntries(stats.deliveries.map((delivery) => [delivery.announcement_id, delivery])));
+      try {
+        const stats = await listAnnouncementDeliveryStats();
+        setAnnouncementDeliveryStats(Object.fromEntries(stats.deliveries.map((delivery) => [delivery.announcement_id, delivery])));
+      } catch {
+        // Delivery analytics is additive; an older backend must not block Announcements.
+        setAnnouncementDeliveryStats({});
+      }
     } catch (err) {
       setAnnouncementsError(err instanceof Error ? err.message : 'Unable to load announcements');
     } finally {
