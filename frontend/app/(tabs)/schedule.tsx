@@ -39,13 +39,14 @@ import { formatScheduleDate, getScheduleWeekday } from '../../src/utils/schedule
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
+import { resolveScheduleCategory } from '../../src/utils/scheduleCategoryDeepLink';
 
 export default function ScheduleScreen() {
   const { frameStyle, sectionStyle } = useAttendeeLayout();
   const { width: viewportWidth } = useWindowDimensions();
   const isDesktop = viewportWidth >= ATTENDEE_DESKTOP_BREAKPOINT;
   const router = useRouter();
-  const { source } = useLocalSearchParams<{ source?: string }>();
+  const { source, category } = useLocalSearchParams<{ source?: string; category?: string | string[] }>();
   usePageAnalytics('schedule', source || 'other', 'schedule_viewed');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +64,7 @@ export default function ScheduleScreen() {
   const [showEventModal, setShowEventModal] = useState(false);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
+  const appliedCategoryQueryRef = useRef<string | string[] | undefined>(undefined);
 
   const selectedCategoryStyle = getScheduleCategoryStyle(selectedCategory);
   const selectedEventCategoryStyle = getScheduleCategoryStyle(selectedEvent?.category);
@@ -230,6 +232,13 @@ export default function ScheduleScreen() {
       new Set(events.map((event) => event.category).filter(Boolean))
     ).sort((a, b) => a.localeCompare(b));
   }, [events]);
+
+  useEffect(() => {
+    if (categoryOptions.length === 0) return;
+    if (appliedCategoryQueryRef.current === category) return;
+    appliedCategoryQueryRef.current = category;
+    setSelectedCategory(resolveScheduleCategory(category, categoryOptions));
+  }, [category, categoryOptions]);
 
   const dayOptions = useMemo(() => {
     const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
