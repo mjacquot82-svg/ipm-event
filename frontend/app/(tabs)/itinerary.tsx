@@ -28,6 +28,7 @@ import {
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
 import { formatScheduleDate } from '../../src/utils/scheduleDate';
+import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
 
 export default function ItineraryScreen() {
   usePageAnalytics('itinerary', 'home_quick_action');
@@ -155,7 +156,7 @@ export default function ItineraryScreen() {
               <View style={styles.cardText}>
                 <Text style={styles.eventTitle}>{item.title}</Text>
                 <Text style={styles.eventTime}>
-                  {formatDate(item.start_date)} | {item.start_time} - {item.end_time}
+                  {formatDate(item.start_date)} | {formatScheduleTimeRange(item.start_time, item.end_time)}
                 </Text>
               </View>
 

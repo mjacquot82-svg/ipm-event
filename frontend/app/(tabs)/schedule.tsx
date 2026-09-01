@@ -15,6 +15,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
 import { getScheduleCategoryStyle } from '../../src/theme/scheduleCategoryStyles';
@@ -36,10 +37,15 @@ import {
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
 import { formatScheduleDate, getScheduleWeekday } from '../../src/utils/scheduleDate';
+import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
 import { resolveScheduleCategory } from '../../src/utils/scheduleCategoryDeepLink';
+import {
+  acknowledgeScheduleOnboarding,
+  hasAcknowledgedScheduleOnboarding,
+} from '../../src/services/scheduleOnboardingState';
 
 export default function ScheduleScreen() {
   const { frameStyle, sectionStyle } = useAttendeeLayout();
@@ -62,12 +68,40 @@ export default function ScheduleScreen() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [showScheduleOnboarding, setShowScheduleOnboarding] = useState(false);
+  const [showStarConfirmation, setShowStarConfirmation] = useState(false);
+  const onboardingDismissRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+  const starConfirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
   const appliedCategoryQueryRef = useRef<string | string[] | undefined>(undefined);
 
   const selectedCategoryStyle = getScheduleCategoryStyle(selectedCategory);
   const selectedEventCategoryStyle = getScheduleCategoryStyle(selectedEvent?.category);
+
+  useEffect(() => {
+    let active = true;
+    const loadOnboardingState = async () => {
+      const acknowledged = await hasAcknowledgedScheduleOnboarding(AsyncStorage);
+      if (active) setShowScheduleOnboarding(!acknowledged);
+    };
+    void loadOnboardingState();
+    return () => { active = false; };
+  }, []);
+
+  const dismissScheduleOnboarding = useCallback(async () => {
+    setShowScheduleOnboarding(false);
+    await acknowledgeScheduleOnboarding(AsyncStorage);
+  }, []);
+
+  useEffect(() => {
+    if (!showScheduleOnboarding || loading) return;
+    const focusTimer = setTimeout(() => {
+      const dismissButton = onboardingDismissRef.current as unknown as { focus?: () => void } | null;
+      dismissButton?.focus?.();
+    }, 0);
+    return () => clearTimeout(focusTimer);
+  }, [loading, showScheduleOnboarding]);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     if (!Array.isArray(result.data.events)) {
@@ -149,7 +183,17 @@ export default function ScheduleScreen() {
     });
     // Sync with backend for notifications
     syncStarredEventsWithBackend(result.favorites);
+    const starSucceeded = result.isFavorite && result.favorites.includes(eventId);
+    if (starSucceeded) {
+      if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current);
+      setShowStarConfirmation(true);
+      starConfirmationTimerRef.current = setTimeout(() => setShowStarConfirmation(false), 2800);
+    }
   };
+
+  useEffect(() => () => {
+    if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current);
+  }, []);
 
   const onRefresh = useCallback(() => {
     fetchSchedule(true);
@@ -684,7 +728,7 @@ export default function ScheduleScreen() {
                             color={categoryStyle.tintForeground}
                           />
                           <Text style={[styles.eventTime, { color: categoryStyle.tintForeground }]}>
-                            {[event.start_time, event.end_time].filter(Boolean).join(' - ')}
+                            {formatScheduleTimeRange(event.start_time, event.end_time)}
                           </Text>
                         </View>
                         <TouchableOpacity
@@ -692,12 +736,15 @@ export default function ScheduleScreen() {
                             e.stopPropagation();
                             handleToggleFavorite(event.id);
                           }}
-                          style={styles.favoriteButton}
+                          style={[styles.favoriteButton, isFavorite && styles.favoriteButtonStarred]}
+                          accessibilityRole="button"
+                          accessibilityLabel={isFavorite ? `Remove ${event.title} from itinerary` : `Add ${event.title} to itinerary`}
+                          accessibilityState={{ selected: isFavorite }}
                         >
                           <Feather
                             name={isFavorite ? 'star' : 'star'}
                             size={20}
-                            color={isFavorite ? colors.accent : colors.textMuted}
+                            color={isFavorite ? colors.accentDark : colors.textSecondary}
                           />
                         </TouchableOpacity>
                       </View>
@@ -737,6 +784,53 @@ export default function ScheduleScreen() {
           );
         }}
       />
+
+      {/* First-visit education overlays the loaded Schedule without delaying it. */}
+      <Modal
+        visible={showScheduleOnboarding}
+        animationType="fade"
+        transparent={true}
+        statusBarTranslucent={true}
+        onRequestClose={() => void dismissScheduleOnboarding()}
+      >
+        <View style={styles.onboardingModalOverlay}>
+          <ScrollView
+            style={styles.onboardingModalScroll}
+            contentContainerStyle={styles.onboardingModalScrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View
+              style={styles.onboardingModalCard}
+              role="dialog"
+              accessibilityViewIsModal={true}
+              accessibilityLabel="Plan your day"
+            >
+              <View style={styles.onboardingModalIcon} accessible={false}>
+                <Feather name="star" size={34} color={colors.accentDark} />
+              </View>
+              <Text nativeID="schedule-onboarding-title" style={styles.onboardingModalTitle}>
+                Plan your day
+              </Text>
+              <Text style={styles.onboardingModalText}>
+                Tap the ⭐ on events you don&apos;t want to miss. They&apos;ll be added to your Personal Itinerary.
+              </Text>
+              <Text style={styles.onboardingModalSecondaryText}>
+                Event reminders about 30 minutes before eligible events will also be available with notifications enabled.
+              </Text>
+              <TouchableOpacity
+                ref={onboardingDismissRef}
+                style={styles.onboardingModalDismiss}
+                onPress={() => void dismissScheduleOnboarding()}
+                accessibilityRole="button"
+                accessibilityLabel="Got it, close Plan your day introduction"
+              >
+                <Text style={styles.onboardingModalDismissText}>Got it</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* Compact category selector for mobile widths. */}
       <Modal
@@ -832,12 +926,12 @@ export default function ScheduleScreen() {
                       onPress={() => {
                         handleToggleFavorite(selectedEvent.id);
                       }}
-                      style={styles.modalStarButton}
+                      style={[styles.modalStarButton, favorites.includes(selectedEvent.id) && styles.favoriteButtonStarred]}
                     >
                       <Feather
                         name="star"
                         size={24}
-                        color={favorites.includes(selectedEvent.id) ? colors.accent : colors.textMuted}
+                        color={favorites.includes(selectedEvent.id) ? colors.accentDark : colors.textSecondary}
                       />
                     </TouchableOpacity>
                   </View>
@@ -860,7 +954,7 @@ export default function ScheduleScreen() {
                       <View style={styles.detailTextContainer}>
                         <Text style={styles.detailLabel}>Time</Text>
                         <Text style={styles.detailValue}>
-                          {[selectedEvent.start_time, selectedEvent.end_time].filter(Boolean).join(' - ')}
+                          {formatScheduleTimeRange(selectedEvent.start_time, selectedEvent.end_time)}
                         </Text>
                       </View>
                     </View>
@@ -957,7 +1051,7 @@ export default function ScheduleScreen() {
                       color="#FFFFFF"
                     />
                     <Text style={styles.addToItineraryText}>
-                      {favorites.includes(selectedEvent.id) ? 'Added to Itinerary' : 'Add to Itinerary'}
+                      {favorites.includes(selectedEvent.id) ? 'Remove from Itinerary' : 'Add to Itinerary'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -966,6 +1060,12 @@ export default function ScheduleScreen() {
           </View>
         </View>
       </Modal>
+      {showStarConfirmation ? (
+        <View style={styles.starConfirmation} accessibilityLiveRegion="polite" accessibilityRole="alert">
+          <Feather name="check-circle" size={20} color="#FFFFFF" />
+          <Text style={styles.starConfirmationText}>Added to Personal Itinerary</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -1287,8 +1387,90 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   favoriteButton: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(45, 41, 38, 0.14)',
   },
+  favoriteButtonStarred: {
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.accentDark,
+  },
+  onboardingModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(20, 28, 23, 0.58)',
+  },
+  onboardingModalScroll: { flex: 1 },
+  onboardingModalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 28,
+  },
+  onboardingModalCard: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 440,
+    paddingHorizontal: 24,
+    paddingVertical: 26,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 22,
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  onboardingModalIcon: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceHighlight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
+  },
+  onboardingModalTitle: {
+    color: colors.textPrimary,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  onboardingModalText: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  onboardingModalSecondaryText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  onboardingModalDismiss: {
+    alignSelf: 'stretch',
+    minHeight: 52,
+    marginTop: 22,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+  onboardingModalDismissText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
   eventTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -1402,7 +1584,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalStarButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(45, 41, 38, 0.14)',
   },
   modalCategoryBadge: {
     alignSelf: 'flex-start',
@@ -1493,6 +1682,7 @@ const styles = StyleSheet.create({
     paddingBottom: 34,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    gap: 10,
   },
   addToItineraryButton: {
     backgroundColor: colors.primary,
@@ -1511,4 +1701,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  starConfirmation: {
+    position: 'absolute', left: 16, right: 16, bottom: 82, minHeight: 72,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    paddingHorizontal: 18, backgroundColor: '#1F2937',
+    borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 }, elevation: 8,
+  },
+  starConfirmationText: { color: '#FFFFFF', fontSize: 15, lineHeight: 20, fontWeight: '800' },
 });
