@@ -14,7 +14,7 @@ import {
   TextInput,
   useWindowDimensions,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
@@ -741,10 +741,10 @@ export default function ScheduleScreen() {
                           accessibilityLabel={isFavorite ? `Remove ${event.title} from itinerary` : `Add ${event.title} to itinerary`}
                           accessibilityState={{ selected: isFavorite }}
                         >
-                          <Feather
-                            name={isFavorite ? 'star' : 'star'}
+                          <FontAwesome
+                            name={isFavorite ? 'star' : 'star-o'}
                             size={20}
-                            color={isFavorite ? colors.accentDark : colors.textSecondary}
+                            color={isFavorite ? colors.accentLight : colors.textSecondary}
                           />
                         </TouchableOpacity>
                       </View>
@@ -928,10 +928,10 @@ export default function ScheduleScreen() {
                       }}
                       style={[styles.modalStarButton, favorites.includes(selectedEvent.id) && styles.favoriteButtonStarred]}
                     >
-                      <Feather
-                        name="star"
+                      <FontAwesome
+                        name={favorites.includes(selectedEvent.id) ? 'star' : 'star-o'}
                         size={24}
-                        color={favorites.includes(selectedEvent.id) ? colors.accentDark : colors.textSecondary}
+                        color={favorites.includes(selectedEvent.id) ? colors.accentLight : colors.textSecondary}
                       />
                     </TouchableOpacity>
                   </View>
