@@ -15,9 +15,9 @@ const groupedButtons = home.slice(actionsStart, groupsEnd);
 const allButtons = [
   'Map', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
   'Camping', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service',
-  'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements', '2026 Show Guide',
+  'Personal Itinerary', 'Queen of the Furrow', 'Emergency Services', 'Announcements', '2026 Show Guide',
 ];
-const actionButtons = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'SOS', 'Announcements'];
+const actionButtons = ['Emergency Services', 'Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements'];
 const linkButtons = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service', '2026 Show Guide'];
 
 function occurrences(source, label) {
@@ -35,36 +35,37 @@ test('all production Home buttons remain present exactly once', () => {
   for (const label of allButtons) assert.equal(occurrences(groupedButtons, label), 1, label);
 });
 
-test('SOS appears exactly once in Quick Actions with its reviewed alert and analytics', () => {
-  assert.equal(occurrences(actions, 'SOS'), 1);
-  assert.equal(occurrences(links, 'SOS'), 0);
-  assert.match(home, /Alert\.alert\('SOS', 'Emergency support information will be available during the event\.'\)/);
-  assert.match(actions, /quickAction\('sos', 'unavailable_notice', showSosNotice\)/);
-  assert.match(actions, /styles\.sosCard/);
-  assert.match(home, /sosCard: \{[\s\S]*?borderWidth: 1,[\s\S]*?borderColor: '#D32F2F'/);
+test('Emergency Services appears exactly once in Quick Actions with internal analytics routing', () => {
+  assert.equal(occurrences(actions, 'Emergency Services'), 1);
+  assert.equal(occurrences(links, 'Emergency Services'), 0);
+  assert.match(actions, /quickAction\('emergency_services', 'internal', \(\) => router\.push\('\/emergency-services' as never\)\)/);
+  assert.doesNotMatch(actions, />SOS<|quickAction\('sos'|unavailable_notice|styles\.sosCard/);
+  assert.doesNotMatch(home, /showSosNotice|Emergency support information will be available during the event\.|sosCard:/);
 });
 
-test('SOS exposes button accessibility metadata', () => {
-  const start = actions.indexOf("quickAction('sos'");
+test('Emergency Services uses the reviewed icon styling and accessibility label', () => {
+  const start = actions.indexOf("quickAction('emergency_services'");
   const cardStart = actions.lastIndexOf('<TouchableOpacity', start);
   const card = actions.slice(cardStart, actions.indexOf('</TouchableOpacity>', start));
+  assert.match(card, /style=\{styles\.actionCard\}/);
+  assert.match(card, /backgroundColor: colors\.error/);
+  assert.match(card, /Feather name="alert-triangle" size=\{22\} color="#FFFFFF"/);
   assert.match(card, /accessibilityRole="button"/);
-  assert.match(card, /accessibilityLabel="Emergency SOS information"/);
-  assert.match(card, /accessibilityHint="Opens emergency support information for the event"/);
+  assert.match(card, /accessibilityLabel="Emergency Services"/);
 });
 
-test('SOS is unconditional and has no responsive or stored-state visibility rule', () => {
-  const start = actions.indexOf("quickAction('sos'");
+test('Emergency Services is unconditional and has no responsive or stored-state visibility rule', () => {
+  const start = actions.indexOf("quickAction('emergency_services'");
   const cardStart = actions.lastIndexOf('<TouchableOpacity', start);
   const card = actions.slice(cardStart, actions.indexOf('</TouchableOpacity>', start));
   assert.ok(cardStart >= 0);
-  assert.doesNotMatch(card, /Platform|useWindowDimensions|screen|width|network|online|PWA|onboard|route|announcement|storage|dataSource|hydrated|\?\s*<|&&\s*</i);
+  assert.doesNotMatch(card, /Platform|useWindowDimensions|screen|width|network|online|PWA|onboard|useRoute|pathname|routeName|announcement|storage|dataSource|hydrated|\?\s*<|&&\s*</i);
 });
 
 test('Quick Actions reflow naturally without width-specific gaps', () => {
   assert.match(home, /quickActionsGrid: \{[\s\S]*?flexDirection: 'row',[\s\S]*?flexWrap: 'wrap',[\s\S]*?justifyContent: 'flex-start',[\s\S]*?gap: 8,/);
   assert.match(home, /actionCard: \{[\s\S]*?width: '31%',/);
-  assert.doesNotMatch(home, /(?:mobile|desktop).*SOS|SOS.*(?:mobile|desktop)/i);
+  assert.doesNotMatch(home, /(?:mobile|desktop).*Emergency Services|Emergency Services.*(?:mobile|desktop)/i);
 });
 
 test('internal controls are isolated under Action Buttons', () => {

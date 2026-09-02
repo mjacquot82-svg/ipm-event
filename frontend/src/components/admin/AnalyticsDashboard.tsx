@@ -20,6 +20,7 @@ const PAGE_LABELS: Record<string, string> = {
   home: 'Home', schedule: 'Schedule', map: 'Map', vendors: 'Vendor Directory',
   itinerary: 'My Itinerary', announcements: 'Announcements', about: 'About',
   queen_archive: 'Queen of the Furrow', announcement_detail: 'Announcement Detail',
+  emergency_services: 'Emergency Services',
 };
 const ACTION_LABELS: Record<string, string> = {
   map: 'Map', schedule: 'Schedule', vendors: 'Vendor Directory', sponsors: 'Sponsors',
@@ -27,6 +28,7 @@ const ACTION_LABELS: Record<string, string> = {
   souvenirs: 'Souvenirs', itinerary: 'My Itinerary', queen_archive: 'Queen of the Furrow',
   announcements: 'Announcements', sos: 'SOS',
   show_guide: '2026 Show Guide',
+  emergency_services: 'Emergency Services',
 };
 const DESTINATION_LABELS: Record<string, string> = {
   partners: 'Partners & Sponsors', volunteer: 'Volunteer Registration', exhibitor: 'Exhibitor Registration',

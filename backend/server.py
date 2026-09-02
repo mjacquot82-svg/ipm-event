@@ -19,6 +19,11 @@ import json
 import traceback
 
 try:
+    from backend.what3words import what3words_router
+except ModuleNotFoundError:
+    from what3words import what3words_router
+
+try:
     from backend.analytics import (
         ANALYTICS_EVENT_SCOPE,
         AnalyticsEventsRequest,
@@ -204,6 +209,7 @@ app = FastAPI(
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+api_router.include_router(what3words_router)
 
 
 # Define Models

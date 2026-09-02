@@ -13,7 +13,7 @@
     "test:analytics": "node --test tests/analytics-core.test.mjs tests/analytics-dashboard.test.mjs",
     "test:install": "node --test tests/install-environment.test.mjs tests/install-flow-component.test.mjs",
     "test:pwa": "node --test tests/pwa-icons.test.mjs",
-    "test:home": "node --test tests/home-action-groups.test.mjs",
+    "test:home": "node --test tests/home-action-groups.test.mjs tests/emergency-services.test.mjs",
     "test:webpushr": "node --test tests/webpushr-bell.test.mjs",
     "test:notifications": "node --test tests/wonderpush-production.test.mjs tests/notification-deep-link.test.mjs",
     "test:offline": "node --test tests/offline-service-worker.test.mjs",

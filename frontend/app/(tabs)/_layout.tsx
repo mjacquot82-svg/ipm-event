@@ -105,6 +105,7 @@ export default function TabLayout() {
           <Tabs.Screen name="announcements" options={{ title: 'Announcements', href: null }} />
           <Tabs.Screen name="queen-of-the-furrow" options={{ title: 'Queen of the Furrow', href: null }} />
           <Tabs.Screen name="camping" options={{ title: 'RV Park & Camping Information', href: null }} />
+          <Tabs.Screen name="emergency-services" options={{ title: 'Emergency Services', href: null }} />
           <Tabs.Screen name="worship-service" options={{ title: 'Interdenominational Worship Service', href: null }} />
         </Tabs>
       </View>
