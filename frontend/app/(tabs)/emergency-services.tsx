@@ -247,9 +247,9 @@ export default function EmergencyServicesScreen() {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>3-word location for 911</Text>
+            <Text style={styles.sectionTitle}>Need help finding your location?</Text>
             <Text style={styles.body}>
-              Allow location access, then tap the button. Read the three words to the dispatcher. Location is only requested when you tap.
+              Tap “Get my 3-word location” below. If prompted, allow location access so we can determine your 3-word location to share with the 911 dispatcher.
             </Text>
             <TouchableOpacity
               style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}

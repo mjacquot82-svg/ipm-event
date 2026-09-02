@@ -18,6 +18,9 @@ test('Emergency Services is a hidden internal route from Home', () => {
 });
 
 test('page asks for a 3-word location on tap and does not auto-fetch', () => {
+  assert.match(page, /Need help finding your location\?/);
+  assert.match(page, /Tap “Get my 3-word location” below\. If prompted, allow location access so we can determine your 3-word location to share with the 911 dispatcher\./);
+  assert.doesNotMatch(page, /Allow location access, then tap the button\./);
   assert.match(page, /Get my 3-word location/);
   assert.match(page, /usePageAnalytics\('emergency_services', 'home_quick_action'\)/);
   assert.match(page, /\/api\/what3words\?lat=/);
