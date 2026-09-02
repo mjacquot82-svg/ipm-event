@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -340,6 +341,10 @@ export default function HomeScreen() {
     quickAction(actionId, 'outbound_link', () => { void openTrackedLink(destinationId, 'home_quick_action'); });
   };
 
+  const showSosNotice = () => {
+    Alert.alert('SOS', 'Emergency support information will be available during the event.');
+  };
+
   const renderEventCard = (event: ScheduleEvent, index: number, showTimeUntil = false) => {
     const eventDate = parseEventDateTime(event);
     const typeColor = getCategoryColor(event.category, index);
@@ -525,6 +530,20 @@ export default function HomeScreen() {
                 <MaterialCommunityIcons name="crown-outline" size={24} color="#FFFFFF" />
               </View>
               <Text style={styles.actionTitle}>Queen of the Furrow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, styles.sosCard]}
+              onPress={() => quickAction('sos', 'unavailable_notice', showSosNotice)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Emergency SOS information"
+              accessibilityHint="Opens emergency support information for the event"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#D32F2F' }]}>
+                <Feather name="alert-triangle" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={[styles.actionTitle, { color: '#D32F2F' }]}>SOS</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -811,6 +830,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
     position: 'relative',
+  },
+  sosCard: {
+    borderWidth: 1,
+    borderColor: '#D32F2F',
   },
   showGuideCard: {
     width: '100%',
