@@ -1,0 +1,203 @@
+{
+  "source": "deterministic matcher over booths[] + locationLabel + PDF geometry",
+  "vendor_count": 285,
+  "totals": {
+    "confident_lot": 230,
+    "range_or_named": 49,
+    "ambiguous": 3,
+    "unmatched": 3
+  },
+  "ace": {
+    "name": "ACE / JCB, Harriston",
+    "locationLabel": "1A-09",
+    "booths": [
+      "1A-09"
+    ],
+    "class": "confident_lot",
+    "reason": "lots",
+    "rect": {
+      "x": 26.935,
+      "y": 26.268,
+      "w": 0.758,
+      "h": 3.947
+    },
+    "lotIds": [
+      "1A-09"
+    ],
+    "areaId": "range-1A-1-12"
+  },
+  "classes": {
+    "confident_lot": [],
+    "range_or_named": [
+      "Grain Farmers of Ontario VIP Tent",
+      "Hydro One",
+      "MNP Lifestyles Tent",
+      "Britespan Main Stage Building",
+      "Bruce County",
+      "Can-Am Demo Area, Montreal, QC",
+      "First Aid and Lost Persons)",
+      "Grain Farmers of Ontario Stage",
+      "Dancing Tractors / Combine Derby",
+      "Equipment Demo Area",
+      "Britespan Building",
+      "Centre",
+      "Partnership Park",
+      "RAM Truck Corral",
+      "Souvenir Tent - IPM 2026",
+      "AgScape, Milton",
+      "Beef Farmers of Ontario & Bruce County Beef Farmers",
+      "Bluewater District School Board, Chesley",
+      "Bruce County Federation of Agriculture",
+      "Bruce Grey Catholic District",
+      "School Board, Hanover",
+      "Dairy Farmers of Ontario",
+      "DGFO - Dairy Goat Farmers of Ontario",
+      "Egg Farmers of Ontario",
+      "ETFO Bluewater Local, Owen Sound",
+      "FIRST Robotics Canada, Pickering",
+      "GFO - Good in Every Grain",
+      "Gregglea Clydesdales, Cargill",
+      "Grey Bruce Pork Producers, Chesley",
+      "Ontario Association of Agriculture Societies, Stirling",
+      "Ontario Fur Managers Federation",
+      "Ontario Sheep Farmers",
+      "Ontario Youth Apprenticeship",
+      "Program (OYAP), Chesley",
+      "Canadian Agricultural Safety Association",
+      "(CASA), Winnipeg",
+      "Bruce Power",
+      "Bruce Power and Nuclear Energy Group Tent",
+      "Aecon",
+      "Bruce Power, Tiverton",
+      "Canadian Union of Skilled",
+      "Workers, Teeswater",
+      "Candu Energy Inc, an AtkinsRéalis company, Port Elgin",
+      "Kinectrics Inc., Toronto",
+      "LIUNA Local 1059, London",
+      "Ontario Power Generation (OPG), Tiverton",
+      "Power Workers’ Union",
+      "Society of United Professionals, Toronto",
+      "UBC Local 2222, Kincardine"
+    ],
+    "ambiguous": [
+      "Hanover",
+      "Dodge RAM",
+      "DC Foods, Tillsonburg"
+    ],
+    "unmatched": [
+      "Wroxeter",
+      "Bell Mobility (Cell Tower)",
+      "Rogers Communications (Cell Tower)"
+    ]
+  },
+  "ambiguous_detail": [
+    {
+      "name": "Hanover",
+      "locationLabel": "5A-01-04",
+      "booths": [
+        "5A-01",
+        "5A-02",
+        "5A-03",
+        "5A-04"
+      ],
+      "class": "ambiguous",
+      "reason": "5A-01-04-do-not-exist",
+      "rect": null,
+      "lotIds": [
+        "5A-01",
+        "5A-02",
+        "5A-03",
+        "5A-04"
+      ],
+      "areaId": null
+    },
+    {
+      "name": "Dodge RAM",
+      "locationLabel": "5A-01-04",
+      "booths": [
+        "5A-01",
+        "5A-02",
+        "5A-03",
+        "5A-04"
+      ],
+      "class": "ambiguous",
+      "reason": "5A-01-04-do-not-exist",
+      "rect": null,
+      "lotIds": [
+        "5A-01",
+        "5A-02",
+        "5A-03",
+        "5A-04"
+      ],
+      "areaId": null
+    },
+    {
+      "name": "DC Foods, Tillsonburg",
+      "locationLabel": "1B-38, 4B-12",
+      "booths": [
+        "1B-38",
+        "4B-12"
+      ],
+      "class": "ambiguous",
+      "reason": "disconnected-lots",
+      "rect": null,
+      "lotIds": [
+        "1B-38",
+        "4B-12"
+      ],
+      "areaId": null
+    }
+  ],
+  "unmatched_detail": [
+    {
+      "name": "Wroxeter",
+      "locationLabel": "5B-10-12",
+      "reason": "unknown-token:5B-10,5B-11,5B-12"
+    },
+    {
+      "name": "Bell Mobility (Cell Tower)",
+      "locationLabel": "NORTH",
+      "reason": "unknown-token:NORTH"
+    },
+    {
+      "name": "Rogers Communications (Cell Tower)",
+      "locationLabel": "NORTH",
+      "reason": "unknown-token:NORTH"
+    }
+  ],
+  "special_cases_needing_decision": [
+    "3A 39-44 is also Quilt Tent: numbered booths use the 6-lot split; a named-only Quilt Tent vendor without booths would highlight the whole parent.",
+    "3B 39-44 is also Rural Expo Courtyard: numbered booths use the 6-lot split; a named-only vendor without booths would highlight the whole parent.",
+    "3B-07 through 3B-12 do not exist as PDF lots; that slot is the named Bruce Power & Nuclear Energy Group tent. Vendors labeled 3B-07-12 highlight the whole tent (range_or_named), not fabricated stalls.",
+    "6B 26-29 numbering direction is unproven; individual lots are ambiguous. Whole-range 6B 26-29 may highlight the parent strip only.",
+    "5A-01..04 do not exist (RAM logo plaque). Hanover / Dodge RAM stay ambiguous.",
+    "NORTH cell-tower labels have no booth geometry.",
+    "Horizontal L→R lot splits are inferred (no stall walls in the PDF)."
+  ],
+  "bruce_power_named_tent": {
+    "areaId": "named-bruce-power-nuclear-energy-group",
+    "rect": {
+      "x": 24.363,
+      "y": 52.744,
+      "w": 5.604,
+      "h": 3.947
+    },
+    "vendor_count": 13,
+    "reason": "Directory 3B-07-12 + tent bruce-power-tent; map has no 3B 7-12 lots; that slot is BRUCE POWER & NUCLEAR ENERGY GROUP named tent.",
+    "vendors": [
+      "Bruce Power",
+      "Bruce Power and Nuclear Energy Group Tent",
+      "Aecon",
+      "Bruce Power, Tiverton",
+      "Canadian Union of Skilled",
+      "Workers, Teeswater",
+      "Candu Energy Inc, an AtkinsRéalis company, Port Elgin",
+      "Kinectrics Inc., Toronto",
+      "LIUNA Local 1059, London",
+      "Ontario Power Generation (OPG), Tiverton",
+      "Power Workers’ Union",
+      "Society of United Professionals, Toronto",
+      "UBC Local 2222, Kincardine"
+    ]
+  }
+}
