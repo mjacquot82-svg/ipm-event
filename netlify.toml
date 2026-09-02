@@ -3,9 +3,6 @@
   publish = "dist"
   command = "npm install && npm run build:web"
 
-[build.environment]
-  EXPO_PUBLIC_BACKEND_URL = "https://ipm-backend-eoiw.onrender.com"
-
 [[redirects]]
   from = "/*"
   to = "/index.html"
