@@ -21,64 +21,83 @@ APPROVED_TARGETS = {
 SOURCE = "mnp_lifestyles_2026_workbook"
 EXPECTED_COUNTS = {"Tuesday": 28, "Wednesday": 27, "Thursday": 27, "Friday": 23, "Saturday": 2}
 EXPECTED_TOTAL = 107
+HEATHER_STARK_EXCEPTION = {
+    "id": "eda69b2b-9928-4097-9b80-505893fed608",
+    "external_id": "2026-09-23-foodland-e21",
+    "source": "admin",
+}
 APPROVED_DESCRIPTIONS = {
-    "2026-09-22-foodland-b6": "Definition Fitness",
-    "2026-09-22-foodland-b7": "Aaniin Collective",
-    "2026-09-22-foodland-b9": "(1050-1120)",
-    "2026-09-22-foodland-b11": "(1125-1145)",
+    "2026-09-22-foodland-b6": 'Christie will be kicking off our morning movement Tuesday and Thursday mornings. Please come bring a friend, enjoy a free coffee and get that body moving and warmed up for the day at The IPM!',
+    "2026-09-22-foodland-b7": "If you feel overwhelmed by the noise in the world on how to properly raise your child the Aaniin Collective will guide you on the journey to confident parenting.",
+    "2026-09-22-foodland-b9": "A local garden centre and nursery near Walkerton owned and operated by Jeff Davis.",
+    "2026-09-22-foodland-b11": "For 30 years Sleepers Bed Gallery has been Kincardine Ontario’s trusted local sleep experts helping our community find the right sleep solutions through personalized service, expert knowledge, and genuine passion for better sleep.",
     "2026-09-22-foodland-b14": "Greenock Collective",
     "2026-09-22-foodland-b18": "Liesemer Home Hardware",
     "2026-09-22-foodland-b21": "Fashion",
-    "2026-09-22-foodland-b23": "Hayley Wilhem",
-    "2026-09-22-foodland-b25": "1510-Makeover",
+    "2026-09-22-foodland-b23": "Local makeup artist. Providing makeover contest with makeup.",
+    "2026-09-22-foodland-b25": "Family-owned independent boutique in downtown Kincardine. Dressing makeover contestant.",
     "2026-09-22-foodland-b28": "The Space Between\nAlicia Gibbons",
-    "2026-09-22-foodland-b30": "Amanada Butchart",
-    "2026-09-22-foodland-b32": "Rebecca Grubb & Jess Connor",
+    "2026-09-22-foodland-b30": "Amanda Butchart",
+    "2026-09-22-foodland-b32": 'Jessica Connor — The WOMB Bruce County\nCo-Owner of The WOMB Bruce County and full spectrum doula. She is a Fertility, Birth, and Postpartum Doula, Holistic Reproductive Practitioner, and Fertility Coach.\n\nRebecca Grubb — The WOMB Bruce County\nRebecca is a Registered Pelvic Health Physiotherapist and a Perinatal Health Advocate.',
     "2026-09-22-harleys-c7": "DK Salon is a locally owned hair salon, operated by Jenna Freiburger, offering professional hairstyling in a welcoming, personalized setting.",
-    "2026-09-22-quality-homes-d18": "Hayley Wilhelm",
-    "2026-09-22-quality-homes-d22": "Chelsea\nAll Bodies",
-    "2026-09-22-quality-homes-d30": "West Shore",
     "2026-09-22-quality-homes-d7": "Locally owned hair and beauty salon downtown Walkerton, offering hair and nail services.",
-    "2026-09-23-foodland-e7": "Essential Wellness\nLiza Weltz",
-    "2026-09-23-foodland-e9": "Rachel Stroeder",
-    "2026-09-23-foodland-e12": "Susan Seitz",
-    "2026-09-23-foodland-e14": "Ruth Montgomery (Energy in the Home)",
-    "2026-09-23-foodland-e21": "Willow Home",
-    "2026-09-23-foodland-e28": "J&H Womens Fashions",
+    "2026-09-22-quality-homes-d18": "Local makeup artist. Providing makeover contest with makeup.",
+    "2026-09-22-quality-homes-d14": 'Jenna is a Reiki Master who will be demonstrating the benefits of cupping when used as an energetic and emotional release.',
+    "2026-09-22-quality-homes-d22": 'Chelsea is the founder and Lead Instructor of All Bodies Studios—a growing, community-focused Pilates brand built on the belief that every body deserves to move with confidence, feel strong, and belong in the room.',
+    "2026-09-22-quality-homes-d30": "West Shore",
+    "2026-09-23-quality-homes-g10": 'Liza is a registered Reflexologist and will be speaking on the benefits of holistic healing and putting your health and wellness into your own hands.',
+    "2026-09-23-foodland-e7": 'Liza is a registered Reflexologist and will be speaking on the benefits of holistic healing and putting your health and wellness into your own hands.',
+    "2026-09-23-harleys-f13": 'Personalized Support for Your Family’s Needs at Every Stage',
+    "2026-09-23-foodland-e9": 'Personalized Support for Your Family’s Needs at Every Stage',
+    "2026-09-23-foodland-e12": 'Susan is an artist, Certified Master Creativity Coach and passionate arts facilitator who shares the powerful role creativity can play in our well-being with stories from her work and a hands-on experience for everyone to enjoy.',
+    "2026-09-23-foodland-e14": "Ruth is a personal development coach who teaches through the lens of spiritual development. A professional interior designer and expert in energy within the home, she explores the powerful connection between our spaces, our energy, and how we feel. She is a collector of experiences, an avid learner, and a natural connector. Ruth is based out of Lucknow, ON.",
+    "2026-09-23-foodland-e16": "Laurie Convay is a passionate advocate for creating cleaner, healthier homes through simple and sustainable choices. As a representative with ENJO Canada, she helps people discover a different way to clean—using innovative natural fibres and water to reduce the need for traditional cleaning products. Laurie is passionate about helping families create homes that feel fresh, safe, and healthy, while making everyday cleaning a little simpler. Laurie is based out of Tiverton, ON.",
+    "2026-09-23-foodland-e18": "Angela is the creative force behind Upstaged Design in Hanover, Ontario, and an interior designer who believes your home should feel unmistakably like you. Known for embracing colour, personality, and a little bit of fun, Angela creates spaces that feel collected, welcoming, and full of life—proving that great design doesn’t have to mean playing it safe.",
+    "2026-09-23-foodland-e21": "Heather is the creative hands behind Willow Home, a furniture refinisher based in Walkerton, Ontario. With a love for seeing the beauty and potential in pieces others may overlook, she gives furniture a second chance through thoughtful refinishing and restoration. Heather believes a home is made more meaningful by pieces with a story—and sometimes, the best pieces are the ones given new life.",
+    "2026-09-23-foodland-e26": "Sadie is the owner of Lake Huron Home in Kincardine, Ontario. With a passion for warm, welcoming spaces and a strong belief in supporting Canadian makers, she loves helping people create homes filled with quality, comfort, and pieces made to last.",
+    "2026-09-23-foodland-e28": "Locally loved women’s clothing boutique, offering stylish, versatile fashions for women of all ages and sizes.",
     "2026-09-23-foodland-e30": "“Lets create TOGETHER. Your own UNIQUE hat, choose a color/finish/style. Create a MEMORY. Tell your STORY, and hold it close. Then wear it PROUDLY.”",
-    "2026-09-23-foodland-e32": "1655-Makeover",
+    "2026-09-23-foodland-e32": "Independent beauty consultant providing personalized beauty and skin care guidance.",
+    "2026-09-23-harleys-f7": "Mark Grubb",
     "2026-09-23-harleys-f10": "Independent beauty consultant providing personalized beauty and skin care guidance.",
     "2026-09-23-harleys-f16": "“Lets create TOGETHER. Your own UNIQUE hat, choose a color/finish/style. Create a MEMORY. Tell your STORY, and hold it close. Then wear it PROUDLY.”",
-    "2026-09-23-harleys-f7": "Mark Grubb",
     "2026-09-23-harleys-f21": "by Lauriss",
+    "2026-09-23-quality-homes-g16": 'Bailey is a local Independent Dental Hygienist and Myofunctional Therapist who will be presenting on what Myofunctional therapy is and how it can benefit your life today.',
     "2026-09-23-quality-homes-g13": "Labour of Love",
     "2026-09-23-quality-homes-g22": "Locally owned hair and beauty salon downtown Walkerton, offering hair and nail services.",
-    "2026-09-24-foodland-h6": "Definition Fitness",
-    "2026-09-24-foodland-h7": "Pure Elegance",
+    "2026-09-24-foodland-h6": 'Christie will be kicking off our morning movement Tuesday and Thursday mornings. Please come bring a friend, enjoy a free coffee and get that body moving and warmed up for the day at The IPM!',
+    "2026-09-24-foodland-h7": "Bridal and formal wear boutique, specializing in beautiful, timeless styles for life’s special occasions.",
     "2026-09-24-foodland-h9": "Locally owned men’s clothing boutique in downtown Walkerton, offering quality clothing for casual, business casual, and formal occasions.",
-    "2026-09-24-foodland-h11": "1140-Makeover",
-    "2026-09-24-foodland-h14": "Hannah Grieg",
+    "2026-09-24-foodland-h11": "Family-owned jewelry store serving the communities since 1977, with a strong focus on quality craftsmanship and personalized service.",
+    "2026-09-24-foodland-h14": 'Perimenopause is a natural transition, not something to fear. Join Registered Nutritional Therapist Hannah Greig to understand the changes your body is designed to experience, why symptoms can arise, and how to support yourself through these years with greater ease, confidence and grace.',
     "2026-09-24-foodland-h16": "George Harpur",
-    "2026-09-24-foodland-h18": "Ashley Grant",
+    "2026-09-24-foodland-h18": 'Ashley is a Reiki Master and Teacher, Meditation Coach, Breathwork Specialist, ALL Game Guide and International Retreat Leader & Speaker who will be speaking and sharing how reiki and other modalities can help you release what is no longer serving, start living in your soul’s purpose and build a life that will catch you!',
     "2026-09-24-foodland-h20": "Home and Garden",
     "2026-09-24-foodland-h25": "Southampton Olive Oil",
     "2026-09-24-foodland-h31": "Greenock Collective",
+    "2026-09-24-harleys-i12": 'Susan is an artist, Certified Master Creativity Coach and passionate arts facilitator who shares the powerful role creativity can play in our well-being with stories from her work and a hands-on experience for everyone to enjoy.',
     "2026-09-24-harleys-i7": "Brenda Kreamer",
     "2026-09-24-harleys-i24": "Independent beauty consultant providing personalized beauty and skin care guidance.",
+    "2026-09-24-harleys-i21": 'Ashley is a Reiki Master and Teacher, Meditation Coach, Breathwork Specialist, ALL Game Guide and International Retreat Leader & Speaker who will be speaking and sharing how reiki and other modalities can help you release what is no longer serving, start living in your soul’s purpose and build a life that will catch you!',
+    "2026-09-24-quality-homes-j19": 'Offering inclusive therapeutic art experiences for all ages through workshops and community programs that inspire people to rediscover creativity as an essential part of life; encouraging self-expression, exploration, imagination, and joy, while reminding us that creativity is not something we leave behind in childhood, but an important part of who we are and something we can continue to nurture throughout our lives.',
+    "2026-09-24-quality-homes-j7": "Locally owned hair and beauty salon downtown Walkerton, offering hair and nail services.",
     "2026-09-24-quality-homes-j12": "Guest House",
     "2026-09-24-quality-homes-j14": "Guest House",
-    "2026-09-24-quality-homes-j7": "Locally owned hair and beauty salon downtown Walkerton, offering hair and nail services.",
+    "2026-09-25-harleys-l16": 'Michelle is an aesthetician and local spa owner who will be performing a relaxing facial massage sequence with lymphatic activation.',
+    "2026-09-25-harleys-l27": 'Recharge your body at the cellular level with IncREDible Light—consistent red light therapy for long-term pain relief and vitality for humans and pets alike.',
     "2026-09-25-foodland-k6": "Freezer Fitness",
     "2026-09-25-foodland-k7": "Fire Cider & Honey",
     "2026-09-25-foodland-k11": "Jennifer Dunsmoor",
-    "2026-09-25-foodland-k14": "Forrest Maiden",
+    "2026-09-25-foodland-k14": "Offering goddess inspired facials, facial waxing, and makeup artistry. A natural, feminine, peaceful, beauty studio with a strong connection to nature.",
     "2026-09-25-foodland-k16": "Modern women’s fashion boutique in downtown Walkerton, offering trendy, yet timeless clothing, denim, footwear, jewelry and lifestyle pieces.",
-    "2026-09-25-foodland-k18": "1325-Makeover",
-    "2026-09-25-foodland-k21": "Freezer Fitness\nJackie West, Dianne Zettle, Conor Fischer",
+    "2026-09-25-foodland-k18": "Locally owned men’s clothing boutique in downtown Walkerton, offering quality clothing for casual, business casual, and formal occasions.",
+    "2026-09-25-foodland-k21": 'Movement is Medicine - together with the Freezer Fitness team, exploring the opportunity for every age, body and ability to confidently move and recover.',
     "2026-09-25-foodland-k31": "Carrie Lynn Floral",
-    "2026-09-25-harleys-l22": "Sara Porter\nRemind Wellness",
+    "2026-09-25-harleys-l22": 'Sara will demonstrate three unique Eminence Organic facials and explore why choosing organic skincare is more than a passing trend—it’s a thoughtful, results-driven approach to caring for your skin and the planet.',
     "2026-09-25-quality-homes-m15": "Flowers by Uss",
     "2026-09-25-quality-homes-m23": "Offering goddess inspired facials, facial waxing, and makeup artistry. A natural, feminine, peaceful, beauty studio with a strong connection to nature.",
+    "2026-09-26-foodland-o8": "Doors open 9:00 AM",
+    "2026-09-26-foodland-o18": "Doors open 12:30 PM",
 }
 MANIFEST_PATH = Path(__file__).parent / "import_manifests" / "mnp_lifestyles_2026.json"
 WORKBOOK_PATH = Path(__file__).parents[1] / "data" / "MMP Lifestyle Tent.xlsx"
@@ -168,20 +187,44 @@ def rows_equal(existing: dict[str, Any], desired: dict[str, Any]) -> bool:
     return True
 
 
+def is_heather_stark_exception(rows: list[dict[str, Any]], desired: dict[str, Any]) -> bool:
+    if desired["external_id"] != HEATHER_STARK_EXCEPTION["external_id"] or len(rows) != 1:
+        return False
+    row = rows[0]
+    if any(row.get(field) != value for field, value in HEATHER_STARK_EXCEPTION.items()):
+        return False
+    if row.get("event_id") != desired.get("event_id"):
+        return False
+    protected_fields = (
+        "timezone", "category", "location_name", "days_active", "status", "sort_order",
+    )
+    if any(row.get(field) != desired.get(field) for field in protected_fields):
+        return False
+    return all(
+        datetime.fromisoformat(normalize_timestamp(row.get(field))).timestamp()
+        == datetime.fromisoformat(normalize_timestamp(desired.get(field))).timestamp()
+        for field in ("starts_at", "ends_at")
+    )
+
+
 def classify(existing_rows: list[dict[str, Any]], wanted_rows: list[dict[str, Any]]) -> dict[str, list[Any]]:
     by_identity: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for row in existing_rows:
         external_id = row.get("external_id")
         if external_id:
             by_identity.setdefault((row.get("source"), external_id), []).append(row)
-    result: dict[str, list[Any]] = {"INSERT": [], "UPDATE": [], "UNCHANGED": [], "CONFLICT": []}
+    result: dict[str, list[Any]] = {
+        "INSERT": [], "UPDATE": [], "UNCHANGED": [], "EXTERNAL_EXCEPTION": [], "CONFLICT": [],
+    }
     for wanted in wanted_rows:
         matches = by_identity.get((SOURCE, wanted["external_id"]), [])
         other_source = [
             row for row in existing_rows
             if row.get("external_id") == wanted["external_id"] and row.get("source") != SOURCE
         ]
-        if other_source or len(matches) > 1:
+        if not matches and is_heather_stark_exception(other_source, wanted):
+            result["EXTERNAL_EXCEPTION"].append({"desired": wanted, "existing": other_source[0]})
+        elif other_source or len(matches) > 1:
             result["CONFLICT"].append({"desired": wanted, "matches": matches, "other_source": other_source})
         elif not matches:
             result["INSERT"].append(wanted)
@@ -265,7 +308,7 @@ def main() -> int:
         raise ImportSafetyError("Identity conflicts detected; refusing to write")
     if not args.apply:
         return 0
-    if len(result["INSERT"]) + len(result["UPDATE"]) + len(result["UNCHANGED"]) != EXPECTED_TOTAL:
+    if sum(len(result[key]) for key in ("INSERT", "UPDATE", "UNCHANGED", "EXTERNAL_EXCEPTION")) != EXPECTED_TOTAL:
         raise ImportSafetyError("Classification did not reconcile to 107 rows")
     if result["INSERT"]:
         client.call("POST", "/schedule_items", body=result["INSERT"])
@@ -273,7 +316,8 @@ def main() -> int:
         client.call("PATCH", "/schedule_items", params={"id": f"eq.{update['id']}", "event_id": f"eq.{event_id}"}, body=update["row"])
     verified = client.call("GET", "/schedule_items", params={"select": "*", "event_id": f"eq.{event_id}"})
     verification = classify(verified, wanted)
-    if len(verification["UNCHANGED"]) != EXPECTED_TOTAL or any(verification[key] for key in ("INSERT", "UPDATE", "CONFLICT")):
+    if len(verification["UNCHANGED"]) + len(verification["EXTERNAL_EXCEPTION"]) != EXPECTED_TOTAL \
+            or any(verification[key] for key in ("INSERT", "UPDATE", "CONFLICT")):
         raise ImportSafetyError("Post-write verification failed")
     print(json.dumps({"verified": EXPECTED_TOTAL, "status": "ok"}, indent=2))
     return 0
