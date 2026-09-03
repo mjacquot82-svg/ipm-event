@@ -42,7 +42,7 @@ test('status checks never prompt permission and retry cannot loop infinitely', (
 test('focus and online recovery are event-driven, deduplicated, and keep transient UI hidden', () => {
   assert.match(component, /statusCheckInFlightRef\.current/);
   assert.match(component, /if \(statusCheckInFlightRef\.current \|\| navigator\.onLine === false\) return/);
-  assert.match(component, /useFocusEffect[\s\S]*notificationStateRef\.current === 'loading' \|\| notificationStateRef\.current === 'error'[\s\S]*void refresh\(\)/);
+  assert.match(component, /useFocusEffect[\s\S]*notificationStateRef\.current === 'loading' \|\| notificationStateRef\.current === 'recovering'[\s\S]*void refresh\(\)/);
   assert.match(component, /window\.addEventListener\('online', resume\)/);
   assert.match(component, /window\.removeEventListener\('online', resume\)/);
   assert.match(component, /if \(state === 'loading'/);
@@ -50,15 +50,22 @@ test('focus and online recovery are event-driven, deduplicated, and keep transie
     /subscribeToNotifications|requestPermission/);
 });
 
-test('a retained transient error is hidden before its asynchronous recovery check starts', () => {
-  const refreshStart = component.indexOf('const refresh =');
-  const refresh = component.slice(refreshStart, component.indexOf('\n  useFocusEffect(', refreshStart));
-  const errorGuard = refresh.indexOf("notificationStateRef.current === 'error'");
-  const hiddenState = refresh.indexOf("setState('loading')");
-  const statusRead = refresh.indexOf('await getNotificationState()');
-  assert.ok(errorGuard >= 0 && errorGuard < hiddenState && hiddenState < statusRead);
-  assert.match(refresh, /notificationStateRef\.current = 'loading'/);
-  assert.doesNotMatch(refresh.slice(0, statusRead), /setTimeout|setInterval|requestPermission/);
+test('a retained transient failure cannot render before focus recovery runs', () => {
+  const renderStart = component.indexOf("if (Platform.OS !== 'web') return null");
+  const render = component.slice(renderStart, component.indexOf('return (', renderStart));
+  assert.match(render, /if \(state === 'recovering'\) return null/);
+  assert.doesNotMatch(render, /state === 'error'[\s\S]*return null/);
+  assert.match(component, /notificationStateRef\.current === 'recovering'[\s\S]*void refresh\(\)/);
+  assert.doesNotMatch(component, /recovering[\s\S]{0,200}setTimeout|recovering[\s\S]{0,200}requestPermission/);
+});
+
+test('recoverable mutations use internal state while confirmed error remains user-visible', () => {
+  const subscribe = service.slice(service.indexOf('export async function subscribeToNotifications'),
+    service.indexOf('export async function getSubscribedInstallationId'));
+  assert.equal((subscribe.match(/return 'recovering'/g) || []).length, 1);
+  assert.match(subscribe, /\? 'denied' : 'recovering'/);
+  assert.doesNotMatch(subscribe, /: 'error'|return 'error'/);
+  assert.match(component, /error: 'Notifications are temporarily unavailable/);
 });
 
 test('confirmed setup and registration failures retain their explicit recovery UI', () => {

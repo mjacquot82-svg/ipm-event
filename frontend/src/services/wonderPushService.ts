@@ -1,5 +1,6 @@
 export type NotificationState =
   | 'loading'
+  | 'recovering'
   | 'default'
   | 'subscribed'
   | 'unsubscribed'

@@ -28,6 +28,7 @@ import {
 
 const STATE_COPY: Record<NotificationState, string> = {
   loading: 'Checking notification status…',
+  recovering: 'Checking notification status…',
   default: 'Get important IPM announcements on this device.',
   subscribed: 'Notifications are enabled on this device.',
   unsubscribed: 'Notifications are currently disabled on this device.',
@@ -138,12 +139,6 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   const refresh = useCallback(async () => {
     if (statusCheckInFlightRef.current || navigator.onLine === false) return;
     statusCheckInFlightRef.current = true;
-    if (notificationStateRef.current === 'error') {
-      // An error retained by the mounted Home screen must not remain visible
-      // while a lifecycle retry is checking whether it was only transient.
-      notificationStateRef.current = 'loading';
-      setState('loading');
-    }
     try {
       const nextState = await getNotificationState();
       notificationStateRef.current = nextState;
@@ -175,7 +170,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
         setOptionalPromptVisible(false);
         return;
       }
-      if (notificationStateRef.current === 'loading' || notificationStateRef.current === 'error') {
+      if (notificationStateRef.current === 'loading' || notificationStateRef.current === 'recovering') {
         void refresh();
       } else {
         void getNotificationState()
@@ -219,6 +214,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   if (Platform.OS !== 'web') return null;
   // The healthy and transient returning-subscriber states require no Home
   // action. Keep setup running, but avoid a persistent card or startup flash.
+  if (state === 'recovering') return null;
   if (state === 'loading' || (state === 'subscribed' && setupState !== 'failed')) return null;
   if ((state === 'default' || state === 'unsubscribed') && !optionalPromptVisible) return null;
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';

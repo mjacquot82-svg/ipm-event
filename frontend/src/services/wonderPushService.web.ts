@@ -46,6 +46,7 @@ declare global {
 
 export type NotificationState =
   | 'loading'
+  | 'recovering'
   | 'default'
   | 'subscribed'
   | 'unsubscribed'
@@ -434,7 +435,7 @@ export async function subscribeToNotifications(): Promise<NotificationState> {
     }, SUBSCRIBE_TIMEOUT_MS, 'WonderPush subscription timed out.');
     return getNotificationState();
   } catch {
-    return (Notification.permission as NotificationPermission) === 'denied' ? 'denied' : 'error';
+    return (Notification.permission as NotificationPermission) === 'denied' ? 'denied' : 'recovering';
   }
 }
 
@@ -447,7 +448,7 @@ export async function unsubscribeFromNotifications(): Promise<NotificationState>
     }, UNSUBSCRIBE_TIMEOUT_MS, 'WonderPush unsubscribe timed out.');
     return getNotificationState();
   } catch {
-    return 'error';
+    return 'recovering';
   }
 }
 
