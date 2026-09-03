@@ -21,7 +21,6 @@ import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 
 const BUILD_NUMBER = process.env.EXPO_PUBLIC_IPM_BUILD_NUMBER || 'development';
 const APP_LABEL = process.env.EXPO_PUBLIC_IPM_APP_LABEL === 'staging' ? 'IPM Staging' : 'IPM App';
-const IS_STAGING_BACKEND = process.env.EXPO_PUBLIC_BACKEND_URL?.includes('staging') === true;
 
 const OFFICIAL_IPM_CONTENT = [
   "It is the largest event of its kind in North America.\nWith so much to see and do, plan to spend more than one day!\nThe IPM is held in a different community each year, highlighting the many great things the area has to offer and attracting on average 70,000 people from across Ontario, throughout Canada, the United States and beyond.",
@@ -176,7 +175,6 @@ export default function AboutScreen() {
 
         <Text style={styles.buildNumber} accessibilityLabel={`${APP_LABEL}, build ${BUILD_NUMBER}`}>
           {APP_LABEL} • Build {BUILD_NUMBER}
-          {IS_STAGING_BACKEND ? '\nPWA auto-update test 2' : null}
         </Text>
 
       </ScrollView>

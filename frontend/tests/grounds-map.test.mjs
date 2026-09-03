@@ -48,6 +48,7 @@ test('Grounds branch renders GroundsMap rather than MapComponent', () => {
 });
 
 test('GroundsMap has the official image, camera worklet, and switch callback', () => {
+  assert.ok(fs.existsSync(path.join(root, 'assets/images/grounds-site-map.jpg')));
   assert.match(componentSource, /pinchAroundMovingFocal/);
   assert.match(componentSource, /grounds-site-map\.jpg/);
   assert.match(componentSource, /onSwitchToTented/);
