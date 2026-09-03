@@ -9,6 +9,7 @@ const CACHE_KEY_PREFIX = 'ipm_supabase_cache:ipm-2026-production';
 const EXISTING_SHARED_CACHE_KEY_PREFIX = 'ipm_supabase_cache:v1';
 const LEGACY_CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
 const DEFAULT_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
+const LIVE_VENDORS_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
 
 export type CachedApiSource = 'network' | 'cache';
 
@@ -101,8 +102,16 @@ function getApiBaseUrl() {
   return process.env.EXPO_PUBLIC_BACKEND_URL || DEFAULT_API_BASE_URL;
 }
 
+/** Live vendor directory. On staging.theipm.ca use same-origin so Netlify can proxy past CORS. */
+function getVendorsApiBaseUrl() {
+  if (typeof window !== 'undefined' && window.location.hostname === 'staging.theipm.ca') {
+    return window.location.origin;
+  }
+  return LIVE_VENDORS_API_BASE_URL;
+}
+
 function getCacheKey(cacheKey: string) {
-  const prefix = cacheKey === 'schedule' || cacheKey === 'vendors'
+  const prefix = cacheKey === 'schedule' || cacheKey === 'vendors' || cacheKey === 'vendors-live'
     ? CACHE_KEY_PREFIX
     : EXISTING_SHARED_CACHE_KEY_PREFIX;
 
@@ -290,8 +299,8 @@ export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> 
 
 export function getVendorsData(options: SupabaseFetchOptions<VendorsResponse> = {}) {
   return fetchCachedApiData<VendorsResponse>({
-    cacheKey: 'vendors',
-    url: `${getApiBaseUrl()}/api/vendors`,
+    cacheKey: 'vendors-live',
+    url: `${getVendorsApiBaseUrl()}/api/vendors`,
     isCacheableResponse: isSupabaseVendorsResponse,
     ...options,
   });
