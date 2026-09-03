@@ -10,6 +10,7 @@ import {
   LayoutChangeEvent,
   Platform,
   useWindowDimensions,
+  ScrollView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -174,7 +175,7 @@ export default function TentedCityMap({
   }, [initialQuery, mapUnavailable, exactInitialPlace, viewport.width]);
 
   const results = useMemo(
-    () => (focused || query.trim() ? searchTentedCity(query, tentedCityVendors, filter, 8) : []),
+    () => (focused || query.trim() ? searchTentedCity(query, tentedCityVendors, filter) : []),
     [query, filter, focused],
   );
 
@@ -451,7 +452,7 @@ export default function TentedCityMap({
         ) : null}
 
         {focused && query.trim().length > 0 ? (
-          <View style={styles.results}>
+          <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
             {results.map((hit, i) => {
               const title = placeTitle(hit);
               const meta = hit.kind === 'vendor' ? hit.vendor.locationLabel : 'Stage';
@@ -466,7 +467,7 @@ export default function TentedCityMap({
               );
             })}
             {results.length === 0 ? <Text style={styles.empty}>No matching places on this map.</Text> : null}
-          </View>
+          </ScrollView>
         ) : null}
       </View>
 
