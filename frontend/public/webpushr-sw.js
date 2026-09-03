@@ -16,6 +16,7 @@ const IPM_SHELL_ASSETS = ['/', '/index.html', '/manifest.json'];
 const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
 const IPM_SHELL_CACHE = `${IPM_CACHE_PREFIX}${IPM_OFFLINE_VERSION}`;
 const IPM_ADMIN_LOGIN_PATH = '/admin/login';
+const IPM_ADMIN_BOOTSTRAP_RECOVERY_CACHE = 'ipm-admin-bootstrap-recovery-v1';
 
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'IPM_ACTIVATE_UPDATE') self.skipWaiting();
@@ -28,18 +29,11 @@ self.addEventListener('install', (event) => {
     const cache = await caches.open(IPM_SHELL_CACHE);
     await cache.addAll(IPM_SHELL_ASSETS);
 
-    // Older clients treated every non-Home route as unsafe, which could leave
-    // an Organizer login tab on its cached bundle forever. Take over only when
-    // every open IPM window is the signed-out login screen.
-    const windowClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const onlyAdminLoginClients = windowClients.length > 0 && windowClients.every((client) => {
-      try {
-        return new URL(client.url).pathname === IPM_ADMIN_LOGIN_PATH;
-      } catch {
-        return false;
-      }
-    });
-    if (isApplicationUpdate && onlyAdminLoginClients) {
+    // One-time bridge for older clients that deferred every non-Home update.
+    // It does not depend on the incumbent page's JavaScript or client matching.
+    const needsAdminBootstrapRecovery = isApplicationUpdate
+      && !existingCacheKeys.includes(IPM_ADMIN_BOOTSTRAP_RECOVERY_CACHE);
+    if (needsAdminBootstrapRecovery) {
       await self.skipWaiting();
     }
   })());
@@ -51,11 +45,16 @@ self.addEventListener('activate', (event) => {
     const isApplicationUpdate = keys.some((key) => (
       key.startsWith(IPM_CACHE_PREFIX) && key !== IPM_SHELL_CACHE
     ));
+    const needsAdminBootstrapRecovery = isApplicationUpdate
+      && !keys.includes(IPM_ADMIN_BOOTSTRAP_RECOVERY_CACHE);
     await Promise.all(keys
       .filter((key) => key.startsWith(IPM_CACHE_PREFIX) && key !== IPM_SHELL_CACHE)
       .map((key) => caches.delete(key)));
     await self.clients.claim();
-    if (isApplicationUpdate) {
+    if (needsAdminBootstrapRecovery) {
+      // Cache existence is the durable one-time marker. No attendee data,
+      // cookies, IndexedDB, or application-shell content is stored here.
+      await caches.open(IPM_ADMIN_BOOTSTRAP_RECOVERY_CACHE);
       const windowClients = await self.clients.matchAll({ type: 'window' });
       await Promise.all(windowClients.map((client) => {
         try {

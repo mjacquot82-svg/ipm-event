@@ -87,11 +87,14 @@ test('Emergency Services and authenticated flows defer activation until a safe r
   assert.match(updateService, /waitingWorker = candidate;[\s\S]*activateWaitingWorkerIfSafe\(\)/);
 });
 
-test('an already-stale admin login is recovered without taking over attendee flows', () => {
-  assert.match(worker, /isApplicationUpdate && onlyAdminLoginClients/);
-  assert.match(worker, /self\.clients\.matchAll\(\{ type: 'window', includeUncontrolled: true \}\)/);
+test('an already-stale admin login receives a one-time bootstrap recovery', () => {
+  assert.match(worker, /IPM_ADMIN_BOOTSTRAP_RECOVERY_CACHE = 'ipm-admin-bootstrap-recovery-v1'/);
+  assert.match(worker, /isApplicationUpdate[\s\S]*!existingCacheKeys\.includes\(IPM_ADMIN_BOOTSTRAP_RECOVERY_CACHE\)/);
+  assert.match(worker, /needsAdminBootstrapRecovery[\s\S]*await self\.skipWaiting\(\)/);
+  assert.match(worker, /await caches\.open\(IPM_ADMIN_BOOTSTRAP_RECOVERY_CACHE\)/);
   assert.match(worker, /key\.startsWith\(IPM_CACHE_PREFIX\) && key !== IPM_SHELL_CACHE/);
   assert.match(worker, /client\.navigate\(client\.url\)/);
+  assert.match(worker, /new URL\(client\.url\)\.pathname === IPM_ADMIN_LOGIN_PATH/);
 });
 
 test('updates preserve itinerary and origin storage and retain one WonderPush worker', () => {
