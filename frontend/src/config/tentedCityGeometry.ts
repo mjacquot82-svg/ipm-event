@@ -121,12 +121,68 @@ function rectArea(r: Rect) {
   return Math.max(r.w, 0) * Math.max(r.h, 0);
 }
 
+/** Adjacent stalls (shared edge / tiny float gap). Street gaps and different parents do not count. */
+export function rectsAbut(a: Rect, b: Rect, gap = 0.25) {
+  const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const overlapY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return overlapX >= -gap && overlapY >= -gap;
+}
+
+function connectedComponents(rects: Rect[]): Rect[][] {
+  const n = rects.length;
+  const seen = new Array(n).fill(false);
+  const comps: Rect[][] = [];
+  for (let i = 0; i < n; i += 1) {
+    if (seen[i]) continue;
+    const stack = [i];
+    seen[i] = true;
+    const comp: Rect[] = [];
+    while (stack.length) {
+      const k = stack.pop() as number;
+      comp.push(rects[k]);
+      for (let j = 0; j < n; j += 1) {
+        if (!seen[j] && rectsAbut(rects[k], rects[j])) {
+          seen[j] = true;
+          stack.push(j);
+        }
+      }
+    }
+    comps.push(comp);
+  }
+  return comps;
+}
+
 export function lotsConnected(rects: Rect[]) {
   if (rects.length <= 1) return true;
   const u = unionRects(rects);
   const s = rects.reduce((acc, r) => acc + rectArea(r), 0);
   if (!u || s <= 0) return false;
-  return rectArea(u) <= 4.5 * s || (u.w < 20 && u.h < 12);
+  if (connectedComponents(rects).length !== 1) return false;
+  // Reject a street-sized hole inside an otherwise-adjacent group.
+  return rectArea(u) <= 1.35 * s;
+}
+
+export type ClusterableLot = { parent: string; rect: Rect };
+
+/**
+ * Cluster by parent range first, then connected components within a parent.
+ * Never union across a street / different parent. Each cluster is one tight union.
+ */
+export function clusterLotRects(lots: ClusterableLot[]): Rect[] {
+  const byParent = new Map<string, Rect[]>();
+  for (const lot of lots) {
+    const list = byParent.get(lot.parent) || [];
+    list.push(lot.rect);
+    byParent.set(lot.parent, list);
+  }
+  const clusters: Rect[] = [];
+  for (const rects of byParent.values()) {
+    for (const comp of connectedComponents(rects)) {
+      const u = unionRects(comp);
+      if (u) clusters.push(u);
+    }
+  }
+  return clusters;
 }
 
 export function focusRectForFootprint(lotRect: Rect, _parent: Rect | null | undefined): Rect {

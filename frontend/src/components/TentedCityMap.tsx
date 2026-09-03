@@ -152,9 +152,11 @@ export default function TentedCityMap({
         focalX: event.clientX - box.left, focalY: event.clientY - box.top,
         left: originX.value, top: originY.value,
       });
-      const cam = next.scale <= 1.02 ? { scale: 1, tx: 0, ty: 0 } : clampTranslation(next, {
-        viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value,
-      });
+      const layout = { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value };
+      if (next.scale < 1) { scale.value = 1; tx.value = 0; ty.value = 0; return; }
+      const bounds = translationBounds(next.scale, layout);
+      const outside = next.tx < bounds.minTx || next.tx > bounds.maxTx || next.ty < bounds.minTy || next.ty > bounds.maxTy;
+      const cam = outside ? clampTranslation(next, layout) : next;
       scale.value = cam.scale; tx.value = cam.tx; ty.value = cam.ty;
     };
     node.addEventListener('wheel', onWheel, { passive: false });
@@ -201,12 +203,15 @@ export default function TentedCityMap({
     })
     .onEnd(() => {
       const layout = { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value };
-      if (scale.value <= 1.02) {
+      if (scale.value < 1) {
         scale.value = withTiming(1, { duration: 200 }); tx.value = withTiming(0, { duration: 200 }); ty.value = withTiming(0, { duration: 200 });
         return;
       }
+      const bounds = translationBounds(scale.value, layout);
+      const outside = tx.value < bounds.minTx || tx.value > bounds.maxTx || ty.value < bounds.minTy || ty.value > bounds.maxTy;
+      if (!outside) return;
       const cam = clampTranslation({ scale: scale.value, tx: tx.value, ty: ty.value }, layout);
-      scale.value = withTiming(cam.scale, { duration: 180 }); tx.value = withTiming(cam.tx, { duration: 180 }); ty.value = withTiming(cam.ty, { duration: 180 });
+      tx.value = withTiming(cam.tx, { duration: 180 }); ty.value = withTiming(cam.ty, { duration: 180 });
     });
 
   const pan = Gesture.Pan().minPointers(1).maxPointers(1)
@@ -218,7 +223,7 @@ export default function TentedCityMap({
     })
     .onEnd((e) => {
       const layout = { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value };
-      if (scale.value <= 1.02) { tx.value = withTiming(0, { duration: 180 }); ty.value = withTiming(0, { duration: 180 }); return; }
+      if (scale.value < 1) { scale.value = withTiming(1, { duration: 180 }); tx.value = withTiming(0, { duration: 180 }); ty.value = withTiming(0, { duration: 180 }); return; }
       const bounds = translationBounds(scale.value, layout);
       tx.value = withDecay({ velocity: e.velocityX, clamp: [bounds.minTx, bounds.maxTx], rubberBandEffect: true, rubberBandFactor: 0.55, deceleration: 0.996 });
       ty.value = withDecay({ velocity: e.velocityY, clamp: [bounds.minTy, bounds.maxTy], rubberBandEffect: true, rubberBandFactor: 0.55, deceleration: 0.996 });
@@ -239,6 +244,7 @@ export default function TentedCityMap({
     }
   });
 
+  pinch.blocksExternalGesture(pan);
   const composed = Gesture.Simultaneous(pinch, pan, doubleTap);
   const mapStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }] }));
   const onLayout = (e: LayoutChangeEvent) => {
@@ -281,14 +287,14 @@ export default function TentedCityMap({
                   <Text style={styles.verifyParentLabel}>{parent.label}</Text>
                 </View>
               )) : null}
-              {vendorFootprint ? (
-                <>
-                  <View pointerEvents="none" style={[styles.footprintHalo, { left: `${vendorFootprint.rect.x}%`, top: `${vendorFootprint.rect.y}%`, width: `${vendorFootprint.rect.w}%`, height: `${vendorFootprint.rect.h}%` }]} />
-                  <View pointerEvents="none" style={[styles.footprint, { left: `${vendorFootprint.rect.x}%`, top: `${vendorFootprint.rect.y}%`, width: `${vendorFootprint.rect.w}%`, height: `${vendorFootprint.rect.h}%` }]}>
+              {vendorFootprint ? vendorFootprint.rects.map((rect, i) => (
+                <React.Fragment key={`fp-${i}-${rect.x}-${rect.y}`}>
+                  <View pointerEvents="none" style={[styles.footprintHalo, { left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.w}%`, height: `${rect.h}%` }]} />
+                  <View pointerEvents="none" style={[styles.footprint, { left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.w}%`, height: `${rect.h}%` }]}>
                     <Animated.View style={[styles.footprintFill, footprintFillStyle]} />
                   </View>
-                </>
-              ) : highlight ? (
+                </React.Fragment>
+              )) : highlight ? (
                 <View pointerEvents="none" style={[styles.pulse, { left: `${highlight.x + highlight.w / 2}%`, top: `${highlight.y + highlight.h / 2}%` }]}>
                   <View style={styles.pulseRing} /><View style={styles.pin} />
                 </View>
@@ -408,7 +414,7 @@ const styles = StyleSheet.create({
   eventLine: { fontSize: 13, color: '#374151' },
   hint: { alignSelf: 'center', marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   hintText: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
-  footprintHalo: { position: 'absolute', marginLeft: -5, marginTop: -5, paddingRight: 10, paddingBottom: 10, borderWidth: 5, borderColor: 'rgba(245,197,24,0.55)', backgroundColor: 'rgba(245,197,24,0.18)' },
+  footprintHalo: { position: 'absolute', marginLeft: -1, marginTop: -1, paddingRight: 2, paddingBottom: 2, borderWidth: 1, borderColor: 'rgba(245,197,24,0.55)', backgroundColor: 'rgba(245,197,24,0.18)' },
   footprint: { position: 'absolute', borderWidth: 4, borderColor: '#F5C518', overflow: 'hidden' },
   footprintFill: { ...StyleSheet.absoluteFillObject, backgroundColor: '#A6262D' },
   verifyParent: { position: 'absolute', borderWidth: 2, borderColor: '#22D3EE', backgroundColor: 'transparent' },

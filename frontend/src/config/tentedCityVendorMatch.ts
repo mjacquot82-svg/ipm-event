@@ -3,8 +3,8 @@ import {
   AREA_BY_ID,
   AREA_BY_LABEL,
   LOT_BY_ID,
+  clusterLotRects,
   formatLotId,
-  lotsConnected,
   unionRects,
 } from './tentedCityGeometry';
 
@@ -14,6 +14,7 @@ export type VendorMatch = {
   class: MatchClass;
   reason: string;
   rect: Rect | null;
+  rects: Rect[];
   parentRect: Rect | null;
   lotIds: string[];
   areaId: string | null;
@@ -22,6 +23,7 @@ export type VendorMatch = {
 export type VendorFootprint = {
   class: 'confident_lot' | 'range_or_named';
   rect: Rect;
+  rects: Rect[];
   parentRect: Rect | null;
   lotIds: string[];
   areaId: string | null;
@@ -94,6 +96,10 @@ function compactKey(s: string) {
   return s.toUpperCase().replace(/[^A-Z0-9]+/g, '');
 }
 
+function emptyMatch(partial: Omit<VendorMatch, 'rects'>): VendorMatch {
+  return { ...partial, rects: partial.rect ? [partial.rect] : [] };
+}
+
 export function namedIdFor(token: string): string | null {
   const t = (token || '').trim();
   if (!t) return null;
@@ -149,7 +155,7 @@ export function vendorTokens(vendor: Pick<TentedCityVendor, 'booths' | 'location
 export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationLabel' | 'name'>): VendorMatch {
   const tokens = vendorTokens(vendor);
   if (!tokens.length) {
-    return { class: 'unmatched', reason: 'no-tokens', rect: null, parentRect: null, lotIds: [], areaId: null };
+    return emptyMatch({ class: 'unmatched', reason: 'no-tokens', rect: null, parentRect: null, lotIds: [], areaId: null });
   }
 
   const namedIds: string[] = [];
@@ -193,14 +199,14 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
   }
 
   if (unknown.length) {
-    return {
+    return emptyMatch({
       class: 'unmatched',
       reason: `unknown-token:${unknown.join(',')}`,
       rect: null,
       parentRect: null,
       lotIds: [],
       areaId: null,
-    };
+    });
   }
 
   const kinds =
@@ -211,114 +217,107 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
     (mutual.length ? 1 : 0) +
     (brucePower.length ? 1 : 0);
   if (kinds > 1) {
-    return { class: 'ambiguous', reason: 'mixed-token-kinds', rect: null, parentRect: null, lotIds: [], areaId: null };
+    return emptyMatch({ class: 'ambiguous', reason: 'mixed-token-kinds', rect: null, parentRect: null, lotIds: [], areaId: null });
   }
 
   if (missing5a.length) {
-    return { class: 'ambiguous', reason: '5A-01-04-do-not-exist', rect: null, parentRect: null, lotIds: missing5a, areaId: null };
+    return emptyMatch({ class: 'ambiguous', reason: '5A-01-04-do-not-exist', rect: null, parentRect: null, lotIds: missing5a, areaId: null });
   }
 
   if (flagged6b.length) {
     const unique = [...new Set(flagged6b)].sort();
     if (unique.join() === '6B-26,6B-27,6B-28,6B-29') {
       const parent = AREA_BY_LABEL.get('6B 26-29');
-      return {
+      return emptyMatch({
         class: 'range_or_named',
         reason: '6B-26-29-whole-parent-only',
         rect: parent?.rect || null,
         parentRect: parent?.rect || null,
         lotIds: unique,
         areaId: parent?.id || 'range-6B-26-29',
-      };
+      });
     }
-    return {
+    return emptyMatch({
       class: 'ambiguous',
       reason: '6B-26-29-numbering-unproven',
       rect: null,
       parentRect: null,
       lotIds: unique,
       areaId: null,
-    };
+    });
   }
 
   if (namedIds.length) {
     const uniq = [...new Set(namedIds)];
     if (uniq.length !== 1) {
-      return { class: 'ambiguous', reason: 'multiple-named-areas', rect: null, parentRect: null, lotIds: [], areaId: null };
+      return emptyMatch({ class: 'ambiguous', reason: 'multiple-named-areas', rect: null, parentRect: null, lotIds: [], areaId: null });
     }
     const area = AREA_BY_ID.get(uniq[0]);
     if (!area) {
-      return { class: 'unmatched', reason: 'named-missing', rect: null, parentRect: null, lotIds: [], areaId: uniq[0] };
+      return emptyMatch({ class: 'unmatched', reason: 'named-missing', rect: null, parentRect: null, lotIds: [], areaId: uniq[0] });
     }
-    return {
+    return emptyMatch({
       class: 'range_or_named',
       reason: 'named-area',
       rect: area.rect,
       parentRect: area.rect,
       lotIds: [],
       areaId: area.id,
-    };
+    });
   }
 
   if (brucePower.length) {
     const area = AREA_BY_ID.get('named-bruce-power-nuclear-energy-group');
-    return {
+    return emptyMatch({
       class: 'range_or_named',
       reason: '3B-07-12-bruce-power-named-tent',
       rect: area?.rect || null,
       parentRect: area?.rect || null,
       lotIds: [...new Set(brucePower)].sort(),
       areaId: 'named-bruce-power-nuclear-energy-group',
-    };
+    });
   }
 
   if (mutual.length) {
     const area = AREA_BY_ID.get('named-mutual-square');
-    return {
+    return emptyMatch({
       class: 'range_or_named',
       reason: '3A/3B-25-38-mutual-square',
       rect: area?.rect || null,
       parentRect: area?.rect || null,
       lotIds: mutual,
       areaId: 'named-mutual-square',
-    };
+    });
   }
 
   if (lots.length) {
-    const rects = lots.map((l) => l.rect);
-    if (!lotsConnected(rects)) {
-      return {
-        class: 'ambiguous',
-        reason: 'disconnected-lots',
-        rect: null,
-        parentRect: null,
-        lotIds: lots.map((l) => l.id),
-        areaId: null,
-      };
-    }
-    const rect = unionRects(rects);
+    const clusters = clusterLotRects(lots);
+    const rect = unionRects(clusters);
     const parents = [...new Set(lots.map((l) => l.parent))];
     const parent = parents.length === 1 ? AREA_BY_LABEL.get(parents[0]) : undefined;
     return {
       class: 'confident_lot',
       reason: 'lots',
       rect,
+      rects: clusters,
       parentRect: parent?.rect || rect,
       lotIds: lots.map((l) => l.id),
       areaId: parent?.id || null,
     };
   }
 
-  return { class: 'unmatched', reason: 'no-geometry', rect: null, parentRect: null, lotIds: [], areaId: null };
+  return emptyMatch({ class: 'unmatched', reason: 'no-geometry', rect: null, parentRect: null, lotIds: [], areaId: null });
 }
 
 export function footprintForVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationLabel' | 'name'>): VendorFootprint | null {
   const match = matchVendor(vendor);
   if (match.class !== 'confident_lot' && match.class !== 'range_or_named') return null;
   if (!match.rect) return null;
+  const rects = match.rects.length ? match.rects : [match.rect];
   return {
     class: match.class,
     rect: match.rect,
+    rects,
     parentRect: match.parentRect,
     lotIds: match.lotIds,
     areaId: match.areaId,

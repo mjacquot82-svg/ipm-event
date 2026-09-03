@@ -3,7 +3,7 @@
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 4.5;
 export const DOUBLE_TAP_SCALE = 2.4;
-export const MIN_OVERLAP_FRACTION = 0.4;
+export const MIN_OVERLAP_FRACTION = 0.15;
 export const RUBBER_BAND_PIXELS = 72;
 
 export type CameraState = {
@@ -107,8 +107,9 @@ export function zoomAroundFocal(args: ZoomAroundFocalInput): CameraState {
 
 /**
  * Allowed pan range. At fit (scale=1) translation is ~0. When zoomed, pan
- * range grows with the extra pixels, but a generous slice of the map
- * (default 40% of the shorter viewport side) always stays on screen.
+ * range grows with the extra pixels, but a mild slice of the map
+ * (default 15% of the shorter viewport side) always stays on screen.
+ * No letterbox lock: pinch-around-fingers must not yank back at 1.1–1.5x.
  */
 export function translationBounds(
   scale: number,
@@ -116,6 +117,10 @@ export function translationBounds(
   minOverlapFraction: number = MIN_OVERLAP_FRACTION,
 ): TranslationBounds {
   'worklet';
+  if (scale <= 1) {
+    return { minTx: 0, maxTx: 0, minTy: 0, maxTy: 0 };
+  }
+
   const vw = layout.viewportW;
   const vh = layout.viewportH;
   const sw = layout.mapW * scale;
@@ -138,22 +143,6 @@ export function translationBounds(
     const centered = (vh - sh) / 2;
     minY0 = centered;
     maxY0 = centered;
-  }
-
-  const extraX = Math.max(0, sw - layout.mapW);
-  const extraY = Math.max(0, sh - layout.mapH);
-  minX0 = Math.max(minX0, layout.left - extraX);
-  maxX0 = Math.min(maxX0, layout.left + extraX);
-  minY0 = Math.max(minY0, layout.top - extraY);
-  maxY0 = Math.min(maxY0, layout.top + extraY);
-
-  if (minX0 > maxX0) {
-    minX0 = layout.left;
-    maxX0 = layout.left;
-  }
-  if (minY0 > maxY0) {
-    minY0 = layout.top;
-    maxY0 = layout.top;
   }
 
   return {

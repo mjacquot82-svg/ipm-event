@@ -166,14 +166,24 @@ test('clampTranslation at fit keeps translation ~0', () => {
   assert.ok(Math.abs(wide.ty) < 1e-6);
 });
 
-test('clampTranslation keeps a generous portion of the map on screen', () => {
+test('clampTranslation keeps a mild portion of the map on screen', () => {
+  assert.equal(camera.MIN_OVERLAP_FRACTION, 0.15);
   const wild = camera.clampTranslation({ scale: 3.2, tx: -8000, ty: 8000 }, layoutPhone);
   const seen = overlap(wild, layoutPhone);
-  const minOverlap = 0.4 * Math.min(layoutPhone.viewportW, layoutPhone.viewportH);
+  const minOverlap = 0.15 * Math.min(layoutPhone.viewportW, layoutPhone.viewportH);
   assert.ok(seen.w + 0.5 >= Math.min(minOverlap, layoutPhone.mapW * wild.scale));
   assert.ok(seen.h + 0.5 >= Math.min(minOverlap, layoutPhone.mapH * wild.scale));
-  assert.ok(seen.w > 100);
-  assert.ok(seen.h > 100);
+  assert.ok(seen.w > 50);
+  assert.ok(seen.h > 50);
+});
+
+test('translationBounds does not letterbox-lock at mild zoom', () => {
+  const b = camera.translationBounds(1.2, layoutPhone);
+  const extraX = Math.max(0, layoutPhone.mapW * 1.2 - layoutPhone.mapW);
+  assert.ok(b.maxTx - b.minTx > extraX * 2 + 40);
+  const src = fs.readFileSync(cameraPath, 'utf8');
+  assert.doesNotMatch(src, /extraX/);
+  assert.doesNotMatch(src, /layout\.left - extraX/);
 });
 
 test('rubberBand eases past the edge then clamp snaps back', () => {
@@ -225,6 +235,9 @@ test('TentedCityMap uses the camera helpers, viewport gestures, and inertia', ()
   assert.match(map, /duration: 280/);
   assert.match(map, /touchAction: 'none'/);
   assert.match(map, /Gesture\.Simultaneous\(pinch, pan, doubleTap\)/);
+  assert.match(map, /blocksExternalGesture\(pan\)/);
+  assert.doesNotMatch(map, /scale\.value <= 1\.02/);
+  assert.match(map, /if \(scale\.value < 1\)/);
   assert.doesNotMatch(map, /averageTouches\(true\)/);
   assert.match(map, /styles\.gestureRoot/);
   assert.match(map, /footprintForVendor/);

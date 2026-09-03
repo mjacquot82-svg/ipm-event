@@ -187,3 +187,165 @@ test('1A 13-24 is separated from 1A 1-12 by the avenue gap', () => {
   const b = areas['1A 13-24'].rect;
   assert.ok(b.x - (a.x + a.w) > 2, 'avenue gap should exist; do not abut copied 1A widths');
 });
+
+const geoTsPath = firstExisting([
+  path.join(root, 'src/config/tentedCityGeometry.ts'),
+  path.join(root, 'config/tentedCityGeometry.ts'),
+]);
+
+function loadExhibitors() {
+  const dir = firstExisting([
+    path.join(root, 'src/data'),
+    path.join(root, 'data'),
+  ]);
+  const rows = [];
+  for (const file of fs.readdirSync(dir).filter((f) => f.startsWith('tentedCityVendorsPart') && f.endsWith('.ts')).sort()) {
+    const text = fs.readFileSync(path.join(dir, file), 'utf8');
+    const start = text.indexOf('= [') + 2;
+    const end = text.lastIndexOf(']') + 1;
+    rows.push(...JSON.parse(text.slice(start, end)));
+  }
+  return rows;
+}
+
+function rectsAbut(a, b, gap = 0.25) {
+  const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+  const overlapY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return overlapX >= -gap && overlapY >= -gap;
+}
+
+function unionOf(rects) {
+  const x = Math.min(...rects.map((r) => r.x));
+  const y = Math.min(...rects.map((r) => r.y));
+  const rgt = Math.max(...rects.map((r) => r.x + r.w));
+  const bot = Math.max(...rects.map((r) => r.y + r.h));
+  return { x: round3(x), y: round3(y), w: round3(rgt - x), h: round3(bot - y) };
+}
+
+function connectedComponents(rects) {
+  const n = rects.length;
+  const seen = Array(n).fill(false);
+  const comps = [];
+  for (let i = 0; i < n; i += 1) {
+    if (seen[i]) continue;
+    const stack = [i];
+    seen[i] = true;
+    const comp = [];
+    while (stack.length) {
+      const k = stack.pop();
+      comp.push(rects[k]);
+      for (let j = 0; j < n; j += 1) {
+        if (!seen[j] && rectsAbut(rects[k], rects[j])) {
+          seen[j] = true;
+          stack.push(j);
+        }
+      }
+    }
+    comps.push(comp);
+  }
+  return comps;
+}
+
+function clusterLotRects(lotObjs) {
+  const byParent = new Map();
+  for (const lot of lotObjs) {
+    const list = byParent.get(lot.parent) || [];
+    list.push(lot.rect);
+    byParent.set(lot.parent, list);
+  }
+  const clusters = [];
+  for (const rects of byParent.values()) {
+    for (const comp of connectedComponents(rects)) clusters.push(unionOf(comp));
+  }
+  return clusters;
+}
+
+const allVendors = loadExhibitors();
+
+test('lotsConnected rejects a street gap / different parent', () => {
+  const geoSrc = fs.readFileSync(geoTsPath, 'utf8');
+  assert.match(geoSrc, /clusterLotRects/);
+  assert.match(geoSrc, /Never union across a street/);
+  assert.doesNotMatch(geoSrc, /u\.w < 20 && u\.h < 12/);
+  assert.doesNotMatch(geoSrc, /4\.5 \* s/);
+  const a = lots['4A-16'].rect;
+  const b = lots['4B-17'].rect;
+  const u = unionOf([a, b]);
+  assert.ok(u.h > a.h + 1, 'union of 4A+4B includes Fourth Street');
+  assert.equal(rectsAbut(a, b), false);
+});
+
+test('Agilec clusters into two tight range rects, not the road union', () => {
+  const agilec = allVendors.find((v) => v.name === 'Agilec Employment Services, Wingham');
+  assert.ok(agilec);
+  const lotObjs = agilec.booths.map((id) => lots[id]);
+  assert.equal(lotObjs.length, 12);
+  const clusters = clusterLotRects(lotObjs);
+  assert.equal(clusters.length, 2);
+  const parents = new Set(lotObjs.map((l) => l.parent));
+  assert.deepEqual([...parents].sort(), ['4A 13-24', '4B 13-24']);
+  const a = unionOf(lotObjs.filter((l) => l.parent === '4A 13-24').map((l) => l.rect));
+  const b = unionOf(lotObjs.filter((l) => l.parent === '4B 13-24').map((l) => l.rect));
+  const painted = clusters.slice().sort((p, q) => p.y - q.y);
+  assert.deepEqual(painted[0], a);
+  assert.deepEqual(painted[1], b);
+  const roadUnion = unionOf(clusters);
+  assert.ok(roadUnion.h > a.h + b.h, 'union includes the street gap');
+  for (const c of clusters) {
+    assert.ok(Math.abs(c.h - a.h) < 0.05 || Math.abs(c.h - b.h) < 0.05);
+    assert.ok(c.w < 6, 'cluster is stalls only, not the whole 13-24 block');
+  }
+});
+
+test('ACE / JCB stays a single 1A-09 stall', () => {
+  const ace = allVendors.find((v) => v.name === 'ACE / JCB, Harriston');
+  const lotObjs = ace.booths.map((id) => lots[id]);
+  assert.equal(lotObjs.length, 1);
+  const clusters = clusterLotRects(lotObjs);
+  assert.equal(clusters.length, 1);
+  assert.deepEqual(clusters[0], lots['1A-09'].rect);
+  assert.deepEqual(clusters[0], { x: 26.935, y: 26.268, w: 0.758, h: 3.947 });
+});
+
+test('every bundled exhibitor with mapped lots paints one rect per cluster', () => {
+  let multi = 0;
+  for (const vendor of allVendors) {
+    const lotObjs = (vendor.booths || []).map((id) => lots[id]).filter(Boolean);
+    if (!lotObjs.length) continue;
+    const clusters = clusterLotRects(lotObjs);
+    const parents = new Set(lotObjs.map((l) => l.parent));
+    assert.ok(clusters.length >= 1, vendor.name);
+    if (parents.size > 1) {
+      multi += 1;
+      assert.ok(clusters.length >= parents.size, vendor.name + ' must not union across parents');
+    }
+  }
+  assert.ok(multi >= 20, `expected many rural-living multi-cluster vendors, got ${multi}`);
+});
+
+test('TentedCityMap paints each cluster rect, not the union, with a tight halo', () => {
+  const map = fs.readFileSync(mapPath, 'utf8');
+  const matchSrc = fs.readFileSync(matchPath, 'utf8');
+  assert.match(matchSrc, /clusterLotRects/);
+  assert.match(matchSrc, /rects: Rect\[\]/);
+  assert.match(map, /vendorFootprint\.rects\.map/);
+  assert.doesNotMatch(map, /vendorFootprint\.rect\.x/);
+  assert.doesNotMatch(map, /marginLeft: -5/);
+  assert.doesNotMatch(map, /borderWidth: 5, borderColor: 'rgba\(245,197,24/);
+  assert.match(map, /borderWidth: 1, borderColor: 'rgba\(245,197,24/);
+  assert.match(map, /flyToRect/);
+  assert.match(map, /SELECTED_RESERVED_BOTTOM/);
+});
+
+test('Hanover / RAM / Wroxeter / Bell leftovers stay unmatched or 5A-missing', () => {
+  const matchSrc = fs.readFileSync(matchPath, 'utf8');
+  assert.match(matchSrc, /5A-01-04-do-not-exist/);
+  assert.match(matchSrc, /3B-07-12-bruce-power-named-tent/);
+  assert.ok(report.classes.ambiguous.includes('Hanover'));
+  assert.ok(report.classes.ambiguous.includes('Dodge RAM'));
+  assert.ok(report.classes.unmatched.includes('Wroxeter'));
+  assert.ok(report.classes.unmatched.includes('Bell Mobility (Cell Tower)'));
+  const hanover = allVendors.find((v) => v.name === 'Hanover' && v.locationLabel === '5A-01-04');
+  assert.ok(hanover);
+  assert.equal(hanover.booths.every((id) => !lots[id]), true);
+});
