@@ -176,7 +176,7 @@ export default function AboutScreen() {
 
         <Text style={styles.buildNumber} accessibilityLabel={`${APP_LABEL}, build ${BUILD_NUMBER}`}>
           {APP_LABEL} • Build {BUILD_NUMBER}
-          {IS_STAGING_BACKEND ? '\nPWA auto-update test' : null}
+          {IS_STAGING_BACKEND ? '\nPWA auto-update test 2' : null}
         </Text>
 
       </ScrollView>
