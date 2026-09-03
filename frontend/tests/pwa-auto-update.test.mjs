@@ -17,18 +17,23 @@ function eventTarget() {
       current.push(listener);
       listeners.set(type, current);
     },
+    removeEventListener(type, listener) {
+      listeners.set(type, (listeners.get(type) || []).filter((current) => current !== listener));
+    },
     dispatch(type) {
       for (const listener of listeners.get(type) || []) listener();
     },
   };
 }
 
-function createHarness({ controlled = true, waiting = null, online = true } = {}) {
+function createHarness({ controlled = true, waiting = null, online = true, visibility = 'visible', update } = {}) {
   const serviceWorkerEvents = eventTarget();
   const windowEvents = eventTarget();
   const documentEvents = eventTarget();
   let reloads = 0;
   let updateCalls = 0;
+  let nextTimerId = 1;
+  const timers = new Map();
   const registrationEvents = eventTarget();
   const registration = {
     waiting,
@@ -36,7 +41,7 @@ function createHarness({ controlled = true, waiting = null, online = true } = {}
     ...registrationEvents,
     update() {
       updateCalls += 1;
-      return Promise.resolve();
+      return update ? update() : Promise.resolve();
     },
   };
   const module = { exports: {} };
@@ -48,7 +53,13 @@ function createHarness({ controlled = true, waiting = null, online = true } = {}
       serviceWorker: { controller: controlled ? {} : null, ...serviceWorkerEvents },
     },
     window: { location: { reload: () => { reloads += 1; } }, ...windowEvents },
-    document: { visibilityState: 'hidden', ...documentEvents },
+    document: { visibilityState: visibility, ...documentEvents },
+    setInterval(callback) {
+      const id = nextTimerId++;
+      timers.set(id, callback);
+      return id;
+    },
+    clearInterval(id) { timers.delete(id); },
     Promise,
   });
   vm.runInContext(compiled, context);
@@ -59,10 +70,15 @@ function createHarness({ controlled = true, waiting = null, online = true } = {}
     windowEvents,
     document: context.document,
     documentEvents,
+    navigator: context.navigator,
+    activeTimers: () => timers.size,
+    tickTimers: () => [...timers.values()].forEach((callback) => callback()),
     reloads: () => reloads,
     updateCalls: () => updateCalls,
   };
 }
+
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
 function waitingWorker() {
   const messages = [];
@@ -76,6 +92,79 @@ test('a waiting worker activates automatically when Home is safe', () => {
   harness.api.startPwaUpdateFlow(harness.registration);
   assert.equal(worker.messages.length, 1);
   assert.equal(worker.messages[0].type, 'IPM_ACTIVATE_UPDATE');
+  assert.equal(harness.activeTimers(), 0);
+});
+
+test('Home becoming safe checks immediately and schedules a 45-second foreground check', async () => {
+  const harness = createHarness();
+  harness.api.startPwaUpdateFlow(harness.registration);
+  await flushPromises();
+  const beforeHome = harness.updateCalls();
+  harness.api.setPwaUpdateSafeState(true);
+  assert.equal(harness.updateCalls(), beforeHome + 1);
+  assert.equal(harness.activeTimers(), 1);
+  await flushPromises();
+  harness.tickTimers();
+  assert.equal(harness.updateCalls(), beforeHome + 2);
+});
+
+test('foreground scheduler stops off Home, when hidden, when offline, and when disposed', () => {
+  const harness = createHarness();
+  harness.api.setPwaUpdateSafeState(true);
+  const dispose = harness.api.startPwaUpdateFlow(harness.registration);
+  assert.equal(harness.activeTimers(), 1);
+  harness.api.setPwaUpdateSafeState(false);
+  assert.equal(harness.activeTimers(), 0);
+  harness.api.setPwaUpdateSafeState(true);
+  harness.document.visibilityState = 'hidden';
+  harness.documentEvents.dispatch('visibilitychange');
+  assert.equal(harness.activeTimers(), 0);
+  harness.document.visibilityState = 'visible';
+  harness.documentEvents.dispatch('visibilitychange');
+  assert.equal(harness.activeTimers(), 1);
+  harness.navigator.onLine = false;
+  harness.windowEvents.dispatch('offline');
+  assert.equal(harness.activeTimers(), 0);
+  harness.navigator.onLine = true;
+  harness.windowEvents.dispatch('online');
+  assert.equal(harness.activeTimers(), 1);
+  dispose();
+  assert.equal(harness.activeTimers(), 0);
+});
+
+test('pageshow, focus, visible resume, and online retain update checks', async () => {
+  const harness = createHarness();
+  harness.api.startPwaUpdateFlow(harness.registration);
+  await flushPromises();
+  for (const event of ['pageshow', 'focus']) {
+    const before = harness.updateCalls();
+    harness.windowEvents.dispatch(event);
+    assert.equal(harness.updateCalls(), before + 1);
+    await flushPromises();
+  }
+  let before = harness.updateCalls();
+  harness.documentEvents.dispatch('visibilitychange');
+  assert.equal(harness.updateCalls(), before + 1);
+  await flushPromises();
+  before = harness.updateCalls();
+  harness.windowEvents.dispatch('online');
+  assert.equal(harness.updateCalls(), before + 1);
+});
+
+test('update checks never overlap', async () => {
+  let finishUpdate;
+  const pendingUpdate = new Promise((resolve) => { finishUpdate = resolve; });
+  const harness = createHarness({ update: () => pendingUpdate });
+  harness.api.setPwaUpdateSafeState(true);
+  harness.api.startPwaUpdateFlow(harness.registration);
+  harness.windowEvents.dispatch('focus');
+  harness.windowEvents.dispatch('pageshow');
+  harness.tickTimers();
+  assert.equal(harness.updateCalls(), 1);
+  finishUpdate();
+  await flushPromises();
+  harness.windowEvents.dispatch('focus');
+  assert.equal(harness.updateCalls(), 2);
 });
 
 test('a waiting worker stays deferred on sensitive flows and activates after reaching Home', () => {

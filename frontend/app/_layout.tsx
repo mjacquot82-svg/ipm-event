@@ -42,9 +42,11 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'web') {
+      let disposed = false;
+      let disposeUpdateFlow = () => undefined;
       void initializeOfflineShell()
         .then((registration) => {
-          if (registration) startPwaUpdateFlow(registration);
+          if (registration && !disposed) disposeUpdateFlow = startPwaUpdateFlow(registration);
         })
         .catch((error) => {
           console.warn('Offline shell service worker unavailable:', error);
@@ -52,7 +54,10 @@ export default function RootLayout() {
       void initializeWonderPush().catch((error) => {
         console.warn('WonderPush initialization unavailable:', error);
       });
-      return undefined;
+      return () => {
+        disposed = true;
+        disposeUpdateFlow();
+      };
     }
 
     let cleanupNotifications: () => void = () => undefined;
