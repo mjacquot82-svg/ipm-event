@@ -267,3 +267,144 @@ export default function TentedCityMap({
     node.addEventListener('wheel', onWheel, { passive: false });
     return () => node.removeEventListener('wheel', onWheel);
   }, [viewport.width, viewport.height]);
+
+  const results = useMemo(
+    () => (focused || query.trim() ? searchTentedCity(query, tentedCityVendors, filter) : []),
+    [query, filter, focused],
+  );
+
+  const stageEvents = useMemo(() => {
+    if (selected?.kind !== 'stage') return [];
+    const names = new Set(selected.venue.names.map((n) => n.toLowerCase().replace(/[\u2019']/g, "'").replace(/\s+/g, ' ').trim()));
+    return events.filter((e) => e.location_name && names.has(e.location_name.toLowerCase().replace(/[\u2019']/g, "'").replace(/\s+/g, ' ').trim())).slice(0, 4);
+  }, [events, selected]);
+
+  const filterDots = useMemo(() => {
+    if (filter === 'food') {
+      return tentedCityVendors.flatMap((v) => {
+        if (v.category !== 'food') return [];
+        const fp = footprintForVendor(v);
+        if (!fp) return [];
+        return [{ key: v.name, rect: fp.rect, place: { kind: 'vendor' as const, vendor: v } }];
+      });
+    }
+    if (filter === 'stages') {
+      return tentedCityVenues
+        .filter((v) => v.kind === 'stage' && v.rect)
+        .map((v) => ({ key: v.id, rect: v.rect!, place: { kind: 'stage' as const, venue: v } }));
+    }
+    return [];
+  }, [filter]);
+
+  const pinch = Gesture.Pinch()
+    .onBegin(() => {
+      cancelAnimation(scale);
+      cancelAnimation(tx);
+      cancelAnimation(ty);
+      startScale.value = scale.value;
+      startX.value = tx.value;
+      startY.value = ty.value;
+    })
+    .onUpdate((e) => {
+      const next = zoomAroundFocal({
+        scale: startScale.value,
+        tx: startX.value,
+        ty: startY.value,
+        nextScale: startScale.value * e.scale,
+        focalX: e.focalX,
+        focalY: e.focalY,
+        left: originX.value,
+        top: originY.value,
+      });
+      const layout = {
+        viewportW: viewW.value,
+        viewportH: viewH.value,
+        mapW: mapW.value,
+        mapH: mapH.value,
+        left: originX.value,
+        top: originY.value,
+      };
+      const soft = rubberBandTranslation(next, layout);
+      scale.value = next.scale;
+      tx.value = soft.tx;
+      ty.value = soft.ty;
+    })
+    .onEnd(() => {
+      const layout = {
+        viewportW: viewW.value,
+        viewportH: viewH.value,
+        mapW: mapW.value,
+        mapH: mapH.value,
+        left: originX.value,
+        top: originY.value,
+      };
+      if (scale.value <= 1.02) {
+        scale.value = withTiming(1, { duration: 200 });
+        tx.value = withTiming(0, { duration: 200 });
+        ty.value = withTiming(0, { duration: 200 });
+        return;
+      }
+      const cam = clampTranslation(
+        { scale: scale.value, tx: tx.value, ty: ty.value },
+        layout,
+      );
+      scale.value = withTiming(cam.scale, { duration: 180 });
+      tx.value = withTiming(cam.tx, { duration: 180 });
+      ty.value = withTiming(cam.ty, { duration: 180 });
+    });
+
+  const pan = Gesture.Pan()
+    .minPointers(1)
+    .maxPointers(1)
+    .onBegin(() => {
+      cancelAnimation(tx);
+      cancelAnimation(ty);
+      startX.value = tx.value;
+      startY.value = ty.value;
+    })
+    .onUpdate((e) => {
+      const layout = {
+        viewportW: viewW.value,
+        viewportH: viewH.value,
+        mapW: mapW.value,
+        mapH: mapH.value,
+        left: originX.value,
+        top: originY.value,
+      };
+      const soft = rubberBandTranslation(
+        { scale: scale.value, tx: startX.value + e.translationX, ty: startY.value + e.translationY },
+        layout,
+      );
+      tx.value = soft.tx;
+      ty.value = soft.ty;
+    })
+    .onEnd((e) => {
+      const layout = {
+        viewportW: viewW.value,
+        viewportH: viewH.value,
+        mapW: mapW.value,
+        mapH: mapH.value,
+        left: originX.value,
+        top: originY.value,
+      };
+      if (scale.value <= 1.02) {
+        tx.value = withTiming(0, { duration: 180 });
+        ty.value = withTiming(0, { duration: 180 });
+        return;
+      }
+      const bounds = translationBounds(scale.value, layout);
+      tx.value = withDecay({
+        velocity: e.velocityX,
+        clamp: [bounds.minTx, bounds.maxTx],
+        rubberBandEffect: true,
+        rubberBandFactor: 0.55,
+        deceleration: 0.996,
+      });
+      ty.value = withDecay({
+        velocity: e.velocityY,
+        clamp: [bounds.minTy, bounds.maxTy],
+        rubberBandEffect: true,
+        rubberBandFactor: 0.55,
+        deceleration: 0.996,
+      });
+    });
