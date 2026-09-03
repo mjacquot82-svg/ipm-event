@@ -35,9 +35,9 @@ export default function RootLayout() {
   }, [pathname]);
 
   useEffect(() => {
-    // Home is the only route without an attendee flow that a reload could interrupt.
-    // Treat every other route as sensitive by default, including future routes.
-    setPwaUpdateSafeState(pathname === '/');
+    // Home and the signed-out Organizer login have no attendee flow that an
+    // update reload could interrupt. Treat every other route as sensitive.
+    setPwaUpdateSafeState(pathname === '/' || pathname === '/admin/login');
   }, [pathname]);
 
   useEffect(() => {

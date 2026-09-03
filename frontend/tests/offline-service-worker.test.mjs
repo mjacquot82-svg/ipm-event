@@ -14,11 +14,12 @@ test('one root worker assigns push and notificationclick to WonderPush', () => {
   assert.doesNotMatch(worker, /addEventListener\(['"]notificationclick/);
 });
 
-test('IPM retains versioned shell and cache-first navigation ownership', () => {
+test('IPM retains versioned shell and navigation ownership with fresh admin login', () => {
   assert.match(worker, /IPM_OFFLINE_VERSION/);
   assert.match(worker, /IPM_SHELL_CACHE/);
   assert.match(worker, /cache\.match\(['"]\/index\.html['"]\)/);
   assert.match(worker, /if \(cached\) return cached/);
+  assert.match(worker, /url\.pathname === IPM_ADMIN_LOGIN_PATH[\s\S]*return await fetch\(request\)/);
   assert.match(generator, /sha256/);
 });
 
@@ -39,7 +40,7 @@ test('safe Home state activates the waiting worker and reloads exactly once afte
   assert.match(worker, /event\.data\?\.type === 'IPM_ACTIVATE_UPDATE'/);
   assert.match(worker, /self\.skipWaiting\(\)/);
   assert.match(updateService, /waitingWorker\.postMessage\(\{ type: ACTIVATE_UPDATE_MESSAGE \}\)/);
-  assert.match(rootLayout, /setPwaUpdateSafeState\(pathname === '\/'\)/);
+  assert.match(rootLayout, /setPwaUpdateSafeState\(pathname === '\/' \|\| pathname === '\/admin\/login'\)/);
   assert.match(updateService, /addEventListener\('controllerchange'/);
   assert.match(updateService, /if \(!activationRequested \|\| reloadStarted\) return/);
   assert.match(updateService, /reloadStarted = true;[\s\S]*window\.location\.reload\(\)/);
@@ -79,11 +80,18 @@ test('bounded local diagnostics cover the update and activation lifecycle', () =
   assert.doesNotMatch(updateService, /queueAnalyticsEvent|fetch\(/);
 });
 
-test('Emergency Services and every other non-Home flow defer activation until Home', () => {
-  assert.match(rootLayout, /setPwaUpdateSafeState\(pathname === '\/'\)/);
+test('Emergency Services and authenticated flows defer activation until a safe route', () => {
+  assert.match(rootLayout, /setPwaUpdateSafeState\(pathname === '\/' \|\| pathname === '\/admin\/login'\)/);
   assert.doesNotMatch(rootLayout, /emergency-services.*setPwaUpdateSafeState|itinerary.*setPwaUpdateSafeState|schedule.*setPwaUpdateSafeState/);
   assert.match(updateService, /safeToActivate = isSafe;[\s\S]*activateWaitingWorkerIfSafe\(\)/);
   assert.match(updateService, /waitingWorker = candidate;[\s\S]*activateWaitingWorkerIfSafe\(\)/);
+});
+
+test('an already-stale admin login is recovered without taking over attendee flows', () => {
+  assert.match(worker, /isApplicationUpdate && onlyAdminLoginClients/);
+  assert.match(worker, /self\.clients\.matchAll\(\{ type: 'window', includeUncontrolled: true \}\)/);
+  assert.match(worker, /key\.startsWith\(IPM_CACHE_PREFIX\) && key !== IPM_SHELL_CACHE/);
+  assert.match(worker, /client\.navigate\(client\.url\)/);
 });
 
 test('updates preserve itinerary and origin storage and retain one WonderPush worker', () => {
