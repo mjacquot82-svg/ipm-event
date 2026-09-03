@@ -1,5 +1,3 @@
-export type PwaUpdateListener = (available: boolean) => void;
-
 const ACTIVATE_UPDATE_MESSAGE = 'IPM_ACTIVATE_UPDATE';
 
 let registration: ServiceWorkerRegistration | null = null;
@@ -9,10 +7,12 @@ let updateCheck: Promise<void> | null = null;
 let activationRequested = false;
 let reloadStarted = false;
 let started = false;
-const listeners = new Set<PwaUpdateListener>();
+let safeToActivate = false;
 
-function publish(available: boolean) {
-  listeners.forEach((listener) => listener(available));
+function activateWaitingWorkerIfSafe() {
+  if (!safeToActivate || !waitingWorker || activationRequested) return;
+  activationRequested = true;
+  waitingWorker.postMessage({ type: ACTIVATE_UPDATE_MESSAGE });
 }
 
 function detectWaitingWorker() {
@@ -22,7 +22,7 @@ function detectWaitingWorker() {
   if (!candidate || !navigator.serviceWorker.controller) return;
   if (candidate === waitingWorker) return;
   waitingWorker = candidate;
-  publish(true);
+  activateWaitingWorkerIfSafe();
 }
 
 function observeInstallingWorker() {
@@ -47,6 +47,11 @@ function checkForUpdate() {
     });
 }
 
+function resumeUpdateFlow() {
+  activateWaitingWorkerIfSafe();
+  checkForUpdate();
+}
+
 export function startPwaUpdateFlow(nextRegistration: ServiceWorkerRegistration) {
   registration = nextRegistration;
   observeInstallingWorker();
@@ -60,21 +65,16 @@ export function startPwaUpdateFlow(nextRegistration: ServiceWorkerRegistration) 
     reloadStarted = true;
     window.location.reload();
   });
-  window.addEventListener('online', checkForUpdate);
-  window.addEventListener('focus', checkForUpdate);
+  window.addEventListener('online', resumeUpdateFlow);
+  window.addEventListener('focus', resumeUpdateFlow);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') checkForUpdate();
+    if (document.visibilityState === 'visible') resumeUpdateFlow();
   });
+
+  checkForUpdate();
 }
 
-export function subscribeToPwaUpdates(listener: PwaUpdateListener) {
-  listeners.add(listener);
-  listener(Boolean(waitingWorker));
-  return () => listeners.delete(listener);
-}
-
-export function activatePwaUpdate() {
-  if (!waitingWorker || activationRequested) return;
-  activationRequested = true;
-  waitingWorker.postMessage({ type: ACTIVATE_UPDATE_MESSAGE });
+export function setPwaUpdateSafeState(isSafe: boolean) {
+  safeToActivate = isSafe;
+  activateWaitingWorkerIfSafe();
 }

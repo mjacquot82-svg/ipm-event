@@ -6,7 +6,6 @@ const worker = await readFile(new URL('../public/webpushr-sw.js', import.meta.ur
 const generator = await readFile(new URL('../scripts/generate-offline-worker.js', import.meta.url), 'utf8');
 const html = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
 const updateService = await readFile(new URL('../src/services/pwaUpdateService.web.ts', import.meta.url), 'utf8');
-const updatePrompt = await readFile(new URL('../src/components/PWAUpdatePrompt.tsx', import.meta.url), 'utf8');
 const rootLayout = await readFile(new URL('../app/_layout.tsx', import.meta.url), 'utf8');
 
 test('one root worker assigns push and notificationclick to WonderPush', () => {
@@ -28,38 +27,44 @@ test('legacy Webpushr bell remains suppressed without loading its SDK', () => {
   assert.doesNotMatch(html, /cdn\.webpushr\.com\/app\.min\.js/);
 });
 
-test('new and already-waiting workers surface one global update prompt', () => {
+test('new and already-waiting workers are discovered without a manual update prompt', () => {
   assert.match(updateService, /registration\?\.waiting/);
   assert.match(updateService, /addEventListener\('updatefound', observeInstallingWorker\)/);
   assert.match(updateService, /candidate\.state === 'installed'/);
   assert.match(updateService, /candidate === waitingWorker/);
-  assert.match(updatePrompt, /A new version of the IPM app is available\./);
-  assert.match(rootLayout, /<PWAUpdatePrompt \/>/);
+  assert.doesNotMatch(rootLayout, /PWAUpdatePrompt|Update now/);
 });
 
-test('Update now activates the waiting worker and reloads exactly once after control changes', () => {
+test('safe Home state activates the waiting worker and reloads exactly once after control changes', () => {
   assert.match(worker, /event\.data\?\.type === 'IPM_ACTIVATE_UPDATE'/);
   assert.match(worker, /self\.skipWaiting\(\)/);
   assert.match(updateService, /waitingWorker\.postMessage\(\{ type: ACTIVATE_UPDATE_MESSAGE \}\)/);
+  assert.match(rootLayout, /setPwaUpdateSafeState\(pathname === '\/'\)/);
   assert.match(updateService, /addEventListener\('controllerchange'/);
   assert.match(updateService, /if \(!activationRequested \|\| reloadStarted\) return/);
   assert.match(updateService, /reloadStarted = true;[\s\S]*window\.location\.reload\(\)/);
-  assert.match(updatePrompt, />Update now</);
 });
 
-test('current builds, first installs, and offline resumes do not prompt or reload', () => {
+test('first installs and already-current builds do not activate or reload', () => {
   assert.match(updateService, /if \(!candidate \|\| !navigator\.serviceWorker\.controller\) return/);
-  assert.match(updateService, /if \(!registration \|\| navigator\.onLine === false \|\| updateCheck\) return/);
-  assert.match(updatePrompt, /if \(Platform\.OS !== 'web' \|\| !available\) return null/);
+  assert.match(updateService, /if \(!safeToActivate \|\| !waitingWorker \|\| activationRequested\) return/);
   assert.doesNotMatch(updateService, /setInterval|setTimeout/);
 });
 
-test('app resume checks for updates without duplicate checks or reload loops', () => {
-  assert.match(updateService, /window\.addEventListener\('focus', checkForUpdate\)/);
-  assert.match(updateService, /document\.visibilityState === 'visible'/);
-  assert.match(updateService, /window\.addEventListener\('online', checkForUpdate\)/);
+test('safe resume checks, activates once, and offline checks remain suppressed', () => {
+  assert.match(updateService, /window\.addEventListener\('focus', resumeUpdateFlow\)/);
+  assert.match(updateService, /document\.visibilityState === 'visible'[\s\S]*resumeUpdateFlow\(\)/);
+  assert.match(updateService, /window\.addEventListener\('online', resumeUpdateFlow\)/);
   assert.match(updateService, /updateCheck = registration\.update\(\)/);
-  assert.match(updateService, /if \(!waitingWorker \|\| activationRequested\) return/);
+  assert.match(updateService, /if \(!registration \|\| navigator\.onLine === false \|\| updateCheck\) return/);
+  assert.match(updateService, /if \(!safeToActivate \|\| !waitingWorker \|\| activationRequested\) return/);
+});
+
+test('Emergency Services and every other non-Home flow defer activation until Home', () => {
+  assert.match(rootLayout, /setPwaUpdateSafeState\(pathname === '\/'\)/);
+  assert.doesNotMatch(rootLayout, /emergency-services.*setPwaUpdateSafeState|itinerary.*setPwaUpdateSafeState|schedule.*setPwaUpdateSafeState/);
+  assert.match(updateService, /safeToActivate = isSafe;[\s\S]*activateWaitingWorkerIfSafe\(\)/);
+  assert.match(updateService, /waitingWorker = candidate;[\s\S]*activateWaitingWorkerIfSafe\(\)/);
 });
 
 test('updates preserve itinerary and origin storage and retain one WonderPush worker', () => {

@@ -14,13 +14,12 @@ import {
 import { AdProvider } from '../src/context/AdContext';
 import ErrorBoundary from '../src/components/ErrorBoundary';
 import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
-import PWAUpdatePrompt from '../src/components/PWAUpdatePrompt';
 import SplashScreen from '../src/components/SplashScreen';
 import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext';
 import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
 import { initializeOfflineShell, initializeWonderPush } from '../src/services/wonderPushService';
 import { listenForWonderPushNotificationDeepLinks } from '../src/services/notificationDeepLink';
-import { startPwaUpdateFlow } from '../src/services/pwaUpdateService';
+import { setPwaUpdateSafeState, startPwaUpdateFlow } from '../src/services/pwaUpdateService';
 
 export default function RootLayout() {
   const [isInitializing, setIsInitializing] = useState(Platform.OS !== 'web');
@@ -33,6 +32,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     void setAnalyticsRoute(pathname);
+  }, [pathname]);
+
+  useEffect(() => {
+    // Home is the only route without an attendee flow that a reload could interrupt.
+    // Treat every other route as sensitive by default, including future routes.
+    setPwaUpdateSafeState(pathname === '/');
   }, [pathname]);
 
   useEffect(() => {
@@ -96,7 +101,6 @@ export default function RootLayout() {
               </Stack>
             )}
             <PWAInstallPrompt />
-            <PWAUpdatePrompt />
             </ErrorBoundary>
           </AnnouncementReadProvider>
         </AdProvider>
