@@ -8,6 +8,12 @@
 # same-origin /api/vendors is proxied to production. Other /api routes stay
 # on the staging backend (schedule, announcements, what3words).
 [[redirects]]
+  from = "/api/admin/*"
+  to = "https://ipm-staging-backend.onrender.com/api/admin/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/vendors"
   to = "https://ipm-backend-eoiw.onrender.com/api/vendors"
   status = 200

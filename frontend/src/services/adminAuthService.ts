@@ -211,6 +211,13 @@ export type CreateBroadcastPayload = {
 };
 
 function getApiBaseUrl() {
+  // Keep staging Organizer Portal traffic first-party. Some desktop privacy
+  // configurations block direct credentialed requests to Render even when the
+  // backend's CORS response is valid. Netlify proxies these admin routes to the
+  // site-specific staging backend.
+  if (typeof window !== 'undefined' && window.location.hostname === 'staging.theipm.ca') {
+    return '';
+  }
   return process.env.EXPO_PUBLIC_BACKEND_URL || DEFAULT_API_BASE_URL;
 }
 
