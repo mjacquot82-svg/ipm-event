@@ -3,23 +3,16 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, StatusBar, TouchableOpacity, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import MapComponent from '../../src/components/MapComponent';
+import GroundsMap from '../../src/components/GroundsMap';
 import TentedCityMap from '../../src/components/TentedCityMap';
-import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import colors from '../../src/theme/colors';
-import {
-  ATTENDEE_CARD_RADIUS,
-  attendeePageContent,
-  useAttendeeLayout,
-} from '../../src/theme/attendeePageLayout';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { mapLocations } from '../../src/config/mapLocations';
 import { findTentedCityPlace } from '../../src/config/tentedCitySearch';
 import { tentedCityVendors } from '../../src/data/tentedCityVendors';
 
 export default function MapScreen() {
-  const { contentWidth } = useAttendeeLayout();
-  const { location, showOnly, source, mapStatus, verify1a } = useLocalSearchParams<{
+  const { location, source, mapStatus, verify1a } = useLocalSearchParams<{
     location?: string;
     showOnly?: string;
     source?: string;
@@ -55,23 +48,12 @@ export default function MapScreen() {
         />
       </View>
       {mode === 'grounds' ? (
-        <View style={[styles.grounds, attendeePageContent]}>
-          <View style={styles.toggle}>
-            <View style={[styles.toggleBtn, styles.toggleBtnOn]}>
-              <Text style={[styles.toggleText, styles.toggleTextOn]}>Grounds</Text>
-            </View>
-            <TouchableOpacity style={styles.toggleBtn} onPress={() => setMode('tented')}>
-              <Text style={styles.toggleText}>Tented City</Text>
-            </TouchableOpacity>
+        <View style={styles.grounds}>
+          <GroundsMap highlightedLocation={location || null} onSwitchToTented={() => setMode('tented')} />
+          <View style={styles.toggle} pointerEvents="box-none">
+            <View style={[styles.toggleBtn, styles.toggleBtnOn]}><Text style={[styles.toggleText, styles.toggleTextOn]}>Grounds</Text></View>
+            <TouchableOpacity style={styles.toggleBtn} onPress={() => setMode('tented')}><Text style={styles.toggleText}>Tented City</Text></TouchableOpacity>
           </View>
-          <View style={[styles.mapCard, { width: contentWidth }]}>
-            <MapComponent
-              mapWidth={contentWidth}
-              highlightedLocation={location || null}
-              showOnlyHighlighted={showOnly === 'true'}
-            />
-          </View>
-          <AttendeeAttribution source="map_attribution" />
         </View>
       ) : null}
     </View>
@@ -79,53 +61,13 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    position: 'relative',
-    backgroundColor: colors.background,
-  },
-  tentedHost: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  tentedHostHidden: {
-    opacity: 0,
-    zIndex: 0,
-  },
-  grounds: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 2,
-    backgroundColor: colors.background,
-  },
-  toggle: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    marginTop: 8,
-    backgroundColor: '#E8E4DA',
-    borderRadius: 12,
-    padding: 3,
-    gap: 4,
-  },
-  toggleBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  toggleBtnOn: {
-    backgroundColor: '#FFFFFF',
-  },
-  toggleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  toggleTextOn: {
-    color: '#A6262D',
-  },
-  mapCard: {
-    flex: 1,
-    alignSelf: 'center',
-    borderRadius: ATTENDEE_CARD_RADIUS,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-  },
+  container: { flex: 1, position: 'relative', backgroundColor: colors.background },
+  tentedHost: { ...StyleSheet.absoluteFillObject },
+  tentedHostHidden: { opacity: 0, zIndex: 0 },
+  grounds: { ...StyleSheet.absoluteFillObject, zIndex: 2, backgroundColor: colors.background },
+  toggle: { position: 'absolute', top: 8, alignSelf: 'center', zIndex: 20, flexDirection: 'row', backgroundColor: 'rgba(232,228,218,0.95)', borderRadius: 12, padding: 3, gap: 4 },
+  toggleBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
+  toggleBtnOn: { backgroundColor: '#FFFFFF' },
+  toggleText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  toggleTextOn: { color: '#A6262D' },
 });
