@@ -8,6 +8,7 @@ const SERVICE_WORKER_PATH = '/webpushr-sw.js';
 const LOADER_TIMEOUT_MS = 10_000;
 const READINESS_TIMEOUT_MS = 15_000;
 const STATUS_TIMEOUT_MS = 10_000;
+const NOTIFICATION_STATE_ATTEMPTS = 2;
 const SDK_SETTLE_TIMEOUT_MS = 3_000;
 const SDK_SETTLE_RETRY_MS = 400;
 const SDK_SETTLE_ATTEMPTS = 3;
@@ -402,16 +403,25 @@ export async function readWonderPushSnapshot({ attempts = SDK_SETTLE_ATTEMPTS,
 export async function getNotificationState(): Promise<NotificationState> {
   if (!isSupported()) return 'unsupported';
   if (Notification.permission === 'denied') return 'denied';
-  try {
-    const subscribed = await withSdk(async (sdk) => {
-      if (!sdk.isSubscribedToNotifications) throw new Error('WonderPush subscription API is unavailable.');
-      return sdk.isSubscribedToNotifications();
-    }, STATUS_TIMEOUT_MS, 'WonderPush notification status timed out.');
-    if (subscribed && Notification.permission === 'granted') return 'subscribed';
-    return Notification.permission === 'granted' ? 'unsubscribed' : 'default';
-  } catch {
-    return 'error';
+
+  // Loader, readiness and status reads can race a slow SDK/service-worker
+  // startup. Retry the read once, then leave the UI in its non-persistent
+  // loading state. Focus/online lifecycle events can start another bounded
+  // check; this path never requests permission or schedules its own retries.
+  for (let attempt = 0; attempt < NOTIFICATION_STATE_ATTEMPTS; attempt += 1) {
+    try {
+      const subscribed = await withSdk(async (sdk) => {
+        if (!sdk.isSubscribedToNotifications) throw new Error('WonderPush subscription API is unavailable.');
+        return sdk.isSubscribedToNotifications();
+      }, STATUS_TIMEOUT_MS, 'WonderPush notification status timed out.');
+      if (subscribed && Notification.permission === 'granted') return 'subscribed';
+      return Notification.permission === 'granted' ? 'unsubscribed' : 'default';
+    } catch {
+      // initializeWonderPush clears its rejected cached promise, allowing the
+      // single retry to recover from loader/readiness failures.
+    }
   }
+  return 'loading';
 }
 
 export async function subscribeToNotifications(): Promise<NotificationState> {

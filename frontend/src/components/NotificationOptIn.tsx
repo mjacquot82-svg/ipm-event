@@ -47,6 +47,8 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   const promptRecordedRef = useRef(false);
   const promptDailyStateRef = useRef<ReturnType<typeof parseNotificationPromptDailyState>>(null);
   const hasFocusedRef = useRef(false);
+  const statusCheckInFlightRef = useRef(false);
+  const notificationStateRef = useRef<NotificationState>('loading');
 
   const evaluateOptionalPrompt = useCallback(async (nextState: NotificationState) => {
     if (nextState !== 'default' && nextState !== 'unsubscribed') {
@@ -134,23 +136,31 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   }, []);
 
   const refresh = useCallback(async () => {
-    const nextState = await getNotificationState();
-    setState(nextState);
-    await evaluateOptionalPrompt(nextState);
-    if (nextState === 'subscribed') {
-      await completeSetup();
-    } else {
-      recordNotificationWorkflowDiagnostic('IDLE');
-      setSetupState('idle');
-      setFailureStage(null);
-      setFailureClassification(null);
+    if (statusCheckInFlightRef.current || navigator.onLine === false) return;
+    statusCheckInFlightRef.current = true;
+    try {
+      const nextState = await getNotificationState();
+      notificationStateRef.current = nextState;
+      setState(nextState);
+      await evaluateOptionalPrompt(nextState);
+      if (nextState === 'subscribed') {
+        await completeSetup();
+      } else if (nextState !== 'loading') {
+        recordNotificationWorkflowDiagnostic('IDLE');
+        setSetupState('idle');
+        setFailureStage(null);
+        setFailureClassification(null);
+      }
+    } finally {
+      statusCheckInFlightRef.current = false;
     }
   }, [completeSetup, evaluateOptionalPrompt]);
 
   useFocusEffect(
     useCallback(() => {
-      // The mount refresh handles the first visit. Later Home visits only
-      // re-evaluate optional prompt eligibility; they do not rerun setup.
+      // The mount refresh handles the first visit. A later Home visit is an
+      // explicit lifecycle opportunity for another bounded initialization
+      // check after a transient startup failure.
       if (!hasFocusedRef.current) {
         hasFocusedRef.current = true;
         return;
@@ -159,25 +169,26 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
         setOptionalPromptVisible(false);
         return;
       }
-      void getNotificationState()
-        .then(evaluateOptionalPrompt)
-        .catch(() => setOptionalPromptVisible(false));
-    }, [evaluateOptionalPrompt]),
+      if (notificationStateRef.current === 'loading') {
+        void refresh();
+      } else {
+        void getNotificationState()
+          .then(evaluateOptionalPrompt)
+          .catch(() => setOptionalPromptVisible(false));
+      }
+    }, [evaluateOptionalPrompt, refresh]),
   );
 
   useEffect(() => {
     if (Platform.OS !== 'web') return undefined;
-    if (navigator.onLine === false) {
-      setVerificationDeferred(true);
-      const resume = () => {
-        setVerificationDeferred(false);
-        void refresh();
-      };
-      window.addEventListener('online', resume, { once: true });
-      return () => window.removeEventListener('online', resume);
-    }
-    void refresh();
-    return undefined;
+    const resume = () => {
+      setVerificationDeferred(false);
+      void refresh();
+    };
+    window.addEventListener('online', resume);
+    if (navigator.onLine === false) setVerificationDeferred(true);
+    else void refresh();
+    return () => window.removeEventListener('online', resume);
   }, [refresh]);
 
   const updateSubscription = useCallback(async () => {
@@ -186,6 +197,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
       const nextState = state === 'subscribed'
         ? await unsubscribeFromNotifications()
         : await subscribeToNotifications();
+      notificationStateRef.current = nextState;
       setState(nextState);
       await evaluateOptionalPrompt(nextState);
       if (nextState === 'subscribed') await completeSetup();
