@@ -1,5 +1,6 @@
 import type { TentedCityPlace, TentedCityVendor } from './tentedCityTypes';
 import { findTentedCityVenue, tentedCityVenues } from './tentedCityVenues';
+import { resolveVendorMapQuery } from './vendorMapCrosswalk';
 
 export function norm(s: string) {
   return s.toLowerCase().replace(/[’']/g, "'").replace(/[^a-z0-9]+/g, ' ').trim();
@@ -15,11 +16,19 @@ export function tokensMatch(hay: string, needle: string) {
   return norm(hay).includes(n);
 }
 
+function vendorTokensMatch(vendor: TentedCityVendor, q: string) {
+  return (
+    tokensMatch(vendor.name, q) ||
+    tokensMatch(vendor.locationLabel, q) ||
+    vendor.booths.some((b) => tokensMatch(b, q))
+  );
+}
+
 export function searchTentedCity(
   query: string,
   vendors: TentedCityVendor[],
   filter: 'all' | 'food' | 'stages' | 'vendors' = 'all',
-  limit = 8,
+  limit = 40,
 ): TentedCityPlace[] {
   const q = query.trim();
   if (!q) return [];
@@ -34,14 +43,12 @@ export function searchTentedCity(
   }
 
   if (filter !== 'stages') {
+    const resolved = resolveVendorMapQuery(q);
+    const mappedName = resolved.status === 'mapped' ? resolved.query : null;
     for (const vendor of vendors) {
       if (filter === 'food' && vendor.category !== 'food') continue;
       if (filter === 'vendors' && vendor.category === 'food') continue;
-      if (
-        tokensMatch(vendor.name, q) ||
-        tokensMatch(vendor.locationLabel, q) ||
-        vendor.booths.some((b) => tokensMatch(b, q))
-      ) {
+      if (vendorTokensMatch(vendor, q) || (mappedName !== null && vendor.name === mappedName)) {
         hits.push({ kind: 'vendor', vendor });
       }
     }
@@ -62,11 +69,13 @@ export function findTentedCityPlace(
     (v) => norm(v.name) === norm(q) || norm(v.locationLabel) === norm(q) || v.booths.some((b) => norm(b) === norm(q)),
   );
   if (exact) return { kind: 'vendor', vendor: exact };
-  return vendors.find(
-    (v) => tokensMatch(v.name, q) || tokensMatch(v.locationLabel, q) || v.booths.some((b) => tokensMatch(b, q)),
-  )
-    ? { kind: 'vendor', vendor: vendors.find((v) => tokensMatch(v.name, q) || tokensMatch(v.locationLabel, q) || v.booths.some((b) => tokensMatch(b, q)))! }
-    : undefined;
+  const resolved = resolveVendorMapQuery(q);
+  if (resolved.status === 'mapped') {
+    const mapped = vendors.find((v) => v.name === resolved.query);
+    if (mapped) return { kind: 'vendor', vendor: mapped };
+  }
+  const fuzzy = vendors.find((v) => vendorTokensMatch(v, q));
+  return fuzzy ? { kind: 'vendor', vendor: fuzzy } : undefined;
 }
 
 export function placeRect(place: TentedCityPlace) {
