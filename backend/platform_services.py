@@ -1152,27 +1152,31 @@ class SupabaseNotificationDeliveryService:
         audience_snapshot_at: str | None = None,
     ) -> dict[str, Any]:
         resolved_event_id = await self._get_event_id(event_id)
+        payload = {
+            "event_id": resolved_event_id,
+            "announcement_id": announcement_id,
+            "audience": audience,
+            "provider": provider,
+            "status": "requested",
+            "requested_by": requested_by,
+            "target_url": target_url,
+            "notification_title": notification_title,
+            "notification_message": notification_message,
+        }
+        # Older staging schemas predate the optional broadcast-audience snapshot
+        # columns. Controlled test sends have no snapshot, so do not require
+        # those nullable columns merely to record and send a test delivery.
+        if audience_device_count is not None:
+            payload.update({
+                "audience_device_count": audience_device_count,
+                "audience_count_basis": "verified_deliverable_registrations",
+                "audience_snapshot_at": audience_snapshot_at,
+                "audience_stale_device_count": audience_stale_device_count,
+            })
         rows = await self.client.request(
             "POST",
             "/notification_deliveries",
-            json={
-                "event_id": resolved_event_id,
-                "announcement_id": announcement_id,
-                "audience": audience,
-                "provider": provider,
-                "status": "requested",
-                "requested_by": requested_by,
-                "target_url": target_url,
-                "notification_title": notification_title,
-                "notification_message": notification_message,
-                "audience_device_count": audience_device_count,
-                "audience_count_basis": (
-                    "verified_deliverable_registrations"
-                    if audience_device_count is not None else None
-                ),
-                "audience_snapshot_at": audience_snapshot_at,
-                "audience_stale_device_count": audience_stale_device_count,
-            },
+            json=payload,
             headers={"Prefer": "return=representation"},
         )
         return rows[0]
