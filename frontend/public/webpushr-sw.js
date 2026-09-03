@@ -16,6 +16,10 @@ const IPM_SHELL_ASSETS = ['/', '/index.html', '/manifest.json'];
 const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
 const IPM_SHELL_CACHE = `${IPM_CACHE_PREFIX}${IPM_OFFLINE_VERSION}`;
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'IPM_ACTIVATE_UPDATE') self.skipWaiting();
+});
+
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(IPM_SHELL_CACHE).then((cache) => cache.addAll(IPM_SHELL_ASSETS)));
 });

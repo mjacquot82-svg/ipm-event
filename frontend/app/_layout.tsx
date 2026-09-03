@@ -14,11 +14,13 @@ import {
 import { AdProvider } from '../src/context/AdContext';
 import ErrorBoundary from '../src/components/ErrorBoundary';
 import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
+import PWAUpdatePrompt from '../src/components/PWAUpdatePrompt';
 import SplashScreen from '../src/components/SplashScreen';
 import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext';
 import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
 import { initializeOfflineShell, initializeWonderPush } from '../src/services/wonderPushService';
 import { listenForWonderPushNotificationDeepLinks } from '../src/services/notificationDeepLink';
+import { startPwaUpdateFlow } from '../src/services/pwaUpdateService';
 
 export default function RootLayout() {
   const [isInitializing, setIsInitializing] = useState(Platform.OS !== 'web');
@@ -35,9 +37,13 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'web') {
-      void initializeOfflineShell().catch((error) => {
-        console.warn('Offline shell service worker unavailable:', error);
-      });
+      void initializeOfflineShell()
+        .then((registration) => {
+          if (registration) startPwaUpdateFlow(registration);
+        })
+        .catch((error) => {
+          console.warn('Offline shell service worker unavailable:', error);
+        });
       void initializeWonderPush().catch((error) => {
         console.warn('WonderPush initialization unavailable:', error);
       });
@@ -90,6 +96,7 @@ export default function RootLayout() {
               </Stack>
             )}
             <PWAInstallPrompt />
+            <PWAUpdatePrompt />
             </ErrorBoundary>
           </AnnouncementReadProvider>
         </AdProvider>
