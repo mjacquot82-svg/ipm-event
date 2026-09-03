@@ -42,12 +42,23 @@ test('status checks never prompt permission and retry cannot loop infinitely', (
 test('focus and online recovery are event-driven, deduplicated, and keep transient UI hidden', () => {
   assert.match(component, /statusCheckInFlightRef\.current/);
   assert.match(component, /if \(statusCheckInFlightRef\.current \|\| navigator\.onLine === false\) return/);
-  assert.match(component, /useFocusEffect[\s\S]*notificationStateRef\.current === 'loading'[\s\S]*void refresh\(\)/);
+  assert.match(component, /useFocusEffect[\s\S]*notificationStateRef\.current === 'loading' \|\| notificationStateRef\.current === 'error'[\s\S]*void refresh\(\)/);
   assert.match(component, /window\.addEventListener\('online', resume\)/);
   assert.match(component, /window\.removeEventListener\('online', resume\)/);
   assert.match(component, /if \(state === 'loading'/);
   assert.doesNotMatch(component.slice(component.indexOf('const refresh ='), component.indexOf('const updateSubscription =')),
     /subscribeToNotifications|requestPermission/);
+});
+
+test('a retained transient error is hidden before its asynchronous recovery check starts', () => {
+  const refreshStart = component.indexOf('const refresh =');
+  const refresh = component.slice(refreshStart, component.indexOf('\n  useFocusEffect(', refreshStart));
+  const errorGuard = refresh.indexOf("notificationStateRef.current === 'error'");
+  const hiddenState = refresh.indexOf("setState('loading')");
+  const statusRead = refresh.indexOf('await getNotificationState()');
+  assert.ok(errorGuard >= 0 && errorGuard < hiddenState && hiddenState < statusRead);
+  assert.match(refresh, /notificationStateRef\.current = 'loading'/);
+  assert.doesNotMatch(refresh.slice(0, statusRead), /setTimeout|setInterval|requestPermission/);
 });
 
 test('confirmed setup and registration failures retain their explicit recovery UI', () => {

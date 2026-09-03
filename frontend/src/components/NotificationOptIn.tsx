@@ -138,6 +138,12 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   const refresh = useCallback(async () => {
     if (statusCheckInFlightRef.current || navigator.onLine === false) return;
     statusCheckInFlightRef.current = true;
+    if (notificationStateRef.current === 'error') {
+      // An error retained by the mounted Home screen must not remain visible
+      // while a lifecycle retry is checking whether it was only transient.
+      notificationStateRef.current = 'loading';
+      setState('loading');
+    }
     try {
       const nextState = await getNotificationState();
       notificationStateRef.current = nextState;
@@ -169,7 +175,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
         setOptionalPromptVisible(false);
         return;
       }
-      if (notificationStateRef.current === 'loading') {
+      if (notificationStateRef.current === 'loading' || notificationStateRef.current === 'error') {
         void refresh();
       } else {
         void getNotificationState()
