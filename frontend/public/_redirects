@@ -1,2 +1,3 @@
+/api/admin/*  https://ipm-staging-backend.onrender.com/api/admin/:splat  200!
 /api/vendors  https://ipm-backend-eoiw.onrender.com/api/vendors  200!
 /*	/index.html	200

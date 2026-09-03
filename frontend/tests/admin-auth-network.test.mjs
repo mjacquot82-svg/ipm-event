@@ -5,6 +5,7 @@ import test from 'node:test';
 import { adminRequest, loginOrganizer } from '../src/services/adminAuthService.ts';
 
 const netlifyConfig = await readFile(new URL('../../netlify.toml', import.meta.url), 'utf8');
+const deployedRedirects = await readFile(new URL('../public/_redirects', import.meta.url), 'utf8');
 
 function response(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, statusText: '', json: async () => body };
@@ -60,4 +61,6 @@ test('non-staging hosts retain the configured backend URL', async () => {
 test('Netlify sends only staging admin routes to the staging backend before the SPA fallback', () => {
   assert.match(netlifyConfig, /from = "\/api\/admin\/\*"\s+to = "https:\/\/ipm-staging-backend\.onrender\.com\/api\/admin\/:splat"\s+status = 200\s+force = true/);
   assert.ok(netlifyConfig.indexOf('from = "/api/admin/*"') < netlifyConfig.indexOf('from = "/*"'));
+  assert.match(deployedRedirects, /^\/api\/admin\/\*  https:\/\/ipm-staging-backend\.onrender\.com\/api\/admin\/:splat  200!/);
+  assert.ok(deployedRedirects.indexOf('/api/admin/*') < deployedRedirects.indexOf('/*\t/index.html'));
 });
