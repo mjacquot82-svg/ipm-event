@@ -31,6 +31,7 @@ function stripWorkletsAndTypes(src) {
   s = s.replace(/^export type[\s\S]*?^};\n/gm, '');
   s = s.replace(/\?: /g, ': ');
   s = s.replace(/: ZoomAroundFocalInput\b/g, '');
+  s = s.replace(/: PinchAroundMovingFocalInput\b/g, '');
   s = s.replace(/: MapPointInput\b/g, '');
   s = s.replace(/: FlyToRectInput\b/g, '');
   s = s.replace(/: FocalQuery\b/g, '');
@@ -222,6 +223,70 @@ test('flyToRect frames a booth above the reserved bottom and stays in bounds', (
   assert.ok(seen.h > 80);
 });
 
+test('pinch with moving focal keeps the original map point and follows the centroid', () => {
+  const start = { scale: 1.5, tx: -40, ty: 18 };
+  const startFocalX = 180;
+  const startFocalY = 360;
+  const focalX = 230;
+  const focalY = 410;
+  const before = camera.mapPointUnderFocal({
+    ...start,
+    focalX: startFocalX,
+    focalY: startFocalY,
+    left: layoutPhone.left,
+    top: layoutPhone.top,
+  });
+  const zoomed = camera.zoomAroundFocal({
+    ...start,
+    nextScale: 2.4,
+    focalX: startFocalX,
+    focalY: startFocalY,
+    left: layoutPhone.left,
+    top: layoutPhone.top,
+  });
+  const next = camera.pinchAroundMovingFocal({
+    ...start,
+    nextScale: 2.4,
+    startFocalX,
+    startFocalY,
+    focalX,
+    focalY,
+    left: layoutPhone.left,
+    top: layoutPhone.top,
+  });
+  assert.equal(next.scale, 2.4);
+  assert.ok(Math.abs(next.tx - (zoomed.tx + (focalX - startFocalX))) < 1e-6);
+  assert.ok(Math.abs(next.ty - (zoomed.ty + (focalY - startFocalY))) < 1e-6);
+  const after = camera.mapPointUnderFocal({
+    ...next,
+    focalX,
+    focalY,
+    left: layoutPhone.left,
+    top: layoutPhone.top,
+  });
+  assert.ok(Math.abs(after.x - before.x) < 1e-6);
+  assert.ok(Math.abs(after.y - before.y) < 1e-6);
+  const vx = layoutPhone.left + before.x * next.scale + next.tx;
+  const vy = layoutPhone.top + before.y * next.scale + next.ty;
+  assert.ok(Math.abs(vx - focalX) < 1e-6);
+  assert.ok(Math.abs(vy - focalY) < 1e-6);
+});
+
+test('fit-scale pan bounds stay locked at 0', () => {
+  const phone = camera.translationBounds(1, layoutPhone);
+  assert.deepEqual(phone, { minTx: 0, maxTx: 0, minTy: 0, maxTy: 0 });
+  const wide = camera.translationBounds(1, layoutWide);
+  assert.deepEqual(wide, { minTx: 0, maxTx: 0, minTy: 0, maxTy: 0 });
+  const under = camera.translationBounds(0.75, layoutPhone);
+  assert.deepEqual(under, { minTx: 0, maxTx: 0, minTy: 0, maxTy: 0 });
+  const rubber = camera.rubberBandTranslation({ scale: 1, tx: 140, ty: -90 }, layoutPhone);
+  assert.ok(Math.abs(rubber.tx) < 72);
+  assert.ok(Math.abs(rubber.ty) < 72);
+  const clamped = camera.clampTranslation({ scale: 1, tx: 140, ty: -90 }, layoutPhone);
+  assert.equal(clamped.tx, 0);
+  assert.equal(clamped.ty, 0);
+});
+
 test('TentedCityMap uses the camera helpers, viewport gestures, and inertia', () => {
   const map = fs.readFileSync(mapPath, 'utf8');
   assert.match(map, /from ['"]\.\.\/config\/tentedCityCamera['"]/);
@@ -244,4 +309,19 @@ test('TentedCityMap uses the camera helpers, viewport gestures, and inertia', ()
   assert.match(map, /onSwitchToGrounds/);
   assert.match(map, /verify1A/);
   assert.match(map, /searchTentedCity\(query, tentedCityVendors, filter\)/);
+
+  assert.match(map, /pinchAroundMovingFocal/);
+  assert.match(map, /startFocalX/);
+  assert.match(map, /addEventListener\('pointerdown'/);
+  assert.match(map, /addEventListener\('touchmove'/);
+  assert.match(map, /passive: false/);
+  assert.match(map, /overscrollBehavior: 'none'/);
+  assert.match(map, /Platform\.OS === 'web' \? mapGestures/);
+  const pinchBlock = map.slice(map.indexOf('const pinch'), map.indexOf('const pan'));
+  assert.match(pinchBlock, /pinchAroundMovingFocal/);
+  assert.doesNotMatch(pinchBlock, /rubberBandTranslation/);
+  const panBlock = map.slice(map.indexOf('const pan'), map.indexOf('const doubleTap'));
+  assert.match(panBlock, /scale\.value <= 1/);
+  assert.match(panBlock, /rubberBandTranslation/);
+  assert.match(panBlock, /withDecay/);
 });
