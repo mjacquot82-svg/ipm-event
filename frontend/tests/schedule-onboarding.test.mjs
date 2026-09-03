@@ -86,6 +86,13 @@ test('successful star confirms itinerary addition and unstar remains unchanged',
   assert.match(itinerary, /events\.filter\(\(event\) => favorites\.includes\(event\.id\)\)/);
 });
 
+test('Schedule stars are outlined when unselected and solid yellow when selected', () => {
+  assert.match(schedule, /name=\{isFavorite \? 'star' : 'star-o'\}/);
+  assert.match(schedule, /name=\{favorites\.includes\(selectedEvent\.id\) \? 'star' : 'star-o'\}/);
+  assert.match(schedule, /color=\{isFavorite \? colors\.accentLight : colors\.textSecondary\}/);
+  assert.match(schedule, /accessibilityState=\{\{ selected: isFavorite \}\}/);
+});
+
 test('contradictory post-star reminder offer is consolidated without notification changes', () => {
   assert.doesNotMatch(schedule, /showReminderPrompt|enableRemindersFromPrompt|Get event reminders/);
   assert.doesNotMatch(schedule, /shouldShowReminderPromotion|enableAttendeeItineraryReminders/);
