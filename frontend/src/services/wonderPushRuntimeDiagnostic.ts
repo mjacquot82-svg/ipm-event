@@ -27,6 +27,16 @@ export type WonderPushRuntimeDiagnostic = {
   authenticationHttpStatusClass: 'NONE' | 'NETWORK' | '2XX' | '4XX' | '5XX' | 'OTHER';
   indexedDbAvailable: boolean;
   initFailureErrorName: string | null;
+  authenticationNetworkClassification: import('./wonderPushRuntimeDiagnosticCore').WonderPushAuthNetworkClassification;
+  authenticationXhrTerminalEvent: import('./wonderPushRuntimeDiagnosticCore').WonderPushAuthTerminalEvent;
+  authenticationOnlineAtStart: boolean | null;
+  authenticationOnlineAtTerminal: boolean | null;
+  authenticationOfflineDuringRequest: boolean;
+  authenticationCspConnectBlocked: boolean;
+  authenticationResourceTimingPresent: boolean;
+  authenticationDnsPhaseObserved: boolean;
+  authenticationConnectPhaseObserved: boolean;
+  authenticationTlsPhaseObserved: boolean;
 };
 
 export type NotificationRegistrationDiagnosticStage =
@@ -91,5 +101,10 @@ export async function readWonderPushRuntimeDiagnostic(): Promise<WonderPushRunti
     initFailureClassification: 'NONE', authenticationRequestAttempted: false,
     authenticationHttpStatus: null, authenticationHttpStatusClass: 'NONE',
     indexedDbAvailable: false, initFailureErrorName: null,
+    authenticationNetworkClassification: 'NONE', authenticationXhrTerminalEvent: 'NONE',
+    authenticationOnlineAtStart: null, authenticationOnlineAtTerminal: null,
+    authenticationOfflineDuringRequest: false, authenticationCspConnectBlocked: false,
+    authenticationResourceTimingPresent: false, authenticationDnsPhaseObserved: false,
+    authenticationConnectPhaseObserved: false, authenticationTlsPhaseObserved: false,
   };
 }

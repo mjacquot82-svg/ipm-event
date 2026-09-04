@@ -64,6 +64,16 @@ export function formatSafeWonderPushDiagnostic(diagnostic: WonderPushRuntimeDiag
     `authentication_http_status_class=${diagnostic.authenticationHttpStatusClass}`,
     `indexeddb_available=${diagnostic.indexedDbAvailable}`,
     `init_failure_error_name=${diagnostic.initFailureErrorName || 'none'}`,
+    `authentication_network_classification=${diagnostic.authenticationNetworkClassification}`,
+    `authentication_xhr_terminal_event=${diagnostic.authenticationXhrTerminalEvent}`,
+    `authentication_online_at_start=${diagnostic.authenticationOnlineAtStart ?? 'unknown'}`,
+    `authentication_online_at_terminal=${diagnostic.authenticationOnlineAtTerminal ?? 'unknown'}`,
+    `authentication_offline_during_request=${diagnostic.authenticationOfflineDuringRequest}`,
+    `authentication_csp_connect_blocked=${diagnostic.authenticationCspConnectBlocked}`,
+    `authentication_resource_timing_present=${diagnostic.authenticationResourceTimingPresent}`,
+    `authentication_dns_phase_observed=${diagnostic.authenticationDnsPhaseObserved}`,
+    `authentication_connect_phase_observed=${diagnostic.authenticationConnectPhaseObserved}`,
+    `authentication_tls_phase_observed=${diagnostic.authenticationTlsPhaseObserved}`,
   ].join('\n');
 }
 

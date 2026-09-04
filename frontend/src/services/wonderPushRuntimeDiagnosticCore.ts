@@ -20,6 +20,52 @@ export type WonderPushInitFailureClassification =
   | 'UNKNOWN_INIT_FAILURE'
   | 'NONE';
 
+export type WonderPushAuthNetworkClassification =
+  | 'XHR_ABORT'
+  | 'XHR_TIMEOUT'
+  | 'OFFLINE_DURING_AUTH'
+  | 'CSP_CONNECT_BLOCK'
+  | 'XHR_NETWORK_ERROR_WITH_RESOURCE_TIMING'
+  | 'XHR_NETWORK_ERROR_NO_RESOURCE_TIMING'
+  | 'XHR_LOAD_STATUS_ZERO'
+  | 'UNKNOWN_NETWORK_FAILURE'
+  | 'NONE';
+
+export type WonderPushAuthTerminalEvent = 'ERROR' | 'ABORT' | 'TIMEOUT' | 'LOAD' | 'NONE';
+
+export function classifyWonderPushAuthNetworkFailure({
+  status,
+  terminalEvent,
+  onlineAtStart,
+  onlineAtTerminal,
+  offlineDuringRequest,
+  cspConnectBlocked,
+  resourceTimingPresent,
+}: {
+  status: number | null;
+  terminalEvent: WonderPushAuthTerminalEvent;
+  onlineAtStart: boolean | null;
+  onlineAtTerminal: boolean | null;
+  offlineDuringRequest: boolean;
+  cspConnectBlocked: boolean;
+  resourceTimingPresent: boolean;
+}): WonderPushAuthNetworkClassification {
+  if (terminalEvent === 'ABORT') return 'XHR_ABORT';
+  if (terminalEvent === 'TIMEOUT') return 'XHR_TIMEOUT';
+  if (cspConnectBlocked) return 'CSP_CONNECT_BLOCK';
+  if (offlineDuringRequest || onlineAtStart === false || onlineAtTerminal === false) {
+    return 'OFFLINE_DURING_AUTH';
+  }
+  if (terminalEvent === 'ERROR') {
+    return resourceTimingPresent
+      ? 'XHR_NETWORK_ERROR_WITH_RESOURCE_TIMING'
+      : 'XHR_NETWORK_ERROR_NO_RESOURCE_TIMING';
+  }
+  if (terminalEvent === 'LOAD' && status === 0) return 'XHR_LOAD_STATUS_ZERO';
+  if (status === 0) return 'UNKNOWN_NETWORK_FAILURE';
+  return 'NONE';
+}
+
 export function classifyWonderPushAuthenticationResult({
   status,
   validJson,

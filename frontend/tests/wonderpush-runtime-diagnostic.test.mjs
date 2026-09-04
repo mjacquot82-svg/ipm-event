@@ -6,6 +6,7 @@ import {
   safeWonderPushRawState,
   isStagingNotificationDiagnosticEnabled,
   classifyWonderPushAuthenticationResult,
+  classifyWonderPushAuthNetworkFailure,
 } from '../src/services/wonderPushRuntimeDiagnosticCore.ts';
 
 const diagnostic = await readFile(new URL('../src/services/wonderPushRuntimeDiagnostic.web.ts', import.meta.url), 'utf8');
@@ -39,6 +40,35 @@ test('classifies WonderPush authentication failures without retaining response v
   }), 'NONE');
 });
 
+test('classifies passive XHR terminal events distinctly', () => {
+  const base = {
+    status: 0, onlineAtStart: true, onlineAtTerminal: true,
+    offlineDuringRequest: false, cspConnectBlocked: false, resourceTimingPresent: false,
+  };
+  assert.equal(classifyWonderPushAuthNetworkFailure({ ...base, terminalEvent: 'ABORT' }), 'XHR_ABORT');
+  assert.equal(classifyWonderPushAuthNetworkFailure({ ...base, terminalEvent: 'TIMEOUT' }), 'XHR_TIMEOUT');
+  assert.equal(classifyWonderPushAuthNetworkFailure({ ...base, terminalEvent: 'ERROR' }),
+    'XHR_NETWORK_ERROR_NO_RESOURCE_TIMING');
+  assert.equal(classifyWonderPushAuthNetworkFailure({
+    ...base, terminalEvent: 'ERROR', resourceTimingPresent: true,
+  }), 'XHR_NETWORK_ERROR_WITH_RESOURCE_TIMING');
+  assert.equal(classifyWonderPushAuthNetworkFailure({ ...base, terminalEvent: 'LOAD' }),
+    'XHR_LOAD_STATUS_ZERO');
+});
+
+test('offline and matching CSP observations override generic network errors', () => {
+  const base = {
+    status: 0, terminalEvent: 'ERROR', onlineAtStart: true, onlineAtTerminal: true,
+    offlineDuringRequest: false, cspConnectBlocked: false, resourceTimingPresent: false,
+  };
+  assert.equal(classifyWonderPushAuthNetworkFailure({ ...base, offlineDuringRequest: true }),
+    'OFFLINE_DURING_AUTH');
+  assert.equal(classifyWonderPushAuthNetworkFailure({ ...base, onlineAtTerminal: false }),
+    'OFFLINE_DURING_AUTH');
+  assert.equal(classifyWonderPushAuthNetworkFailure({ ...base, cspConnectBlocked: true }),
+    'CSP_CONNECT_BLOCK');
+});
+
 test('temporary initialization diagnostic is enabled only for the staging backend', () => {
   assert.equal(isStagingNotificationDiagnosticEnabled('https://ipm-staging-backend.onrender.com'), true);
   assert.equal(isStagingNotificationDiagnosticEnabled('https://ipm-staging-backend.onrender.com/'), true);
@@ -61,8 +91,14 @@ test('init failure observer is staging-gated, pass-through, and retains no sensi
     diagnostic.indexOf('export function startWonderPushRuntimeObservation'));
   assert.match(observer, /if \(!enabled/);
   assert.match(observer, /originalOpen\.call/);
-  assert.match(observer, /authentication\/accessToken/);
+  assert.match(diagnostic, /authentication\/accessToken/);
   assert.doesNotMatch(observer, /\.send\(|subscribeToNotifications|unsubscribeFromNotifications|fetch\(|indexedDB\.open|localStorage|sessionStorage/);
+  assert.match(observer, /addEventListener\('error'/);
+  assert.match(observer, /addEventListener\('abort'/);
+  assert.match(observer, /addEventListener\('timeout'/);
+  assert.match(observer, /addEventListener\('load'/);
+  assert.match(observer, /securitypolicyviolation/);
+  assert.match(diagnostic, /getEntriesByType\('resource'\)/);
   assert.doesNotMatch(notificationCard, /responseText|accessToken|webKey|endpoint|pushToken|installationId\b/);
 });
 
@@ -70,9 +106,12 @@ test('failure UI renders classifications only and never sensitive provider value
   assert.match(notificationCard, /SHOW_STAGING_NOTIFICATION_DIAGNOSTIC/);
   assert.match(notificationCard, /Staging initialization diagnostic/);
   for (const forbidden of ['installationId}', 'endpoint}', 'pushToken', 'capability}',
-    'fingerprint', 'credentials', 'apiKey', 'cookie']) {
+    'fingerprint', 'credentials', 'apiKey', 'cookie', 'blockedURI', 'domainLookupStart',
+    'domainLookupEnd', 'connectStart', 'connectEnd', 'secureConnectionStart']) {
     assert.doesNotMatch(notificationCard, new RegExp(forbidden, 'i'));
   }
+  assert.match(notificationCard, /authentication_network_classification=/);
+  assert.match(notificationCard, /authentication_resource_timing_present=/);
 });
 
 test('production About does not render temporary WonderPush engineering state', () => {

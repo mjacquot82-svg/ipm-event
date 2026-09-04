@@ -1,4 +1,5 @@
 import {
+  classifyWonderPushAuthNetworkFailure,
   classifyWonderPushAuthenticationResult,
   interpretWonderPushSessionState,
   safeWonderPushRawState,
@@ -36,6 +37,18 @@ let authenticationHttpStatus: number | null = null;
 let authenticationResponseWasComplete = false;
 let initFailureErrorName: string | null = null;
 let initFailureObserverStarted = false;
+let activeAuthenticationRequests = 0;
+let authenticationNetworkClassification: WonderPushRuntimeDiagnostic['authenticationNetworkClassification'] = 'NONE';
+let authenticationXhrTerminalEvent: WonderPushRuntimeDiagnostic['authenticationXhrTerminalEvent'] = 'NONE';
+let authenticationOnlineAtStart: boolean | null = null;
+let authenticationOnlineAtTerminal: boolean | null = null;
+let authenticationOfflineDuringRequest = false;
+let authenticationCspConnectBlocked = false;
+let authenticationResourceTimingPresent = false;
+let authenticationDnsPhaseObserved = false;
+let authenticationConnectPhaseObserved = false;
+let authenticationTlsPhaseObserved = false;
+let authenticationResourceEntryCountAtStart = 0;
 let registrationWorkflow: NotificationRegistrationWorkflowDiagnostic = {
   currentStage: 'none', attemptNumber: null, stageStartedAt: null, stageCompletedAt: null,
   lastHttpStatus: null, lastOperationOutcome: 'none', lastCompletedStage: 'none',
@@ -80,6 +93,36 @@ function httpStatusClass(status: number): WonderPushRuntimeDiagnostic['authentic
   return 'OTHER';
 }
 
+function isAuthenticationTarget(value: string): boolean {
+  try {
+    const target = new URL(value, window.location.href);
+    return target.hostname.endsWith('.wonderpush.com')
+      && target.pathname.endsWith('/authentication/accessToken');
+  } catch {
+    return false;
+  }
+}
+
+function authenticationResourceEntries(): PerformanceResourceTiming[] {
+  if (typeof performance?.getEntriesByType !== 'function') return [];
+  return performance.getEntriesByType('resource').filter((candidate) =>
+    isAuthenticationTarget(candidate.name)) as PerformanceResourceTiming[];
+}
+
+function observeAuthenticationResourceTiming() {
+  authenticationResourceTimingPresent = false;
+  authenticationDnsPhaseObserved = false;
+  authenticationConnectPhaseObserved = false;
+  authenticationTlsPhaseObserved = false;
+  const entry = authenticationResourceEntries().slice(authenticationResourceEntryCountAtStart).at(-1);
+  if (!entry) return;
+  authenticationResourceTimingPresent = true;
+  authenticationDnsPhaseObserved = entry.domainLookupEnd > entry.domainLookupStart;
+  authenticationConnectPhaseObserved = entry.connectEnd > entry.connectStart;
+  authenticationTlsPhaseObserved = entry.secureConnectionStart > 0
+    && entry.connectEnd > entry.secureConnectionStart;
+}
+
 export function startWonderPushInitFailureObservation(enabled: boolean) {
   if (!enabled || initFailureObserverStarted || typeof XMLHttpRequest === 'undefined') return;
   initFailureObserverStarted = true;
@@ -93,16 +136,32 @@ export function startWonderPushInitFailureObservation(enabled: boolean) {
   ) {
     let observesAuthentication = false;
     try {
-      const target = new URL(String(url), window.location.href);
       observesAuthentication = method.toUpperCase() === 'POST'
-        && target.hostname.endsWith('.wonderpush.com')
-        && target.pathname.endsWith('/authentication/accessToken');
+        && isAuthenticationTarget(String(url));
     } catch {
       // Malformed and non-WonderPush URLs are passed through untouched.
     }
     if (observesAuthentication) {
       authenticationRequestAttempted = true;
+      activeAuthenticationRequests += 1;
+      authenticationXhrTerminalEvent = 'NONE';
+      authenticationOnlineAtStart = navigator.onLine;
+      authenticationOnlineAtTerminal = null;
+      authenticationOfflineDuringRequest = false;
+      authenticationCspConnectBlocked = false;
+      authenticationNetworkClassification = 'NONE';
+      authenticationResourceEntryCountAtStart = authenticationResourceEntries().length;
+      const recordTerminalEvent = (value: WonderPushRuntimeDiagnostic['authenticationXhrTerminalEvent']) => {
+        authenticationXhrTerminalEvent = value;
+      };
+      this.addEventListener('error', () => recordTerminalEvent('ERROR'), { once: true });
+      this.addEventListener('abort', () => recordTerminalEvent('ABORT'), { once: true });
+      this.addEventListener('timeout', () => recordTerminalEvent('TIMEOUT'), { once: true });
+      this.addEventListener('load', () => recordTerminalEvent('LOAD'), { once: true });
       this.addEventListener('loadend', () => {
+        activeAuthenticationRequests = Math.max(0, activeAuthenticationRequests - 1);
+        authenticationOnlineAtTerminal = navigator.onLine;
+        observeAuthenticationResourceTiming();
         authenticationHttpStatus = Number.isInteger(this.status) ? this.status : null;
         let validJson = false;
         let tokenPresent = false;
@@ -125,6 +184,15 @@ export function startWonderPushInitFailureObservation(enabled: boolean) {
           status: this.status, validJson, tokenPresent, installationIdPresent,
         });
         authenticationResponseWasComplete = initFailureClassification === 'NONE';
+        authenticationNetworkClassification = classifyWonderPushAuthNetworkFailure({
+          status: authenticationHttpStatus,
+          terminalEvent: authenticationXhrTerminalEvent,
+          onlineAtStart: authenticationOnlineAtStart,
+          onlineAtTerminal: authenticationOnlineAtTerminal,
+          offlineDuringRequest: authenticationOfflineDuringRequest,
+          cspConnectBlocked: authenticationCspConnectBlocked,
+          resourceTimingPresent: authenticationResourceTimingPresent,
+        });
       }, { once: true });
     }
     if (arguments.length >= 5) return originalOpen.call(this, method, url, asyncFlag, username, password);
@@ -133,6 +201,13 @@ export function startWonderPushInitFailureObservation(enabled: boolean) {
   };
   window.addEventListener('error', (event) => classifyStorageFailure(event.error));
   window.addEventListener('unhandledrejection', (event) => classifyStorageFailure(event.reason));
+  window.addEventListener('offline', () => {
+    if (activeAuthenticationRequests > 0) authenticationOfflineDuringRequest = true;
+  });
+  window.addEventListener('securitypolicyviolation', (event) => {
+    if (activeAuthenticationRequests < 1 || event.effectiveDirective !== 'connect-src') return;
+    if (isAuthenticationTarget(event.blockedURI)) authenticationCspConnectBlocked = true;
+  });
 }
 
 export function startWonderPushRuntimeObservation() {
@@ -322,5 +397,15 @@ export async function readWonderPushRuntimeDiagnostic(): Promise<WonderPushRunti
       ? 'NONE' : httpStatusClass(authenticationHttpStatus),
     indexedDbAvailable: typeof indexedDB !== 'undefined',
     initFailureErrorName,
+    authenticationNetworkClassification,
+    authenticationXhrTerminalEvent,
+    authenticationOnlineAtStart,
+    authenticationOnlineAtTerminal,
+    authenticationOfflineDuringRequest,
+    authenticationCspConnectBlocked,
+    authenticationResourceTimingPresent,
+    authenticationDnsPhaseObserved,
+    authenticationConnectPhaseObserved,
+    authenticationTlsPhaseObserved,
   };
 }
