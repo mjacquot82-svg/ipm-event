@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   interpretWonderPushSessionState,
   safeWonderPushRawState,
+  isStagingNotificationDiagnosticEnabled,
 } from '../src/services/wonderPushRuntimeDiagnosticCore.ts';
 
 const diagnostic = await readFile(new URL('../src/services/wonderPushRuntimeDiagnostic.web.ts', import.meta.url), 'utf8');
@@ -21,6 +22,14 @@ test('maps every known WonderPush session state and safely handles unknown value
   assert.equal(safeWonderPushRawState({ secret: true }), 'UNKNOWN');
 });
 
+test('temporary initialization diagnostic is enabled only for the staging backend', () => {
+  assert.equal(isStagingNotificationDiagnosticEnabled('https://ipm-staging-backend.onrender.com'), true);
+  assert.equal(isStagingNotificationDiagnosticEnabled('https://ipm-staging-backend.onrender.com/'), true);
+  assert.equal(isStagingNotificationDiagnosticEnabled('https://ipm-backend-eoiw.onrender.com'), false);
+  assert.equal(isStagingNotificationDiagnosticEnabled(undefined), false);
+  assert.equal(isStagingNotificationDiagnosticEnabled('not a url'), false);
+});
+
 test('diagnostic refresh performs only read operations', () => {
   const reader = diagnostic.slice(diagnostic.indexOf('export async function readWonderPushRuntimeDiagnostic'));
   assert.match(reader, /getSessionState/);
@@ -28,6 +37,15 @@ test('diagnostic refresh performs only read operations', () => {
   assert.match(reader, /isSubscribedToNotifications/);
   assert.match(reader, /getSubscription/);
   assert.doesNotMatch(reader, /initializeWonderPush|subscribeToNotifications|unsubscribeFromNotifications|requestPermission|ensureNotificationRegistration|fetch\(|request\(/);
+});
+
+test('failure UI renders classifications only and never sensitive provider values', () => {
+  assert.match(notificationCard, /SHOW_STAGING_NOTIFICATION_DIAGNOSTIC/);
+  assert.match(notificationCard, /Staging initialization diagnostic/);
+  for (const forbidden of ['installationId}', 'endpoint}', 'pushToken', 'capability}',
+    'fingerprint', 'credentials', 'apiKey', 'cookie']) {
+    assert.doesNotMatch(notificationCard, new RegExp(forbidden, 'i'));
+  }
 });
 
 test('production About does not render temporary WonderPush engineering state', () => {

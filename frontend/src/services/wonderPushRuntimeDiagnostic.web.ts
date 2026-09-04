@@ -25,6 +25,10 @@ const transitions: Transition[] = [];
 let observerStarted = false;
 let workflowState: WorkflowState = 'UNKNOWN';
 let homeClassification = 'none';
+let sdkLoader: WonderPushRuntimeDiagnostic['sdkLoader'] = 'UNSTARTED';
+let initializationStage: WonderPushRuntimeDiagnostic['initializationStage'] = 'unknown';
+let initializationTimedOut = false;
+let sdkErrorName: string | null = null;
 let registrationWorkflow: NotificationRegistrationWorkflowDiagnostic = {
   currentStage: 'none', attemptNumber: null, stageStartedAt: null, stageCompletedAt: null,
   lastHttpStatus: null, lastOperationOutcome: 'none', lastCompletedStage: 'none',
@@ -58,6 +62,23 @@ export function startWonderPushRuntimeObservation() {
     const sdk = (window as Window & { WonderPush?: DiagnosticSdk }).WonderPush;
     appendTransition(detail.state, detail.WonderPushSDK?.SessionState || sdk?.SessionState);
   });
+}
+
+export function recordWonderPushInitializationStage(
+  stage: WonderPushRuntimeDiagnostic['initializationStage'],
+) {
+  initializationStage = stage;
+  if (stage === 'sdk_loader' && sdkLoader === 'UNSTARTED') sdkLoader = 'PENDING';
+}
+
+export function recordWonderPushLoaderResult(result: 'SUCCESS' | 'FAILURE') {
+  sdkLoader = result;
+}
+
+export function recordWonderPushInitializationFailure(error: unknown) {
+  initializationTimedOut = error instanceof Error && /timed out/i.test(error.message);
+  const name = error instanceof Error ? error.name : null;
+  sdkErrorName = name && /^[A-Za-z][A-Za-z0-9_.-]{0,79}$/.test(name) ? name : null;
 }
 
 export function recordNotificationWorkflowDiagnostic(
@@ -155,6 +176,16 @@ export async function readWonderPushRuntimeDiagnostic(): Promise<WonderPushRunti
   } catch {
     // UNKNOWN is the safe read-only result when browser state cannot be inspected.
   }
+  const controller = navigator.serviceWorker?.controller;
+  let serviceWorkerScript: WonderPushRuntimeDiagnostic['serviceWorkerScript'] = 'NONE';
+  if (controller?.scriptURL) {
+    try {
+      serviceWorkerScript = new URL(controller.scriptURL).pathname === '/webpushr-sw.js'
+        ? 'WONDERPUSH_ROOT' : 'OTHER';
+    } catch {
+      serviceWorkerScript = 'OTHER';
+    }
+  }
 
   return {
     sdkLoaded: sdkLoaded ? 'YES' : 'NO',
@@ -181,5 +212,13 @@ export async function readWonderPushRuntimeDiagnostic(): Promise<WonderPushRunti
           - Date.parse(registrationWorkflow.stageStartedAt))
         : null,
     },
+    sdkLoader,
+    sessionApiAvailable: typeof sdk?.getSessionState === 'function',
+    initializationStage,
+    initializationTimedOut,
+    sdkErrorName,
+    serviceWorkerControlled: Boolean(controller),
+    serviceWorkerScript,
+    serviceWorkerVersion: process.env.EXPO_PUBLIC_IPM_BUILD_NUMBER || 'unknown',
   };
 }

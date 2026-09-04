@@ -12,6 +12,15 @@ export type WonderPushRuntimeDiagnostic = {
   homeClassification: string;
   transitionHistory: { observedAt: string; rawState: string; interpretedState: string }[];
   registrationWorkflow: NotificationRegistrationWorkflowDiagnostic;
+  sdkLoader: 'SUCCESS' | 'FAILURE' | 'PENDING' | 'UNSTARTED';
+  sessionApiAvailable: boolean;
+  initializationStage: 'support_check' | 'configuration_check' | 'worker_ready'
+    | 'sdk_loader' | 'sdk_readiness' | 'complete' | 'unknown';
+  initializationTimedOut: boolean;
+  sdkErrorName: string | null;
+  serviceWorkerControlled: boolean;
+  serviceWorkerScript: 'WONDERPUSH_ROOT' | 'OTHER' | 'NONE';
+  serviceWorkerVersion: string;
 };
 
 export type NotificationRegistrationDiagnosticStage =
@@ -35,6 +44,11 @@ export type NotificationRegistrationWorkflowDiagnostic = {
 };
 
 export function startWonderPushRuntimeObservation() {}
+export function recordWonderPushInitializationStage(
+  _stage: WonderPushRuntimeDiagnostic['initializationStage'],
+) {}
+export function recordWonderPushLoaderResult(_result: 'SUCCESS' | 'FAILURE') {}
+export function recordWonderPushInitializationFailure(_error: unknown) {}
 
 export function recordNotificationWorkflowDiagnostic(
   _state: 'IDLE' | 'PENDING' | 'SUCCESS' | 'FAILED' | 'UNKNOWN',
@@ -64,5 +78,8 @@ export async function readWonderPushRuntimeDiagnostic(): Promise<WonderPushRunti
       elapsedTimeMs: null, headersReceivedAt: null, responseParseStartedAt: null,
       responseParseCompletedAt: null,
     },
+    sdkLoader: 'UNSTARTED', sessionApiAvailable: false, initializationStage: 'unknown',
+    initializationTimedOut: false, sdkErrorName: null, serviceWorkerControlled: false,
+    serviceWorkerScript: 'NONE', serviceWorkerVersion: 'unknown',
   };
 }

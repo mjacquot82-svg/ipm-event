@@ -5,6 +5,17 @@ export type WonderPushSessionName =
   | 'INIT_SUCCESS'
   | 'UNKNOWN';
 
+const STAGING_BACKEND_ORIGIN = 'https://ipm-staging-backend.onrender.com';
+
+export function isStagingNotificationDiagnosticEnabled(backendUrl: string | undefined): boolean {
+  if (!backendUrl) return false;
+  try {
+    return new URL(backendUrl).origin === STAGING_BACKEND_ORIGIN;
+  } catch {
+    return false;
+  }
+}
+
 export function interpretWonderPushSessionState(
   rawState: unknown,
   sessionStates: Record<string, unknown> | null | undefined,

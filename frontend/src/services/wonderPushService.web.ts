@@ -1,4 +1,9 @@
-import { startWonderPushRuntimeObservation } from './wonderPushRuntimeDiagnostic';
+import {
+  recordWonderPushInitializationFailure,
+  recordWonderPushInitializationStage,
+  recordWonderPushLoaderResult,
+  startWonderPushRuntimeObservation,
+} from './wonderPushRuntimeDiagnostic';
 
 const SDK_URL = 'https://cdn.by.wonderpush.com/sdk/1.1/wonderpush-loader.min.js';
 const SDK_SCRIPT_ID = 'wonderpush-jssdk-loader';
@@ -149,10 +154,12 @@ export function initializeWonderPush(): Promise<void> {
   if (initialization) return initialization;
 
   initialization = (async () => {
+    recordWonderPushInitializationStage('support_check');
     if (!isSupported()) {
       throw new Error('Push notifications are not supported in this browser.');
     }
 
+    recordWonderPushInitializationStage('configuration_check');
     const webKey = getWebKey();
     if (!webKey) {
       throw new Error('EXPO_PUBLIC_WONDERPUSH_WEB_KEY is not configured.');
@@ -168,8 +175,10 @@ export function initializeWonderPush(): Promise<void> {
       window.WonderPush?.push(resolve);
     });
 
+    recordWonderPushInitializationStage('worker_ready');
     await initializeOfflineShell();
 
+    recordWonderPushInitializationStage('sdk_loader');
     const existingScript = document.getElementById(SDK_SCRIPT_ID) as HTMLScriptElement | null;
     if (existingScript?.dataset.loaded !== 'true') {
       const loader = new Promise<void>((resolve, reject) => {
@@ -179,19 +188,26 @@ export function initializeWonderPush(): Promise<void> {
         script.src = SDK_URL;
         script.onload = () => {
           script.dataset.loaded = 'true';
+          recordWonderPushLoaderResult('SUCCESS');
           resolve();
         };
         script.onerror = () => {
+          recordWonderPushLoaderResult('FAILURE');
           script.remove?.();
           reject(new Error('WonderPush Website SDK failed to load.'));
         };
         if (!existingScript) document.head.appendChild(script);
       });
       await withTimeout(loader, LOADER_TIMEOUT_MS, 'WonderPush Website SDK loader timed out.');
+    } else {
+      recordWonderPushLoaderResult('SUCCESS');
     }
 
+    recordWonderPushInitializationStage('sdk_readiness');
     await withTimeout(ready, READINESS_TIMEOUT_MS, 'WonderPush Website SDK readiness timed out.');
+    recordWonderPushInitializationStage('complete');
   })().catch((error) => {
+    recordWonderPushInitializationFailure(error);
     initialization = null;
     throw error;
   });

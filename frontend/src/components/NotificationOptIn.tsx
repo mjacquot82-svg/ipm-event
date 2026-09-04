@@ -17,6 +17,9 @@ import {
   NotificationRegistrationStage,
 } from '../services/notificationRegistration';
 import { recordNotificationWorkflowDiagnostic } from '../services/wonderPushRuntimeDiagnostic';
+import type { WonderPushRuntimeDiagnostic } from '../services/wonderPushRuntimeDiagnostic';
+import { readWonderPushRuntimeDiagnostic } from '../services/wonderPushRuntimeDiagnostic';
+import { isStagingNotificationDiagnosticEnabled } from '../services/wonderPushRuntimeDiagnosticCore';
 import { colors } from '../theme/colors';
 import {
   isNotificationPromptEligible,
@@ -37,6 +40,27 @@ const STATE_COPY: Record<NotificationState, string> = {
   error: 'Notifications are temporarily unavailable. The IPM app will continue to work.',
 };
 
+const SHOW_STAGING_NOTIFICATION_DIAGNOSTIC = isStagingNotificationDiagnosticEnabled(
+  process.env.EXPO_PUBLIC_BACKEND_URL,
+);
+
+export function formatSafeWonderPushDiagnostic(diagnostic: WonderPushRuntimeDiagnostic): string {
+  return [
+    `sdk_loader=${diagnostic.sdkLoader}`,
+    `session_api_available=${diagnostic.sessionApiAvailable}`,
+    `initialization_state=${diagnostic.sessionInterpretedState}`,
+    `initialization_timeout=${diagnostic.initializationTimedOut}`,
+    `installation_id_present=${diagnostic.installationAvailable === 'YES'}`,
+    `browser_push_subscription_present=${diagnostic.pushSubscriptionPresent === 'YES'}`,
+    `local_sdk_subscribed=${diagnostic.subscribed === 'YES'}`,
+    `sdk_error_name=${diagnostic.sdkErrorName || 'none'}`,
+    `initialization_stage=${diagnostic.initializationStage}`,
+    `service_worker_controlled=${diagnostic.serviceWorkerControlled}`,
+    `service_worker_script=${diagnostic.serviceWorkerScript}`,
+    `service_worker_version=${diagnostic.serviceWorkerVersion}`,
+  ].join('\n');
+}
+
 export default function NotificationOptIn({ containerStyle }: { containerStyle?: StyleProp<ViewStyle> }) {
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
@@ -44,6 +68,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'failed'>('idle');
   const [failureStage, setFailureStage] = useState<NotificationRegistrationStage | null>(null);
   const [failureClassification, setFailureClassification] = useState<NotificationRegistrationFailure | null>(null);
+  const [stagingDiagnostic, setStagingDiagnostic] = useState<string | null>(null);
   const [optionalPromptVisible, setOptionalPromptVisible] = useState(false);
   const promptRecordedRef = useRef(false);
   const promptDailyStateRef = useRef<ReturnType<typeof parseNotificationPromptDailyState>>(null);
@@ -107,6 +132,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
     setSetupState('pending');
     setFailureStage(null);
     setFailureClassification(null);
+    setStagingDiagnostic(null);
     try {
       await ensureNotificationRegistration();
       recordNotificationWorkflowDiagnostic('SUCCESS');
@@ -141,6 +167,11 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
       setFailureClassification(safeClassification || 'other');
       recordNotificationWorkflowDiagnostic('FAILED', safeClassification || 'other');
       setSetupState('failed');
+      if (SHOW_STAGING_NOTIFICATION_DIAGNOSTIC) {
+        void readWonderPushRuntimeDiagnostic()
+          .then((diagnostic) => setStagingDiagnostic(formatSafeWonderPushDiagnostic(diagnostic)))
+          .catch(() => setStagingDiagnostic('diagnostic_unavailable=true'));
+      }
     }
   }, []);
 
@@ -247,6 +278,10 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
         <Text style={styles.message}>{stateMessage}</Text>
         {state === 'subscribed' && setupState === 'failed' ? (
           <Text style={styles.diagnostic}>Setup reference: {failureClassification || 'other'}</Text>
+        ) : null}
+        {state === 'subscribed' && setupState === 'failed'
+          && SHOW_STAGING_NOTIFICATION_DIAGNOSTIC && stagingDiagnostic ? (
+          <Text style={styles.diagnostic}>Staging initialization diagnostic:{'\n'}{stagingDiagnostic}</Text>
         ) : null}
         {state === 'subscribed' && setupState === 'failed' ? (
           <TouchableOpacity
