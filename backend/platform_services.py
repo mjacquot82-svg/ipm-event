@@ -144,9 +144,13 @@ class WonderPushClient:
         form = {
             "accessToken": self.access_token,
             "notification": json.dumps(notification, separators=(",", ":")),
-            "filterPlatforms": "Web",
             **target,
         }
+        # Exact-installation test targeting is already bounded and must not be
+        # silently reduced to zero by an additional provider platform filter.
+        # Broadcast sends retain the Web-only guard.
+        if audience_classification != "test":
+            form["filterPlatforms"] = "Web"
         if disable_capping:
             # WonderPush's deliveries endpoint expects this as a form field, not
             # inside the JSON-encoded notification payload.

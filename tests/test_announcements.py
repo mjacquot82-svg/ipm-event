@@ -439,7 +439,7 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
     assert captured["url"] == "https://management-api.wonderpush.com/v1/deliveries"
     assert captured["data"]["accessToken"] == "not-a-credential"
     assert captured["data"]["targetInstallationIds"] == "123,456"
-    assert captured["data"]["filterPlatforms"] == "Web"
+    assert "filterPlatforms" not in captured["data"]
     assert captured["data"]["campaignId"] == "controlled-test-campaign"
     assert "disableCapping" not in captured["data"]
     assert captured["headers"] == {
@@ -478,6 +478,7 @@ def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
     ))
     assert result == "wonderpush:accepted"
     assert captured["data"]["targetSegmentIds"] == "@ALL"
+    assert captured["data"]["filterPlatforms"] == "Web"
     assert "campaignId" not in captured["data"]
     assert "targetInstallationIds" not in captured["data"]
     assert "disableCapping" not in captured["data"]
