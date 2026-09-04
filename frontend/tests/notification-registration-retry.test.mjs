@@ -45,6 +45,32 @@ test('clean installation returns before migration recovery', () => {
     < getter.indexOf('sdk.subscribeToNotifications()'));
 });
 
+test('initializing SDK waits for installation restoration before recovery subscription', () => {
+  const getter = wonderPush.slice(wonderPush.indexOf('export async function getSubscribedInstallationId'),
+    wonderPush.indexOf('export async function getCurrentInstallationFingerprint'));
+  const initializationGate = getter.slice(getter.indexOf('if (snapshot.sessionInitSuccess === false)'),
+    getter.indexOf('// A Webpushr-era browser'));
+  assert.match(initializationGate, /await waitForWonderPushSessionReady\(\)/);
+  assert.match(initializationGate, /snapshot = await readWonderPushSnapshot/);
+  assert.match(initializationGate, /if \(snapshot\.subscribed && snapshot\.installationId\) return snapshot\.installationId/);
+  assert.doesNotMatch(initializationGate, /subscribeToNotifications|unsubscribeFromNotifications|requestPermission/);
+  assert.ok(getter.indexOf('await waitForWonderPushSessionReady()')
+    < getter.indexOf('sdk.subscribeToNotifications()'));
+});
+
+test('restored installation proceeds through one normal setup attempt without a registration loop', () => {
+  const getter = wonderPush.slice(wonderPush.indexOf('export async function getSubscribedInstallationId'),
+    wonderPush.indexOf('export async function getCurrentInstallationFingerprint'));
+  const initializationGate = getter.slice(getter.indexOf('if (snapshot.sessionInitSuccess === false)'),
+    getter.indexOf('// A Webpushr-era browser'));
+  assert.equal((initializationGate.match(/waitForWonderPushSessionReady\(\)/g) || []).length, 1);
+  assert.equal((initializationGate.match(/readWonderPushSnapshot\(/g) || []).length, 1);
+  assert.doesNotMatch(initializationGate, /RegistrationInProgressError|registrationAlreadyInProgress/);
+  assert.match(service, /installationId = await getSubscribedInstallationId\(\)/);
+  assert.equal((service.slice(service.indexOf('export async function runNotificationRegistrationAttempt'),
+    service.indexOf('function wait(delayMs')).match(/getSubscribedInstallationId\(\)/g) || []).length, 1);
+});
+
 test('missing legacy installation performs bounded provider recovery before targeted replacement', () => {
   const getter = wonderPush.slice(wonderPush.indexOf('export async function getSubscribedInstallationId'),
     wonderPush.indexOf('export async function getCurrentInstallationFingerprint'));
@@ -56,7 +82,7 @@ test('missing legacy installation performs bounded provider recovery before targ
   assert.match(wonderPush, /INSTALLATION_RECOVERY_ATTEMPTS = 12/);
   assert.match(wonderPush, /INSTALLATION_RECOVERY_RETRY_MS = 750/);
   assert.equal((getter.match(/sdk\.subscribeToNotifications\(\)/g) || []).length, 3);
-  assert.equal((getter.match(/readWonderPushSnapshot\(/g) || []).length, 4);
+  assert.equal((getter.match(/readWonderPushSnapshot\(/g) || []).length, 5);
   assert.doesNotMatch(getter, /Notification\.requestPermission/);
   assert.match(getter, /wonderpush_recovery_subscribe_timed_out/);
   assert.match(getter, /wonderpush_recovery_snapshot_failed/);

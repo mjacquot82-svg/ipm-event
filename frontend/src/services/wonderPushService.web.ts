@@ -462,6 +462,26 @@ export async function getSubscribedInstallationId(): Promise<string | null> {
   }
   if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
 
+  // The SDK can report its cached subscription before its server-backed
+  // session has finished restoring the installation. Subscribing during that
+  // window only races the SDK's own registration and produces
+  // RegistrationInProgressError. Wait for the documented session completion
+  // event, then re-read the installation before considering recovery.
+  if (snapshot.sessionInitSuccess === false) {
+    try {
+      await waitForWonderPushSessionReady();
+      snapshot = await readWonderPushSnapshot({
+        attempts: INSTALLATION_RECOVERY_ATTEMPTS,
+        retryDelayMs: INSTALLATION_RECOVERY_RETRY_MS,
+      });
+    } catch {
+      throw new WonderPushInstallationRecoveryError(
+        'wonderpush_registration_in_progress_session_not_ready'
+      );
+    }
+    if (snapshot.subscribed && snapshot.installationId) return snapshot.installationId;
+  }
+
   // A Webpushr-era browser can retain granted browser permission while having
   // no current WonderPush installation or stable WonderPush subscription
   // snapshot. Reassert once, then allow the documented asynchronous session
