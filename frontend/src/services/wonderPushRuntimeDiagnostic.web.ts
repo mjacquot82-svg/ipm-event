@@ -1,4 +1,5 @@
 import {
+  classifyWonderPushAuthenticationResult,
   interpretWonderPushSessionState,
   safeWonderPushRawState,
   WonderPushSessionName,
@@ -29,6 +30,12 @@ let sdkLoader: WonderPushRuntimeDiagnostic['sdkLoader'] = 'UNSTARTED';
 let initializationStage: WonderPushRuntimeDiagnostic['initializationStage'] = 'unknown';
 let initializationTimedOut = false;
 let sdkErrorName: string | null = null;
+let initFailureClassification: WonderPushRuntimeDiagnostic['initFailureClassification'] = 'NONE';
+let authenticationRequestAttempted = false;
+let authenticationHttpStatus: number | null = null;
+let authenticationResponseWasComplete = false;
+let initFailureErrorName: string | null = null;
+let initFailureObserverStarted = false;
 let registrationWorkflow: NotificationRegistrationWorkflowDiagnostic = {
   currentStage: 'none', attemptNumber: null, stageStartedAt: null, stageCompletedAt: null,
   lastHttpStatus: null, lastOperationOutcome: 'none', lastCompletedStage: 'none',
@@ -49,6 +56,85 @@ function appendTransition(rawState: unknown, sessionStates?: Record<string, unkn
   if (transitions.length > MAX_TRANSITIONS) transitions.splice(0, transitions.length - MAX_TRANSITIONS);
 }
 
+function safeErrorName(value: unknown): string | null {
+  const name = value instanceof Error ? value.name : null;
+  return name && /^[A-Za-z][A-Za-z0-9_.-]{0,79}$/.test(name) ? name : null;
+}
+
+function classifyStorageFailure(value: unknown) {
+  if (!authenticationRequestAttempted || initFailureClassification !== 'NONE') return;
+  const error = value instanceof Error ? value : null;
+  const safeText = `${error?.name || ''} ${error?.message || ''}`;
+  if (!/(indexeddb|idb|database|storage|transaction|quota)/i.test(safeText)) return;
+  initFailureErrorName = safeErrorName(value);
+  initFailureClassification = typeof indexedDB === 'undefined'
+    ? 'INDEXEDDB_UNAVAILABLE'
+    : /(write|put|commit|quota)/i.test(safeText) ? 'STORAGE_WRITE_FAILURE' : 'STORAGE_READ_FAILURE';
+}
+
+function httpStatusClass(status: number): WonderPushRuntimeDiagnostic['authenticationHttpStatusClass'] {
+  if (status === 0) return 'NETWORK';
+  if (status >= 200 && status < 300) return '2XX';
+  if (status >= 400 && status < 500) return '4XX';
+  if (status >= 500) return '5XX';
+  return 'OTHER';
+}
+
+export function startWonderPushInitFailureObservation(enabled: boolean) {
+  if (!enabled || initFailureObserverStarted || typeof XMLHttpRequest === 'undefined') return;
+  initFailureObserverStarted = true;
+  const originalOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function diagnosticOpen(
+    method: string,
+    url: string,
+    asyncFlag: boolean = true,
+    username?: string | null,
+    password?: string | null,
+  ) {
+    let observesAuthentication = false;
+    try {
+      const target = new URL(String(url), window.location.href);
+      observesAuthentication = method.toUpperCase() === 'POST'
+        && target.hostname.endsWith('.wonderpush.com')
+        && target.pathname.endsWith('/authentication/accessToken');
+    } catch {
+      // Malformed and non-WonderPush URLs are passed through untouched.
+    }
+    if (observesAuthentication) {
+      authenticationRequestAttempted = true;
+      this.addEventListener('loadend', () => {
+        authenticationHttpStatus = Number.isInteger(this.status) ? this.status : null;
+        let validJson = false;
+        let tokenPresent = false;
+        let installationIdPresent = false;
+        if (this.status >= 200 && this.status < 300) {
+          try {
+            const payload = JSON.parse(this.responseText) as {
+              token?: unknown;
+              data?: { installationId?: unknown };
+            };
+            validJson = Boolean(payload && typeof payload === 'object');
+            tokenPresent = typeof payload.token === 'string' && payload.token.length > 0;
+            installationIdPresent = typeof payload.data?.installationId === 'string'
+              && payload.data.installationId.length > 0;
+          } catch {
+            // Only the parse outcome is retained; response content is discarded.
+          }
+        }
+        initFailureClassification = classifyWonderPushAuthenticationResult({
+          status: this.status, validJson, tokenPresent, installationIdPresent,
+        });
+        authenticationResponseWasComplete = initFailureClassification === 'NONE';
+      }, { once: true });
+    }
+    if (arguments.length >= 5) return originalOpen.call(this, method, url, asyncFlag, username, password);
+    if (arguments.length === 4) return originalOpen.call(this, method, url, asyncFlag, username);
+    return originalOpen.call(this, method, url, asyncFlag);
+  };
+  window.addEventListener('error', (event) => classifyStorageFailure(event.error));
+  window.addEventListener('unhandledrejection', (event) => classifyStorageFailure(event.reason));
+}
+
 export function startWonderPushRuntimeObservation() {
   if (observerStarted || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
   observerStarted = true;
@@ -61,6 +147,15 @@ export function startWonderPushRuntimeObservation() {
     if (detail?.name !== 'session') return;
     const sdk = (window as Window & { WonderPush?: DiagnosticSdk }).WonderPush;
     appendTransition(detail.state, detail.WonderPushSDK?.SessionState || sdk?.SessionState);
+    if (interpretWonderPushSessionState(detail.state,
+      detail.WonderPushSDK?.SessionState || sdk?.SessionState) === 'INIT_FAILED') {
+      if (authenticationResponseWasComplete && initFailureClassification === 'NONE') {
+        initFailureClassification = 'SESSION_PERSIST_FAILURE';
+      } else if (initFailureClassification === 'NONE') {
+        initFailureClassification = typeof indexedDB === 'undefined'
+          ? 'INDEXEDDB_UNAVAILABLE' : 'UNKNOWN_INIT_FAILURE';
+      }
+    }
   });
 }
 
@@ -220,5 +315,12 @@ export async function readWonderPushRuntimeDiagnostic(): Promise<WonderPushRunti
     serviceWorkerControlled: Boolean(controller),
     serviceWorkerScript,
     serviceWorkerVersion: process.env.EXPO_PUBLIC_IPM_BUILD_NUMBER || 'unknown',
+    initFailureClassification,
+    authenticationRequestAttempted,
+    authenticationHttpStatus,
+    authenticationHttpStatusClass: authenticationHttpStatus === null
+      ? 'NONE' : httpStatusClass(authenticationHttpStatus),
+    indexedDbAvailable: typeof indexedDB !== 'undefined',
+    initFailureErrorName,
   };
 }

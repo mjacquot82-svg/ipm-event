@@ -5,6 +5,7 @@ import {
   interpretWonderPushSessionState,
   safeWonderPushRawState,
   isStagingNotificationDiagnosticEnabled,
+  classifyWonderPushAuthenticationResult,
 } from '../src/services/wonderPushRuntimeDiagnosticCore.ts';
 
 const diagnostic = await readFile(new URL('../src/services/wonderPushRuntimeDiagnostic.web.ts', import.meta.url), 'utf8');
@@ -20,6 +21,22 @@ test('maps every known WonderPush session state and safely handles unknown value
   assert.equal(interpretWonderPushSessionState(99, states), 'UNKNOWN');
   assert.equal(interpretWonderPushSessionState({ secret: true }, states), 'UNKNOWN');
   assert.equal(safeWonderPushRawState({ secret: true }), 'UNKNOWN');
+});
+
+test('classifies WonderPush authentication failures without retaining response values', () => {
+  assert.equal(classifyWonderPushAuthenticationResult({ status: 0 }), 'AUTH_NETWORK_FAILURE');
+  assert.equal(classifyWonderPushAuthenticationResult({ status: 401 }), 'DOMAIN_PROJECT_REJECTION');
+  assert.equal(classifyWonderPushAuthenticationResult({ status: 404 }), 'AUTH_HTTP_4XX');
+  assert.equal(classifyWonderPushAuthenticationResult({ status: 503 }), 'AUTH_HTTP_5XX');
+  assert.equal(classifyWonderPushAuthenticationResult({ status: 200 }), 'AUTH_RESPONSE_INVALID');
+  assert.equal(classifyWonderPushAuthenticationResult({ status: 200, validJson: true }),
+    'AUTH_RESPONSE_MISSING_TOKEN');
+  assert.equal(classifyWonderPushAuthenticationResult({
+    status: 200, validJson: true, tokenPresent: true,
+  }), 'AUTH_RESPONSE_MISSING_INSTALLATION_ID');
+  assert.equal(classifyWonderPushAuthenticationResult({
+    status: 200, validJson: true, tokenPresent: true, installationIdPresent: true,
+  }), 'NONE');
 });
 
 test('temporary initialization diagnostic is enabled only for the staging backend', () => {
@@ -39,6 +56,16 @@ test('diagnostic refresh performs only read operations', () => {
   assert.doesNotMatch(reader, /initializeWonderPush|subscribeToNotifications|unsubscribeFromNotifications|requestPermission|ensureNotificationRegistration|fetch\(|request\(/);
 });
 
+test('init failure observer is staging-gated, pass-through, and retains no sensitive material', () => {
+  const observer = diagnostic.slice(diagnostic.indexOf('export function startWonderPushInitFailureObservation'),
+    diagnostic.indexOf('export function startWonderPushRuntimeObservation'));
+  assert.match(observer, /if \(!enabled/);
+  assert.match(observer, /originalOpen\.call/);
+  assert.match(observer, /authentication\/accessToken/);
+  assert.doesNotMatch(observer, /\.send\(|subscribeToNotifications|unsubscribeFromNotifications|fetch\(|indexedDB\.open|localStorage|sessionStorage/);
+  assert.doesNotMatch(notificationCard, /responseText|accessToken|webKey|endpoint|pushToken|installationId\b/);
+});
+
 test('failure UI renders classifications only and never sensitive provider values', () => {
   assert.match(notificationCard, /SHOW_STAGING_NOTIFICATION_DIAGNOSTIC/);
   assert.match(notificationCard, /Staging initialization diagnostic/);
@@ -55,7 +82,7 @@ test('production About does not render temporary WonderPush engineering state', 
     assert.doesNotMatch(about, new RegExp(label));
   }
   assert.doesNotMatch(about, /wonderPushDiagnostic|readWonderPushRuntimeDiagnostic|Refresh WonderPush diagnostic/);
-  assert.doesNotMatch(diagnostic, /endpoint|toJSON|applicationServerKey|localStorage|indexedDB|fetch\(/);
+  assert.doesNotMatch(diagnostic, /endpoint|toJSON|applicationServerKey|localStorage|indexedDB\.open|fetch\(/);
 });
 
 test('transition history is in-memory, bounded, and observer-only', () => {

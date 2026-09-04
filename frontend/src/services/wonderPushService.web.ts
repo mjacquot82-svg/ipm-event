@@ -2,8 +2,10 @@ import {
   recordWonderPushInitializationFailure,
   recordWonderPushInitializationStage,
   recordWonderPushLoaderResult,
+  startWonderPushInitFailureObservation,
   startWonderPushRuntimeObservation,
 } from './wonderPushRuntimeDiagnostic';
+import { isStagingNotificationDiagnosticEnabled } from './wonderPushRuntimeDiagnosticCore';
 
 const SDK_URL = 'https://cdn.by.wonderpush.com/sdk/1.1/wonderpush-loader.min.js';
 const SDK_SCRIPT_ID = 'wonderpush-jssdk-loader';
@@ -154,6 +156,9 @@ export function initializeWonderPush(): Promise<void> {
   if (initialization) return initialization;
 
   initialization = (async () => {
+    startWonderPushInitFailureObservation(isStagingNotificationDiagnosticEnabled(
+      process.env.EXPO_PUBLIC_BACKEND_URL,
+    ));
     recordWonderPushInitializationStage('support_check');
     if (!isSupported()) {
       throw new Error('Push notifications are not supported in this browser.');

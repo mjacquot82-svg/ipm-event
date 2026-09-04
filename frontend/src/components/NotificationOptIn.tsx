@@ -58,6 +58,12 @@ export function formatSafeWonderPushDiagnostic(diagnostic: WonderPushRuntimeDiag
     `service_worker_controlled=${diagnostic.serviceWorkerControlled}`,
     `service_worker_script=${diagnostic.serviceWorkerScript}`,
     `service_worker_version=${diagnostic.serviceWorkerVersion}`,
+    `init_failure_classification=${diagnostic.initFailureClassification}`,
+    `authentication_request_attempted=${diagnostic.authenticationRequestAttempted}`,
+    `authentication_http_status=${diagnostic.authenticationHttpStatus ?? 'none'}`,
+    `authentication_http_status_class=${diagnostic.authenticationHttpStatusClass}`,
+    `indexeddb_available=${diagnostic.indexedDbAvailable}`,
+    `init_failure_error_name=${diagnostic.initFailureErrorName || 'none'}`,
   ].join('\n');
 }
 

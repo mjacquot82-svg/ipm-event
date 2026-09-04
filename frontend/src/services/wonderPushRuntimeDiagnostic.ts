@@ -21,6 +21,12 @@ export type WonderPushRuntimeDiagnostic = {
   serviceWorkerControlled: boolean;
   serviceWorkerScript: 'WONDERPUSH_ROOT' | 'OTHER' | 'NONE';
   serviceWorkerVersion: string;
+  initFailureClassification: import('./wonderPushRuntimeDiagnosticCore').WonderPushInitFailureClassification;
+  authenticationRequestAttempted: boolean;
+  authenticationHttpStatus: number | null;
+  authenticationHttpStatusClass: 'NONE' | 'NETWORK' | '2XX' | '4XX' | '5XX' | 'OTHER';
+  indexedDbAvailable: boolean;
+  initFailureErrorName: string | null;
 };
 
 export type NotificationRegistrationDiagnosticStage =
@@ -44,6 +50,7 @@ export type NotificationRegistrationWorkflowDiagnostic = {
 };
 
 export function startWonderPushRuntimeObservation() {}
+export function startWonderPushInitFailureObservation(_enabled: boolean) {}
 export function recordWonderPushInitializationStage(
   _stage: WonderPushRuntimeDiagnostic['initializationStage'],
 ) {}
@@ -81,5 +88,8 @@ export async function readWonderPushRuntimeDiagnostic(): Promise<WonderPushRunti
     sdkLoader: 'UNSTARTED', sessionApiAvailable: false, initializationStage: 'unknown',
     initializationTimedOut: false, sdkErrorName: null, serviceWorkerControlled: false,
     serviceWorkerScript: 'NONE', serviceWorkerVersion: 'unknown',
+    initFailureClassification: 'NONE', authenticationRequestAttempted: false,
+    authenticationHttpStatus: null, authenticationHttpStatusClass: 'NONE',
+    indexedDbAvailable: false, initFailureErrorName: null,
   };
 }
