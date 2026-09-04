@@ -283,6 +283,7 @@ def configure_notification_fakes(monkeypatch, item, *, provider=None, deliveries
     monkeypatch.setattr(server, "notification_delivery_service", deliveries)
     monkeypatch.setattr(server, "wonderpush_client", provider)
     monkeypatch.setattr(server, "WONDERPUSH_TEST_INSTALLATION_IDS", ["test-1", "test-2"])
+    monkeypatch.setattr(server, "WONDERPUSH_TEST_CAMPAIGN_ID", "controlled-test-campaign")
     monkeypatch.setattr(server, "PUBLIC_APP_URL", "https://theipm.ca")
     return provider, deliveries
 
@@ -327,13 +328,28 @@ def test_test_send_uses_only_configured_subscribers(monkeypatch):
         "username": "comms", "role": "Communications", "event_id": "event-a"
     }))
     assert provider.test_installations == ["test-1", "test-2"]
-    assert "campaign_id" not in provider.test_options
+    assert provider.test_options["campaign_id"] == "controlled-test-campaign"
     assert provider.test_options["idempotency_key"].startswith("announcement-test-")
     assert 0 < int(provider.test_options["expiration_time"].split()[0]) <= 72 * 60 * 60
     assert result.audience == "test"
     assert deliveries.rows[0]["provider_campaign_id"] == "test-campaign"
     assert deliveries.rows[0]["provider"] == "wonderpush"
     assert deliveries.rows[0]["target_url"] == "https://theipm.ca/announcements/announcement-1"
+
+
+def test_test_send_requires_configured_wonderpush_campaign(monkeypatch):
+    provider, deliveries = configure_notification_fakes(monkeypatch, announcement())
+    monkeypatch.setattr(server, "WONDERPUSH_TEST_CAMPAIGN_ID", "")
+
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(server.notify_announcement("announcement-1", "test", {
+            "username": "comms", "role": "Communications", "event_id": "event-a"
+        }))
+
+    assert error.value.status_code == 503
+    assert "controlled test WonderPush campaign" in error.value.detail
+    assert provider.test_installations is None
+    assert deliveries.rows == []
 
 
 def test_everyone_send_cannot_duplicate_after_success(monkeypatch):
@@ -415,6 +431,7 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
         target_url="https://theipm.ca/announcements/announcement-1",
         installation_ids=["123", "456"],
         idempotency_key="announcement-test-delivery-123",
+        campaign_id="controlled-test-campaign",
         expiration_time="72 hours",
     ))
 
@@ -423,7 +440,7 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
     assert captured["data"]["accessToken"] == "not-a-credential"
     assert captured["data"]["targetInstallationIds"] == "123,456"
     assert captured["data"]["filterPlatforms"] == "Web"
-    assert "campaignId" not in captured["data"]
+    assert captured["data"]["campaignId"] == "controlled-test-campaign"
     assert "disableCapping" not in captured["data"]
     assert captured["headers"] == {
         "X-WonderPush-Idempotency-Key": "announcement-test-delivery-123"
@@ -435,6 +452,7 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
         "web": {"icon": "https://theipm.ca/ipm-icon-any-192.png"},
     }
     assert notification["push"]["custom"]["target_url"].endswith("/announcements/announcement-1")
+    assert notification["push"]["custom"]["diagnostic_id"] == "announcement-test-delivery-123"
     assert notification["push"]["expirationTime"] == "72 hours"
 
 

@@ -170,6 +170,7 @@ WONDERPUSH_TEST_INSTALLATION_IDS = [
     for installation_id in os.environ.get("WONDERPUSH_TEST_INSTALLATION_IDS", "").split(",")
     if installation_id.strip()
 ]
+WONDERPUSH_TEST_CAMPAIGN_ID = os.environ.get("WONDERPUSH_TEST_CAMPAIGN_ID", "").strip()
 # T-30 delivery is deliberately unavailable during the announcement cutover.
 ITINERARY_REMINDER_DELIVERY_ENABLED = False
 ITINERARY_REMINDER_SCHEDULER_ENABLED = False
@@ -1741,6 +1742,8 @@ async def notify_announcement(
         )
     if audience == "test" and not WONDERPUSH_TEST_INSTALLATION_IDS:
         raise HTTPException(status_code=503, detail="No controlled test installation is configured")
+    if audience == "test" and not WONDERPUSH_TEST_CAMPAIGN_ID:
+        raise HTTPException(status_code=503, detail="No controlled test WonderPush campaign is configured")
 
     expiration_time = announcement_expiration_time(announcement)
 
@@ -1782,6 +1785,7 @@ async def notify_announcement(
             campaign_id = await provider.send_test(
                 **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS,
                 idempotency_key=f"announcement-test-{delivery['id']}",
+                campaign_id=WONDERPUSH_TEST_CAMPAIGN_ID,
                 expiration_time=expiration_time,
             )
         else:
@@ -1889,6 +1893,7 @@ async def notification_registration_operations():
     return {
         "provider_configured": wonderpush_client is not None,
         "controlled_test_allowlist_count": len(WONDERPUSH_TEST_INSTALLATION_IDS),
+        "controlled_test_campaign_configured": bool(WONDERPUSH_TEST_CAMPAIGN_ID),
         "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
         "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
     }

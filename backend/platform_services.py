@@ -154,6 +154,11 @@ class WonderPushClient:
         if campaign_id:
             # Campaign grouping is backend configuration, never organizer input.
             form["campaignId"] = campaign_id
+        if audience_classification == "test" and idempotency_key:
+            # Non-secret correlation context for one controlled delivery. This
+            # never contains or derives from an installation identifier.
+            notification["push"]["custom"]["diagnostic_id"] = idempotency_key
+            form["notification"] = json.dumps(notification, separators=(",", ":"))
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 headers = {"X-WonderPush-Idempotency-Key": idempotency_key} if idempotency_key else None
