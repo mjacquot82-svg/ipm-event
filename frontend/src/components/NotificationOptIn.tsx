@@ -47,11 +47,15 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   const [optionalPromptVisible, setOptionalPromptVisible] = useState(false);
   const promptRecordedRef = useRef(false);
   const promptDailyStateRef = useRef<ReturnType<typeof parseNotificationPromptDailyState>>(null);
+  const disabledPromptLatchedRef = useRef(false);
   const hasFocusedRef = useRef(false);
   const statusCheckInFlightRef = useRef(false);
-  const notificationStateRef = useRef<NotificationState>('loading');
 
   const evaluateOptionalPrompt = useCallback(async (nextState: NotificationState) => {
+    if (nextState === 'unsubscribed' && disabledPromptLatchedRef.current) {
+      setOptionalPromptVisible(true);
+      return;
+    }
     if (nextState !== 'default' && nextState !== 'unsubscribed') {
       setOptionalPromptVisible(false);
       if (nextState === 'subscribed') {
@@ -70,6 +74,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
       const dailyState = parseNotificationPromptDailyState(storedDailyState);
       const eligible = isNotificationPromptEligible({ now: Date.now(), dismissedAt, dailyState });
       promptDailyStateRef.current = dailyState;
+      if (nextState === 'unsubscribed' && eligible) disabledPromptLatchedRef.current = true;
       setOptionalPromptVisible(eligible);
     } catch (error) {
       console.warn('Unable to load notification prompt preference:', error);
@@ -87,6 +92,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   }, [optionalPromptVisible]);
 
   const dismissOptionalPrompt = useCallback(async () => {
+    disabledPromptLatchedRef.current = false;
     setOptionalPromptVisible(false);
     promptRecordedRef.current = false;
     try {
@@ -104,6 +110,8 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
     try {
       await ensureNotificationRegistration();
       recordNotificationWorkflowDiagnostic('SUCCESS');
+      disabledPromptLatchedRef.current = false;
+      setOptionalPromptVisible(false);
       setSetupState('ready');
     } catch (error) {
       let finalError = error;
@@ -141,7 +149,6 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
     statusCheckInFlightRef.current = true;
     try {
       const nextState = await getNotificationState();
-      notificationStateRef.current = nextState;
       setState(nextState);
       await evaluateOptionalPrompt(nextState);
       if (nextState === 'subscribed') {
@@ -170,14 +177,8 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
         setOptionalPromptVisible(false);
         return;
       }
-      if (notificationStateRef.current === 'loading' || notificationStateRef.current === 'recovering') {
-        void refresh();
-      } else {
-        void getNotificationState()
-          .then(evaluateOptionalPrompt)
-          .catch(() => setOptionalPromptVisible(false));
-      }
-    }, [evaluateOptionalPrompt, refresh]),
+      void refresh();
+    }, [refresh]),
   );
 
   useEffect(() => {
@@ -194,11 +195,11 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
 
   const updateSubscription = useCallback(async () => {
     setWorking(true);
+    disabledPromptLatchedRef.current = false;
     try {
       const nextState = state === 'subscribed'
         ? await unsubscribeFromNotifications()
         : await subscribeToNotifications();
-      notificationStateRef.current = nextState;
       setState(nextState);
       await evaluateOptionalPrompt(nextState);
       if (nextState === 'subscribed') await completeSetup();
@@ -212,10 +213,11 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   }, [completeSetup, evaluateOptionalPrompt, state]);
 
   if (Platform.OS !== 'web') return null;
-  // The healthy and transient returning-subscriber states require no Home
-  // action. Keep setup running, but avoid a persistent card or startup flash.
+  // Only provider-verified subscribers require no Home action. A local SDK
+  // subscription remains visible while capability registration is pending.
   if (state === 'recovering') return null;
-  if (state === 'loading' || (state === 'subscribed' && setupState !== 'failed')) return null;
+  if (state === 'loading') return null;
+  if (state === 'subscribed' && setupState === 'ready') return null;
   if ((state === 'default' || state === 'unsubscribed') && !optionalPromptVisible) return null;
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;

@@ -188,8 +188,9 @@ test('session initialization remains pending and automatically resumes setup', (
   assert.doesNotMatch(setup, /subscribeToNotifications|unsubscribeFromNotifications|requestPermission|send/);
 });
 
-test('pending startup hides actions while genuine failures retain recovery UI', () => {
-  assert.match(component, /state === 'loading' \|\| \(state === 'subscribed' && setupState !== 'failed'\)\) return null/);
+test('pending startup remains visible until provider readiness while genuine failures retain recovery UI', () => {
+  assert.match(component, /if \(state === 'loading'\) return null/);
+  assert.match(component, /state === 'subscribed' && setupState === 'ready'/);
   assert.match(component, /setupState === 'failed'[\s\S]*Try again/);
   assert.match(component, /state === 'subscribed'[\s\S]*unsubscribeFromNotifications\(\)/);
   assert.match(component, /state === 'denied'/);
@@ -197,8 +198,8 @@ test('pending startup hides actions while genuine failures retain recovery UI', 
   assert.match(component, /Notifications are enabled, but setup could not be completed/);
 });
 
-test('healthy and initializing subscribers do not render the Home card or Disable action', () => {
-  const hidden = component.indexOf("if (state === 'loading' || (state === 'subscribed' && setupState !== 'failed')) return null");
+test('only provider-ready subscribers hide the Home card', () => {
+  const hidden = component.indexOf("if (state === 'subscribed' && setupState === 'ready') return null");
   const card = component.indexOf('accessibilityLabel="IPM notification settings"');
   assert.ok(hidden > 0 && hidden < card);
   assert.match(component, /style=\{\[styles\.card, containerStyle\]\}/);

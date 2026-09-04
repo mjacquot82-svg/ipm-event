@@ -46,6 +46,19 @@ test('frequency is recorded only after rendering and no cooldown timer interrupt
   assert.doesNotMatch(component, /setTimeout\([\s\S]*NOTIFICATION_PROMPT_COOLDOWN_MS/);
 });
 
+test('a visible unsubscribed card stays latched through later canonical status checks', () => {
+  assert.match(component, /nextState === 'unsubscribed' && disabledPromptLatchedRef\.current[\s\S]*setOptionalPromptVisible\(true\)/);
+  assert.match(component, /nextState === 'unsubscribed' && eligible[\s\S]*disabledPromptLatchedRef\.current = true/);
+  assert.match(component, /useFocusEffect\([\s\S]*void refresh\(\);[\s\S]*\}, \[refresh\]\)/);
+  assert.doesNotMatch(component, /getNotificationState\(\)\s*\.then\(evaluateOptionalPrompt\)/);
+});
+
+test('local subscription state stays visible until provider-backed setup is ready', () => {
+  assert.match(component, /await ensureNotificationRegistration\(\);[\s\S]*setSetupState\('ready'\)/);
+  assert.match(component, /state === 'subscribed' && setupState === 'ready'/);
+  assert.doesNotMatch(component, /state === 'subscribed' && setupState !== 'failed'/);
+});
+
 test('healthy, denied, unsupported, failed, and offline states stay outside optional eligibility', () => {
   assert.match(component, /nextState !== 'default' && nextState !== 'unsubscribed'/);
   assert.match(component, /nextState === 'subscribed'/);
