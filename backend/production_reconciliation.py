@@ -63,6 +63,40 @@ def install_routes(router, config):
         except Exception:
             return response({'status': 'DEFERRED'}, 503)
 
+    @router.post('/notification-registrations/bind-pilot', include_in_schema=False)
+    async def bind_pilot(request: Request):
+        c = config()
+        if not active(c) or request.headers.get('Origin') != c['app']:
+            return response({'bound': False}, 404)
+        capability = request.headers.get('X-Notification-Device-Capability', '')
+        if not re.fullmatch(r'[A-Za-z0-9_-]{43}', capability):
+            return response({'bound': False}, 404)
+        try:
+            raw = bytearray()
+            async for chunk in request.stream():
+                raw.extend(chunk)
+                if len(raw) > 128:
+                    return response({'bound': False}, 404)
+            body = json.loads(raw)
+            if (not isinstance(body, dict) or set(body) != {'invitation'}
+                    or not isinstance(body['invitation'], str)
+                    or not re.fullmatch(r'[A-Za-z0-9_-]{43}', body['invitation'])):
+                return response({'bound': False}, 404)
+            result = await c['client'].request('POST', '/rpc/ipm_bind_reconciliation_pilot', json={'p': {
+                'event_slug': c['event'],
+                'capability_hash': hashlib.sha256(capability.encode()).hexdigest(),
+                'invitation_hash': hashlib.sha256(body['invitation'].encode()).hexdigest()}})
+            if (result.get('bound') is True and type(result.get('pilot_restriction_count')) is int
+                    and result['pilot_restriction_count'] == 1
+                    and result.get('observation_enabled') is False
+                    and result.get('repair_enabled') is False):
+                return response({'bound': True, 'pilot_restriction_count': 1,
+                                 'observation_enabled': False, 'repair_enabled': False})
+            return response({'bound': False}, 404)
+        except Exception:
+            # Ambiguous commit: do not retry or expose transport errors/secrets.
+            return response({'bound': False}, 503)
+
     @router.post('/notification-registrations/reconcile', include_in_schema=False)
     async def reconcile_request(request: Request):
         c = config()
