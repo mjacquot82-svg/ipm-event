@@ -1808,6 +1808,19 @@ async def verify_notification_readiness(request: Request):
     return public_notification_registration(verified)
 
 
+# Isolated, non-mutating production Pixel diagnostic. No existing routes changed.
+try:
+    from backend.production_push_diagnostic import install_routes as install_production_push_diagnostic
+except ModuleNotFoundError:
+    from production_push_diagnostic import install_routes as install_production_push_diagnostic
+install_production_push_diagnostic(api_router, lambda: {
+    "host": os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""), "app": PUBLIC_APP_URL,
+    "database": SUPABASE_URL, "event": DEFAULT_EVENT_ID,
+    "database_key": SUPABASE_SERVICE_ROLE_KEY, "credential": WONDERPUSH_ACCESS_TOKEN,
+    "targets": WONDERPUSH_TEST_INSTALLATION_IDS,
+})
+
+
 @api_router.get("/notification-registrations/operations")
 async def notification_registration_operations():
     return {
