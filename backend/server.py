@@ -1924,6 +1924,36 @@ if provider_diagnostic_enabled(
         return JSONResponse(result, headers={"Cache-Control": "no-store"})
 
 
+    @api_router.post("/staging-diagnostics/compare-subscription", include_in_schema=False)
+    async def staging_subscription_comparison(request: Request):
+        # POST carries only ephemeral challenge/digests. This operation performs
+        # reads only; it is deliberately not a GET with fingerprints in a URL.
+        try:
+            from backend.staging_subscription_compare import compare_current, unverifiable
+        except ModuleNotFoundError:
+            from staging_subscription_compare import compare_current, unverifiable
+        if (request.headers.get("Origin") != "https://staging.theipm.ca"
+                or request.headers.get("X-IPM-Staging-Diagnostic") != "compare-current-subscription"):
+            raise HTTPException(status_code=404, detail="Not found")
+        try:
+            # Manual parsing avoids validation errors echoing arbitrary input.
+            body = bytearray()
+            async for chunk in request.stream():
+                body.extend(chunk)
+                if len(body) > 2048:
+                    return JSONResponse(unverifiable(), headers={"Cache-Control": "no-store"})
+            payload = json.loads(body)
+        except Exception:
+            return JSONResponse(unverifiable(), headers={"Cache-Control": "no-store"})
+        result = await compare_current(
+            render_hostname=os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""),
+            public_app_url=PUBLIC_APP_URL, supabase_url=SUPABASE_URL,
+            repository=notification_registration_repository,
+            credential=WONDERPUSH_ACCESS_TOKEN, payload=payload,
+        )
+        return JSONResponse(result, headers={"Cache-Control": "no-store"})
+
+
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)
 async def list_admin_schedule(current_user: dict = Depends(get_current_organizer_user)):
     require_schedule_manager_role(current_user)

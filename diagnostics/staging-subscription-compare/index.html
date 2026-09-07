@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src https://ipm-staging-backend.onrender.com; base-uri 'none'; form-action 'none'">
+<title>IPM staging — subscription comparison</title>
+<style>body{font:16px system-ui,sans-serif;margin:24px auto;padding:0 18px;max-width:700px;color:#142b22;background:#f5f7f5}button{font:inherit;background:#145638;color:white;border:0;border-radius:8px;padding:14px 20px}button:disabled{opacity:.6}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:white;padding:16px;border:1px solid #ccd6ce;font-size:13px}p{line-height:1.5}</style>
+<script type="module" src="./subscription-compare-page.mjs"></script></head>
+<body><h1>Staging subscription comparison</h1><p>Read-only comparison of this browser’s existing subscription with the current staging provider registration. Nothing is sent to the device or changed.</p>
+<button id="compare" disabled>Compare current subscription once</button>
+<pre id="result" aria-live="polite"></pre>
+<p>The comparison can take up to 75 seconds. An unavailable or incomplete comparison returns unverifiable. This page does not initialize WonderPush, subscribe, retry or change browser storage.</p>
+</body></html>
