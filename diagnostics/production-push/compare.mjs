@@ -40,7 +40,8 @@ const BOOLS = ['production_registration_identified','browser_subscription_presen
  'configured_test_target_matches_current_registration','provider_opt_in','provider_has_push_token','provider_os_notifications_visible'];
 const STATUSES = ['UNVERIFIABLE','WRONG_ORIGIN','CAPABILITY_UNAVAILABLE','BROWSER_UNAVAILABLE','BROWSER_CHANGED',
  'INVALID_INPUT','CONFIGURATION_UNAVAILABLE','REGISTRATION_READ_UNAVAILABLE','REGISTRATION_UNRESOLVED',
- 'PROVIDER_READ_UNAVAILABLE','PROVIDER_DATA_UNVERIFIABLE','COMPARED','ORIGIN_REJECTED'];
+ 'PROVIDER_READ_UNAVAILABLE','PROVIDER_DATA_UNVERIFIABLE','COMPARED','ORIGIN_REJECTED',
+ 'ROOT_SUBSCRIPTION_ABSENT','ALTERNATE_SUBSCRIPTION_PRESENT','REGISTRATION_INVENTORY_UNAVAILABLE'];
 export function safeResult(body = {}) {
   const out = Object.fromEntries(BOOLS.map(k => [k, typeof body[k] === 'boolean' ? body[k] : 'unverifiable']));
   out.configured_test_target_count = Number.isSafeInteger(body.configured_test_target_count) && body.configured_test_target_count >= 0 ? body.configured_test_target_count : 'unverifiable';
@@ -56,6 +57,19 @@ async function bounded(read) {
     timer = setTimeout(() => reject(new Error()), 5000);
   })]); } finally { clearTimeout(timer); }
 }
+// Root absence does not establish absence from every same-origin registration.
+// Inventory only: a narrower-scope subscription is not silently selected as the app target.
+async function inspectOtherRegistrations(env, root) {
+  try {
+    const registrations = await bounded(() => env.navigator.serviceWorker.getRegistrations());
+    if (!Array.isArray(registrations) || registrations.length > 8) throw new Error();
+    const other = registrations.filter(r => r.scope !== root.scope);
+    if (other.some(r => new URL(r.scope).origin !== ORIGIN)) throw new Error();
+    const subscriptions = await Promise.all(other.map(r => bounded(() => r.pushManager.getSubscription())));
+    if (subscriptions.some(Boolean)) return safeResult({browser_subscription_present:true,diagnostic_status:'ALTERNATE_SUBSCRIPTION_PRESENT'});
+    return safeResult({browser_subscription_present:false,diagnostic_status:'ROOT_SUBSCRIPTION_ABSENT'});
+  } catch { return safeResult({diagnostic_status:'REGISTRATION_INVENTORY_UNAVAILABLE'}); }
+}
 export async function compareCurrentSubscription(env = globalThis) {
   if (env.location?.origin !== ORIGIN) return safeResult({diagnostic_status:'WRONG_ORIGIN'});
   try {
@@ -64,7 +78,7 @@ export async function compareCurrentSubscription(env = globalThis) {
     const registration = await bounded(() => env.navigator.serviceWorker.getRegistration('/'));
     if (!registration?.active || registration.scope !== ORIGIN + '/') return safeResult({diagnostic_status:'BROWSER_UNAVAILABLE'});
     const subscription = await bounded(() => registration.pushManager.getSubscription());
-    if (!subscription) return safeResult({browser_subscription_present:false,diagnostic_status:'BROWSER_UNAVAILABLE'});
+    if (!subscription) return inspectOtherRegistrations(env, registration);
     const challenge = env.crypto.getRandomValues(new Uint8Array(32));
     const payload = await digestSubscription(subscription, challenge, env.crypto);
     const controller = new AbortController();

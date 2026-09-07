@@ -10,7 +10,7 @@ const good={...Object.fromEntries(BOOLS.map(k=>[k,true])),configured_test_target
 function env({rotate=false,missing=false,reject=false}={}) {
  const calls=[];let reads=0;
  return {calls,location:{origin:'https://theipm.ca'},crypto:webcrypto,localStorage:{getItem:()=> 'C'.repeat(43)},
- navigator:{serviceWorker:{getRegistration:async()=>({active:{},scope:'https://theipm.ca/',pushManager:{getSubscription:async()=>{
+ navigator:{serviceWorker:{getRegistrations:async()=>[],getRegistration:async()=>({active:{},scope:'https://theipm.ca/',pushManager:{getSubscription:async()=>{
  reads++;return missing?null:rotate&&reads>1?{...sub,endpoint:'https://push.example/new'}:sub;
  }}})}},fetch:async(url,options)=>{calls.push({url,options});if(reject)throw Error('PRIVATE_CANARY');return {ok:true,json:async()=>({...good,secret:'PRIVATE_CANARY'})};}};
 }
@@ -53,4 +53,27 @@ test('standalone page build inputs contain no mutation/SDK/app loading',()=>{
  const html=readFileSync(new URL('./production-push-diagnostic.html',import.meta.url),'utf8');
  assert.equal((html.match(/<script/g)||[]).length,1);assert.ok(html.includes('./production-push-compare.mjs'));
  assert.ok(html.includes("default-src 'none'"));assert.ok(!html.includes('staging'));
+});
+
+test('null root subscription enumerates other scopes without backend comparison',async()=>{
+ const e=env({missing:true});let reads=0;
+ e.navigator.serviceWorker.getRegistrations=async()=>[{scope:'https://theipm.ca/legacy/',pushManager:{getSubscription:async()=>{reads++;return sub;}}}];
+ const r=await compareCurrentSubscription(e);
+ assert.equal(reads,1);assert.equal(r.diagnostic_status,'ALTERNATE_SUBSCRIPTION_PRESENT');
+ assert.equal(r.browser_subscription_present,true);assert.equal(r.browser_provider_match,'unverifiable');assert.equal(e.calls.length,0);
+});
+test('all enumerated subscriptions absent is distinct from read failure',async()=>{
+ const e=env({missing:true});let enumerations=0;
+ e.navigator.serviceWorker.getRegistrations=async()=>{enumerations++;return []};
+ assert.equal((await compareCurrentSubscription(e)).diagnostic_status,'ROOT_SUBSCRIPTION_ABSENT');assert.equal(enumerations,1);
+ e.navigator.serviceWorker.getRegistrations=async()=>{throw Error('CANARY');};
+ const r=await compareCurrentSubscription(e);assert.equal(r.diagnostic_status,'REGISTRATION_INVENTORY_UNAVAILABLE');
+ assert.equal(r.browser_subscription_present,'unverifiable');assert.equal(e.calls.length,0);assert.ok(!JSON.stringify(r).includes('CANARY'));
+});
+test('inventory is bounded and excludes other origins',async()=>{
+ const e=env({missing:true});
+ e.navigator.serviceWorker.getRegistrations=async()=>Array.from({length:9},()=>({}));
+ assert.equal((await compareCurrentSubscription(e)).diagnostic_status,'REGISTRATION_INVENTORY_UNAVAILABLE');
+ e.navigator.serviceWorker.getRegistrations=async()=>[{scope:'https://other.example/'}];
+ assert.equal((await compareCurrentSubscription(e)).diagnostic_status,'REGISTRATION_INVENTORY_UNAVAILABLE');assert.equal(e.calls.length,0);
 });
