@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src https://ipm-staging-backend.onrender.com; base-uri 'none'; form-action 'none'">
+<title>IPM staging — read-only Pixel check</title>
+<style>body{font:16px system-ui,sans-serif;margin:24px auto;padding:0 18px;max-width:700px;color:#142b22;background:#f5f7f5}button{font:inherit;background:#145638;color:white;border:0;border-radius:8px;padding:14px 20px}button:disabled{opacity:.6}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:white;padding:16px;border:1px solid #ccd6ce;font-size:13px}p{line-height:1.5}</style>
+<script type="module" src="./pixel-diagnostic-page.mjs"></script></head>
+<body><h1>Staging Pixel check</h1><p>One read-only snapshot. This page does not load the IPM app or initialize WonderPush.</p>
+<button id="inspect" disabled>Read current state once</button>
+<pre id="result" aria-live="polite">Checking staging origin…</pre>
+<p>UNKNOWN means unavailable, not false. The worker-present field identifies the expected active worker script; it cannot prove its WonderPush handlers initialized.</p>
+<p>Local SDK subscription, installation presence and initialization are unavailable when the SDK is absent from this isolated page. We do not start it to discover them. Current OS visibility, live provider token validity and existing worker errors cannot be read here. Stored provider values and their timestamp are historical, not a live readiness check.</p>
+<p>No registration, subscription, readiness refresh, retry, worker update, storage change or notification is performed.</p>
+</body></html>
