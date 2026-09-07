@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src https://ipm-backend-eoiw.onrender.com; base-uri 'none'; form-action 'none'">
+<title>IPM private pilot binding</title></head><body>
+<h1>Bind this device to the private pilot</h1>
+<p>Use only on Marc's production browser used for the diagnostic. This keeps observation and repair off and sends no notification.</p>
+<label>Private one-use invitation <input id="invitation" type="password" autocomplete="off" maxlength="43"></label>
+<button id="bind" type="button">Bind this device</button>
+<pre id="result" aria-live="polite"></pre>
+<script type="module" src="./production-pilot-binding.mjs"></script>
+</body></html>
