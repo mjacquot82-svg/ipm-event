@@ -1,0 +1,4 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src https://ipm-backend-eoiw.onrender.com; base-uri 'none'; form-action 'none'"><title>Read-only binding check</title></head><body>
+<h1>Read-only binding check</h1><p>This checks current eligibility. It does not bind a pilot, consume an invitation, enable reconciliation or send a notification. It cannot reconstruct an earlier attempt.</p>
+<label>Existing private invitation <input id="invitation" type="password" autocomplete="off"></label>
+<button id="check" type="button">Check only — do not bind</button><pre id="result" aria-live="polite"></pre><script type="module" src="./production-pilot-binding-check.mjs"></script></body></html>
