@@ -1954,6 +1954,33 @@ if provider_diagnostic_enabled(
         return JSONResponse(result, headers={"Cache-Control": "no-store"})
 
 
+    @api_router.post("/staging-diagnostics/reconcile-subscription", include_in_schema=False)
+    async def staging_subscription_reconciliation(request: Request):
+        try:
+            from backend.staging_subscription_repair import repair_current, result
+        except ModuleNotFoundError:
+            from staging_subscription_repair import repair_current, result
+        if (request.headers.get("Origin") != "https://staging.theipm.ca"
+                or request.headers.get("X-IPM-Staging-Diagnostic") != "reconcile-existing-subscription"):
+            raise HTTPException(status_code=404, detail="Not found")
+        try:
+            body = bytearray()
+            async for chunk in request.stream():
+                body.extend(chunk)
+                if len(body) > 12288:
+                    return JSONResponse(result("UNVERIFIABLE"), headers={"Cache-Control": "no-store"})
+            payload = json.loads(body)
+        except Exception:
+            return JSONResponse(result("UNVERIFIABLE"), headers={"Cache-Control": "no-store"})
+        repaired = await repair_current(
+            render_hostname=os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""),
+            public_app_url=PUBLIC_APP_URL, supabase_url=SUPABASE_URL,
+            repository=notification_registration_repository, credential=WONDERPUSH_ACCESS_TOKEN,
+            capability=request.headers.get("X-Notification-Device-Capability", ""), payload=payload,
+        )
+        return JSONResponse(repaired, headers={"Cache-Control": "no-store"})
+
+
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)
 async def list_admin_schedule(current_user: dict = Depends(get_current_organizer_user)):
     require_schedule_manager_role(current_user)
