@@ -1821,6 +1821,19 @@ install_production_push_diagnostic(api_router, lambda: {
 })
 
 
+# Isolated production pilot; existing diagnostic and attendee routes stay intact.
+try:
+    from backend.production_reconciliation import install_routes as install_pilot_routes
+except ModuleNotFoundError:
+    from production_reconciliation import install_routes as install_pilot_routes
+install_pilot_routes(api_router, lambda: {
+    "host": os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""), "app": PUBLIC_APP_URL,
+    "database": SUPABASE_URL, "event": DEFAULT_EVENT_ID,
+    "credential": WONDERPUSH_ACCESS_TOKEN, "commit": os.environ.get("RENDER_GIT_COMMIT", ""),
+    "client": notification_registration_repository.client if notification_registration_repository else None,
+})
+
+
 @api_router.get("/notification-registrations/operations")
 async def notification_registration_operations():
     return {
