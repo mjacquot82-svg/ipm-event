@@ -1,3 +1,4 @@
+import { isProductionPilot, reconcileSubscription } from './subscriptionReconciliation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getSubscribedInstallationId,
@@ -68,7 +69,7 @@ export type NotificationRegistrationFailure =
   | 'legacy_association_recovery_subscribed_session_not_ready_installation_unavailable'
   | 'legacy_association_recovery_not_subscribed_installation_unavailable'
   | 'legacy_association_recovery_subscription_state_unavailable'
-  | 'other';
+  | 'pilot_verification_pending' | 'other';
 export type NotificationRegistrationResult = {
   stage: 'success'; status: Record<string, unknown>; attempts: number;
 };
@@ -230,6 +231,16 @@ function wait(delayMs: number) {
 }
 
 export async function ensureNotificationRegistration(): Promise<NotificationRegistrationResult> {
+  // Existing pilot identity never enters legacy resubscribe/rebind recovery.
+  // Unavailable membership fails closed; confirmed non-pilots retain baseline setup.
+  let pilot: boolean;
+  try { pilot = await isProductionPilot(); }
+  catch { throw new NotificationRegistrationError('provider_verification', 'pilot_verification_pending', false); }
+  if (pilot) {
+    const result = await reconcileSubscription();
+    if (result.status === 'VERIFIED') return {stage:'success', status:{registered:true, provider_deliverable:true, subscription_verified:true}, attempts:1};
+    throw new NotificationRegistrationError('provider_verification', 'pilot_verification_pending', false);
+  }
   let lastError: NotificationRegistrationError | null = null;
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
     try {

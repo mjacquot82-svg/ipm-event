@@ -1,3 +1,4 @@
+import { watchReconciliation } from '../services/subscriptionReconciliation';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
@@ -38,6 +39,7 @@ const STATE_COPY: Record<NotificationState, string> = {
 
 export default function NotificationOptIn({ containerStyle }: { containerStyle?: StyleProp<ViewStyle> }) {
   const [state, setState] = useState<NotificationState>('loading');
+  const [pilotVerification, setPilotVerification] = useState(false);
   const [working, setWorking] = useState(false);
   const [verificationDeferred, setVerificationDeferred] = useState(false);
   const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'failed'>('idle');
@@ -92,6 +94,14 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
       console.warn('Unable to save notification prompt preference:', error);
     }
   }, []);
+
+  useEffect(() => watchReconciliation((result) => {
+    // Only confirmed pilot checks emit; non-pilot UI remains unchanged.
+    setPilotVerification(true);
+    if (result.status === 'VERIFIED') { setSetupState('ready'); setState('subscribed'); }
+    else if (['SDK_SETTLING','COMPARING','PATCH_PENDING','VERIFYING','CHECK_DUE'].includes(result.status)) setSetupState('pending');
+    else setSetupState('failed');
+  }), []);
 
   const completeSetup = useCallback(async () => {
     recordNotificationWorkflowDiagnostic('PENDING');
@@ -201,13 +211,15 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   if (Platform.OS !== 'web') return null;
   // The healthy and transient returning-subscriber states require no Home
   // action. Keep setup running, but avoid a persistent card or startup flash.
-  if (state === 'loading' || (state === 'subscribed' && setupState !== 'failed')) return null;
-  if ((state === 'default' || state === 'unsubscribed') && !optionalPromptVisible) return null;
+  if (state === 'loading' || (state === 'subscribed' && (setupState === 'ready' || (!pilotVerification && setupState !== 'failed')))) return null;
+  if ((state === 'default' || state === 'unsubscribed') && !optionalPromptVisible && !pilotVerification) return null;
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const isIphoneSafari = /iPhone|iPad|iPod/.test(window.navigator.userAgent || '') && !standalone;
   const stateMessage = verificationDeferred
     ? 'Notification status will refresh when your connection improves.'
+    : pilotVerification && setupState !== 'ready'
+    ? setupState === 'pending' ? 'Checking notification delivery…' : 'Notification delivery is not verified. The app will continue to work.'
     : state === 'subscribed' && setupState === 'pending'
     ? 'Notifications are enabled. Finishing setup…'
     : state === 'subscribed' && setupState === 'failed'
