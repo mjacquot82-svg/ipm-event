@@ -52,6 +52,6 @@ export type NotificationRegistrationResult = {
   stage: 'success'; status: Record<string, unknown>; attempts: number;
 };
 
-export async function ensureNotificationRegistration(): Promise<NotificationRegistrationResult> {
+export async function ensureNotificationRegistration(_options: {allowEnrollment?: boolean} = {}): Promise<NotificationRegistrationResult> {
   return { stage: 'success', status: {}, attempts: 1 };
 }

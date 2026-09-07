@@ -66,7 +66,7 @@ test('restored installation proceeds through one normal setup attempt without a 
   assert.equal((initializationGate.match(/waitForWonderPushSessionReady\(\)/g) || []).length, 1);
   assert.equal((initializationGate.match(/readWonderPushSnapshot\(/g) || []).length, 1);
   assert.doesNotMatch(initializationGate, /RegistrationInProgressError|registrationAlreadyInProgress/);
-  assert.match(service, /installationId = await getSubscribedInstallationId\(\)/);
+  assert.match(service, /await getSubscribedInstallationId\(\)/);
   assert.equal((service.slice(service.indexOf('export async function runNotificationRegistrationAttempt'),
     service.indexOf('function wait(delayMs')).match(/getSubscribedInstallationId\(\)/g) || []).length, 1);
 });
@@ -184,10 +184,10 @@ test('invalid credentials and takeover responses do not retry', () => {
 });
 
 test('Home distinguishes subscribed, pending, ready and failed setup', () => {
-  assert.doesNotMatch(component, /ensureNotificationRegistration\(\)\.catch\(\(\) => undefined\)/);
-  assert.match(component, /Notifications are enabled\. Finishing setup…/);
-  assert.match(component, /Notifications are enabled, but setup could not be completed\. Tap to try again\./);
-  assert.match(component, /await ensureNotificationRegistration\(\)/);
+  assert.doesNotMatch(component, /ensureNotificationRegistration\(\{allowEnrollment\}\)\.catch\(\(\) => undefined\)/);
+  assert.match(component, /Checking notification delivery…/);
+  assert.match(component, /Notification delivery is not verified\. The app will continue to work\./);
+  assert.match(component, /await ensureNotificationRegistration\(\{allowEnrollment\}\)/);
   assert.match(component, />Try again</);
   assert.match(component, /accessibilityLabel="Try notification setup again"/);
   assert.match(component, /minHeight: 44/);
@@ -206,9 +206,9 @@ test('session initialization remains pending and automatically resumes setup', (
     component.indexOf('const refresh'));
   assert.match(setup, /wonderpush_registration_in_progress_session_not_ready/);
   assert.match(setup, /await waitForWonderPushSessionReady\(\)/);
-  assert.equal((setup.match(/await ensureNotificationRegistration\(\)/g) || []).length, 2);
+  assert.equal((setup.match(/await ensureNotificationRegistration\(\{allowEnrollment\}\)/g) || []).length, 2);
   assert.ok(setup.indexOf('await waitForWonderPushSessionReady()')
-    < setup.lastIndexOf('await ensureNotificationRegistration()'));
+    < setup.lastIndexOf('await ensureNotificationRegistration({allowEnrollment})'));
   assert.match(setup, /setSetupState\('ready'\)/);
   assert.match(setup, /setSetupState\('failed'\)/);
   assert.doesNotMatch(setup, /subscribeToNotifications|unsubscribeFromNotifications|requestPermission|send/);
@@ -220,8 +220,8 @@ test('pending startup remains visible until provider readiness while genuine fai
   assert.match(component, /setupState === 'failed'[\s\S]*Try again/);
   assert.match(component, /state === 'subscribed'[\s\S]*unsubscribeFromNotifications\(\)/);
   assert.match(component, /state === 'denied'/);
-  assert.match(component, /Notifications are enabled\. Finishing setup…/);
-  assert.match(component, /Notifications are enabled, but setup could not be completed/);
+  assert.match(component, /Checking notification delivery…/);
+  assert.match(component, /Notification delivery is not verified/);
 });
 
 test('only provider-ready subscribers hide the Home card', () => {

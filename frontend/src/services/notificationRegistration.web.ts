@@ -1,6 +1,8 @@
+import { reconciliationEnabled, hasExistingReconciliationCapability, reconcileSubscription } from './subscriptionReconciliation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   getSubscribedInstallationId,
+  readWonderPushSnapshot,
   WonderPushInstallationRecoveryError,
 } from './wonderPushService.web';
 import {
@@ -177,7 +179,9 @@ export async function runNotificationRegistrationAttempt(
   attemptNumber: 1 | 2 | 3 = 1,
 ): Promise<Record<string, unknown>> {
   let installationId: string | null;
-  try { installationId = await getSubscribedInstallationId(); }
+  try { installationId = reconciliationEnabled()
+    ? (await readWonderPushSnapshot({requireInstallation:true})).installationId
+    : await getSubscribedInstallationId(); }
   catch (error) {
     if (error instanceof WonderPushInstallationRecoveryError) {
       throw new NotificationRegistrationError('installation_retrieval', error.failureStage, true);
@@ -229,12 +233,22 @@ function wait(delayMs: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, delayMs));
 }
 
-export async function ensureNotificationRegistration(): Promise<NotificationRegistrationResult> {
+export async function ensureNotificationRegistration(options: {allowEnrollment?: boolean} = {}): Promise<NotificationRegistrationResult> {
+  if (reconciliationEnabled() && (!options.allowEnrollment || hasExistingReconciliationCapability())) {
+    const result = await reconcileSubscription();
+    if (result.status === 'VERIFIED') return {stage:'success',status:{registered:true,provider_deliverable:true,subscription_verified:true},attempts:1};
+    throw new NotificationRegistrationError('provider_verification','malformed_response',false,null);
+  }
+
   let lastError: NotificationRegistrationError | null = null;
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
     try {
       const attemptNumber = (attempt + 1) as 1 | 2 | 3;
       const status = await runNotificationRegistrationAttempt(attemptNumber);
+      if (reconciliationEnabled()) {
+        const verified = await reconcileSubscription();
+        if (verified.status !== 'VERIFIED') throw new NotificationRegistrationError('provider_verification','malformed_response',false,null);
+      }
       return { stage: 'success', status, attempts: attempt + 1 };
     } catch (error) {
       lastError = safeRequestError('installation_retrieval', error);

@@ -71,6 +71,6 @@ test('recoverable mutations use internal state while confirmed error remains use
 
 test('confirmed setup and registration failures retain their explicit recovery UI', () => {
   assert.match(component, /setSetupState\('failed'\)/);
-  assert.match(component, /Notifications are enabled, but setup could not be completed\. Tap to try again\./);
+  assert.match(component, /Notification delivery is not verified\. The app will continue to work\./);
   assert.match(component, /accessibilityLabel="Try notification setup again"/);
 });

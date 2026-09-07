@@ -1,0 +1,2 @@
+# Optional isolated PostgreSQL integration/load tests; not a production dependency.
+psycopg[binary]>=3,<4

@@ -1972,6 +1972,17 @@ if provider_diagnostic_enabled(
             payload = json.loads(body)
         except Exception:
             return JSONResponse(result("UNVERIFIABLE"), headers={"Cache-Control": "no-store"})
+        # Preserve the temporary tool, but never let its process-local latch
+        # bypass permanent durable coordination when automatic repair is active.
+        try:
+            flags = await notification_registration_repository.client.request(
+                "GET", "/notification_reconciliation_project",
+                params={"select":"enabled,repair_enabled","limit":"1"},
+            )
+            if flags and flags[0].get("enabled") and flags[0].get("repair_enabled"):
+                return JSONResponse(result("PERMANENT_RECONCILIATION_ACTIVE"),headers={"Cache-Control":"no-store"})
+        except Exception:
+            return JSONResponse(result("UNVERIFIABLE"),headers={"Cache-Control":"no-store"})
         repaired = await repair_current(
             render_hostname=os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""),
             public_app_url=PUBLIC_APP_URL, supabase_url=SUPABASE_URL,
@@ -1979,6 +1990,44 @@ if provider_diagnostic_enabled(
             capability=request.headers.get("X-Notification-Device-Capability", ""), payload=payload,
         )
         return JSONResponse(repaired, headers={"Cache-Control": "no-store"})
+
+
+    @api_router.get("/notification-registrations/reconciliation-health", include_in_schema=False)
+    async def subscription_reconciliation_health():
+        # Build/rollout evidence only: no installation or provider read.
+        commit = os.environ.get("RENDER_GIT_COMMIT", "")
+        result = {"component":"SUBSCRIPTION_RECONCILIATION_V1", "build_commit":commit if re.fullmatch(r"[0-9a-f]{40}",commit) else "UNKNOWN"}
+        try:
+            rows = await notification_registration_repository.client.request("GET", "/notification_reconciliation_project",
+                params={"select":"enabled,repair_enabled","limit":"1"})
+            result.update({"observation_enabled":bool(rows and rows[0].get("enabled")),
+                "repair_enabled":bool(rows and rows[0].get("repair_enabled")),"metadata_read":"SUCCESS"})
+        except Exception:
+            result["metadata_read"] = "FAILED"
+        return JSONResponse(result,headers={"Cache-Control":"no-store"})
+
+    @api_router.post("/notification-registrations/reconcile", include_in_schema=False)
+    async def permanent_subscription_reconciliation(request: Request):
+        try:
+            from backend.subscription_reconciliation import reconcile, safe
+        except ModuleNotFoundError:
+            from subscription_reconciliation import reconcile, safe
+        if request.headers.get("Origin") != PUBLIC_APP_URL.rstrip("/"):
+            raise HTTPException(status_code=404, detail="Not found")
+        try:
+            body = bytearray()
+            async for chunk in request.stream():
+                body.extend(chunk)
+                if len(body)>12288:
+                    return JSONResponse(safe({'status':'INELIGIBLE'}),headers={'Cache-Control':'no-store'})
+            payload = json.loads(body)
+            repository = notification_registration_repository
+            result = await reconcile(client=repository.client,event_slug=repository.event_slug,
+                credential=WONDERPUSH_ACCESS_TOKEN,scope=SUPABASE_URL,
+                capability=request.headers.get("X-Notification-Device-Capability", ""),payload=payload)
+        except Exception:
+            result = safe({'status':'DEFERRED'})
+        return JSONResponse(result,headers={'Cache-Control':'no-store'})
 
 
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)

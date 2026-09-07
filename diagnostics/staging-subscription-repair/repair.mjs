@@ -1,6 +1,6 @@
 import { ORIGIN, RESULT, digestSubscription, safeResult, unverifiable } from '../staging-subscription-compare/compare.mjs';
 const API = 'https://ipm-staging-backend.onrender.com/api/staging-diagnostics/reconcile-subscription';
-const statuses = new Set(['ALREADY_MATCHED', 'PRECONDITION_NOT_MET', 'ATTEMPT_ALREADY_USED', 'MATCH_VERIFIED', 'OUTCOME_UNCONFIRMED', 'READ_FAILED', 'NOT_AUTHORIZED', 'UNVERIFIABLE']);
+const statuses = new Set(['PERMANENT_RECONCILIATION_ACTIVE', 'ALREADY_MATCHED', 'PRECONDITION_NOT_MET', 'ATTEMPT_ALREADY_USED', 'MATCH_VERIFIED', 'OUTCOME_UNCONFIRMED', 'READ_FAILED', 'NOT_AUTHORIZED', 'UNVERIFIABLE']);
 const failure = () => ({ repair_status: 'UNVERIFIABLE', ...unverifiable(), browser_subscription_preserved: 'unverifiable' });
 function encode(buffer) {
   return btoa(String.fromCharCode(...new Uint8Array(buffer))).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');

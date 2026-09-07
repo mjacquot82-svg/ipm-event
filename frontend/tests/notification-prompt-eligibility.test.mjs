@@ -54,7 +54,7 @@ test('a visible unsubscribed card stays latched through later canonical status c
 });
 
 test('local subscription state stays visible until provider-backed setup is ready', () => {
-  assert.match(component, /await ensureNotificationRegistration\(\);[\s\S]*setSetupState\('ready'\)/);
+  assert.match(component, /await ensureNotificationRegistration\(\{allowEnrollment\}\);[\s\S]*setSetupState\('ready'\)/);
   assert.match(component, /state === 'subscribed' && setupState === 'ready'/);
   assert.doesNotMatch(component, /state === 'subscribed' && setupState !== 'failed'/);
 });

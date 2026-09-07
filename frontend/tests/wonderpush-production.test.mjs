@@ -25,7 +25,9 @@ test('normal announcement delivery has TTL and idempotency but no campaignId', (
 test('production announcement links are same-origin and never staging', () => {
   assert.match(backend, /PUBLIC_APP_URL.*https:\/\/theipm\.ca/);
   assert.match(backend, /PUBLIC_APP_URL.*announcements/);
-  assert.doesNotMatch(backend, /staging\.theipm\.ca/);
+  const delivery = backend.slice(backend.indexOf('async def notify_announcement('), backend.indexOf('def notification_device_headers('));
+  assert.doesNotMatch(delivery, /staging\.theipm\.ca/);
+  // Diagnostic/reconciliation routes are separately tested as absent in production.
 });
 
 test('exact-device tests cannot degrade to broadcast and remain Owner-only in UI', () => {

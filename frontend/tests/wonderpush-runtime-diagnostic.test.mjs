@@ -132,7 +132,7 @@ test('transition history is in-memory, bounded, and observer-only', () => {
 
 test('Home setup behavior is unchanged apart from publishing safe workflow state', () => {
   assert.match(notificationCard, /await waitForWonderPushSessionReady\(\)/);
-  assert.match(notificationCard, /await ensureNotificationRegistration\(\)/);
+  assert.match(notificationCard, /await ensureNotificationRegistration\(\{allowEnrollment\}\)/);
   assert.match(notificationCard, /recordNotificationWorkflowDiagnostic\('PENDING'\)/);
   assert.match(notificationCard, /recordNotificationWorkflowDiagnostic\('FAILED', safeClassification \|\| 'other'\)/);
 });

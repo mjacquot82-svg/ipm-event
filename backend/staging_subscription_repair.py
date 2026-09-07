@@ -60,9 +60,11 @@ def read_token(target, credential):
 def patch_token(target, credential, token):
     # Documented PATCH updates an existing installation. Never PUT/POST/upsert.
     # Credential and token go in the TLS request body, never a logged URL.
-    data = json.dumps({"accessToken": credential, "userId": "", "body": {"pushToken": token}}).encode()
-    request = Request("https://management-api.wonderpush.com/v1/installations/" + quote(target, safe=""),
-                      data=data, method="PATCH", headers={"Content-Type": "application/json"})
+    try:
+        from backend.subscription_provider import patch_request
+    except ModuleNotFoundError:
+        from subscription_provider import patch_request
+    request = patch_request(target, credential, token)
     with build_opener(comparison.NoRedirect()).open(request, timeout=25) as response:
         if response.status != 200:
             raise ValueError()

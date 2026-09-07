@@ -21,7 +21,10 @@ import { initializeOfflineShell, initializeWonderPush } from '../src/services/wo
 import { listenForWonderPushNotificationDeepLinks } from '../src/services/notificationDeepLink';
 import { setPwaUpdateSafeState, startPwaUpdateFlow } from '../src/services/pwaUpdateService';
 
+import { startSubscriptionReconciliation } from '../src/services/subscriptionReconciliation';
+
 export default function RootLayout() {
+  useEffect(() => startSubscriptionReconciliation(), []);
   const [isInitializing, setIsInitializing] = useState(Platform.OS !== 'web');
   const pathname = usePathname();
   const router = useRouter();

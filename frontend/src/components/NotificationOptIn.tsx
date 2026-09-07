@@ -1,3 +1,4 @@
+import { watchReconciliation, reconciliationEnabled, hasExistingReconciliationCapability } from '../services/subscriptionReconciliation';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
@@ -143,14 +144,21 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
     }
   }, []);
 
-  const completeSetup = useCallback(async () => {
+  useEffect(() => watchReconciliation((result) => {
+    if (!reconciliationEnabled() || !hasExistingReconciliationCapability()) return;
+    if (result.status === 'VERIFIED') { setSetupState('ready'); setState('subscribed'); }
+    else if (['SDK_SETTLING','COMPARING','PATCH_PENDING','VERIFYING','CHECK_DUE'].includes(result.status)) setSetupState('pending');
+    else setSetupState('failed');
+  }), []);
+
+  const completeSetup = useCallback(async (allowEnrollment = false) => {
     recordNotificationWorkflowDiagnostic('PENDING');
     setSetupState('pending');
     setFailureStage(null);
     setFailureClassification(null);
     setStagingDiagnostic(null);
     try {
-      await ensureNotificationRegistration();
+      await ensureNotificationRegistration({allowEnrollment});
       recordNotificationWorkflowDiagnostic('SUCCESS');
       disabledPromptLatchedRef.current = false;
       setOptionalPromptVisible(false);
@@ -164,7 +172,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
           // not a completed failure. Stay pending until the SDK reports that its
           // session is ready, then rerun the existing idempotent setup path.
           await waitForWonderPushSessionReady();
-          await ensureNotificationRegistration();
+          await ensureNotificationRegistration({allowEnrollment});
           recordNotificationWorkflowDiagnostic('SUCCESS');
           setSetupState('ready');
           return;
@@ -249,7 +257,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
         : await subscribeToNotifications();
       setState(nextState);
       await evaluateOptionalPrompt(nextState);
-      if (nextState === 'subscribed') await completeSetup();
+      if (nextState === 'subscribed') await completeSetup(true);
       else {
         recordNotificationWorkflowDiagnostic('IDLE');
         setSetupState('idle');
@@ -265,18 +273,18 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   if (state === 'recovering') return null;
   if (state === 'loading') return null;
   if (state === 'subscribed' && setupState === 'ready') return null;
-  if ((state === 'default' || state === 'unsubscribed') && !optionalPromptVisible) return null;
+  if (state === 'default' && setupState !== 'failed' && !optionalPromptVisible) return null;
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
   const isIphoneSafari = /iPhone|iPad|iPod/.test(window.navigator.userAgent || '') && !standalone;
   const stateMessage = verificationDeferred
     ? 'Notification status will refresh when your connection improves.'
     : state === 'subscribed' && setupState === 'pending'
-    ? 'Notifications are enabled. Finishing setup…'
+    ? 'Checking notification delivery…'
     : state === 'subscribed' && setupState === 'failed'
-    ? 'Notifications are enabled, but setup could not be completed. Tap to try again.'
+    ? 'Notification delivery is not verified. The app will continue to work.'
     : state === 'subscribed' && setupState !== 'ready'
-    ? 'Notifications are enabled. Finishing setup…'
+    ? 'Checking notification delivery…'
     : state === 'unsupported' && isIphoneSafari
     ? 'On iPhone, notifications are available from the installed IPM app.'
     : STATE_COPY[state];
