@@ -1,0 +1,31 @@
+{
+  "backend": {
+    "commit": "a28f44735b562e386ab4f2c1f575b7193fd06a06",
+    "parent": "741d51ecff5fb11e522e481e32ca02ee0430052d",
+    "files": [
+      "backend/production_reconciliation.py",
+      "docs/production-pilot-binding.md",
+      "supabase/migrations/20260907000200_subscription_reconciliation_binding.sql",
+      "tests/test_pilot_binding.py",
+      "tests/test_pilot_binding_postgres.py"
+    ]
+  },
+  "frontend": {
+    "commit": "83aea470edce3da16be02ee6f599e49a59cd165a",
+    "parent": "1d66efe668b08062faba1887992cdd3793c1e8ae",
+    "files": [
+      "frontend/public/api/production-pilot-binding.html",
+      "frontend/public/api/production-pilot-binding.mjs",
+      "frontend/tests/production-pilot-binding.test.mjs"
+    ]
+  },
+  "validation": {
+    "python_passed": 97,
+    "node_passed": 24,
+    "local_migration_rollback": true,
+    "deployed": false,
+    "production_accessed": false,
+    "observation_enabled_by_this_work": false,
+    "repair_enabled_by_this_work": false
+  }
+}
