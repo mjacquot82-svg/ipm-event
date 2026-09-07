@@ -1821,6 +1821,18 @@ install_production_push_diagnostic(api_router, lambda: {
 })
 
 
+# Read-only binding gate probe: separate from the write-capable binding route.
+try:
+    from backend.production_binding_diagnostic import install_routes as install_binding_diagnostic
+except ModuleNotFoundError:
+    from production_binding_diagnostic import install_routes as install_binding_diagnostic
+install_binding_diagnostic(api_router, lambda: {
+    "host": os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""), "app": PUBLIC_APP_URL,
+    "database": SUPABASE_URL, "event": DEFAULT_EVENT_ID,
+    "database_key": SUPABASE_SERVICE_ROLE_KEY,
+})
+
+
 # Isolated production pilot; existing diagnostic and attendee routes stay intact.
 try:
     from backend.production_reconciliation import install_routes as install_pilot_routes
