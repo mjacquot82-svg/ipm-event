@@ -1899,6 +1899,31 @@ async def notification_registration_operations():
     }
 
 
+# Temporary diagnostic is mounted only on the actual staging resources.
+try:
+    from backend.staging_provider_diagnostic import enabled as provider_diagnostic_enabled, read_current as read_current_provider_diagnostic
+except ModuleNotFoundError:
+    from staging_provider_diagnostic import enabled as provider_diagnostic_enabled, read_current as read_current_provider_diagnostic
+
+if provider_diagnostic_enabled(
+    render_hostname=os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""),
+    public_app_url=PUBLIC_APP_URL, supabase_url=SUPABASE_URL,
+):
+    @api_router.get("/staging-diagnostics/provider-installation", include_in_schema=False)
+    async def staging_provider_installation_diagnostic(request: Request):
+        # Explicit operator header prevents a page/link prefetch from calling the
+        # provider. It is an intent marker, not an authentication credential.
+        if request.headers.get("X-IPM-Staging-Diagnostic") != "read-current-installation":
+            raise HTTPException(status_code=404, detail="Not found")
+        result = await read_current_provider_diagnostic(
+            render_hostname=os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""),
+            public_app_url=PUBLIC_APP_URL, supabase_url=SUPABASE_URL,
+            repository=notification_registration_repository,
+            credential=WONDERPUSH_ACCESS_TOKEN,
+        )
+        return JSONResponse(result, headers={"Cache-Control": "no-store"})
+
+
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)
 async def list_admin_schedule(current_user: dict = Depends(get_current_organizer_user)):
     require_schedule_manager_role(current_user)
