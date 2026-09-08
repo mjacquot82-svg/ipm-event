@@ -121,3 +121,42 @@ Production unchanged. No notification sent. No WonderPush PATCH, enrollment,
 permission change, reconciliation/cohort/config change, schedule-data edit, vendor
 edit, map edit or production deployment occurred. Browser tests isolate providers
 and use local synthetic favorite records; no attendee records are modified.
+
+## Final staging read-back
+
+Published Netlify deployment: `6aa091b2b8f161cc3b981158`, ready at
+2026-09-08T22:54:59Z, https://staging.theipm.ca. Application source SHA:
+`317ccd4faf72d5adcae086e84ee51bea5321892a`. Served bundle:
+`entry-acd64df49b64990b340a1a3c26db9561.js`; offline cache version `190cff821a290811`.
+Manual deployment source is proven by bundle/index/worker byte comparison and the
+release manifest; Netlify leaves commit_ref null for this file-manifest deployment.
+
+Preserved 163 previous paths unchanged, including old bundle aliases and diagnostics.
+Only index.html and the generated worker replace existing paths; new hashed assets
+are additive. The submitted manifest contains 185 paths. Preview read-back verified
+78 critical paths by SHA-1; live index and worker match the built bytes exactly.
+Worker body matches the previous worker after excluding generated cache constants.
+
+Local, preview and live browser fixture flows passed at 390px and 1440px: addition,
+Schedule removal, My Itinerary removal, saved-state persistence, dismissal, reload
+cooldown and granted-permission suppression. Live read-only smoke passed at 320px
+and 1440px: optional browser-first help, Emergency location UI, Tented City tab,
+and organizer login. No document overflow. All provider access and outbound writes
+were blocked in automated browser flows. Test favorites are synthetic browser-local
+records, not attendee/provider state. The actual local offline worker cached Home,
+reloaded offline and served an offline Schedule deep link successfully.
+
+Integrated analytics desktop/mobile UI fixture tests passed. Live /api/admin/auth/me
+returns 401 without a session; actual authenticated aggregate counts remain pending.
+The simplest remaining human step is normal organizer sign-in at
+https://staging.theipm.ca/admin/ and opening Analytics. No cookie export is requested.
+
+Staging Render remains on fb80d44a, deployment dep-dag8ls3l550s739r539g (live).
+No new backend deploy or configuration mutation occurred during consolidation.
+
+The final documentation-only commit aligns origin/staging with this consolidated
+candidate, so the next staging task no longer starts from the older frontend.
+It uses [skip render] and [skip netlify], leaving the validated deployments intact.
+These are supported by [Render's deploy documentation](https://render.com/docs/deploys)
+and [Netlify's deploy documentation](https://docs.netlify.com/deploy/manage-deploys/manage-deploys-overview/).
+The documentation-only commit does not change the deployed application bytes.
