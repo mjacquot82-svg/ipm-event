@@ -48,7 +48,7 @@ test('safe Home state activates the waiting worker and reloads exactly once afte
 
 test('first installs and already-current builds do not activate or reload', () => {
   assert.match(updateService, /if \(!candidate \|\| !navigator\.serviceWorker\.controller\) return/);
-  assert.match(updateService, /if \(!safeToActivate \|\| !waitingWorker \|\| activationRequested\) return/);
+  assert.match(updateService, /if \(!safeToActivate \|\| interactionHolds > 0 \|\| !waitingWorker \|\| activationRequested\) return/);
   assert.doesNotMatch(updateService, /setTimeout/);
 });
 
@@ -61,7 +61,7 @@ test('safe resume checks, activates once, and offline checks remain suppressed',
   assert.match(updateService, /setInterval\(checkForUpdate, UPDATE_CHECK_INTERVAL_MS\)/);
   assert.match(updateService, /updateCheck = registration\.update\(\)/);
   assert.match(updateService, /if \(!registration[\s\S]*navigator\.onLine === false[\s\S]*document\.visibilityState !== 'visible'[\s\S]*updateCheck\) return/);
-  assert.match(updateService, /if \(!safeToActivate \|\| !waitingWorker \|\| activationRequested\) return/);
+  assert.match(updateService, /if \(!safeToActivate \|\| interactionHolds > 0 \|\| !waitingWorker \|\| activationRequested\) return/);
 });
 
 test('foreground scheduler stops for unsafe, hidden, offline, and disposed states', () => {

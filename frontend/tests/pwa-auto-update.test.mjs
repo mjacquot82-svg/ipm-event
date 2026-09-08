@@ -219,3 +219,22 @@ test('offline resume preserves a downloaded update but does not perform a networ
   harness.api.setPwaUpdateSafeState(true);
   assert.equal(worker.messages.length, 1);
 });
+
+test('S update waits for every help/enrollment interaction and release is idempotent', () => {
+ const worker = waitingWorker();
+ const h = createHarness({waiting:worker});
+ const a=h.api.holdPwaUpdate(), b=h.api.holdPwaUpdate();
+ h.api.setPwaUpdateSafeState(true);h.api.startPwaUpdateFlow(h.registration);
+ h.windowEvents.dispatch('focus');assert.equal(worker.messages.length,0);
+ a();a();assert.equal(worker.messages.length,0);
+ b();assert.equal(worker.messages.length,1);
+ h.serviceWorkerEvents.dispatch('controllerchange');h.serviceWorkerEvents.dispatch('controllerchange');assert.equal(h.reloads(),1);
+});
+
+test('an interaction started after activation still defers the controller-change reload', () => {
+ const worker=waitingWorker();const h=createHarness({waiting:worker});
+ h.api.setPwaUpdateSafeState(true);h.api.startPwaUpdateFlow(h.registration);
+ assert.equal(worker.messages.length,1);const release=h.api.holdPwaUpdate();
+ h.serviceWorkerEvents.dispatch('controllerchange');assert.equal(h.reloads(),0);
+ release();release();assert.equal(h.reloads(),1);
+});

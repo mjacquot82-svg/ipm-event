@@ -103,15 +103,15 @@ test('init failure observer is staging-gated, pass-through, and retains no sensi
 });
 
 test('failure UI renders classifications only and never sensitive provider values', () => {
-  assert.match(notificationCard, /SHOW_STAGING_NOTIFICATION_DIAGNOSTIC/);
-  assert.match(notificationCard, /Staging initialization diagnostic/);
+  assert.doesNotMatch(notificationCard, /SHOW_STAGING_NOTIFICATION_DIAGNOSTIC/);
+  assert.doesNotMatch(notificationCard, /Staging initialization diagnostic/);
   for (const forbidden of ['installationId}', 'endpoint}', 'pushToken', 'capability}',
     'fingerprint', 'credentials', 'apiKey', 'cookie', 'blockedURI', 'domainLookupStart',
     'domainLookupEnd', 'connectStart', 'connectEnd', 'secureConnectionStart']) {
     assert.doesNotMatch(notificationCard, new RegExp(forbidden, 'i'));
   }
-  assert.match(notificationCard, /authentication_network_classification=/);
-  assert.match(notificationCard, /authentication_resource_timing_present=/);
+  assert.match(diagnostic, /authenticationNetworkClassification/);
+  assert.match(diagnostic, /authenticationResourceTimingPresent/);
 });
 
 test('production About does not render temporary WonderPush engineering state', () => {

@@ -30,40 +30,12 @@ test('America/Toronto calendar day limits prompts to two and resets next day', (
   assert.deepEqual(nextNotificationPromptDailyState(next, { day: '2026-09-22', count: 2 }), { day: '2026-09-23', count: 1 });
 });
 
-test('Not now is local-only and cannot request permission, subscribe, or register', () => {
-  const dismissStart = component.indexOf('const dismissOptionalPrompt');
-  const dismissEnd = component.indexOf('}, []);', dismissStart);
-  const dismiss = component.slice(dismissStart, dismissEnd);
-  assert.match(dismiss, /NOTIFICATION_PROMPT_DISMISSED_AT_KEY/);
-  assert.match(dismiss, /AsyncStorage\.setItem/);
-  assert.doesNotMatch(dismiss, /requestPermission|subscribeToNotifications|ensureNotificationRegistration|fetch\(/);
-  assert.match(component, /<Text style=\{styles\.notNowButtonText\}>Not now<\/Text>/);
+test('notification help never uses the retired recurring prompt policy', () => {
+ assert.doesNotMatch(component, /isNotificationPromptEligible|nextNotificationPromptDailyState|setTimeout|setInterval/);
+ assert.match(component, /const \[expanded, setExpanded\] = useState\(false\)/);
+ assert.match(component, /Notification options/);
 });
-
-test('frequency is recorded only after rendering and no cooldown timer interrupts later', () => {
-  assert.match(component, /useEffect\(\(\) => \{\s*if \(!optionalPromptVisible/);
-  assert.match(component, /nextNotificationPromptDailyState/);
-  assert.doesNotMatch(component, /setTimeout\([\s\S]*NOTIFICATION_PROMPT_COOLDOWN_MS/);
-});
-
-test('a visible unsubscribed card stays latched through later canonical status checks', () => {
-  assert.match(component, /nextState === 'unsubscribed' && disabledPromptLatchedRef\.current[\s\S]*setOptionalPromptVisible\(true\)/);
-  assert.match(component, /nextState === 'unsubscribed' && eligible[\s\S]*disabledPromptLatchedRef\.current = true/);
-  assert.match(component, /useFocusEffect\([\s\S]*void refresh\(\);[\s\S]*\}, \[refresh\]\)/);
-  assert.doesNotMatch(component, /getNotificationState\(\)\s*\.then\(evaluateOptionalPrompt\)/);
-});
-
-test('local subscription state stays visible until provider-backed setup is ready', () => {
-  assert.match(component, /await ensureNotificationRegistration\(\{allowEnrollment\}\);[\s\S]*setSetupState\('ready'\)/);
-  assert.match(component, /state === 'subscribed' && setupState === 'ready'/);
-  assert.doesNotMatch(component, /state === 'subscribed' && setupState !== 'failed'/);
-});
-
-test('healthy, denied, unsupported, failed, and offline states stay outside optional eligibility', () => {
-  assert.match(component, /nextState !== 'default' && nextState !== 'unsubscribed'/);
-  assert.match(component, /nextState === 'subscribed'/);
-  assert.match(component, /state === 'denied'/);
-  assert.match(component, /state === 'unsupported' && isIphoneSafari/);
-  assert.match(component, /state === 'subscribed' && setupState === 'failed'/);
-  assert.match(component, /navigator\.onLine === false/);
+test('notification success stays visible and controls remain discoverable', () => {
+ assert.match(component, /Notifications are enabled on this device/);
+ assert.doesNotMatch(component, /if \(state === 'subscribed'.*return null/);
 });

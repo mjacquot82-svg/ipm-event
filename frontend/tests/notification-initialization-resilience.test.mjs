@@ -39,22 +39,22 @@ test('status checks never prompt permission and retry cannot loop infinitely', (
   assert.match(service, /NOTIFICATION_STATE_ATTEMPTS = 2/);
 });
 
-test('focus and online recovery are event-driven, deduplicated, and keep transient UI hidden', () => {
+test('focus and online recovery are event-driven, deduplicated, and offer bounded retry', () => {
   assert.match(component, /statusCheckInFlightRef\.current/);
   assert.match(component, /if \(statusCheckInFlightRef\.current \|\| navigator\.onLine === false\) return/);
   assert.match(component, /useFocusEffect[\s\S]*void refresh\(\)[\s\S]*\}, \[refresh\]\)/);
   assert.doesNotMatch(component, /getNotificationState\(\)\s*\.then\(evaluateOptionalPrompt\)/);
   assert.match(component, /window\.addEventListener\('online', resume\)/);
   assert.match(component, /window\.removeEventListener\('online', resume\)/);
-  assert.match(component, /if \(state === 'loading'/);
+  assert.match(component, /nextState === 'loading'.*'error'/);
   assert.doesNotMatch(component.slice(component.indexOf('const refresh ='), component.indexOf('const updateSubscription =')),
     /subscribeToNotifications|requestPermission/);
 });
 
-test('a retained transient failure cannot render before focus recovery runs', () => {
+test('a transient failure offers recovery without initiating permission', () => {
   const renderStart = component.indexOf("if (Platform.OS !== 'web') return null");
   const render = component.slice(renderStart, component.indexOf('return (', renderStart));
-  assert.match(render, /if \(state === 'recovering'\) return null/);
+  assert.match(component, /nextState === 'recovering' \? 'error'/);
   assert.doesNotMatch(render, /state === 'error'[\s\S]*return null/);
   assert.match(component, /useFocusEffect[\s\S]*void refresh\(\)/);
   assert.doesNotMatch(component, /recovering[\s\S]{0,200}setTimeout|recovering[\s\S]{0,200}requestPermission/);

@@ -13,7 +13,7 @@ import {
 } from '../src/utils/notificationService';
 import { AdProvider } from '../src/context/AdContext';
 import ErrorBoundary from '../src/components/ErrorBoundary';
-import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
+import { startInstallPromptCapture } from '../src/components/PWAInstallPrompt';
 import SplashScreen from '../src/components/SplashScreen';
 import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext';
 import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
@@ -24,6 +24,7 @@ import { setPwaUpdateSafeState, startPwaUpdateFlow } from '../src/services/pwaUp
 import { startSubscriptionReconciliation } from '../src/services/subscriptionReconciliation';
 
 export default function RootLayout() {
+  useEffect(() => startInstallPromptCapture(), []);
   useEffect(() => startSubscriptionReconciliation(), []);
   const [isInitializing, setIsInitializing] = useState(Platform.OS !== 'web');
   const pathname = usePathname();
@@ -108,7 +109,6 @@ export default function RootLayout() {
                 <Stack.Screen name="coming-soon" options={{ headerShown: false }} />
               </Stack>
             )}
-            <PWAInstallPrompt />
             </ErrorBoundary>
           </AnnouncementReadProvider>
         </AdProvider>

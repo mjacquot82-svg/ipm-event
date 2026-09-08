@@ -1,6 +1,3 @@
-import { watchReconciliation, reconciliationEnabled, hasExistingReconciliationCapability } from '../services/subscriptionReconciliation';
-import { Feather } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
@@ -18,65 +15,21 @@ import {
   NotificationRegistrationStage,
 } from '../services/notificationRegistration';
 import { recordNotificationWorkflowDiagnostic } from '../services/wonderPushRuntimeDiagnostic';
-import type { WonderPushRuntimeDiagnostic } from '../services/wonderPushRuntimeDiagnostic';
-import { readWonderPushRuntimeDiagnostic } from '../services/wonderPushRuntimeDiagnostic';
-import { isStagingNotificationDiagnosticEnabled } from '../services/wonderPushRuntimeDiagnosticCore';
+import { holdPwaUpdate } from '../services/pwaUpdateService';
 import { colors } from '../theme/colors';
-import {
-  isNotificationPromptEligible,
-  nextNotificationPromptDailyState,
-  NOTIFICATION_PROMPT_DAILY_STATE_KEY,
-  NOTIFICATION_PROMPT_DISMISSED_AT_KEY,
-  parseNotificationPromptDailyState,
-} from '../utils/notificationPromptEligibility';
+import { detectInstallEnvironment } from '../utils/installEnvironment';
+import { notificationHelp } from '../utils/notificationHelp';
 
 const STATE_COPY: Record<NotificationState, string> = {
   loading: 'Checking notification status…',
   recovering: 'Checking notification status…',
-  default: 'Get important IPM announcements on this device.',
+  default: 'Notifications are optional. Choose whether to receive important IPM announcements.',
   subscribed: 'Notifications are enabled on this device.',
   unsubscribed: 'Notifications are currently disabled on this device.',
   denied: 'Notifications are blocked in your browser settings.',
   unsupported: 'Notifications require a supported browser or installed app.',
   error: 'Notifications are temporarily unavailable. The IPM app will continue to work.',
 };
-
-const SHOW_STAGING_NOTIFICATION_DIAGNOSTIC = isStagingNotificationDiagnosticEnabled(
-  process.env.EXPO_PUBLIC_BACKEND_URL,
-);
-
-export function formatSafeWonderPushDiagnostic(diagnostic: WonderPushRuntimeDiagnostic): string {
-  return [
-    `sdk_loader=${diagnostic.sdkLoader}`,
-    `session_api_available=${diagnostic.sessionApiAvailable}`,
-    `initialization_state=${diagnostic.sessionInterpretedState}`,
-    `initialization_timeout=${diagnostic.initializationTimedOut}`,
-    `installation_id_present=${diagnostic.installationAvailable === 'YES'}`,
-    `browser_push_subscription_present=${diagnostic.pushSubscriptionPresent === 'YES'}`,
-    `local_sdk_subscribed=${diagnostic.subscribed === 'YES'}`,
-    `sdk_error_name=${diagnostic.sdkErrorName || 'none'}`,
-    `initialization_stage=${diagnostic.initializationStage}`,
-    `service_worker_controlled=${diagnostic.serviceWorkerControlled}`,
-    `service_worker_script=${diagnostic.serviceWorkerScript}`,
-    `service_worker_version=${diagnostic.serviceWorkerVersion}`,
-    `init_failure_classification=${diagnostic.initFailureClassification}`,
-    `authentication_request_attempted=${diagnostic.authenticationRequestAttempted}`,
-    `authentication_http_status=${diagnostic.authenticationHttpStatus ?? 'none'}`,
-    `authentication_http_status_class=${diagnostic.authenticationHttpStatusClass}`,
-    `indexeddb_available=${diagnostic.indexedDbAvailable}`,
-    `init_failure_error_name=${diagnostic.initFailureErrorName || 'none'}`,
-    `authentication_network_classification=${diagnostic.authenticationNetworkClassification}`,
-    `authentication_xhr_terminal_event=${diagnostic.authenticationXhrTerminalEvent}`,
-    `authentication_online_at_start=${diagnostic.authenticationOnlineAtStart ?? 'unknown'}`,
-    `authentication_online_at_terminal=${diagnostic.authenticationOnlineAtTerminal ?? 'unknown'}`,
-    `authentication_offline_during_request=${diagnostic.authenticationOfflineDuringRequest}`,
-    `authentication_csp_connect_blocked=${diagnostic.authenticationCspConnectBlocked}`,
-    `authentication_resource_timing_present=${diagnostic.authenticationResourceTimingPresent}`,
-    `authentication_dns_phase_observed=${diagnostic.authenticationDnsPhaseObserved}`,
-    `authentication_connect_phase_observed=${diagnostic.authenticationConnectPhaseObserved}`,
-    `authentication_tls_phase_observed=${diagnostic.authenticationTlsPhaseObserved}`,
-  ].join('\n');
-}
 
 export default function NotificationOptIn({ containerStyle }: { containerStyle?: StyleProp<ViewStyle> }) {
   const [state, setState] = useState<NotificationState>('loading');
@@ -85,83 +38,24 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
   const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'failed'>('idle');
   const [failureStage, setFailureStage] = useState<NotificationRegistrationStage | null>(null);
   const [failureClassification, setFailureClassification] = useState<NotificationRegistrationFailure | null>(null);
-  const [stagingDiagnostic, setStagingDiagnostic] = useState<string | null>(null);
-  const [optionalPromptVisible, setOptionalPromptVisible] = useState(false);
-  const promptRecordedRef = useRef(false);
-  const promptDailyStateRef = useRef<ReturnType<typeof parseNotificationPromptDailyState>>(null);
-  const disabledPromptLatchedRef = useRef(false);
+  const [expanded, setExpanded] = useState(false);
+  const triggerRef = useRef<any>(null);
+  const actionInFlightRef = useRef(false);
   const hasFocusedRef = useRef(false);
   const statusCheckInFlightRef = useRef(false);
-
-  const evaluateOptionalPrompt = useCallback(async (nextState: NotificationState) => {
-    if (nextState === 'unsubscribed' && disabledPromptLatchedRef.current) {
-      setOptionalPromptVisible(true);
-      return;
-    }
-    if (nextState !== 'default' && nextState !== 'unsubscribed') {
-      setOptionalPromptVisible(false);
-      if (nextState === 'subscribed') {
-        void AsyncStorage.multiRemove([
-          NOTIFICATION_PROMPT_DISMISSED_AT_KEY,
-          NOTIFICATION_PROMPT_DAILY_STATE_KEY,
-        ]).catch(() => undefined);
-      }
-      return;
-    }
-    try {
-      const [dismissedAt, storedDailyState] = await Promise.all([
-        AsyncStorage.getItem(NOTIFICATION_PROMPT_DISMISSED_AT_KEY),
-        AsyncStorage.getItem(NOTIFICATION_PROMPT_DAILY_STATE_KEY),
-      ]);
-      const dailyState = parseNotificationPromptDailyState(storedDailyState);
-      const eligible = isNotificationPromptEligible({ now: Date.now(), dismissedAt, dailyState });
-      promptDailyStateRef.current = dailyState;
-      if (nextState === 'unsubscribed' && eligible) disabledPromptLatchedRef.current = true;
-      setOptionalPromptVisible(eligible);
-    } catch (error) {
-      console.warn('Unable to load notification prompt preference:', error);
-      setOptionalPromptVisible(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (!optionalPromptVisible || promptRecordedRef.current) return;
-    promptRecordedRef.current = true;
-    void AsyncStorage.setItem(
-      NOTIFICATION_PROMPT_DAILY_STATE_KEY,
-      JSON.stringify(nextNotificationPromptDailyState(Date.now(), promptDailyStateRef.current)),
-    ).catch((error) => console.warn('Unable to save notification prompt frequency:', error));
-  }, [optionalPromptVisible]);
-
-  const dismissOptionalPrompt = useCallback(async () => {
-    disabledPromptLatchedRef.current = false;
-    setOptionalPromptVisible(false);
-    promptRecordedRef.current = false;
-    try {
-      await AsyncStorage.setItem(NOTIFICATION_PROMPT_DISMISSED_AT_KEY, String(Date.now()));
-    } catch (error) {
-      console.warn('Unable to save notification prompt preference:', error);
-    }
-  }, []);
-
-  useEffect(() => watchReconciliation((result) => {
-    if (!reconciliationEnabled() || !hasExistingReconciliationCapability()) return;
-    if (result.status === 'VERIFIED') { setSetupState('ready'); setState('subscribed'); }
-    else if (['SDK_SETTLING','COMPARING','PATCH_PENDING','VERIFYING','CHECK_DUE'].includes(result.status)) setSetupState('pending');
-    else setSetupState('failed');
-  }), []);
+    if (expanded || working || setupState === 'pending') return holdPwaUpdate();
+  }, [expanded, working, setupState]);
+  const closeHelp = () => { setExpanded(false); triggerRef.current?.focus?.(); };
 
   const completeSetup = useCallback(async (allowEnrollment = false) => {
     recordNotificationWorkflowDiagnostic('PENDING');
     setSetupState('pending');
     setFailureStage(null);
     setFailureClassification(null);
-    setStagingDiagnostic(null);
     try {
       await ensureNotificationRegistration({allowEnrollment});
       recordNotificationWorkflowDiagnostic('SUCCESS');
-      disabledPromptLatchedRef.current = false;
-      setOptionalPromptVisible(false);
       setSetupState('ready');
     } catch (error) {
       let finalError = error;
@@ -191,11 +85,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
       setFailureClassification(safeClassification || 'other');
       recordNotificationWorkflowDiagnostic('FAILED', safeClassification || 'other');
       setSetupState('failed');
-      if (SHOW_STAGING_NOTIFICATION_DIAGNOSTIC) {
-        void readWonderPushRuntimeDiagnostic()
-          .then((diagnostic) => setStagingDiagnostic(formatSafeWonderPushDiagnostic(diagnostic)))
-          .catch(() => setStagingDiagnostic('diagnostic_unavailable=true'));
-      }
+
     }
   }, []);
 
@@ -204,8 +94,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
     statusCheckInFlightRef.current = true;
     try {
       const nextState = await getNotificationState();
-      setState(nextState);
-      await evaluateOptionalPrompt(nextState);
+      setState(nextState === 'loading' || nextState === 'recovering' ? 'error' : nextState);
       if (nextState === 'subscribed') {
         await completeSetup();
       } else if (nextState !== 'loading') {
@@ -214,10 +103,12 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
         setFailureStage(null);
         setFailureClassification(null);
       }
+    } catch {
+      setState('error');
     } finally {
       statusCheckInFlightRef.current = false;
     }
-  }, [completeSetup, evaluateOptionalPrompt]);
+  }, [completeSetup]);
 
   useFocusEffect(
     useCallback(() => {
@@ -229,7 +120,7 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
         return;
       }
       if (navigator.onLine === false) {
-        setOptionalPromptVisible(false);
+        setVerificationDeferred(true);
         return;
       }
       void refresh();
@@ -242,41 +133,41 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
       setVerificationDeferred(false);
       void refresh();
     };
+    const pause = () => setVerificationDeferred(true);
+    window.addEventListener('offline', pause);
     window.addEventListener('online', resume);
     if (navigator.onLine === false) setVerificationDeferred(true);
     else void refresh();
-    return () => window.removeEventListener('online', resume);
+    return () => { window.removeEventListener('online', resume); window.removeEventListener('offline', pause); };
   }, [refresh]);
 
   const updateSubscription = useCallback(async () => {
+    if (actionInFlightRef.current || navigator.onLine === false || state === 'denied' || state === 'unsupported') return;
+    const releaseUpdate = holdPwaUpdate();
+    actionInFlightRef.current = true;
     setWorking(true);
-    disabledPromptLatchedRef.current = false;
     try {
       const nextState = state === 'subscribed'
         ? await unsubscribeFromNotifications()
         : await subscribeToNotifications();
-      setState(nextState);
-      await evaluateOptionalPrompt(nextState);
+      setState(nextState === 'loading' || nextState === 'recovering' ? 'error' : nextState);
       if (nextState === 'subscribed') await completeSetup(true);
       else {
         recordNotificationWorkflowDiagnostic('IDLE');
         setSetupState('idle');
       }
     } finally {
+      actionInFlightRef.current = false;
+      releaseUpdate();
       setWorking(false);
     }
-  }, [completeSetup, evaluateOptionalPrompt, state]);
+  }, [completeSetup, state]);
 
   if (Platform.OS !== 'web') return null;
-  // Only provider-verified subscribers require no Home action. A local SDK
-  // subscription remains visible while capability registration is pending.
-  if (state === 'recovering') return null;
-  if (state === 'loading') return null;
-  if (state === 'subscribed' && setupState === 'ready') return null;
-  if (state === 'default' && setupState !== 'failed' && !optionalPromptVisible) return null;
-  const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
-  const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  const isIphoneSafari = /iPhone|iPad|iPod/.test(window.navigator.userAgent || '') && !standalone;
+  const environment = detectInstallEnvironment({ userAgent: navigator.userAgent, platformHint: navigator.platform, maxTouchPoints: navigator.maxTouchPoints,
+    standalone: window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true });
+  const help = notificationHelp(environment, state);
+  const canAct = state === 'default' || state === 'unsubscribed' || (state === 'subscribed' && setupState === 'ready');
   const stateMessage = verificationDeferred
     ? 'Notification status will refresh when your connection improves.'
     : state === 'subscribed' && setupState === 'pending'
@@ -285,43 +176,41 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
     ? 'Notification delivery is not verified. The app will continue to work.'
     : state === 'subscribed' && setupState !== 'ready'
     ? 'Checking notification delivery…'
-    : state === 'unsupported' && isIphoneSafari
-    ? 'On iPhone, notifications are available from the installed IPM app.'
+    : state === 'unsupported'
+    ? (environment.platform === 'ios' && environment.installState !== 'installed' ? 'Optional notifications are available when you open IPM from your Home Screen.' : 'Notifications aren’t available in this browser. You can still use IPM.')
     : STATE_COPY[state];
 
   return (
     <View
-      style={[styles.card, containerStyle]}
+      style={[containerStyle, styles.card]}
       accessibilityLabel="IPM notification settings"
       testID={`notification-setup-${setupState === 'failed'
         ? `${failureStage}-${failureClassification}` : setupState}`}
     >
-      <View style={styles.icon}><Feather name="bell" size={22} color="#FFFFFF" /></View>
       <View style={styles.copy}>
-        <Text style={styles.title}>IPM Notifications</Text>
-        <Text style={styles.message}>{stateMessage}</Text>
-        {state === 'subscribed' && setupState === 'failed' ? (
-          <Text style={styles.diagnostic}>Setup reference: {failureClassification || 'other'}</Text>
-        ) : null}
-        {state === 'subscribed' && setupState === 'failed'
-          && SHOW_STAGING_NOTIFICATION_DIAGNOSTIC && stagingDiagnostic ? (
-          <Text style={styles.diagnostic}>Staging initialization diagnostic:{'\n'}{stagingDiagnostic}</Text>
-        ) : null}
-        {state === 'subscribed' && setupState === 'failed' ? (
+        <Text accessibilityRole="header" style={styles.title}>Get important IPM updates</Text>
+        <Text accessibilityLiveRegion="polite" style={styles.message}>{stateMessage}</Text>
+        <TouchableOpacity ref={triggerRef} accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={styles.retryButton}>
+          <Text style={styles.retryButtonText}>{expanded ? 'Hide notification options' : 'Notification options'}</Text>
+        </TouchableOpacity>
+        {expanded ? <Text style={styles.hint}>Notifications are optional. Get important IPM announcements on this device. You can keep using IPM without them.</Text> : null}
+        {expanded && state === 'subscribed' && setupState === 'failed' ? (
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel="Try notification setup again"
-            onPress={() => { void completeSetup(); }}
+            disabled={working || verificationDeferred} onPress={() => { void refresh(); }}
             style={styles.retryButton}
           >
             <Text style={styles.retryButtonText}>Try again</Text>
           </TouchableOpacity>
         ) : null}
-        {state === 'denied' ? <Text style={styles.hint}>Allow notifications for this site in browser settings to enable them.</Text> : null}
-        {state === 'unsupported' && isIphoneSafari ? <Text style={styles.hint}>Install IPM to your Home Screen, then open the installed IPM app to enable notifications.</Text> : null}
+        {expanded && !verificationDeferred && (state === 'denied' || state === 'error') ? <TouchableOpacity accessibilityRole="button" onPress={() => { void refresh(); }} style={styles.retryButton}><Text style={styles.retryButtonText}>Check notification status again</Text></TouchableOpacity> : null}
+        {expanded && state === 'unsupported' ? <Text style={styles.hint}>{help}</Text> : null}
+        {expanded && state === 'denied' ? <Text style={styles.hint}>{help}</Text> : null}
+
       </View>
       {!verificationDeferred && working ? <ActivityIndicator color={colors.primary} /> : null}
-      {!verificationDeferred && canAct && !working && setupState !== 'pending' ? (
+      {expanded && !verificationDeferred && canAct && !working && setupState !== 'pending' ? (
         <View style={styles.actions}>
           <TouchableOpacity
             accessibilityRole="button"
@@ -330,17 +219,17 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
             style={[styles.button, state === 'subscribed' && styles.disableButton]}
           >
             <Text style={[styles.buttonText, state === 'subscribed' && styles.disableButtonText]}>
-              {state === 'subscribed' ? 'Disable' : 'Enable'}
+              {state === 'subscribed' ? 'Turn off notifications' : 'Enable notifications'}
             </Text>
           </TouchableOpacity>
           {(state === 'default' || state === 'unsubscribed') ? (
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel="Not now"
-              onPress={() => { void dismissOptionalPrompt(); }}
+              accessibilityLabel="Close notification options"
+              onPress={closeHelp}
               style={styles.notNowButton}
             >
-              <Text style={styles.notNowButtonText}>Not now</Text>
+              <Text style={styles.notNowButtonText}>Close options</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -350,20 +239,20 @@ export default function NotificationOptIn({ containerStyle }: { containerStyle?:
 }
 
 const styles = StyleSheet.create({
-  card: { alignItems: 'center', backgroundColor: '#FFFFFF', borderColor: colors.border, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 12, padding: 14 },
+  card: { backgroundColor: '#FFFFFF', borderColor: colors.border, borderRadius: 16, borderWidth: 1, flexDirection: 'column', alignItems: 'stretch', gap: 12, padding: 14, paddingHorizontal: 14 },
   icon: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: 22, height: 44, justifyContent: 'center', width: 44 },
   copy: { flex: 1, minWidth: 0 },
   title: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
-  message: { color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 3 },
-  hint: { color: colors.textMuted, fontSize: 12, lineHeight: 16, marginTop: 4 },
+  message: { color: colors.textSecondary, fontSize: 16, lineHeight: 24, marginTop: 3 },
+  hint: { color: colors.textMuted, fontSize: 16, lineHeight: 24, marginTop: 4 },
   diagnostic: { color: colors.textMuted, fontSize: 11, lineHeight: 15, marginTop: 4 },
-  button: { backgroundColor: colors.primary, borderRadius: 10, minWidth: 76, paddingHorizontal: 13, paddingVertical: 11 },
+  button: { minHeight: 48, justifyContent: 'center', backgroundColor: colors.primary, borderRadius: 10, minWidth: 76, paddingHorizontal: 13, paddingVertical: 11 },
   actions: { alignItems: 'center', gap: 2 },
-  buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', textAlign: 'center' },
   disableButton: { backgroundColor: '#FFFFFF', borderColor: colors.primary, borderWidth: 1 },
   disableButtonText: { color: colors.primary },
   notNowButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 76, paddingHorizontal: 8 },
-  notNowButtonText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
+  notNowButtonText: { color: colors.textSecondary, fontSize: 16, fontWeight: '700' },
   retryButton: { alignSelf: 'flex-start', marginTop: 6, minHeight: 44, justifyContent: 'center' },
-  retryButtonText: { color: colors.primary, fontSize: 13, fontWeight: '800' },
+  retryButtonText: { color: colors.primary, fontSize: 16, fontWeight: '800' },
 });

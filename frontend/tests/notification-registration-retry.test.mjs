@@ -215,7 +215,7 @@ test('session initialization remains pending and automatically resumes setup', (
 });
 
 test('pending startup remains visible until provider readiness while genuine failures retain recovery UI', () => {
-  assert.match(component, /if \(state === 'loading'\) return null/);
+  assert.match(component, /loading: 'Checking notification status/);
   assert.match(component, /state === 'subscribed' && setupState === 'ready'/);
   assert.match(component, /setupState === 'failed'[\s\S]*Try again/);
   assert.match(component, /state === 'subscribed'[\s\S]*unsubscribeFromNotifications\(\)/);
@@ -224,18 +224,14 @@ test('pending startup remains visible until provider readiness while genuine fai
   assert.match(component, /Notification delivery is not verified/);
 });
 
-test('only provider-ready subscribers hide the Home card', () => {
-  const hidden = component.indexOf("if (state === 'subscribed' && setupState === 'ready') return null");
-  const card = component.indexOf('accessibilityLabel="IPM notification settings"');
-  assert.ok(hidden > 0 && hidden < card);
-  assert.match(component, /style=\{\[styles\.card, containerStyle\]\}/);
-  assert.match(component, /state === 'default' \|\| state === 'unsubscribed'/);
-  assert.match(component, /state === 'denied'/);
-  assert.match(component, /state === 'unsupported' && isIphoneSafari/);
+test('provider-ready subscribers see success without another enrollment request', () => {
+ assert.match(component, /Notifications are enabled on this device/);
+ assert.doesNotMatch(component, /if \(state === 'subscribed'.*return null/);
+ assert.match(component, /setupState === 'ready'/);
 });
 
 test('safe UI and diagnostics do not render sensitive device material', () => {
-  assert.match(component, /Setup reference: \{failureClassification \|\| 'other'\}/);
+  assert.doesNotMatch(component, /Setup reference:|Staging initialization diagnostic/);
   for (const safeStage of ['sdk_unavailable', 'installation_still_unavailable',
     'wonderpush_recovery_subscribe_timed_out',
     'wonderpush_recovery_snapshot_failed',

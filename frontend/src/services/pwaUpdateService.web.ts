@@ -12,8 +12,10 @@ let updateCheck: Promise<void> | null = null;
 let updateTimer: ReturnType<typeof setInterval> | null = null;
 let activationRequested = false;
 let reloadStarted = false;
+let reloadPending = false;
 let started = false;
 let safeToActivate = false;
+let interactionHolds = 0;
 const diagnostics: PwaUpdateDiagnostic[] = [];
 
 function recordDiagnostic(event: string) {
@@ -35,6 +37,7 @@ if (typeof window !== 'undefined') {
 function canRunForegroundHomeChecks() {
   return started
     && safeToActivate
+    && interactionHolds === 0
     && !activationRequested
     && navigator.onLine !== false
     && document.visibilityState === 'visible';
@@ -55,7 +58,7 @@ function syncUpdateScheduler() {
 }
 
 function activateWaitingWorkerIfSafe() {
-  if (!safeToActivate || !waitingWorker || activationRequested) return;
+  if (!safeToActivate || interactionHolds > 0 || !waitingWorker || activationRequested) return;
   activationRequested = true;
   stopUpdateScheduler();
   recordDiagnostic('activation_requested');
@@ -125,12 +128,18 @@ function handleOffline() {
   stopUpdateScheduler();
 }
 
-function handleControllerChange() {
-  recordDiagnostic('controller_changed');
-  if (!activationRequested || reloadStarted) return;
+function reloadWhenIdle() {
+  if (!reloadPending || reloadStarted || interactionHolds > 0) return;
   reloadStarted = true;
   recordDiagnostic('reload_started');
   window.location.reload();
+}
+
+function handleControllerChange() {
+  recordDiagnostic('controller_changed');
+  if (!activationRequested || reloadStarted) return;
+  reloadPending = true;
+  reloadWhenIdle();
 }
 
 export function disposePwaUpdateFlow() {
@@ -152,6 +161,7 @@ export function disposePwaUpdateFlow() {
   updateCheck = null;
   activationRequested = false;
   reloadStarted = false;
+  reloadPending = false;
   started = false;
 }
 
@@ -183,4 +193,19 @@ export function setPwaUpdateSafeState(isSafe: boolean) {
   activateWaitingWorkerIfSafe();
   if (isSafe) checkForUpdate();
   syncUpdateScheduler();
+}
+
+/** Prevent an update reload from interrupting an explicit attendee action. */
+export function holdPwaUpdate() {
+  interactionHolds += 1;
+  syncUpdateScheduler();
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    interactionHolds -= 1;
+    reloadWhenIdle();
+    activateWaitingWorkerIfSafe();
+    syncUpdateScheduler();
+  };
 }

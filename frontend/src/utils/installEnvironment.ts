@@ -63,11 +63,11 @@ export function getInstallGuidance(environment: InstallEnvironment): InstallGuid
     const browserName = environment.browser === 'samsung_internet' ? 'Samsung Internet' : environment.browser === 'edge' ? 'Edge' : environment.browser === 'chrome' ? 'Chrome' : null;
     return {
       heading: environment.platform === 'desktop' && browserName ? `Install the IPM App in ${browserName}` : 'Install the IPM App',
-      intro: 'Tap the button below. Your browser will do the rest—no menus needed.', steps: [], primaryLabel: 'Install IPM App',
+      intro: 'Your browser will ask you to confirm. This is optional.', steps: [], primaryLabel: 'Add IPM to your Home Screen',
     };
   }
   if (environment.platform === 'ios' && environment.browser === 'safari') {
-    return { heading: 'Install the IPM App on your iPhone', intro: 'Follow these three taps in Safari.', steps: [
+    return { heading: 'Add IPM to your Home Screen', intro: 'Follow these three taps in Safari.', steps: [
       { cue: 'share', title: 'Tap the Share button', hint: 'Look for the box with the arrow pointing up. If it is hidden, tap •••, then “Share.”' },
       { cue: 'add_home', title: 'Tap “Add to Home Screen”', hint: 'Scroll down the list. If it is missing, tap “Edit Actions” to add it.' },
       { cue: 'install', title: 'Tap “Add”', hint: 'If “Open as Web App” appears, leave it on. The IPM App will appear on your Home Screen.' },
@@ -75,7 +75,7 @@ export function getInstallGuidance(environment: InstallEnvironment): InstallGuid
   }
   if (environment.platform === 'ios') {
     const browserName = environment.browser === 'chrome' ? 'Chrome' : environment.browser === 'edge' ? 'Edge' : environment.browser === 'firefox' ? 'Firefox' : 'this browser';
-    return { heading: 'Open IPM in Safari to install it', intro: `iPhone installation works reliably from Safari, not ${browserName}.`, steps: [
+    return { heading: 'Add IPM using Safari', intro: `You can keep using IPM in ${browserName}. For these Home Screen steps, open this page in Safari.`, steps: [
       { cue: 'safari', title: 'Open this page in Safari', hint: 'Copy this page’s address, open Safari, and paste it into the address bar.' },
       { cue: 'share', title: 'Tap the Share button', hint: 'In Safari, look for the box with the arrow pointing up.' },
       { cue: 'add_home', title: 'Choose “Add to Home Screen,” then confirm', hint: 'Tap “Add” to put the IPM App on your Home Screen.' },
@@ -117,11 +117,7 @@ export function getInstallGuidance(environment: InstallEnvironment): InstallGuid
     ], primaryLabel: null };
   }
   if (environment.platform === 'desktop') {
-    return { heading: 'Install the IPM App on your computer', intro: 'Your browser may support installing this app.', steps: [
-      { cue: 'more_vertical', title: 'Find your browser’s menu', hint: 'Look for ⋮ or ☰ near the top-right corner.' },
-      { cue: 'add_home', title: 'Look for an install choice', hint: 'Choose “Install app” or “Add to Home screen.”' },
-      { cue: 'install', title: 'Follow the confirmation', hint: 'Your browser will tell you when the app is ready.' },
-    ], primaryLabel: null };
+    return { heading: 'Keep IPM handy', intro: 'Bookmark this page to open IPM quickly. If your browser offers an install or Add to Dock option, you can use that too.', steps: [], primaryLabel: null };
   }
   return { heading: 'Welcome to the IPM App', intro: 'You can use the app now. Installation is optional.', steps: [
     { cue: 'more_vertical', title: 'Find your browser’s menu', hint: 'Look for ⋮ or ☰ near the top or bottom of the screen.' },
