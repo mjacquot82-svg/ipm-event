@@ -1,0 +1,2326 @@
+{
+  "schema_version": 1,
+  "workbook_sha256": "ea36f44371c6105424b103621c235a4d56f8e696c2edb97c60a7b9f81a95a99f",
+  "source_email": "https://mail.google.com/mail/#all/1a06c879d40db69a",
+  "identity_resolution": "Marc: Carrick and Jen Fitzgerald/Soul Journey are new appearances; archive Greenock and Jen Brough without repurposing IDs.",
+  "items": [
+    {
+      "cell": "B5",
+      "external_id": "2026-09-22-foodland-b6",
+      "proposed": {
+        "title": "Christie Thomson — Definition Fitness",
+        "starts_at": "2026-09-22T10:00:00-04:00",
+        "ends_at": "2026-09-22T10:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Christie Thomson — Definition Fitness",
+        "starts_at": "2026-09-22 14:00:00+00",
+        "ends_at": "2026-09-22 14:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B6",
+      "external_id": "2026-09-22-foodland-b7",
+      "proposed": {
+        "title": "Aaniin Collective (Hannah Wheeler)",
+        "starts_at": "2026-09-22T10:15:00-04:00",
+        "ends_at": "2026-09-22T10:50:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Aaniin Collective (Hannah Wheeler)",
+        "starts_at": "2026-09-22 14:15:00+00",
+        "ends_at": "2026-09-22 14:45:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "D6",
+      "external_id": "2026-09-22-harleys-c7",
+      "proposed": {
+        "title": "DK Salon",
+        "starts_at": "2026-09-22T10:15:00-04:00",
+        "ends_at": "2026-09-22T11:15:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "DK Salon",
+        "starts_at": "2026-09-22 14:15:00+00",
+        "ends_at": "2026-09-22 15:15:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "F6",
+      "external_id": "2026-09-22-quality-homes-d7",
+      "proposed": {
+        "title": "Bombshell Salon - Head spa",
+        "starts_at": "2026-09-22T10:15:00-04:00",
+        "ends_at": "2026-09-22T11:15:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Bombshell",
+        "starts_at": "2026-09-22 14:15:00+00",
+        "ends_at": "2026-09-22 15:15:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B7",
+      "external_id": "2026-09-22-foodland-b9",
+      "proposed": {
+        "title": "Davishill Nursery",
+        "starts_at": "2026-09-22T10:50:00-04:00",
+        "ends_at": "2026-09-22T11:20:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Davishill Nursery",
+        "starts_at": "2026-09-22 14:45:00+00",
+        "ends_at": "2026-09-22 15:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "D7",
+      "external_id": "2026-09-22-harleys-c11",
+      "proposed": {
+        "title": "Sour Dough Sampling - The Bread Barn",
+        "starts_at": "2026-09-22T11:15:00-04:00",
+        "ends_at": "2026-09-22T11:45:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Sourdough Sampling",
+        "starts_at": "2026-09-22 15:15:00+00",
+        "ends_at": "2026-09-22 15:45:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "F7",
+      "external_id": "2026-09-22-quality-homes-d12",
+      "proposed": {
+        "title": "Davishill Nursery",
+        "starts_at": "2026-09-22T11:30:00-04:00",
+        "ends_at": "2026-09-22T12:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Davishill",
+        "starts_at": "2026-09-22 15:30:00+00",
+        "ends_at": "2026-09-22 16:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B8",
+      "external_id": "2026-09-22-foodland-b11",
+      "proposed": {
+        "title": "Sleepers Bed Gallery (Sadie Al)",
+        "starts_at": "2026-09-22T11:25:00-04:00",
+        "ends_at": "2026-09-22T11:45:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Sleepers Bed Gallery (Sadie Al)",
+        "starts_at": "2026-09-22 15:15:00+00",
+        "ends_at": "2026-09-22 15:45:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "D8",
+      "external_id": "sept4-2026-09-22-harleys-d8",
+      "proposed": {
+        "title": "Ionic Foot Bath — Jen Fitzgerald, Soul Journey",
+        "starts_at": "2026-09-22T11:45:00-04:00",
+        "ends_at": "2026-09-22T12:30:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": "Jen will be providing insight, through demonstration, on the relaxing and healing benefits of Indian Head Massage as well as the profound detoxification of Ionic Foot Cleanse."
+    },
+    {
+      "cell": "F8",
+      "external_id": "2026-09-22-quality-homes-d14",
+      "proposed": {
+        "title": "Jenna Lee Lethbridge — SheWolf Reiki",
+        "starts_at": "2026-09-22T12:00:00-04:00",
+        "ends_at": "2026-09-22T13:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Jenna Lee Lethbridge — SheWolf Reiki",
+        "starts_at": "2026-09-22 16:00:00+00",
+        "ends_at": "2026-09-22 17:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B9",
+      "external_id": "sept4-2026-09-22-main-b9",
+      "proposed": {
+        "title": "Carrick Farm Market",
+        "starts_at": "2026-09-22T12:00:00-04:00",
+        "ends_at": "2026-09-22T12:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "D9",
+      "external_id": "sept4-2026-09-22-harleys-d9",
+      "proposed": {
+        "title": "Carrick Farm Market - Sampling",
+        "starts_at": "2026-09-22T12:30:00-04:00",
+        "ends_at": "2026-09-22T13:15:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "F9",
+      "external_id": "2026-09-22-quality-homes-d18",
+      "proposed": {
+        "title": "Hayley Wilhelm MUA",
+        "starts_at": "2026-09-22T13:00:00-04:00",
+        "ends_at": "2026-09-22T14:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Hayley Wilhelm MUA",
+        "starts_at": "2026-09-22 17:00:00+00",
+        "ends_at": "2026-09-22 18:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B10",
+      "external_id": "2026-09-22-foodland-b16",
+      "proposed": {
+        "title": "Harley's Pub and Perk - Charcuterie",
+        "starts_at": "2026-09-22T12:30:00-04:00",
+        "ends_at": "2026-09-22T13:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Harley's Charcuterie",
+        "starts_at": "2026-09-22 16:30:00+00",
+        "ends_at": "2026-09-22 17:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "D10",
+      "external_id": "2026-09-22-harleys-c19",
+      "proposed": {
+        "title": "Harley's Pub and Perk - Charcuterie Sampling",
+        "starts_at": "2026-09-22T13:15:00-04:00",
+        "ends_at": "2026-09-22T13:45:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Charcuterie Sampling Harley's",
+        "starts_at": "2026-09-22 17:15:00+00",
+        "ends_at": "2026-09-22 17:45:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "F10",
+      "external_id": "2026-09-22-quality-homes-d22",
+      "proposed": {
+        "title": "Chelsea Spackman — All Bodies Studios",
+        "starts_at": "2026-09-22T14:00:00-04:00",
+        "ends_at": "2026-09-22T15:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Chelsea Spackman — All Bodies Studios",
+        "starts_at": "2026-09-22 18:00:00+00",
+        "ends_at": "2026-09-22 19:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B11",
+      "external_id": "2026-09-22-foodland-b18",
+      "proposed": {
+        "title": "Liesemer Home Hardware - Meat Smoking",
+        "starts_at": "2026-09-22T13:00:00-04:00",
+        "ends_at": "2026-09-22T13:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Meat smoking",
+        "starts_at": "2026-09-22 17:00:00+00",
+        "ends_at": "2026-09-22 17:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "D11",
+      "external_id": "2026-09-22-harleys-c21",
+      "proposed": {
+        "title": "Liesemer Home Hardware - Sampling smoked meats",
+        "starts_at": "2026-09-22T13:45:00-04:00",
+        "ends_at": "2026-09-22T14:15:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Liesmers Meat Sampling",
+        "starts_at": "2026-09-22 17:45:00+00",
+        "ends_at": "2026-09-22 18:15:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "F11",
+      "external_id": "sept4-2026-09-22-quality-f11",
+      "proposed": {
+        "title": "Indian Head Massage — Jen Fitzgerald, Soul Journey",
+        "starts_at": "2026-09-22T15:00:00-04:00",
+        "ends_at": "2026-09-22T16:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": "Jen will be providing insight, through demonstration, on the relaxing and healing benefits of Indian Head Massage as well as the profound detoxification of Ionic Foot Cleanse."
+    },
+    {
+      "cell": "B12",
+      "external_id": "2026-09-22-foodland-b21",
+      "proposed": {
+        "title": "Photography Beitz Studios",
+        "starts_at": "2026-09-22T13:45:00-04:00",
+        "ends_at": "2026-09-22T14:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Photography Bietz Studio",
+        "starts_at": "2026-09-22 17:45:00+00",
+        "ends_at": "2026-09-22 18:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "D12",
+      "external_id": "2026-09-22-harleys-c23",
+      "proposed": {
+        "title": "GG Sips",
+        "starts_at": "2026-09-22T14:15:00-04:00",
+        "ends_at": "2026-09-22T14:45:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "GG Sips",
+        "starts_at": "2026-09-22 18:15:00+00",
+        "ends_at": "2026-09-22 18:45:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "F12",
+      "external_id": "2026-09-22-quality-homes-d30",
+      "proposed": {
+        "title": "Shroom Soda - West Shore",
+        "starts_at": "2026-09-22T16:00:00-04:00",
+        "ends_at": "2026-09-22T16:30:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Shroom Soda",
+        "starts_at": "2026-09-22 20:00:00+00",
+        "ends_at": "2026-09-22 20:30:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B13",
+      "external_id": "2026-09-22-foodland-b23",
+      "proposed": {
+        "title": "Hayley Wilhelm MUA",
+        "starts_at": "2026-09-22T14:15:00-04:00",
+        "ends_at": "2026-09-22T14:45:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Hayley Wilhelm MUA",
+        "starts_at": "2026-09-22 18:15:00+00",
+        "ends_at": "2026-09-22 18:45:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "D13",
+      "external_id": "sept4-2026-09-22-harleys-d13",
+      "proposed": {
+        "title": "Wine Ontario",
+        "starts_at": "2026-09-22T15:00:00-04:00",
+        "ends_at": "2026-09-22T16:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "B14",
+      "external_id": "2026-09-22-foodland-b25",
+      "proposed": {
+        "title": "West Shore Clothing and Surf Shop",
+        "starts_at": "2026-09-22T14:45:00-04:00",
+        "ends_at": "2026-09-22T15:10:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "West Shore Clothing and Surf Shop",
+        "starts_at": "2026-09-22 18:45:00+00",
+        "ends_at": "2026-09-22 19:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "D14",
+      "external_id": "2026-09-22-harleys-c30",
+      "proposed": {
+        "title": "Thornbury Craft Co. Cider and Brew House",
+        "starts_at": "2026-09-22T16:00:00-04:00",
+        "ends_at": "2026-09-22T17:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Thornbury Cidery",
+        "starts_at": "2026-09-22 20:00:00+00",
+        "ends_at": "2026-09-22 21:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B15",
+      "external_id": "sept4-2026-09-22-main-b15",
+      "proposed": {
+        "title": "Makeover Reveal!",
+        "starts_at": "2026-09-22T15:10:00-04:00",
+        "ends_at": "2026-09-22T15:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "B16",
+      "external_id": "2026-09-22-foodland-b28",
+      "proposed": {
+        "title": "The Space Between with Alicia",
+        "starts_at": "2026-09-22T15:30:00-04:00",
+        "ends_at": "2026-09-22T16:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Wellness",
+        "starts_at": "2026-09-22 19:30:00+00",
+        "ends_at": "2026-09-22 20:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B17",
+      "external_id": "2026-09-22-foodland-b30",
+      "proposed": {
+        "title": "The Nature Babe",
+        "starts_at": "2026-09-22T16:00:00-04:00",
+        "ends_at": "2026-09-22T16:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Nature Babes",
+        "starts_at": "2026-09-22 20:00:00+00",
+        "ends_at": "2026-09-22 20:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B18",
+      "external_id": "2026-09-22-foodland-b32",
+      "proposed": {
+        "title": "Jessica Connor & Rebecca Grubb — The WOMB Bruce County",
+        "starts_at": "2026-09-22T16:30:00-04:00",
+        "ends_at": "2026-09-22T17:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Jessica Connor & Rebecca Grubb — The WOMB Bruce County",
+        "starts_at": "2026-09-22 20:30:00+00",
+        "ends_at": "2026-09-22 21:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      }
+    },
+    {
+      "cell": "B21",
+      "external_id": "2026-09-23-foodland-e6",
+      "proposed": {
+        "title": "Start of Day Movement - Freezer Fitness",
+        "starts_at": "2026-09-23T10:00:00-04:00",
+        "ends_at": "2026-09-23T10:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Start of Day Movement",
+        "starts_at": "2026-09-23 14:00:00+00",
+        "ends_at": "2026-09-23 14:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B22",
+      "external_id": "2026-09-23-foodland-e7",
+      "proposed": {
+        "title": "Liza Weltz — Essential Wellness",
+        "starts_at": "2026-09-23T10:15:00-04:00",
+        "ends_at": "2026-09-23T10:45:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Liza Weltz — Essential Wellness",
+        "starts_at": "2026-09-23 14:15:00+00",
+        "ends_at": "2026-09-23 14:45:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "D22",
+      "external_id": "2026-09-23-harleys-f7",
+      "proposed": {
+        "title": "Wood Working Demo - Mark Grubb",
+        "starts_at": "2026-09-23T10:15:00-04:00",
+        "ends_at": "2026-09-23T11:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Wood Working",
+        "starts_at": "2026-09-23 14:15:00+00",
+        "ends_at": "2026-09-23 15:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "F22",
+      "external_id": "2026-09-23-quality-homes-g10",
+      "proposed": {
+        "title": "Liza Weltz — Essential Wellness",
+        "starts_at": "2026-09-23T11:00:00-04:00",
+        "ends_at": "2026-09-23T11:45:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Liza Weltz — Essential Wellness",
+        "starts_at": "2026-09-23 15:00:00+00",
+        "ends_at": "2026-09-23 15:45:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B23",
+      "external_id": "2026-09-23-foodland-e9",
+      "proposed": {
+        "title": "Doula Panel — Rachel Stroeder, Katie Franklin & Madison Kittel",
+        "starts_at": "2026-09-23T10:45:00-04:00",
+        "ends_at": "2026-09-23T11:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Rachel Stroeder — Evergreen Connections",
+        "starts_at": "2026-09-23 14:45:00+00",
+        "ends_at": "2026-09-23 15:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "D23",
+      "external_id": "2026-09-23-harleys-f10",
+      "proposed": {
+        "title": "Mary Kay (Cheryl McNair)",
+        "starts_at": "2026-09-23T11:00:00-04:00",
+        "ends_at": "2026-09-23T11:45:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Mary Kay (Cheryl McNair)",
+        "starts_at": "2026-09-23 15:00:00+00",
+        "ends_at": "2026-09-23 15:45:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "F23",
+      "external_id": "2026-09-23-quality-homes-g13",
+      "proposed": {
+        "title": "Labour of Love - Cupcake Decorating",
+        "starts_at": "2026-09-23T11:45:00-04:00",
+        "ends_at": "2026-09-23T12:30:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Cupcake decorating",
+        "starts_at": "2026-09-23 15:45:00+00",
+        "ends_at": "2026-09-23 16:30:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B24",
+      "external_id": "2026-09-23-foodland-e12",
+      "proposed": {
+        "title": "Susan Seitz — Susan Seitz Studio | Creative Circle",
+        "starts_at": "2026-09-23T11:15:00-04:00",
+        "ends_at": "2026-09-23T11:45:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Susan Seitz — Susan Seitz Studio | Creative Circle",
+        "starts_at": "2026-09-23 15:30:00+00",
+        "ends_at": "2026-09-23 15:45:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "D24",
+      "external_id": "2026-09-23-harleys-f13",
+      "proposed": {
+        "title": "Reiki Master — Rachel Stroeder, Evergreen Connections",
+        "starts_at": "2026-09-23T11:45:00-04:00",
+        "ends_at": "2026-09-23T12:30:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Rachel Stroeder — Evergreen Connections",
+        "starts_at": "2026-09-23 15:45:00+00",
+        "ends_at": "2026-09-23 16:30:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "F24",
+      "external_id": "2026-09-23-quality-homes-g22",
+      "proposed": {
+        "title": "Bombshell Salon - Head spa",
+        "starts_at": "2026-09-23T14:00:00-04:00",
+        "ends_at": "2026-09-23T15:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Bombshell",
+        "starts_at": "2026-09-23 18:00:00+00",
+        "ends_at": "2026-09-23 19:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B25",
+      "external_id": "2026-09-23-foodland-e14",
+      "proposed": {
+        "title": "The Maven Project — Ruth Montgomery",
+        "starts_at": "2026-09-23T12:00:00-04:00",
+        "ends_at": "2026-09-23T12:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "The Maven Project — Ruth Montgomery",
+        "starts_at": "2026-09-23 16:00:00+00",
+        "ends_at": "2026-09-23 16:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "D25",
+      "external_id": "2026-09-23-harleys-f16",
+      "proposed": {
+        "title": "Flossie Mae",
+        "starts_at": "2026-09-23T12:30:00-04:00",
+        "ends_at": "2026-09-23T13:30:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Flossie Mae Custom Hats",
+        "starts_at": "2026-09-23 16:30:00+00",
+        "ends_at": "2026-09-23 17:30:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "F25",
+      "external_id": "2026-09-25-quality-homes-m27",
+      "proposed": {
+        "title": "Neustadt Brewery",
+        "starts_at": "2026-09-23T15:15:00-04:00",
+        "ends_at": "2026-09-23T16:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Unique business moved to a new day in Sept. 4; preserve original stable identity and content.",
+      "existing": true,
+      "baseline": {
+        "title": "Neustadt Brewery",
+        "starts_at": "2026-09-25 19:15:00+00",
+        "ends_at": "2026-09-25 20:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B26",
+      "external_id": "2026-09-23-foodland-e16",
+      "proposed": {
+        "title": "Laurie Convay, ENJO Canada",
+        "starts_at": "2026-09-23T12:30:00-04:00",
+        "ends_at": "2026-09-23T13:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Laurie Convay, ENJO Canada",
+        "starts_at": "2026-09-23 16:30:00+00",
+        "ends_at": "2026-09-23 17:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "D26",
+      "external_id": "2026-09-23-harleys-f21",
+      "proposed": {
+        "title": "Simply Potts by Lauriss",
+        "starts_at": "2026-09-23T13:45:00-04:00",
+        "ends_at": "2026-09-23T14:30:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Simply Potts",
+        "starts_at": "2026-09-23 17:45:00+00",
+        "ends_at": "2026-09-23 18:30:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "F26",
+      "external_id": "2026-09-23-quality-homes-g30",
+      "proposed": {
+        "title": "Grey Matter Beer Company",
+        "starts_at": "2026-09-23T16:00:00-04:00",
+        "ends_at": "2026-09-23T17:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Grey Matter",
+        "starts_at": "2026-09-23 20:00:00+00",
+        "ends_at": "2026-09-23 21:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B27",
+      "external_id": "2026-09-23-foodland-e18",
+      "proposed": {
+        "title": "Angela Wainscott, Upstaged Design",
+        "starts_at": "2026-09-23T13:00:00-04:00",
+        "ends_at": "2026-09-23T13:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Angela Wainscott, Upstaged Design",
+        "starts_at": "2026-09-23 17:00:00+00",
+        "ends_at": "2026-09-23 17:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "D27",
+      "external_id": "2026-09-23-harleys-f24",
+      "proposed": {
+        "title": "Willow Home",
+        "starts_at": "2026-09-23T14:30:00-04:00",
+        "ends_at": "2026-09-23T15:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Willow Home Painting",
+        "starts_at": "2026-09-23 18:30:00+00",
+        "ends_at": "2026-09-23 19:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B28",
+      "external_id": "2026-09-23-foodland-e21",
+      "proposed": {
+        "title": "Heather Stark, Willow Home",
+        "starts_at": "2026-09-23T13:45:00-04:00",
+        "ends_at": "2026-09-23T14:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Heather Stark, Willow Home",
+        "starts_at": "2026-09-23 17:45:00+00",
+        "ends_at": "2026-09-23 18:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "D28",
+      "external_id": "2026-09-23-harleys-f26",
+      "proposed": {
+        "title": "Cody's Egg Shack",
+        "starts_at": "2026-09-23T15:00:00-04:00",
+        "ends_at": "2026-09-23T16:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Cody's Egg Shack",
+        "starts_at": "2026-09-23 19:00:00+00",
+        "ends_at": "2026-09-23 20:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B29",
+      "external_id": "2026-09-23-foodland-e24",
+      "proposed": {
+        "title": "Cody's Egg Shack",
+        "starts_at": "2026-09-23T14:30:00-04:00",
+        "ends_at": "2026-09-23T15:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Cody's Egg Shack",
+        "starts_at": "2026-09-23 18:30:00+00",
+        "ends_at": "2026-09-23 19:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B30",
+      "external_id": "2026-09-23-foodland-e26",
+      "proposed": {
+        "title": "Sadie Al, Lake Huron Home",
+        "starts_at": "2026-09-23T15:00:00-04:00",
+        "ends_at": "2026-09-23T15:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Sadie Al, Lake Huron Home",
+        "starts_at": "2026-09-23 19:00:00+00",
+        "ends_at": "2026-09-23 19:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B31",
+      "external_id": "2026-09-23-foodland-e28",
+      "proposed": {
+        "title": "J&H Women's Fashions",
+        "starts_at": "2026-09-23T15:30:00-04:00",
+        "ends_at": "2026-09-23T16:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "J and H Womens’ Fashions",
+        "starts_at": "2026-09-23 19:30:00+00",
+        "ends_at": "2026-09-23 20:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B32",
+      "external_id": "2026-09-23-foodland-e30",
+      "proposed": {
+        "title": "Flossie Mae",
+        "starts_at": "2026-09-23T16:00:00-04:00",
+        "ends_at": "2026-09-23T16:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Flossie Mae Custom Hats",
+        "starts_at": "2026-09-23 20:00:00+00",
+        "ends_at": "2026-09-23 20:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B33",
+      "external_id": "2026-09-23-foodland-e32",
+      "proposed": {
+        "title": "Mary Kay (Cheryl McNair)",
+        "starts_at": "2026-09-23T16:30:00-04:00",
+        "ends_at": "2026-09-23T16:55:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Mary Kay (Cheryl McNair)",
+        "starts_at": "2026-09-23 20:30:00+00",
+        "ends_at": "2026-09-23 21:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B34",
+      "external_id": "sept4-2026-09-23-main-b34",
+      "proposed": {
+        "title": "Makeover Reveal!",
+        "starts_at": "2026-09-23T16:55:00-04:00",
+        "ends_at": "2026-09-23T17:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "B37",
+      "external_id": "2026-09-24-foodland-h6",
+      "proposed": {
+        "title": "Christie Thomson — Definition Fitness",
+        "starts_at": "2026-09-24T10:00:00-04:00",
+        "ends_at": "2026-09-24T10:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Christie Thomson — Definition Fitness",
+        "starts_at": "2026-09-24 14:00:00+00",
+        "ends_at": "2026-09-24 14:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B38",
+      "external_id": "2026-09-24-foodland-h7",
+      "proposed": {
+        "title": "Pure Elegance Bridal",
+        "starts_at": "2026-09-24T10:15:00-04:00",
+        "ends_at": "2026-09-24T10:45:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Pure Elegance Bridal",
+        "starts_at": "2026-09-24 14:15:00+00",
+        "ends_at": "2026-09-24 14:45:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "D38",
+      "external_id": "2026-09-24-harleys-i7",
+      "proposed": {
+        "title": "Country Garden Greenhouse - Christmas Urns",
+        "starts_at": "2026-09-24T10:15:00-04:00",
+        "ends_at": "2026-09-24T11:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Christmas Urns",
+        "starts_at": "2026-09-24 14:15:00+00",
+        "ends_at": "2026-09-24 15:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "F38",
+      "external_id": "2026-09-24-quality-homes-j7",
+      "proposed": {
+        "title": "Bombshell Salon - Head spa",
+        "starts_at": "2026-09-24T10:15:00-04:00",
+        "ends_at": "2026-09-24T11:15:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Bombshell",
+        "starts_at": "2026-09-24 14:15:00+00",
+        "ends_at": "2026-09-24 15:15:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B39",
+      "external_id": "2026-09-24-foodland-h9",
+      "proposed": {
+        "title": "His Style",
+        "starts_at": "2026-09-24T10:45:00-04:00",
+        "ends_at": "2026-09-24T11:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "His Style",
+        "starts_at": "2026-09-24 14:45:00+00",
+        "ends_at": "2026-09-24 15:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "D39",
+      "external_id": "2026-09-24-harleys-i12",
+      "proposed": {
+        "title": "Susan Seitz — Susan Seitz Studio | Creative Circle",
+        "starts_at": "2026-09-24T11:30:00-04:00",
+        "ends_at": "2026-09-24T12:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Susan Seitz — Susan Seitz Studio | Creative Circle",
+        "starts_at": "2026-09-24 15:30:00+00",
+        "ends_at": "2026-09-24 16:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "F39",
+      "external_id": "2026-09-24-quality-homes-j12",
+      "proposed": {
+        "title": "The Guest House - Replanting House Plants",
+        "starts_at": "2026-09-24T11:30:00-04:00",
+        "ends_at": "2026-09-24T12:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Replanting house plants",
+        "starts_at": "2026-09-24 15:30:00+00",
+        "ends_at": "2026-09-24 16:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B40",
+      "external_id": "2026-09-24-foodland-h11",
+      "proposed": {
+        "title": "Elgin Jewelers",
+        "starts_at": "2026-09-24T11:15:00-04:00",
+        "ends_at": "2026-09-24T11:40:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Elgin Jewelers",
+        "starts_at": "2026-09-24 15:15:00+00",
+        "ends_at": "2026-09-24 15:45:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "D40",
+      "external_id": "2026-09-24-harleys-i16",
+      "proposed": {
+        "title": "Doterra with Jodi",
+        "starts_at": "2026-09-24T12:30:00-04:00",
+        "ends_at": "2026-09-24T13:15:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Doterra w Jodi",
+        "starts_at": "2026-09-24 16:30:00+00",
+        "ends_at": "2026-09-24 17:15:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "F40",
+      "external_id": "2026-09-24-quality-homes-j14",
+      "proposed": {
+        "title": "LaDel's Café - The Guest House - Cold Brew Sampling",
+        "starts_at": "2026-09-24T12:00:00-04:00",
+        "ends_at": "2026-09-24T12:45:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Sampling cold brew",
+        "starts_at": "2026-09-24 16:00:00+00",
+        "ends_at": "2026-09-24 16:45:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B41",
+      "external_id": "sept4-2026-09-24-main-b41",
+      "proposed": {
+        "title": "Makeover Reveal!",
+        "starts_at": "2026-09-24T11:40:00-04:00",
+        "ends_at": "2026-09-24T11:45:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "D41",
+      "external_id": "2026-09-24-harleys-i21",
+      "proposed": {
+        "title": "Ashley Grant — Soul Purpose Reiki",
+        "starts_at": "2026-09-24T13:45:00-04:00",
+        "ends_at": "2026-09-24T14:30:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Ashley Grant — Soul Purpose Reiki",
+        "starts_at": "2026-09-24 17:45:00+00",
+        "ends_at": "2026-09-24 18:30:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "F41",
+      "external_id": "2026-09-24-quality-homes-j19",
+      "proposed": {
+        "title": "D’elle Calhoun — Inside Out Art Studio",
+        "starts_at": "2026-09-24T13:15:00-04:00",
+        "ends_at": "2026-09-24T14:45:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "D'elle Calhoun — Inside Out Art Studio / Corderro",
+        "starts_at": "2026-09-24 17:15:00+00",
+        "ends_at": "2026-09-24 18:45:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B42",
+      "external_id": "2026-09-24-foodland-h14",
+      "proposed": {
+        "title": "Hannah Greig — Naturally Well by Hannah",
+        "starts_at": "2026-09-24T12:00:00-04:00",
+        "ends_at": "2026-09-24T12:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Hannah Greig — Naturally Well by Hannah",
+        "starts_at": "2026-09-24 16:00:00+00",
+        "ends_at": "2026-09-24 16:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "D42",
+      "external_id": "2026-09-24-harleys-i24",
+      "proposed": {
+        "title": "Mary Kay (Cheryl McNair)",
+        "starts_at": "2026-09-24T14:30:00-04:00",
+        "ends_at": "2026-09-24T15:15:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Mary Kay (Cheryl McNair)",
+        "starts_at": "2026-09-24 18:30:00+00",
+        "ends_at": "2026-09-24 19:15:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "F42",
+      "external_id": "2026-09-24-quality-homes-j25",
+      "proposed": {
+        "title": "Corderro - Lamb Sampling",
+        "starts_at": "2026-09-24T14:45:00-04:00",
+        "ends_at": "2026-09-24T15:30:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Lamb Stick Sampling",
+        "starts_at": "2026-09-24 18:45:00+00",
+        "ends_at": "2026-09-24 19:30:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B43",
+      "external_id": "sept4-2026-09-24-main-b43",
+      "proposed": {
+        "title": "Re:mind Spa & Apothecary",
+        "starts_at": "2026-09-24T12:30:00-04:00",
+        "ends_at": "2026-09-24T13:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "D43",
+      "external_id": "sept4-2026-09-24-harleys-d43",
+      "proposed": {
+        "title": "Mixology",
+        "starts_at": "2026-09-24T15:15:00-04:00",
+        "ends_at": "2026-09-24T16:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "F43",
+      "external_id": "2026-09-24-quality-homes-j28",
+      "proposed": {
+        "title": "Junction 56 Distillery",
+        "starts_at": "2026-09-24T15:30:00-04:00",
+        "ends_at": "2026-09-24T16:15:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Junction 56",
+        "starts_at": "2026-09-24 19:30:00+00",
+        "ends_at": "2026-09-24 20:15:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B44",
+      "external_id": "2026-09-24-foodland-h18",
+      "proposed": {
+        "title": "Ashley Grant — Soul Purpose Reiki",
+        "starts_at": "2026-09-24T13:00:00-04:00",
+        "ends_at": "2026-09-24T13:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Ashley Grant — Soul Purpose Reiki",
+        "starts_at": "2026-09-24 17:00:00+00",
+        "ends_at": "2026-09-24 17:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "D44",
+      "external_id": "2026-09-24-harleys-i31",
+      "proposed": {
+        "title": "Essentially Lavender",
+        "starts_at": "2026-09-24T16:00:00-04:00",
+        "ends_at": "2026-09-24T17:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Essentially Lavender",
+        "starts_at": "2026-09-24 20:15:00+00",
+        "ends_at": "2026-09-24 21:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "F44",
+      "external_id": "2026-09-23-quality-homes-g27",
+      "proposed": {
+        "title": "Cottage Springs",
+        "starts_at": "2026-09-24T16:15:00-04:00",
+        "ends_at": "2026-09-24T17:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Unique business moved to a new day in Sept. 4; preserve original stable identity and content.",
+      "existing": true,
+      "baseline": {
+        "title": "Cottage Springs",
+        "starts_at": "2026-09-23 19:15:00+00",
+        "ends_at": "2026-09-23 20:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      }
+    },
+    {
+      "cell": "B45",
+      "external_id": "2026-09-24-foodland-h20",
+      "proposed": {
+        "title": "The Feeling of Home - Designing Beyond the Trend - Panel Discussion",
+        "starts_at": "2026-09-24T13:30:00-04:00",
+        "ends_at": "2026-09-24T14:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "The Feeling of Home - Designing Beyond the Trend",
+        "starts_at": "2026-09-24 17:30:00+00",
+        "ends_at": "2026-09-24 18:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B46",
+      "external_id": "2026-09-24-foodland-h23",
+      "proposed": {
+        "title": "The Maven Project — Ruth Montgomery",
+        "starts_at": "2026-09-24T14:15:00-04:00",
+        "ends_at": "2026-09-24T14:45:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Ruth Montgomery (organization)",
+        "starts_at": "2026-09-24 18:15:00+00",
+        "ends_at": "2026-09-24 18:45:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B47",
+      "external_id": "2026-09-24-foodland-h27",
+      "proposed": {
+        "title": "Essentially Lavender",
+        "starts_at": "2026-09-24T14:45:00-04:00",
+        "ends_at": "2026-09-24T15:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Essentially Lavender",
+        "starts_at": "2026-09-24 19:15:00+00",
+        "ends_at": "2026-09-24 19:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B48",
+      "external_id": "2026-09-24-foodland-h28",
+      "proposed": {
+        "title": "MNP Panel Discussion: Planning for a Successful Transition",
+        "starts_at": "2026-09-24T15:30:00-04:00",
+        "ends_at": "2026-09-24T16:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "MNP Succession Planning",
+        "starts_at": "2026-09-24 19:30:00+00",
+        "ends_at": "2026-09-24 20:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B49",
+      "external_id": "sept4-2026-09-24-main-b49",
+      "proposed": {
+        "title": "Carrick Farm Market - All things Canning",
+        "starts_at": "2026-09-24T16:15:00-04:00",
+        "ends_at": "2026-09-24T17:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "B53",
+      "external_id": "2026-09-25-foodland-k6",
+      "proposed": {
+        "title": "Start of Day Movement - Freezer Fitness",
+        "starts_at": "2026-09-25T10:00:00-04:00",
+        "ends_at": "2026-09-25T10:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Start of Day Movement",
+        "starts_at": "2026-09-25 14:00:00+00",
+        "ends_at": "2026-09-25 14:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B54",
+      "external_id": "2026-09-25-foodland-k7",
+      "proposed": {
+        "title": "Fire Cider & Honey - Homesteading",
+        "starts_at": "2026-09-25T10:15:00-04:00",
+        "ends_at": "2026-09-25T10:45:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Food and Drink",
+        "starts_at": "2026-09-25 14:15:00+00",
+        "ends_at": "2026-09-25 14:45:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "D54",
+      "external_id": "sept4-2026-09-25-harleys-d54",
+      "proposed": {
+        "title": "Simply Potts by Lauriss",
+        "starts_at": "2026-09-25T10:15:00-04:00",
+        "ends_at": "2026-09-25T11:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "F54",
+      "external_id": "2026-09-25-quality-homes-m7",
+      "proposed": {
+        "title": "Coastal Coffee",
+        "starts_at": "2026-09-25T10:15:00-04:00",
+        "ends_at": "2026-09-25T11:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Costal Coffee",
+        "starts_at": "2026-09-25 14:15:00+00",
+        "ends_at": "2026-09-25 15:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B55",
+      "external_id": "2026-09-25-foodland-k9",
+      "proposed": {
+        "title": "Harley's Pub and Perk - Meal Prep",
+        "starts_at": "2026-09-25T10:45:00-04:00",
+        "ends_at": "2026-09-25T11:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Harley's Pub and Perk",
+        "starts_at": "2026-09-25 14:45:00+00",
+        "ends_at": "2026-09-25 15:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "D55",
+      "external_id": "sept4-2026-09-25-harleys-d55",
+      "proposed": {
+        "title": "Sara Porter — Re:mind Wellness Spa & Apothecary",
+        "starts_at": "2026-09-25T11:00:00-04:00",
+        "ends_at": "2026-09-25T11:45:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "F55",
+      "external_id": "2026-09-25-quality-homes-m10",
+      "proposed": {
+        "title": "All things honey -Jody",
+        "starts_at": "2026-09-25T11:00:00-04:00",
+        "ends_at": "2026-09-25T11:30:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "All things honey -Jody",
+        "starts_at": "2026-09-25 15:00:00+00",
+        "ends_at": "2026-09-25 15:30:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B56",
+      "external_id": "2026-09-25-foodland-k11",
+      "proposed": {
+        "title": "Hormones and Food - Jennifer Dunsmoor",
+        "starts_at": "2026-09-25T11:15:00-04:00",
+        "ends_at": "2026-09-25T12:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Hormones and Food",
+        "starts_at": "2026-09-25 15:15:00+00",
+        "ends_at": "2026-09-25 16:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "D56",
+      "external_id": "2026-09-25-harleys-l16",
+      "proposed": {
+        "title": "Michelle Knoll — The Dragonfly Spa",
+        "starts_at": "2026-09-25T12:30:00-04:00",
+        "ends_at": "2026-09-25T13:15:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Michelle Knoll — The Dragonfly Spa",
+        "starts_at": "2026-09-25 16:30:00+00",
+        "ends_at": "2026-09-25 17:15:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "F56",
+      "external_id": "2026-09-25-quality-homes-m12",
+      "proposed": {
+        "title": "Harley's Pub and Perk - Sampling",
+        "starts_at": "2026-09-25T11:30:00-04:00",
+        "ends_at": "2026-09-25T12:15:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Harley's Sampling",
+        "starts_at": "2026-09-25 15:30:00+00",
+        "ends_at": "2026-09-25 16:15:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B57",
+      "external_id": "2026-09-25-foodland-k14",
+      "proposed": {
+        "title": "Forest Maiden Facial & Beauty Room",
+        "starts_at": "2026-09-25T12:00:00-04:00",
+        "ends_at": "2026-09-25T12:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Forest Maiden Facial and Beauty Room",
+        "starts_at": "2026-09-25 16:00:00+00",
+        "ends_at": "2026-09-25 16:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "D57",
+      "external_id": "2026-09-25-harleys-l19",
+      "proposed": {
+        "title": "Fire Cider & Honey - Homesteading",
+        "starts_at": "2026-09-25T13:15:00-04:00",
+        "ends_at": "2026-09-25T14:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Fire Cider & Honey Sampling",
+        "starts_at": "2026-09-25 17:15:00+00",
+        "ends_at": "2026-09-25 18:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "F57",
+      "external_id": "2026-09-25-quality-homes-m15",
+      "proposed": {
+        "title": "Flowers by Uss - The Perfect Christmas Tree",
+        "starts_at": "2026-09-25T12:15:00-04:00",
+        "ends_at": "2026-09-25T13:15:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "The perfect Christmas Trees",
+        "starts_at": "2026-09-25 16:15:00+00",
+        "ends_at": "2026-09-25 17:15:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B58",
+      "external_id": "2026-09-25-foodland-k16",
+      "proposed": {
+        "title": "by Grace Boutique",
+        "starts_at": "2026-09-25T12:30:00-04:00",
+        "ends_at": "2026-09-25T13:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "By Grace Boutique",
+        "starts_at": "2026-09-25 16:30:00+00",
+        "ends_at": "2026-09-25 17:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "D58",
+      "external_id": "2026-09-25-harleys-l22",
+      "proposed": {
+        "title": "Organic Facial — Sara Porter, Re:mind Wellness Spa & Apothecary",
+        "starts_at": "2026-09-25T14:00:00-04:00",
+        "ends_at": "2026-09-25T15:15:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Sara Porter — Re:mind Wellness Spa & Apothecary",
+        "starts_at": "2026-09-25 18:00:00+00",
+        "ends_at": "2026-09-25 19:15:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "F58",
+      "external_id": "2026-09-25-quality-homes-m20",
+      "proposed": {
+        "title": "The Farmhouse Shop",
+        "starts_at": "2026-09-25T13:30:00-04:00",
+        "ends_at": "2026-09-25T14:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Kerri @ The Farmhouse",
+        "starts_at": "2026-09-25 17:30:00+00",
+        "ends_at": "2026-09-25 18:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B59",
+      "external_id": "2026-09-25-foodland-k18",
+      "proposed": {
+        "title": "His Style",
+        "starts_at": "2026-09-25T13:00:00-04:00",
+        "ends_at": "2026-09-25T13:25:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "His Style",
+        "starts_at": "2026-09-25 17:00:00+00",
+        "ends_at": "2026-09-25 17:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "D59",
+      "external_id": "2026-09-25-harleys-l27",
+      "proposed": {
+        "title": "Connor Fischer — IncREDible Light",
+        "starts_at": "2026-09-25T15:15:00-04:00",
+        "ends_at": "2026-09-25T16:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Connor Fischer — IncREDible Light",
+        "starts_at": "2026-09-25 19:15:00+00",
+        "ends_at": "2026-09-25 20:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "F59",
+      "external_id": "2026-09-25-quality-homes-m23",
+      "proposed": {
+        "title": "Forest Maiden Facial & Beauty Room",
+        "starts_at": "2026-09-25T14:15:00-04:00",
+        "ends_at": "2026-09-25T15:15:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Forest Maiden Facial and Beauty Room",
+        "starts_at": "2026-09-25 18:15:00+00",
+        "ends_at": "2026-09-25 19:15:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B60",
+      "external_id": "sept4-2026-09-25-main-b60",
+      "proposed": {
+        "title": "Makeover Reveal!",
+        "starts_at": "2026-09-25T13:25:00-04:00",
+        "ends_at": "2026-09-25T13:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "F60",
+      "external_id": "2026-09-24-quality-homes-j31",
+      "proposed": {
+        "title": "Macleans Beer",
+        "starts_at": "2026-09-25T15:15:00-04:00",
+        "ends_at": "2026-09-25T16:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Unique business moved to a new day in Sept. 4; preserve original stable identity and content.",
+      "existing": true,
+      "baseline": {
+        "title": "Macleans",
+        "starts_at": "2026-09-24 20:15:00+00",
+        "ends_at": "2026-09-24 21:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Thursday"
+      }
+    },
+    {
+      "cell": "B61",
+      "external_id": "2026-09-25-foodland-k21",
+      "proposed": {
+        "title": "Beth Fischer — Freezer Fitness",
+        "starts_at": "2026-09-25T13:45:00-04:00",
+        "ends_at": "2026-09-25T14:00:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Sept. 4 splits the old Friday 13:45–15:15 fitness block: retain its ID for the opening Freezer Fitness segment; add two separately timed fitness sessions and IncREDible Light.",
+      "existing": true,
+      "baseline": {
+        "title": "Beth Fischer — Freezer Fitness",
+        "starts_at": "2026-09-25 17:45:00+00",
+        "ends_at": "2026-09-25 19:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "F61",
+      "external_id": "2026-09-25-quality-homes-m30",
+      "proposed": {
+        "title": "Crafty Elk",
+        "starts_at": "2026-09-25T16:00:00-04:00",
+        "ends_at": "2026-09-25T17:00:00-04:00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Crafty Elk",
+        "starts_at": "2026-09-25 20:00:00+00",
+        "ends_at": "2026-09-25 21:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B62",
+      "external_id": "sept4-2026-09-25-main-b62",
+      "proposed": {
+        "title": "Functional Movement — Freezer Fitness",
+        "starts_at": "2026-09-25T14:00:00-04:00",
+        "ends_at": "2026-09-25T14:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": "Movement is Medicine - together with the Freezer Fitness team, exploring the opportunity for every age, body and ability to confidently move and recover."
+    },
+    {
+      "cell": "B63",
+      "external_id": "sept4-2026-09-25-main-b63",
+      "proposed": {
+        "title": "Line Dancing — Freezer Fitness",
+        "starts_at": "2026-09-25T14:15:00-04:00",
+        "ends_at": "2026-09-25T14:45:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": "Movement is Medicine - together with the Freezer Fitness team, exploring the opportunity for every age, body and ability to confidently move and recover."
+    },
+    {
+      "cell": "B64",
+      "external_id": "sept4-2026-09-25-main-b64",
+      "proposed": {
+        "title": "Connor Fischer — IncREDible Light",
+        "starts_at": "2026-09-25T14:45:00-04:00",
+        "ends_at": "2026-09-25T15:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": "Recharge your body at the cellular level with IncREDible Light—consistent red light therapy for long-term pain relief and vitality for humans and pets alike."
+    },
+    {
+      "cell": "B65",
+      "external_id": "2026-09-25-foodland-k28",
+      "proposed": {
+        "title": "MNP Panel Discussion: Navigating the Succession Journey",
+        "starts_at": "2026-09-25T15:30:00-04:00",
+        "ends_at": "2026-09-25T16:15:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "MNP Succession Planning",
+        "starts_at": "2026-09-25 19:30:00+00",
+        "ends_at": "2026-09-25 20:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B66",
+      "external_id": "2026-09-25-foodland-k31",
+      "proposed": {
+        "title": "Carrie Lynn Floral + Event Styling",
+        "starts_at": "2026-09-25T16:15:00-04:00",
+        "ends_at": "2026-09-25T16:45:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Home and Garden",
+        "starts_at": "2026-09-25 20:15:00+00",
+        "ends_at": "2026-09-25 20:45:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "B67",
+      "external_id": "2026-09-25-foodland-k33",
+      "proposed": {
+        "title": "Angela Wainscott, Upstaged Design",
+        "starts_at": "2026-09-25T16:45:00-04:00",
+        "ends_at": "2026-09-25T17:30:00-04:00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "Angela - Up stage Design",
+        "starts_at": "2026-09-25 20:45:00+00",
+        "ends_at": "2026-09-25 21:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Friday"
+      }
+    },
+    {
+      "cell": "D70",
+      "external_id": "sept4-2026-09-26-harleys-d70",
+      "proposed": {
+        "title": "Doors Open — Gina Livy (Morning)",
+        "starts_at": "2026-09-26T09:00:00-04:00",
+        "ends_at": "2026-09-26T10:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Saturday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "D71",
+      "external_id": "2026-09-26-foodland-o8",
+      "proposed": {
+        "title": "Gina Livy - The Livy Method",
+        "starts_at": "2026-09-26T10:00:00-04:00",
+        "ends_at": "2026-09-26T11:00:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Saturday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "GINA LIVY",
+        "starts_at": "2026-09-26 14:00:00+00",
+        "ends_at": "2026-09-26 15:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Saturday"
+      }
+    },
+    {
+      "cell": "D72",
+      "external_id": "sept4-2026-09-26-harleys-d72",
+      "proposed": {
+        "title": "Doors Open — Gina Livy (Afternoon)",
+        "starts_at": "2026-09-26T12:30:00-04:00",
+        "ends_at": "2026-09-26T13:30:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Saturday"
+      },
+      "reason": "Explicitly timed Sept. 4 item with no matching current session; not a punctuation/capitalization duplicate.",
+      "existing": false,
+      "description": null
+    },
+    {
+      "cell": "D73",
+      "external_id": "2026-09-26-foodland-o18",
+      "proposed": {
+        "title": "Gina Livy - The Livy Method",
+        "starts_at": "2026-09-26T13:30:00-04:00",
+        "ends_at": "2026-09-26T14:30:00-04:00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Saturday"
+      },
+      "reason": "Same session identified by business/presenter/topic and day/stage; source time and stage take priority. Existing descriptions and other fields retained.",
+      "existing": true,
+      "baseline": {
+        "title": "GINA LIVY",
+        "starts_at": "2026-09-26 17:30:00+00",
+        "ends_at": "2026-09-26 18:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Saturday"
+      }
+    }
+  ],
+  "withdrawals": [
+    {
+      "external_id": "2026-09-22-foodland-b14",
+      "baseline": {
+        "title": "Food and Drink",
+        "starts_at": "2026-09-22 16:00:00+00",
+        "ends_at": "2026-09-22 16:30:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Marc explicitly directs replacement/new identities; archive this predecessor and preserve its ID and content."
+    },
+    {
+      "external_id": "2026-09-22-harleys-c16",
+      "baseline": {
+        "title": "James Greenock Collective Sampling",
+        "starts_at": "2026-09-22 16:30:00+00",
+        "ends_at": "2026-09-22 17:15:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Marc explicitly directs replacement/new identities; archive this predecessor and preserve its ID and content."
+    },
+    {
+      "external_id": "2026-09-22-harleys-c26",
+      "baseline": {
+        "title": "3 Sheets",
+        "starts_at": "2026-09-22 19:00:00+00",
+        "ends_at": "2026-09-22 20:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Confirmed Lifestyles source/category. Absent across all three stages/all five days in both Sept. 4 workbook and companion flyer; no same-business moved session found. Withdraw from published schedule, retain record/content for existing references."
+    },
+    {
+      "external_id": "2026-09-22-quality-homes-d26",
+      "baseline": {
+        "title": "Jen Brough",
+        "starts_at": "2026-09-22 19:00:00+00",
+        "ends_at": "2026-09-22 20:00:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Tuesday"
+      },
+      "reason": "Marc explicitly directs replacement/new identities; archive this predecessor and preserve its ID and content."
+    },
+    {
+      "external_id": "2026-09-23-quality-homes-g16",
+      "baseline": {
+        "title": "Bailey Donnelly — Redefined Smile featuring Airway Studio",
+        "starts_at": "2026-09-23 16:30:00+00",
+        "ends_at": "2026-09-23 17:30:00+00",
+        "location_name": "Quality Homes - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Confirmed Lifestyles source/category. Absent across all three stages/all five days in both Sept. 4 workbook and companion flyer; no same-business moved session found. Withdraw from published schedule, retain record/content for existing references."
+    },
+    {
+      "external_id": "2026-09-23-harleys-f30",
+      "baseline": {
+        "title": "Formosa Spring Brewery",
+        "starts_at": "2026-09-23 20:00:00+00",
+        "ends_at": "2026-09-23 21:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Wednesday"
+      },
+      "reason": "Confirmed Lifestyles source/category. Absent across all three stages/all five days in both Sept. 4 workbook and companion flyer; no same-business moved session found. Withdraw from published schedule, retain record/content for existing references."
+    },
+    {
+      "external_id": "2026-09-24-foodland-h16",
+      "baseline": {
+        "title": "Tobermory Hyperbaric Chamber",
+        "starts_at": "2026-09-24 16:30:00+00",
+        "ends_at": "2026-09-24 17:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Confirmed Lifestyles source/category. Absent across all three stages/all five days in both Sept. 4 workbook and companion flyer; no same-business moved session found. Withdraw from published schedule, retain record/content for existing references."
+    },
+    {
+      "external_id": "2026-09-24-foodland-h25",
+      "baseline": {
+        "title": "Food and Drink",
+        "starts_at": "2026-09-24 18:45:00+00",
+        "ends_at": "2026-09-24 19:15:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Confirmed Lifestyles source/category. Absent across all three stages/all five days in both Sept. 4 workbook and companion flyer; no same-business moved session found. Withdraw from published schedule, retain record/content for existing references."
+    },
+    {
+      "external_id": "2026-09-24-harleys-i27",
+      "baseline": {
+        "title": "Oil Sampling",
+        "starts_at": "2026-09-24 19:15:00+00",
+        "ends_at": "2026-09-24 20:00:00+00",
+        "location_name": "Harley's Pub & Perk - Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Confirmed Lifestyles source/category. Absent across all three stages/all five days in both Sept. 4 workbook and companion flyer; no same-business moved session found. Withdraw from published schedule, retain record/content for existing references."
+    },
+    {
+      "external_id": "2026-09-24-foodland-h31",
+      "baseline": {
+        "title": "All things canning",
+        "starts_at": "2026-09-24 20:15:00+00",
+        "ends_at": "2026-09-24 21:00:00+00",
+        "location_name": "The Beyond Wireless Stage",
+        "days_active": "Thursday"
+      },
+      "reason": "Marc explicitly directs replacement/new identities; archive this predecessor and preserve its ID and content."
+    }
+  ]
+}

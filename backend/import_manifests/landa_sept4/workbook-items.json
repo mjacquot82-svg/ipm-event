@@ -1,0 +1,814 @@
+[
+  {
+    "cell": "B5",
+    "date": "2026-09-22",
+    "time": "10:00-10:15am",
+    "title": "Start of Day Movement - Definition Fitness",
+    "stage": "main"
+  },
+  {
+    "cell": "B6",
+    "date": "2026-09-22",
+    "time": "10:15-10:50am",
+    "title": "Aaniin Collective",
+    "stage": "main"
+  },
+  {
+    "cell": "D6",
+    "date": "2026-09-22",
+    "time": "10:15-11:15am",
+    "title": "DK Salon",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F6",
+    "date": "2026-09-22",
+    "time": "10:15-11:15am",
+    "title": "Bombshell Salon - Head spa",
+    "stage": "quality"
+  },
+  {
+    "cell": "B7",
+    "date": "2026-09-22",
+    "time": "10:50-11:20am",
+    "title": "Davishill Nursery",
+    "stage": "main"
+  },
+  {
+    "cell": "D7",
+    "date": "2026-09-22",
+    "time": "11:15-11:45am",
+    "title": "Sour Dough Sampling - The Bread Barn",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F7",
+    "date": "2026-09-22",
+    "time": "11:30-12:00pm",
+    "title": "Davishill Nursery",
+    "stage": "quality"
+  },
+  {
+    "cell": "B8",
+    "date": "2026-09-22",
+    "time": "11:25-11:45am",
+    "title": "Sleepers Bed Gallery",
+    "stage": "main"
+  },
+  {
+    "cell": "D8",
+    "date": "2026-09-22",
+    "time": "11:45-12:30pm",
+    "title": "Ionic Foot Bath - Soul Journey",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F8",
+    "date": "2026-09-22",
+    "time": "12:00-1:00pm",
+    "title": "SheWolf Reiki - Jenna Lethbridge",
+    "stage": "quality"
+  },
+  {
+    "cell": "B9",
+    "date": "2026-09-22",
+    "time": "12:00-12:30pm",
+    "title": "Carrick Farm Market",
+    "stage": "main"
+  },
+  {
+    "cell": "D9",
+    "date": "2026-09-22",
+    "time": "12:30-1:15pm",
+    "title": "Carrick Farm Market - Sampling",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F9",
+    "date": "2026-09-22",
+    "time": "1:00-2:00pm",
+    "title": "Make Up Artist - Hayley Wilhelm",
+    "stage": "quality"
+  },
+  {
+    "cell": "B10",
+    "date": "2026-09-22",
+    "time": "12:30-1:00pm",
+    "title": "Harley's Pub and Perk - Charcuterie",
+    "stage": "main"
+  },
+  {
+    "cell": "D10",
+    "date": "2026-09-22",
+    "time": "1:15-1:45pm",
+    "title": "Harley's Pub and Perk - Charcuterie Sampling",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F10",
+    "date": "2026-09-22",
+    "time": "2:00-3:00pm",
+    "title": "All Bodies Pilates Demo",
+    "stage": "quality"
+  },
+  {
+    "cell": "B11",
+    "date": "2026-09-22",
+    "time": "1:00-1:30pm",
+    "title": "Liesemer Home Hardware - Meat Smoking",
+    "stage": "main"
+  },
+  {
+    "cell": "D11",
+    "date": "2026-09-22",
+    "time": "1:45-2:15pm",
+    "title": "Liesemer Home Hardware - Sampling smoked meats",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F11",
+    "date": "2026-09-22",
+    "time": "3:00-4:00pm",
+    "title": "Indian Head Massage - Soul Journey",
+    "stage": "quality"
+  },
+  {
+    "cell": "B12",
+    "date": "2026-09-22",
+    "time": "1:45-2:15pm",
+    "title": "Photography Beitz Studios",
+    "stage": "main"
+  },
+  {
+    "cell": "D12",
+    "date": "2026-09-22",
+    "time": "2:15-2:45pm",
+    "title": "GG Sips",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F12",
+    "date": "2026-09-22",
+    "time": "4:00-4:30pm",
+    "title": "Shroom Soda - West Shore",
+    "stage": "quality"
+  },
+  {
+    "cell": "B13",
+    "date": "2026-09-22",
+    "time": "2:15-2:45pm",
+    "title": "Make Up Artist - Hayley Wilhelm",
+    "stage": "main"
+  },
+  {
+    "cell": "D13",
+    "date": "2026-09-22",
+    "time": "3:00-4:00pm",
+    "title": "Wine Ontartio",
+    "stage": "harleys"
+  },
+  {
+    "cell": "B14",
+    "date": "2026-09-22",
+    "time": "2:45-3:10pm",
+    "title": "West Shore Clothing and Surf Shop",
+    "stage": "main"
+  },
+  {
+    "cell": "D14",
+    "date": "2026-09-22",
+    "time": "4:00-5:00pm",
+    "title": "Thornbury Craft Co. Cider and Brew House",
+    "stage": "harleys"
+  },
+  {
+    "cell": "B15",
+    "date": "2026-09-22",
+    "time": "3:10-3:15pm",
+    "title": "Makeover Reveal!",
+    "stage": "main"
+  },
+  {
+    "cell": "B16",
+    "date": "2026-09-22",
+    "time": "3:30-4:00pm",
+    "title": "The Space Between with Alicia",
+    "stage": "main"
+  },
+  {
+    "cell": "B17",
+    "date": "2026-09-22",
+    "time": "4:00-4:30pm",
+    "title": "The Nature Babe",
+    "stage": "main"
+  },
+  {
+    "cell": "B18",
+    "date": "2026-09-22",
+    "time": "4:30-5:00pm",
+    "title": "The Womb - Bruce County",
+    "stage": "main"
+  },
+  {
+    "cell": "B21",
+    "date": "2026-09-23",
+    "time": "10:00-10:15am",
+    "title": "Start of Day Movement - Freezer Fitness",
+    "stage": "main"
+  },
+  {
+    "cell": "B22",
+    "date": "2026-09-23",
+    "time": "10:15-10:45am",
+    "title": "Essential Wellness",
+    "stage": "main"
+  },
+  {
+    "cell": "D22",
+    "date": "2026-09-23",
+    "time": "10:15-11:00am",
+    "title": "Wood Working Demo - Mark Grubb",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F22",
+    "date": "2026-09-23",
+    "time": "11:00-11:45am",
+    "title": "Essential Wellness",
+    "stage": "quality"
+  },
+  {
+    "cell": "B23",
+    "date": "2026-09-23",
+    "time": "10:45-11:15am",
+    "title": "Doula Panel",
+    "stage": "main"
+  },
+  {
+    "cell": "D23",
+    "date": "2026-09-23",
+    "time": "11:00-11:45am",
+    "title": "Mary Kay - Cheryl McNair",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F23",
+    "date": "2026-09-23",
+    "time": "11:45-12:30pm",
+    "title": "Labour of Love - Cupcake Decorating",
+    "stage": "quality"
+  },
+  {
+    "cell": "B24",
+    "date": "2026-09-23",
+    "time": "11:15-11:45am",
+    "title": "Susan Seitz Art Studio",
+    "stage": "main"
+  },
+  {
+    "cell": "D24",
+    "date": "2026-09-23",
+    "time": "11:45-12:30pm",
+    "title": "Reiki Master - Rachel Stroeder",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F24",
+    "date": "2026-09-23",
+    "time": "2:00-3:00pm",
+    "title": "Bombshell Salon - Head spa",
+    "stage": "quality"
+  },
+  {
+    "cell": "B25",
+    "date": "2026-09-23",
+    "time": "12:00-12:30pm",
+    "title": "Energy in the Home",
+    "stage": "main"
+  },
+  {
+    "cell": "D25",
+    "date": "2026-09-23",
+    "time": "12:30-1:30pm",
+    "title": "Flossie Mae Customs",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F25",
+    "date": "2026-09-23",
+    "time": "3:15-4:00pm",
+    "title": "Neustadt Brewery",
+    "stage": "quality"
+  },
+  {
+    "cell": "B26",
+    "date": "2026-09-23",
+    "time": "12:30-1:00pm",
+    "title": "Clean Smarter, not harder. Discover Enjo",
+    "stage": "main"
+  },
+  {
+    "cell": "D26",
+    "date": "2026-09-23",
+    "time": "1:45-2:30pm",
+    "title": "Simply Potts by Lauriss",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F26",
+    "date": "2026-09-23",
+    "time": "4:00-5:00pm",
+    "title": "Grey Matter Beer Company",
+    "stage": "quality"
+  },
+  {
+    "cell": "B27",
+    "date": "2026-09-23",
+    "time": "1:00-1:30pm",
+    "title": "Upstaged Design",
+    "stage": "main"
+  },
+  {
+    "cell": "D27",
+    "date": "2026-09-23",
+    "time": "2:30-3:00pm",
+    "title": "Willow Home",
+    "stage": "harleys"
+  },
+  {
+    "cell": "B28",
+    "date": "2026-09-23",
+    "time": "1:45-2:30pm",
+    "title": "Willow Home - Furniture Refresh",
+    "stage": "main"
+  },
+  {
+    "cell": "D28",
+    "date": "2026-09-23",
+    "time": "3:00-4:00pm",
+    "title": "Cody's Egg Shack",
+    "stage": "harleys"
+  },
+  {
+    "cell": "B29",
+    "date": "2026-09-23",
+    "time": "2:30-3:00pm",
+    "title": "Cody's Egg Shack",
+    "stage": "main"
+  },
+  {
+    "cell": "B30",
+    "date": "2026-09-23",
+    "time": "3:00-3:30pm",
+    "title": "Lake Huron Home",
+    "stage": "main"
+  },
+  {
+    "cell": "B31",
+    "date": "2026-09-23",
+    "time": "3:30-4:00pm",
+    "title": "J&H Women's Fashions",
+    "stage": "main"
+  },
+  {
+    "cell": "B32",
+    "date": "2026-09-23",
+    "time": "4:00-4:30pm",
+    "title": "Flossie Mae",
+    "stage": "main"
+  },
+  {
+    "cell": "B33",
+    "date": "2026-09-23",
+    "time": "4:30-4:55pm",
+    "title": "Mary Kay",
+    "stage": "main"
+  },
+  {
+    "cell": "B34",
+    "date": "2026-09-23",
+    "time": "4:55-5:00pm",
+    "title": "Makeover Reveal!",
+    "stage": "main"
+  },
+  {
+    "cell": "B37",
+    "date": "2026-09-24",
+    "time": "10:00-10:15am",
+    "title": "Start of Day Movement - Definition Fitness",
+    "stage": "main"
+  },
+  {
+    "cell": "B38",
+    "date": "2026-09-24",
+    "time": "10:15-10:45am",
+    "title": "Pure Elegance Bridal",
+    "stage": "main"
+  },
+  {
+    "cell": "D38",
+    "date": "2026-09-24",
+    "time": "10:15-11:00am",
+    "title": "Country Garden Greenhouse - Christmas Urns",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F38",
+    "date": "2026-09-24",
+    "time": "10:15-11:15am",
+    "title": "Bombshell Salon - Head spa",
+    "stage": "quality"
+  },
+  {
+    "cell": "B39",
+    "date": "2026-09-24",
+    "time": "10:45-11:15am",
+    "title": "His Style",
+    "stage": "main"
+  },
+  {
+    "cell": "D39",
+    "date": "2026-09-24",
+    "time": "11:30-12:00pm",
+    "title": "Susan Seitz Art Studio",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F39",
+    "date": "2026-09-24",
+    "time": "11:30-12:00pm",
+    "title": "The Guest House - Replanting House Plants",
+    "stage": "quality"
+  },
+  {
+    "cell": "B40",
+    "date": "2026-09-24",
+    "time": "11:15-11:40am",
+    "title": "Elgin Jewelers",
+    "stage": "main"
+  },
+  {
+    "cell": "D40",
+    "date": "2026-09-24",
+    "time": "12:30-1:15pm",
+    "title": "Doterra with Jodi",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F40",
+    "date": "2026-09-24",
+    "time": "12:00-12:45pm",
+    "title": "LaDel's Caf\u00e9 - The Guest House - Cold Brew Sampling",
+    "stage": "quality"
+  },
+  {
+    "cell": "B41",
+    "date": "2026-09-24",
+    "time": "11:40-11:45am",
+    "title": "Makeover Reveal!",
+    "stage": "main"
+  },
+  {
+    "cell": "D41",
+    "date": "2026-09-24",
+    "time": "1:45-2:30pm",
+    "title": "Soul Purpose Reiki - Ashley Grant",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F41",
+    "date": "2026-09-24",
+    "time": "1:15-2:45pm",
+    "title": "Inside Out Art School - D'elle Calhoun",
+    "stage": "quality"
+  },
+  {
+    "cell": "B42",
+    "date": "2026-09-24",
+    "time": "12:00-12:30pm",
+    "title": "Naturally Well by Hannah",
+    "stage": "main"
+  },
+  {
+    "cell": "D42",
+    "date": "2026-09-24",
+    "time": "2:30-3:15pm",
+    "title": "Mary Kay - Cheryl McNair",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F42",
+    "date": "2026-09-24",
+    "time": "2:45-3:30pm",
+    "title": "Corderro - Lamb Sampling",
+    "stage": "quality"
+  },
+  {
+    "cell": "B43",
+    "date": "2026-09-24",
+    "time": "12:30-1:00pm",
+    "title": "Re:mind Spa & Apothecary",
+    "stage": "main"
+  },
+  {
+    "cell": "D43",
+    "date": "2026-09-24",
+    "time": "3:15-4:00pm",
+    "title": "Mixology",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F43",
+    "date": "2026-09-24",
+    "time": "3:30-4:15pm",
+    "title": "Junction 56 Distillery",
+    "stage": "quality"
+  },
+  {
+    "cell": "B44",
+    "date": "2026-09-24",
+    "time": "1:00-1:30pm",
+    "title": "Soul Purpose Reiki",
+    "stage": "main"
+  },
+  {
+    "cell": "D44",
+    "date": "2026-09-24",
+    "time": "4:00-5:00pm",
+    "title": "Essentially Lavender",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F44",
+    "date": "2026-09-24",
+    "time": "4:15-5:00pm",
+    "title": "Cottage Spring",
+    "stage": "quality"
+  },
+  {
+    "cell": "B45",
+    "date": "2026-09-24",
+    "time": "1:30-2:15pm",
+    "title": "The Feeling of Home - Designing Beyond the Trend - Panel Discussion",
+    "stage": "main"
+  },
+  {
+    "cell": "B46",
+    "date": "2026-09-24",
+    "time": "2:15-2:45pm",
+    "title": "The Maven Project",
+    "stage": "main"
+  },
+  {
+    "cell": "B47",
+    "date": "2026-09-24",
+    "time": "2:45-3:30pm",
+    "title": "Essentially Lavender",
+    "stage": "main"
+  },
+  {
+    "cell": "B48",
+    "date": "2026-09-24",
+    "time": "3:30-4:15pm",
+    "title": "MNP Panel Discussion: Planning for a Successful Transition",
+    "stage": "main"
+  },
+  {
+    "cell": "B49",
+    "date": "2026-09-24",
+    "time": "4:15-5:00pm",
+    "title": "Carrick Farm Market - All things Canning",
+    "stage": "main"
+  },
+  {
+    "cell": "B53",
+    "date": "2026-09-25",
+    "time": "10:00-10:15am",
+    "title": "Start of Day Movement - Freezer Fitness",
+    "stage": "main"
+  },
+  {
+    "cell": "B54",
+    "date": "2026-09-25",
+    "time": "10:15-10:45am",
+    "title": "Fire Cider & Honey - Homesteading",
+    "stage": "main"
+  },
+  {
+    "cell": "D54",
+    "date": "2026-09-25",
+    "time": "10:15-11:00am",
+    "title": "Simply Potts by Lauriss",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F54",
+    "date": "2026-09-25",
+    "time": "10:15-11:00am",
+    "title": "Coastal Coffee",
+    "stage": "quality"
+  },
+  {
+    "cell": "B55",
+    "date": "2026-09-25",
+    "time": "10:45-11:15am",
+    "title": "Harley's Pub and Perk - Meal Prep",
+    "stage": "main"
+  },
+  {
+    "cell": "D55",
+    "date": "2026-09-25",
+    "time": "11:00-11:45am",
+    "title": "Re:mind Wellness - Sara Porter",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F55",
+    "date": "2026-09-25",
+    "time": "11:00-11:30am",
+    "title": "All Things Honey",
+    "stage": "quality"
+  },
+  {
+    "cell": "B56",
+    "date": "2026-09-25",
+    "time": "11:15-12:00pm",
+    "title": "Hormones and Food - Jennifer Dunsmoor",
+    "stage": "main"
+  },
+  {
+    "cell": "D56",
+    "date": "2026-09-25",
+    "time": "12:30-1:15pm",
+    "title": "Dragonfly Spa - Michelle Knoll",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F56",
+    "date": "2026-09-25",
+    "time": "11:30-12:15pm",
+    "title": "Harley's Pub and Perk - Sampling",
+    "stage": "quality"
+  },
+  {
+    "cell": "B57",
+    "date": "2026-09-25",
+    "time": "12:00-12:30pm",
+    "title": "Forest Maiden Facial & Beauty Room",
+    "stage": "main"
+  },
+  {
+    "cell": "D57",
+    "date": "2026-09-25",
+    "time": "1:15-2:00pm",
+    "title": "Fire Cider & Honey - Homesteading",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F57",
+    "date": "2026-09-25",
+    "time": "12:15-1:15pm",
+    "title": "Flowers by Uss - The Perfect Christmas Tree",
+    "stage": "quality"
+  },
+  {
+    "cell": "B58",
+    "date": "2026-09-25",
+    "time": "12:30-1:00pm",
+    "title": "by Grace Boutique",
+    "stage": "main"
+  },
+  {
+    "cell": "D58",
+    "date": "2026-09-25",
+    "time": "2:00-3:15pm",
+    "title": "Re:mind Wellness - Organic Facial - Sara Porter",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F58",
+    "date": "2026-09-25",
+    "time": "1:30-2:00pm",
+    "title": "The Farmhouse Shop",
+    "stage": "quality"
+  },
+  {
+    "cell": "B59",
+    "date": "2026-09-25",
+    "time": "1:00-1:25pm",
+    "title": "His Style",
+    "stage": "main"
+  },
+  {
+    "cell": "D59",
+    "date": "2026-09-25",
+    "time": "3:15-4:00pm",
+    "title": "IncREDible Light - Connor Fischer",
+    "stage": "harleys"
+  },
+  {
+    "cell": "F59",
+    "date": "2026-09-25",
+    "time": "2:15-3:15pm",
+    "title": "Forest Maiden Facial and Beauty Room",
+    "stage": "quality"
+  },
+  {
+    "cell": "B60",
+    "date": "2026-09-25",
+    "time": "1:25-1:30pm",
+    "title": "Makeover Reveal!",
+    "stage": "main"
+  },
+  {
+    "cell": "F60",
+    "date": "2026-09-25",
+    "time": "3:15-4:00pm",
+    "title": "Macleans Beer",
+    "stage": "quality"
+  },
+  {
+    "cell": "B61",
+    "date": "2026-09-25",
+    "time": "1:45-2:00pm",
+    "title": "Freezer Fitness",
+    "stage": "main"
+  },
+  {
+    "cell": "F61",
+    "date": "2026-09-25",
+    "time": "4:00-5:00pm",
+    "title": "Craft Elk",
+    "stage": "quality"
+  },
+  {
+    "cell": "B62",
+    "date": "2026-09-25",
+    "time": "2:00-2:15pm",
+    "title": "Functional Movement - Freezer Fitness",
+    "stage": "main"
+  },
+  {
+    "cell": "B63",
+    "date": "2026-09-25",
+    "time": "2:15-2:45pm",
+    "title": "Line Dancing - Freezer Fitness",
+    "stage": "main"
+  },
+  {
+    "cell": "B64",
+    "date": "2026-09-25",
+    "time": "2:45-3:15pm",
+    "title": "IncREDible Light",
+    "stage": "main"
+  },
+  {
+    "cell": "B65",
+    "date": "2026-09-25",
+    "time": "3:30-4:15pm",
+    "title": "MNP Panel Discussion: Navigating the Succession Journey",
+    "stage": "main"
+  },
+  {
+    "cell": "B66",
+    "date": "2026-09-25",
+    "time": "4:15-4:45pm",
+    "title": "Carrie Lynn Floral + Event Styling",
+    "stage": "main"
+  },
+  {
+    "cell": "B67",
+    "date": "2026-09-25",
+    "time": "4:45-5:30pm",
+    "title": "UpStaged Design",
+    "stage": "main"
+  },
+  {
+    "cell": "D70",
+    "date": "2026-09-26",
+    "time": "9:00-10:00am",
+    "title": "Doors Open",
+    "stage": "harleys"
+  },
+  {
+    "cell": "D71",
+    "date": "2026-09-26",
+    "time": "10:00-11:00am",
+    "title": "Gina Livy - The Livy Method",
+    "stage": "harleys"
+  },
+  {
+    "cell": "D72",
+    "date": "2026-09-26",
+    "time": "12:30-1:30pm",
+    "title": "Doors Open",
+    "stage": "harleys"
+  },
+  {
+    "cell": "D73",
+    "date": "2026-09-26",
+    "time": "1:30-2:30pm",
+    "title": "Gina Livy - The Livy Method",
+    "stage": "harleys"
+  }
+]
