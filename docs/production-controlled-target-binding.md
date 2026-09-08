@@ -26,11 +26,11 @@ alter storage, or retry.
 1. Apply `supabase/migrations/20260908000100_controlled_target_binding.sql` in
    production through the secure Supabase workflow. Do not alter earlier
    migrations or production rows.
-2. Deploy backend commit `CONTROLLED_BACKEND_COMMIT` from the isolated branch
+2. Deploy the backend branch tip from the isolated branch
    `release/production-pilot-controlled-binding-backend` using Render Manual
    Deploy → Deploy a specific commit. Preserve the existing service settings.
-3. Publish only the two frontend assets from commit
-   `CONTROLLED_FRONTEND_COMMIT` with the complete production manifest, preserving
+3. Publish only the two frontend assets from the paired controlled-binding
+   frontend branch with the complete production manifest, preserving
    every existing asset and adding only the page and module.
 4. Verify backend health, pilot count zero, both switches false, and unchanged
    diagnostics before presenting the page. No notification is authorized by
