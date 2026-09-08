@@ -46,12 +46,11 @@ def test_durable_claim_deduplicates_multiple_instances_and_restarts():
  assert all(r['status'] in ('COMPARING','DEFERRED') for r in results)
  assert rpc()['status']=='DEFERRED'
 
-def test_fresh_verified_no_provider_claim_and_expired_read_only_claim():
- assert verified()['status']=='VERIFIED'
- for _ in range(20):assert rpc()['status']=='VERIFIED'
- assert sql('select checks from notification_reconciliation')[0][0]==1
- sql("update notification_reconciliation set verification_expires_at=now()-interval '1 second'")
- assert rpc()['status']=='COMPARING'
+def test_verified_history_does_not_skip_new_claim_and_reads_remain_bounded():
+ for _ in range(4):assert verified()['status']=='VERIFIED'
+ assert rpc()['outcome']=='RATE_LIMIT'
+ assert sql('select checks from notification_reconciliation')[0][0]==4
+
 
 def test_rotation_fences_old_patch_and_confirmation():
  r=rpc()
@@ -135,7 +134,7 @@ def test_real_database_backend_protocol_exact_failure(monkeypatch):
   async def call(**kw):return await core.reconcile(client=Client(),event_slug='test',credential=SECRET,scope='staging',capability=CAP,payload={**base,**kw})
   result=await call(action='check');assert result['status']=='VERIFYING'
   assert (await call(action='confirm',generation=result['generation']))['status']=='VERIFIED'
-  assert (await call(action='check'))['status']=='VERIFIED'
+  assert (await call(action='check'))['status']=='VERIFYING'
  asyncio.run(run());assert writes==[1];assert stored==TOKEN
 
 def test_late_old_check_cannot_revert_a_new_generation():
