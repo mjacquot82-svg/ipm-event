@@ -81,7 +81,7 @@ For backend regressions run `python -m pytest -q tests/test_subscription_reconci
    function definition and sanitized health counters.
 2. Apply only `supabase/migrations/20260908155153_reconciliation_freshness_circuit_fences.sql`
    transactionally, recording migration version `20260908155153`. SHA-256:
-   `512a8e96857cb22203b0deced0cb3d4697ed3b5e5a1c60530ffdb6ea1d1fef1e`.
+   `04fa8b241749441c385dacee712118af6a0053f23a057f20e88b281b7f429aa9`.
    Do not run a bulk migration push that could include unrelated pending files.
    This function-only migration is compatible with the currently deployed backend;
    neither a backend nor frontend redeploy is required.

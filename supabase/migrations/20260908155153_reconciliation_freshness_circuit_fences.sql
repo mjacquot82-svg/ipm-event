@@ -19,7 +19,7 @@ begin
  if action='eligibility' then
    return jsonb_build_object('pilot_eligible',true,'observation_enabled',project.enabled,
      'repair_enabled',project.repair_enabled and (project.mode='PILOT' or
-       (project.mode='POPULATION_REPAIR_STAGED' and project.repair_cohort_percent > 0))); 
+       (project.mode='POPULATION_REPAIR_STAGED' and project.repair_cohort_percent > 0)));
  end if;
  if not project.enabled then return jsonb_build_object('status','DEFERRED','outcome','DISABLED'); end if;
  if reg.wonderpush_installation_id is distinct from p->>'installation_id' then
