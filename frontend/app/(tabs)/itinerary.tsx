@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import { colors } from '../../src/theme/colors';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
@@ -34,6 +35,9 @@ export default function ItineraryScreen() {
   usePageAnalytics('itinerary', 'home_quick_action');
   const { frameStyle } = useAttendeeLayout();
   const router = useRouter();
+  const [removalNotice, setRemovalNotice] = useState(false);
+  const removalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (removalTimer.current) clearTimeout(removalTimer.current); }, []);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +92,11 @@ export default function ItineraryScreen() {
     const result = await toggleFavorite(eventId);
     setFavorites(result.favorites);
     void queueAnalyticsEvent('favorite_changed', { schedule_item_id: eventId, action: 'removed' });
+    if (!result.isFavorite && !result.favorites.includes(eventId)) {
+      setRemovalNotice(true);
+      if (removalTimer.current) clearTimeout(removalTimer.current);
+      removalTimer.current = setTimeout(() => setRemovalNotice(false), 2800);
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -130,6 +139,7 @@ export default function ItineraryScreen() {
   return (
     <View style={[styles.container, frameStyle]}>
       <PageHeader title="My Itinerary" />
+      {removalNotice ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ padding: 16, color: colors.primary }}>Removed from your itinerary</Text> : null}
       <View style={styles.header}>
         <Text style={styles.title}>My Itinerary</Text>
         <Text style={styles.subtitle}>
@@ -160,7 +170,7 @@ export default function ItineraryScreen() {
                 </Text>
               </View>
 
-              <TouchableOpacity onPress={() => handleRemove(item.id)}>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Remove ${item.title} from itinerary`} onPress={() => handleRemove(item.id)}>
                 <Feather name="star" size={22} color="#FBC02D" />
               </TouchableOpacity>
             </View>

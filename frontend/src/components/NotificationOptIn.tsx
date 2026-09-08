@@ -31,14 +31,14 @@ const STATE_COPY: Record<NotificationState, string> = {
   error: 'Notifications are temporarily unavailable. The IPM app will continue to work.',
 };
 
-export default function NotificationOptIn({ containerStyle }: { containerStyle?: StyleProp<ViewStyle> }) {
+export default function NotificationOptIn({ containerStyle, initiallyExpanded = false }: { containerStyle?: StyleProp<ViewStyle>; initiallyExpanded?: boolean }) {
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
   const [verificationDeferred, setVerificationDeferred] = useState(false);
   const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'failed'>('idle');
   const [failureStage, setFailureStage] = useState<NotificationRegistrationStage | null>(null);
   const [failureClassification, setFailureClassification] = useState<NotificationRegistrationFailure | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(initiallyExpanded);
   const triggerRef = useRef<any>(null);
   const actionInFlightRef = useRef(false);
   const hasFocusedRef = useRef(false);

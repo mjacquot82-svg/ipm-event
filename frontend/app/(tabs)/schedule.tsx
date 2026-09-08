@@ -27,6 +27,7 @@ import {
 } from '../../src/theme/attendeePageLayout';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
+import ItineraryNotificationSuggestion from '../../src/components/ItineraryNotificationSuggestion';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
@@ -71,6 +72,8 @@ export default function ScheduleScreen() {
   const [showScheduleOnboarding, setShowScheduleOnboarding] = useState(false);
   const [showStarConfirmation, setShowStarConfirmation] = useState(false);
   const onboardingDismissRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+  const [successfulAddition, setSuccessfulAddition] = useState(0);
+  const [confirmationText, setConfirmationText] = useState('Added to Personal Itinerary');
   const starConfirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
@@ -184,7 +187,9 @@ export default function ScheduleScreen() {
     // Sync with backend for notifications
     syncStarredEventsWithBackend(result.favorites);
     const starSucceeded = result.isFavorite && result.favorites.includes(eventId);
-    if (starSucceeded) {
+    if (starSucceeded || (!result.isFavorite && !result.favorites.includes(eventId))) {
+      setConfirmationText(starSucceeded ? 'Added to Personal Itinerary' : 'Removed from your itinerary');
+      if (starSucceeded) setSuccessfulAddition(value => value + 1);
       if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current);
       setShowStarConfirmation(true);
       starConfirmationTimerRef.current = setTimeout(() => setShowStarConfirmation(false), 2800);
@@ -1060,10 +1065,11 @@ export default function ScheduleScreen() {
           </View>
         </View>
       </Modal>
+      <ItineraryNotificationSuggestion successfulAddition={successfulAddition} />
       {showStarConfirmation ? (
         <View style={styles.starConfirmation} accessibilityLiveRegion="polite" accessibilityRole="alert">
           <Feather name="check-circle" size={20} color="#FFFFFF" />
-          <Text style={styles.starConfirmationText}>Added to Personal Itinerary</Text>
+          <Text style={styles.starConfirmationText}>{confirmationText}</Text>
         </View>
       ) : null}
     </View>
