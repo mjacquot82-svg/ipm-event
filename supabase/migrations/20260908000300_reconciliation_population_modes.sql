@@ -5,7 +5,7 @@ alter table public.notification_reconciliation_project
   add column if not exists repair_cohort_percent integer not null default 0
     check (repair_cohort_percent between 0 and 100);
 
-create function public.ipm_reconciliation(p jsonb) returns jsonb
+create or replace function public.ipm_reconciliation(p jsonb) returns jsonb
 language plpgsql security definer set search_path=public,pg_temp as $$
 declare
  reg public.notification_installations; r public.notification_reconciliation;
