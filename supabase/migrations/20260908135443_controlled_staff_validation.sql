@@ -97,7 +97,7 @@ begin
         exists(select 1 from public.events e where e.id=reg.event_id and e.slug='ipm-2026'))))),false);
  if action='eligibility' then
    return jsonb_build_object('pilot_eligible',true,'observation_enabled',project.enabled,
-     'repair_enabled',repair_allowed); 
+     'repair_enabled',repair_allowed);
  end if;
  if not project.enabled then return jsonb_build_object('status','DEFERRED','outcome','DISABLED'); end if;
  if reg.wonderpush_installation_id is distinct from p->>'installation_id' then
@@ -194,4 +194,3 @@ begin
 end $$;
 revoke all on function public.ipm_reconciliation(jsonb) from public,anon,authenticated;
 grant execute on function public.ipm_reconciliation(jsonb) to service_role;
-

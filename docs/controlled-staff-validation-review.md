@@ -57,7 +57,7 @@ replacement installation. No browser subscription/permission/SDK mutation was ad
 
 Migration: `supabase/migrations/20260908135443_controlled_staff_validation.sql`
 
-SHA-256: `176eeb9fe35539afb4091c7e1ab90c47d558906e374b48287f3cf4851295a8fc`
+SHA-256: `c7d617fb5e017b1da8633c8815b34f2e5e6002f995fa9be05476b38a6e1d508d`
 
 Apply transactionally only after review and explicit production authorization.
 The migration itself adds inactive fields and replaces private functions; it does
@@ -188,7 +188,8 @@ the outstanding send-path/audience gate. READY is not authorization to send.
   warning. Python compilation and diff whitespace checks passed.
 - Production-mode frontend export passed using a non-deployable placeholder web key;
   the output contains the new support-reference flow and existing reconciliation.
-- Migration applied successfully to disposable PostgreSQL. No production/staging DB
+- Migration applied successfully to disposable PostgreSQL; a separate migration test
+  confirmed existing 1% controls, pilot reference and VERIFIED metadata are preserved. No production/staging DB
   writes, deployment, notification, Notify Everyone action, or staff mutation occurred.
 
 **One next action: Marc reviews the prepared backend/frontend revisions and migration.**
