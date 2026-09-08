@@ -311,3 +311,13 @@ Existing `status=archived` behavior removes withdrawn rows from both schedule li
 Validation: 42 Python schedule/import tests passed, including 16 new cases and three real PostgreSQL transaction tests. 33 frontend schedule/admin tests passed. TypeScript and Python compilation passed. Local staging-context web build passed; its artifacts are not deployed. Exact workbook cells/dates/times/stages, corrected names, content preservation, duplicates, day moves, idempotency and concurrency aborts are covered.
 
 Production SQL is prepared for separate review/authorization only. The legacy 107-row importer remains historical tooling and must not be run to restore the old schedule after this release. No bulk import or unrelated migration is part of this update.
+
+## Staging execution and final read-back
+
+The isolated schedule transaction was applied to the existing staging database only. No backend/frontend deployment or staging branch merge was needed. The staging public API now returns 160 records: 116 active Lifestyles items plus the same 44 unrelated events. All dates, start/end times, stages, titles, descriptions and visible IDs match the reviewed result.
+
+All 107 old UUIDs/external IDs remain. The 10 withdrawn rows are archived; all 71 existing descriptions remain unchanged, including archived descriptions. The database's existing timestamp trigger advanced updated_at for exactly the 77 modified rows (67 schedule updates and 10 withdrawals); it did not alter content or unrelated rows. A fresh planner run against staging requests zero writes.
+
+Production was checked read-only afterward: its complete 151-row schedule snapshot is unchanged. The prepared production transaction has not been run. No notification work, controlled targets, allowlists, provider state, Show Guide, or map/content assets were changed. No message or notification was sent.
+
+Next release step: separately authorize the production schedule data transaction after reviewing this report. Take a fresh production snapshot and regenerate the SQL with the planner; any changed timing/title/identity requires review. Apply only this event-scoped transaction, then repeat the staging read-back checks. Do not run the historical wholesale import or deploy unrelated application work.
