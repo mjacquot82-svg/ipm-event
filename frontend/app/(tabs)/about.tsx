@@ -1,6 +1,7 @@
 // © 2026 Jacquot Digital Solutions. All Rights Reserved.
 
-import React from 'react';
+import React, { useState } from 'react';
+import { readNotificationSupportReference, reconciliationEnabled } from '../../src/services/subscriptionReconciliation';
 import {
   View,
   Text,
@@ -38,6 +39,7 @@ const EVENT_HISTORY = [
 ] as const;
 
 export default function AboutScreen() {
+  const [supportReference, setSupportReference] = useState<string | null>(null);
   usePageAnalytics('about', 'bottom_nav');
   const { frameStyle } = useAttendeeLayout();
   const openMaps = () => {
@@ -170,6 +172,15 @@ export default function AboutScreen() {
             ))}
           </View>
         </View>
+
+        {reconciliationEnabled() ? <View style={styles.footerBadge}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Show notification support reference"
+            style={{ minHeight: 44, justifyContent: 'center' }}
+            onPress={() => { void readNotificationSupportReference().then(value => setSupportReference(value || 'Unavailable')); }}>
+            <Text style={styles.footerText}>Show notification support reference</Text>
+          </TouchableOpacity>
+          {supportReference ? <Text selectable style={styles.footerText}>Support reference: {supportReference}</Text> : null}
+        </View> : null}
 
         <AttendeeAttribution source="about_attribution" />
 

@@ -7,3 +7,5 @@ export const startSubscriptionReconciliation=()=>()=>{};
 export const reconcileSubscription=async():Promise<ReconciliationResult>=>({status:'INELIGIBLE'});
 
 export const isProductionPilot=async()=>false;
+
+export async function readNotificationSupportReference(): Promise<string | null> { return null; }

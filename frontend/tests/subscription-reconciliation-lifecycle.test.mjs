@@ -55,3 +55,20 @@ test('nonpilot and unavailable membership never read subscription or contact rec
   assert.equal(requests,2);assert.equal(emissions,0);
  }finally{for(const [n,d] of Object.entries(originals)){if(d)Object.defineProperty(globalThis,n,d);else delete globalThis[n];}}
 });
+
+test('support reference reads only existing capability and rejects private response material', async()=>{
+ const originals={};for(const n of ['window','location','localStorage','fetch']) originals[n]=Object.getOwnPropertyDescriptor(globalThis,n);
+ let value='ABCDEF1234', requests=0, capability='a'.repeat(43);
+ const globals={window:{},location:{origin:'https://theipm.ca'},localStorage:{getItem:()=>capability},fetch:async(url,options)=>{
+  requests++;assert.equal(url,'https://ipm-backend-eoiw.onrender.com/api/notification-registrations/support-reference');
+  assert.equal(options.body,undefined);assert.equal(options.method,'POST');assert.equal(options.cache,'no-store');
+  assert.equal(options.headers['X-Notification-Device-Capability'],capability);
+  return {ok:true,json:async()=>({reference:value,private:'PRIVATE-INSTALLATION-CANARY'})};
+ }};
+ for(const [n,v] of Object.entries(globals))Object.defineProperty(globalThis,n,{value:v,configurable:true});
+ try {
+  const module=await load();assert.equal(await module.readNotificationSupportReference(),'ABCDEF1234');
+  value='PRIVATE-INSTALLATION-CANARY';assert.equal(await module.readNotificationSupportReference(),null);
+  capability='';assert.equal(await module.readNotificationSupportReference(),null);assert.equal(requests,2);
+ } finally {for(const [n,d] of Object.entries(originals)){if(d)Object.defineProperty(globalThis,n,d);else delete globalThis[n];}}
+});

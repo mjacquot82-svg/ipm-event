@@ -112,3 +112,22 @@ export function startSubscriptionReconciliation() {
   schedule();
   return ()=>{stopped=true;clearTimeout(timer);window.removeEventListener('online',trigger);document.removeEventListener('visibilitychange',trigger);};
 }
+
+// On-demand support locator only. Does not register, subscribe or reconcile.
+export async function readNotificationSupportReference(): Promise<string | null> {
+  if (!reconciliationEnabled()) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try {
+    const capability = localStorage.getItem('@ipm_notification_capability_v1') || '';
+    if (!/^[A-Za-z0-9_-]{43}$/.test(capability)) return null;
+    const response = await fetch(BACKEND + '/api/notification-registrations/support-reference', {
+      method: 'POST', cache: 'no-store', credentials: 'omit', redirect: 'error', signal: controller.signal,
+      headers: { 'X-Notification-Device-Capability': capability },
+    });
+    if (!response.ok) return null;
+    const value = (await response.json()).reference;
+    return typeof value === 'string' && /^[A-F0-9]{10}$/.test(value) ? value : null;
+  } catch { return null; }
+  finally { clearTimeout(timer); }
+}
