@@ -97,6 +97,42 @@ def install_routes(router, config):
             # Ambiguous commit: do not retry or expose transport errors/secrets.
             return response({'bound': False}, 503)
 
+    @router.post('/notification-registrations/bind-controlled-target', include_in_schema=False)
+    async def bind_controlled_target(request: Request):
+        c = config()
+        if not active(c) or request.headers.get('Origin') != c['app']:
+            return response({'reason': 'ORIGIN_REJECTED'}, 404)
+        capability = request.headers.get('X-Notification-Device-Capability', '')
+        if not re.fullmatch(r'[A-Za-z0-9_-]{43}', capability):
+            return response({'reason': 'CAPABILITY_INVALID'})
+        targets = c.get('targets', [])
+        if not isinstance(targets, list) or len(targets) != 1:
+            return response({'reason': 'CONTROLLED_TARGET_COUNT'})
+        target = targets[0]
+        if not isinstance(target, str) or not re.fullmatch(r'[A-Za-z0-9]{40}', target):
+            return response({'reason': 'CONTROLLED_TARGET_INVALID'})
+        try:
+            result = await c['client'].request('POST', '/rpc/ipm_bind_controlled_target', json={'p': {
+                'event_slug': c['event'],
+                'capability_hash': hashlib.sha256(capability.encode()).hexdigest(),
+                'controlled_target': target}})
+            if (result.get('bound') is True
+                    and result.get('pilot_restriction_count') == 1
+                    and result.get('controlled_target_count') == 1
+                    and result.get('controlled_target_match') is True
+                    and result.get('observation_enabled') is False
+                    and result.get('repair_enabled') is False):
+                return response({'bound': True, 'pilot_restriction_count': 1,
+                                 'controlled_target_count': 1,
+                                 'controlled_target_match': True,
+                                 'observation_enabled': False, 'repair_enabled': False})
+            reason = result.get('reason')
+            if not isinstance(reason, str) or not re.fullmatch(r'[A-Z_]{3,64}', reason):
+                reason = 'UNAVAILABLE'
+            return response({'reason': reason})
+        except Exception:
+            return response({'reason': 'UNAVAILABLE'}, 503)
+
     @router.post('/notification-registrations/reconcile', include_in_schema=False)
     async def reconcile_request(request: Request):
         c = config()

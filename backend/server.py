@@ -1843,6 +1843,7 @@ install_pilot_routes(api_router, lambda: {
     "database": SUPABASE_URL, "event": DEFAULT_EVENT_ID,
     "credential": WONDERPUSH_ACCESS_TOKEN, "commit": os.environ.get("RENDER_GIT_COMMIT", ""),
     "client": notification_registration_repository.client if notification_registration_repository else None,
+    "targets": WONDERPUSH_TEST_INSTALLATION_IDS,
 })
 
 
