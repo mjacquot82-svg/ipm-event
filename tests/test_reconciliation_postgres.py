@@ -25,7 +25,7 @@ def reset():
  sql('update notification_reconciliation_project set pilot_registration_id=null')
  sql('truncate notification_reconciliation, notification_installations, events cascade')
  sql('insert into notification_reconciliation_project(singleton) values(true) on conflict do nothing')
- sql("update notification_reconciliation_project set enabled=true,repair_enabled=true,checks=0,failures=0,window_start=now(),open_until=null")
+ sql("update notification_reconciliation_project set mode='PILOT',repair_cohort_percent=0,enabled=true,repair_enabled=true,checks=0,failures=0,window_start=now(),open_until=null")
  sql("insert into events values('11111111-1111-1111-1111-111111111111','test')")
  sql("insert into notification_installations(event_id,wonderpush_installation_id,capability_hash) values('11111111-1111-1111-1111-111111111111',%s,%s)",('b'*40,'a'*64))
  sql('update notification_reconciliation_project set pilot_registration_id=(select id from notification_installations limit 1)')

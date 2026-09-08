@@ -104,3 +104,33 @@ def test_server_mount_and_cors_preserve_existing_routes(monkeypatch):
             assert (await c.post('/api/notification-registrations/reconcile',headers={'Origin':'https://staging.theipm.ca'},json={})).status_code==404
             assert (await c.post('/api/production-diagnostics/push-target',headers={'Origin':'https://staging.theipm.ca'},json={})).status_code==403
     asyncio.run(run())
+
+@pytest.mark.parametrize('body',[None,'{"registration_id":"PRIVATE-CANARY"}','{"installation_id":"PRIVATE-CANARY"}'])
+def test_support_reference_capability_only_and_private(body,caplog):
+    client=AsyncMock();client.request.return_value={'reference':'ABCDEF1234','private':PRIVATE}
+    r=request(config(client),'/notification-registrations/support-reference',headers={'Origin':'https://theipm.ca','X-Notification-Device-Capability':CAP},content=body)
+    if body:
+        assert r.status_code==400;client.request.assert_not_called()
+    else:
+        assert r.json()=={'reference':'ABCDEF1234'}
+        assert client.request.call_args.args==('POST','/rpc/ipm_staff_validation_reference')
+    assert PRIVATE not in r.text+caplog.text and CAP not in r.text+caplog.text
+    assert r.headers['cache-control']=='no-store'
+
+@pytest.mark.parametrize('field',['host','app','database','event'])
+def test_support_reference_production_only(field):
+    client=AsyncMock();c=config(client);c[field]='wrong'
+    assert request(c,'/notification-registrations/support-reference',headers={'Origin':'https://theipm.ca','X-Notification-Device-Capability':CAP}).status_code==404
+    client.request.assert_not_called()
+
+@pytest.mark.parametrize('headers',[{}, {'Origin':'https://staging.theipm.ca','X-Notification-Device-Capability':CAP},{'Origin':'https://theipm.ca','X-Notification-Device-Capability':'bad'}])
+def test_support_reference_requires_origin_and_capability(headers):
+    client=AsyncMock()
+    assert request(config(client),'/notification-registrations/support-reference',headers=headers).status_code==404
+    client.request.assert_not_called()
+
+def test_support_reference_exception_canary(caplog):
+    client=AsyncMock();client.request.side_effect=RuntimeError(PRIVATE+CAP)
+    r=request(config(client),'/notification-registrations/support-reference',headers={'Origin':'https://theipm.ca','X-Notification-Device-Capability':CAP})
+    assert r.status_code==503 and r.json()=={}
+    assert PRIVATE not in r.text+caplog.text and CAP not in r.text+caplog.text

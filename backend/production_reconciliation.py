@@ -82,6 +82,30 @@ def install_routes(router, config):
             pass
         return response(out)
 
+    @router.post('/notification-registrations/support-reference', include_in_schema=False)
+    async def support_reference(request: Request):
+        c = config()
+        if not active(c) or request.headers.get('Origin') != c['app']:
+            return response({}, 404)
+        capability = request.headers.get('X-Notification-Device-Capability', '')
+        if not re.fullmatch(r'[A-Za-z0-9_-]{43}', capability):
+            return response({}, 404)
+        # No browser-selected identity or body is accepted. Private RPC POST
+        # prevents capability hashes / installation IDs entering URL logs.
+        async for chunk in request.stream():
+            if chunk:
+                return response({}, 400)
+        try:
+            result = await c['client'].request('POST', '/rpc/ipm_staff_validation_reference', json={'p': {
+                'event_slug': c['event'],
+                'capability_hash': hashlib.sha256(capability.encode()).hexdigest()}})
+            reference = result.get('reference')
+            if isinstance(reference, str) and re.fullmatch(r'[A-F0-9]{10}', reference):
+                return response({'reference': reference})
+            return response({}, 404)
+        except Exception:
+            return response({}, 503)
+
     @router.post('/notification-registrations/pilot-eligibility', include_in_schema=False)
     async def eligibility(request: Request):
         c = config()
