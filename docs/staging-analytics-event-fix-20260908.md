@@ -63,11 +63,27 @@ these diagnostic outputs.
 
 ## Remaining acceptance checks
 
-Verify staging service configuration and request logs; deploy only the backend
-correction with Netlify skipped. Then use a normal authenticated staging organizer
-session to read all five routes and verify all panels and actual displayed counts.
-The current Netlify deployment must remain `6aa091b2b8f161cc3b981158`.
+Backend deployment and authenticated Live Activity verification are complete as
+recorded below. Marc must refresh the remaining aggregate panels and confirm actual
+displayed counts. Netlify must remain `6aa091b2b8f161cc3b981158`.
 
 Production is excluded. No notification was sent and no provider, subscription,
 permission, reconciliation, schedule, vendor, map, what3words, itinerary, or
 onboarding behavior was changed by this correction.
+
+## Staging deployment read-back
+
+Correction deployed to `ipm-staging-backend` as `dep-daga0obbc2fs73euhl7g`,
+application commit `ab50b90a044e5610eea6bebd6decc56841c00fcb`, live at
+2026-09-08T23:57:10Z. The public build read-back confirms this SHA and successful
+metadata reads. Observation and repair flags remain enabled, unchanged.
+
+The existing authenticated browser's `/api/admin/analytics/live` request returned
+200 at 23:57:48Z (previously 403), proving the new authorization check and Mongo
+reporting work through the live session. Marc's refresh of the remaining aggregate
+panels and confirmation of displayed values are still pending.
+
+Netlify remains on `6aa091b2b8f161cc3b981158`. Live index SHA-1 remains
+`ea5066c963bf646e795a2e3ee8bcb97fec22f7c1`; worker SHA-1 remains
+`1e240d9620f39beb29383d01924cba93e3b7fbc9`. No frontend was rebuilt or deployed.
+No environment configuration, database data or schema was changed by this task.
