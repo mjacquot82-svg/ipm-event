@@ -23,8 +23,9 @@ This is the exact message Marc observed. The staging Supabase project
 `hooiqjcbcbwzjjvnwyxf` contains the active event `ipm-staging`.
 
 Local tests exercising cookie authentication and server-side session/user lookup
-reproduced the rejection. Live authenticated network capture remains pending; no
-claim is made that a local fixture is Marc's live session.
+reproduced the rejection. Render application logs now independently confirm HTTP 403 for all five live
+Analytics routes, including both 7d and today ranges. Response-body evidence is
+the exact server error and Marc's UI report; no session cookie was exported.
 
 ## Correction
 
@@ -34,9 +35,13 @@ so existing analytics are retained. Wrong-event organizers still receive 403;
 unauthenticated requests still receive 401; missing storage still receives 503.
 No frontend fallback, migration, data write, or environment change is included.
 
-Before deployment, verify the Render staging service's configured event and Mongo
-database isolation. Render workspace confirmation is pending. No staging deployment
-of this correction has occurred yet.
+Marc confirmed Render workspace `tea-d74lqic50q8c73e2dv60`. The verified target is
+`ipm-staging-backend`, service `srv-da4adt7qj5pc73bl63j0`, branch `staging`,
+auto-deploy enabled. Its current live deployment is `dep-dag8ls3l550s739r539g`
+at `fb80d44a`. The connector exposes service/deployment metadata but not environment
+values; Mongo connection settings have not been independently read. No connection
+settings are changed by this fix. Authenticated post-deploy reads remain required
+to verify the configured storage end-to-end.
 
 ## Verification so far
 
