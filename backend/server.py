@@ -1461,6 +1461,20 @@ async def admin_notification_adoption(
     return await require_notification_registration_repository().adoption_summary()
 
 
+@api_router.get("/admin/analytics/notification-health")
+async def admin_notification_health(current_user: dict = Depends(get_current_organizer_user)):
+    require_analytics_reporting_repository(current_user)
+    try:
+        from backend.notification_health import health_report
+    except ModuleNotFoundError:
+        from notification_health import health_report
+    try:
+        result = await health_report(require_notification_registration_repository())
+    except Exception:
+        raise HTTPException(status_code=503, detail="Notification health is temporarily unavailable") from None
+    return JSONResponse(result, headers={"Cache-Control": "no-store"})
+
+
 @api_router.post("/admin/bootstrap", response_model=OrganizerAuthResponse)
 async def bootstrap_organizer_owner(data: OrganizerBootstrapRequest, response: Response):
     database = require_mongodb()
