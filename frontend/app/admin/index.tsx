@@ -1612,11 +1612,11 @@ function AnnouncementsPage({
                 </Text>
                 {deliveryStats[item.id] ? <Text style={styles.deliveryMeta}>
                   {deliveryStats[item.id].sent_at
-                    ? `Notification sent ${new Date(deliveryStats[item.id].sent_at as string).toLocaleString()}`
+                    ? `Provider accepted ${new Date(deliveryStats[item.id].sent_at as string).toLocaleString()}`
                     : `Notification ${deliveryStats[item.id].status}`}
                   {deliveryStats[item.id].audience_device_count === null
                     ? ' · Audience at send: Not available'
-                    : ` · Known deliverable devices at send: ${deliveryStats[item.id].audience_device_count}`}
+                    : ` · Provider-ready registrations at send: ${deliveryStats[item.id].audience_device_count}`}
                   {deliveryStats[item.id].provider_accepted ? ' · Provider accepted: Yes' : ''}
                 </Text> : null}
               </View>
