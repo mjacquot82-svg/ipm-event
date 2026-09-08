@@ -48,6 +48,26 @@ def test_health_defaults_off_and_never_discloses_pilot(pilot,caplog):
     assert r.json()['observation_enabled'] is False and r.json()['repair_enabled'] is False
     assert PRIVATE not in r.text+caplog.text
 
+def test_health_reports_population_mode_with_sanitized_counts():
+    client=AsyncMock()
+    client.request.side_effect=[
+        [{'pilot_registration_id':PRIVATE,'enabled':True,'repair_enabled':False,
+          'mode':'POPULATION_OBSERVE','repair_cohort_percent':0,'open_until':None}],
+        [{'status':'VERIFIED','lease_until':None,'next_attempt_at':None,'uncertain':False,
+          'provider_ready':True,'failures':0},
+         {'status':'MISMATCH','lease_until':'2999-01-01T00:00:00Z','next_attempt_at':None,
+          'uncertain':False,'provider_ready':True,'failures':0}],
+    ]
+    r=request(config(client),'/notification-registrations/reconciliation-health','GET')
+    body=r.json()
+    assert body['pilot_only'] is False
+    assert body['operating_mode']=='POPULATION_OBSERVE'
+    assert body['repair_cohort_percent']==0
+    assert body['metadata_rows']==2
+    assert body['status_counts']=={'VERIFIED':1,'MISMATCH':1}
+    assert body['active_leases']==1 and body['provider_ready_count']==2
+    assert PRIVATE not in r.text
+
 def test_origin_oversize_invalid_and_outage_fail_closed():
     client=AsyncMock();c=config(client)
     assert request(c,'/notification-registrations/reconcile').status_code==404

@@ -25,20 +25,58 @@ def install_routes(router, config):
         c = config()
         if not active(c):
             return response({'detail': 'Not found'}, 404)
-        out = {'component': 'PRODUCTION_RECONCILIATION_PILOT_V1',
+        out = {'component': 'PRODUCTION_RECONCILIATION_V2',
                'build_commit': c['commit'] if re.fullmatch(r'[0-9a-f]{40}', c['commit']) else 'UNKNOWN',
                'pilot_only': True, 'pilot_restriction_count': 0,
-               'observation_enabled': False, 'repair_enabled': False, 'metadata_read': 'FAILED'}
+               'operating_mode': 'PILOT', 'repair_cohort_percent': 0,
+               'metadata_rows': 0, 'status_counts': {}, 'active_leases': 0,
+               'pending_retries': 0, 'uncertain_outcomes': 0,
+               'provider_ready_count': 0, 'failure_count': 0,
+               'circuit_open': False, 'observation_enabled': False,
+               'repair_enabled': False, 'metadata_read': 'FAILED'}
         try:
             rows = await c['client'].request('GET', '/notification_reconciliation_project',
-                params={'select': 'enabled,repair_enabled,pilot_registration_id', 'limit': '2'})
+                params={'select': 'enabled,repair_enabled,pilot_registration_id,mode,repair_cohort_percent,open_until', 'limit': '2'})
             if len(rows) != 1:
                 raise ValueError()
             row = rows[0]
+            mode = row.get('mode') if row.get('mode') in ('PILOT','POPULATION_OBSERVE','POPULATION_REPAIR_STAGED') else 'PILOT'
+            cohort = row.get('repair_cohort_percent') if isinstance(row.get('repair_cohort_percent'), int) else 0
+            metadata = await c['client'].request('GET', '/notification_reconciliation',
+                params={'select': 'status,lease_until,next_attempt_at,uncertain,provider_ready,failures', 'limit': '1000'})
+            status_counts = {}
+            active_leases = pending_retries = uncertain = provider_ready = failures = 0
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            for item in metadata if isinstance(metadata, list) else []:
+                status = item.get('status')
+                if isinstance(status, str) and re.fullmatch(r'[A-Z_]{3,32}', status):
+                    status_counts[status] = status_counts.get(status, 0) + 1
+                lease = item.get('lease_until')
+                retry = item.get('next_attempt_at')
+                try:
+                    if isinstance(lease, str) and datetime.fromisoformat(lease.replace('Z', '+00:00')) > now:
+                        active_leases += 1
+                except Exception:
+                    pass
+                try:
+                    if isinstance(retry, str) and datetime.fromisoformat(retry.replace('Z', '+00:00')) > now:
+                        pending_retries += 1
+                except Exception:
+                    pass
+                uncertain += int(item.get('uncertain') is True)
+                provider_ready += int(item.get('provider_ready') is True)
+                failures += item.get('failures', 0) if isinstance(item.get('failures'), int) and item.get('failures', 0) > 0 else 0
             count = int(bool(row.get('pilot_registration_id')))
-            out.update(pilot_restriction_count=count,
-                       observation_enabled=count == 1 and row.get('enabled') is True,
-                       repair_enabled=count == 1 and row.get('enabled') is True and row.get('repair_enabled') is True,
+            out.update(pilot_restriction_count=count, operating_mode=mode,
+                       pilot_only=mode == 'PILOT', repair_cohort_percent=max(0, min(100, cohort)),
+                       metadata_rows=len(metadata) if isinstance(metadata, list) else 0,
+                       status_counts=status_counts, active_leases=active_leases,
+                       pending_retries=pending_retries, uncertain_outcomes=uncertain,
+                       provider_ready_count=provider_ready, failure_count=failures,
+                       circuit_open=isinstance(row.get('open_until'), str),
+                       observation_enabled=row.get('enabled') is True,
+                       repair_enabled=row.get('enabled') is True and row.get('repair_enabled') is True,
                        metadata_read='SUCCESS')
         except Exception:
             pass
