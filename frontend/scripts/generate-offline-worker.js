@@ -25,12 +25,14 @@ const assets = ['/', '/index.html', ...essential.map((path) => `/${relative(dist
   .filter((value, index, all) => all.indexOf(value) === index)
   .sort();
 const digest = createHash('sha256');
+const template = readFileSync(join(root, 'public', 'webpushr-sw.js'), 'utf8');
+digest.update(template);
 for (const asset of assets) {
   digest.update(asset);
   if (asset !== '/') digest.update(readFileSync(join(dist, asset.slice(1))));
 }
 const version = digest.digest('hex').slice(0, 16);
-let worker = readFileSync(join(root, 'public', 'webpushr-sw.js'), 'utf8');
+let worker = template;
 worker = worker.replace("const IPM_OFFLINE_VERSION = 'development';", `const IPM_OFFLINE_VERSION = '${version}';`)
   .replace("const IPM_SHELL_ASSETS = ['/', '/index.html', '/manifest.json'];",
     `const IPM_SHELL_ASSETS = ${JSON.stringify(assets, null, 2)};`);

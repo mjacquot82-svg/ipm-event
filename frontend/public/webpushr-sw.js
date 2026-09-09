@@ -17,7 +17,31 @@ const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
 const IPM_SHELL_CACHE = `${IPM_CACHE_PREFIX}${IPM_OFFLINE_VERSION}`;
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(IPM_SHELL_CACHE).then((cache) => cache.addAll(IPM_SHELL_ASSETS)));
+  event.waitUntil((async () => {
+    const cache = await caches.open(IPM_SHELL_CACHE);
+    // An upgrade must not hold the next navigation behind a network precache.
+    // Carry forward a complete usable shell; fresh navigation already validates
+    // and caches the current deployment before returning its HTML.
+    const keys = (await caches.keys()).filter((key) =>
+      key.startsWith(IPM_CACHE_PREFIX) && key !== IPM_SHELL_CACHE).reverse();
+    for (const key of keys) {
+      const previous = await caches.open(key);
+      const document = await previous.match('/index.html');
+      if (!document) continue;
+      const html = await document.clone().text();
+      const entry = html.match(/src=["'](\/_expo\/static\/js\/web\/entry-[^"']+\.js)["']/)?.[1];
+      if (!entry || !await previous.match(entry)) continue;
+      for (const request of await previous.keys()) {
+        const path = new URL(request.url).pathname;
+        // Do not accumulate obsolete entry bundles across repeated upgrades.
+        if (/^\/_expo\/static\/js\/web\/entry-/.test(path) && path !== entry) continue;
+        await cache.put(request, await previous.match(request));
+      }
+      return;
+    }
+    // First installation has no last-known-good shell to inherit.
+    await cache.addAll(IPM_SHELL_ASSETS);
+  })());
 });
 
 self.addEventListener('activate', (event) => {
