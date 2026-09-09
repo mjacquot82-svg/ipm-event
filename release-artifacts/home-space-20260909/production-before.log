@@ -1,0 +1,8 @@
+{"name":"320 installed enabled","width":320,"height":568,"primaryY":455.390625,"primaryVisible":true,"promptHeight":0,"promptY":null}
+{"name":"320 installed next","width":320,"height":568,"primaryY":455.390625,"primaryVisible":true,"promptHeight":0,"promptY":null}
+{"name":"320 installed disabled","width":320,"height":568,"primaryY":455.390625,"primaryVisible":true,"promptHeight":121,"promptY":1339.390625}
+{"name":"360 installed disabled","width":360,"height":640,"primaryY":492.1875,"primaryVisible":true,"promptHeight":121,"promptY":1529.1875}
+{"name":"320 browser disabled","width":320,"height":568,"primaryY":455.390625,"primaryVisible":true,"promptHeight":121,"promptY":1339.390625}
+{"name":"360 browser enabled","width":360,"height":640,"primaryY":492.1875,"primaryVisible":true,"promptHeight":0,"promptY":null}
+{"name":"360 browser denied","width":360,"height":640,"primaryY":492.1875,"primaryVisible":true,"promptHeight":0,"promptY":null}
+{"name":"desktop","width":1440,"height":900,"primaryY":803.234375,"primaryVisible":true,"promptHeight":101,"promptY":1756.234375}

@@ -1,0 +1,17 @@
+{"name":"320 installed enabled","width":320,"height":568,"primaryY":455.390625,"primaryVisible":true,"promptHeight":0,"promptY":null}
+{"name":"320 installed next","width":320,"height":568,"primaryY":455.390625,"primaryVisible":true,"promptHeight":0,"promptY":null}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Compact invitation must be <=96px; got 121px
+    at file:///workspaces/ipm-event/release-artifacts/home-space-20260909/space-gate-before.mjs:48:15 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.14.0

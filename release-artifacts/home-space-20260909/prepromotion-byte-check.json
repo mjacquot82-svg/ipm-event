@@ -1,0 +1,33 @@
+{
+  "staging": {
+    "verified": [
+      "/_expo/static/js/web/entry-16348af012b4db16e77298f28b6ec7e7.js",
+      "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+      "/index.html",
+      "/webpushr-sw.js",
+      "/_expo/static/js/web/entry-e8a4c411363b533729e8d9e6296c3a0e.js",
+      "/_expo/static/js/web/entry-49627d554cef2cad8a9504556ab8aa8b.js",
+      "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "/_expo/static/js/web/entry-7d65f0a4a8d86d9ea57aeaf7e7204c79.js",
+      "/_expo/static/js/web/entry-2455da6fc57d1546176f69a225bbfa67.js"
+    ],
+    "retained_assets_unchanged": true
+  },
+  "production": {
+    "verified": [
+      "/webpushr-sw.js",
+      "/index.html",
+      "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+      "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "/_expo/static/js/web/entry-37853976efcd06d37462427866a35bea.js",
+      "/_expo/static/js/web/entry-c5e3e1169be104732668a1eb6101e22e.js",
+      "/_expo/static/js/web/entry-14b446228878e4f5b525ff4ebe52c38a.js",
+      "/_expo/static/js/web/entry-741d9b22cd2bfd6c0662b65f502e9855.js",
+      "/_expo/static/js/web/entry-3b91f93fff82cdc3da841001cbaacc8c.js",
+      "/_expo/static/js/web/entry-c3ea4a341fcf65789de2607d0bd41bbc.js",
+      "/_expo/static/js/web/entry-44de99e937117c4596a098a14fd611f5.js",
+      "/_expo/static/js/web/entry-381311dd4227ceb99138c421d5503233.js"
+    ],
+    "retained_assets_unchanged": true
+  }
+}

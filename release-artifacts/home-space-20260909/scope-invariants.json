@@ -1,0 +1,12 @@
+{
+  "home-space-production": {
+    "all_handlers_and_eligibility_byte_identical": true,
+    "help_byte_identical": true,
+    "only_home_markup_and_three_styles_changed": true
+  },
+  "home-space-staging": {
+    "all_handlers_and_eligibility_byte_identical": true,
+    "help_byte_identical": true,
+    "only_home_markup_and_three_styles_changed": true
+  }
+}

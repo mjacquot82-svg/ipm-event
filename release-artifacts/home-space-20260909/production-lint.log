@@ -1,0 +1,111 @@
+
+> frontend@1.0.0 lint
+> expo lint
+
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/(tabs)/_layout.tsx
+  8:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/(tabs)/about.tsx
+  16:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/(tabs)/announcements.tsx
+  8:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/(tabs)/camping.tsx
+  9:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/(tabs)/emergency-services.tsx
+  16:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/(tabs)/index.tsx
+  20:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/(tabs)/map.tsx
+  8:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/(tabs)/queen-of-the-furrow.tsx
+  15:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/(tabs)/schedule.tsx
+  19:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/(tabs)/worship-service.tsx
+  9:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/_layout.tsx
+  10:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/announcements/[announcement_id].tsx
+  10:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/coming-soon.tsx
+  11:3  warning  'Platform' is defined but never used                           @typescript-eslint/no-unused-vars
+  14:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/preview-2026/(tabs)/_layout.tsx
+   8:8   warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+  38:38  warning  A `require()` style import is forbidden                        @typescript-eslint/no-require-imports
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/preview-2026/(tabs)/about.tsx
+  15:8   warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+  16:21  warning  'locations' is defined but never used                          @typescript-eslint/no-unused-vars
+  16:32  warning  'sessions' is defined but never used                           @typescript-eslint/no-unused-vars
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/preview-2026/(tabs)/index.tsx
+   11:3  warning  'Platform' is defined but never used                           @typescript-eslint/no-unused-vars
+   15:3  warning  'Pressable' is defined but never used                          @typescript-eslint/no-unused-vars
+   22:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+   24:3  warning  'sessions' is defined but never used                           @typescript-eslint/no-unused-vars
+   25:3  warning  'locations' is defined but never used                          @typescript-eslint/no-unused-vars
+   33:3  warning  'eventInfo' is defined but never used                          @typescript-eslint/no-unused-vars
+  290:9  warning  'formatDate' is assigned a value but never used                @typescript-eslint/no-unused-vars
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/preview-2026/(tabs)/map.tsx
+  7:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/preview-2026/(tabs)/schedule.tsx
+  16:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/app/preview-2026/index.tsx
+  2:64  warning  'Image' is defined but never used                              @typescript-eslint/no-unused-vars
+  4:8   warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+  4:8   warning  'colors' is defined but never used                             @typescript-eslint/no-unused-vars
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/src/components/AnnouncementCard.tsx
+  4:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/src/components/AttendeeAttribution.tsx
+  4:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/src/components/BottomSheet.tsx
+  22:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/src/components/CachedDataBanner.tsx
+  6:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/src/components/ErrorBoundary.tsx
+  13:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/src/components/MapComponent.tsx
+   15:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+   92:9  warning  'renderPin' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  146:9  warning  'pinsToShow' is assigned a value but never used                @typescript-eslint/no-unused-vars
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/src/components/MapComponent.web.tsx
+   15:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+   91:9  warning  'renderPin' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  145:9  warning  'pinsToShow' is assigned a value but never used                @typescript-eslint/no-unused-vars
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/src/components/PWAInstallPrompt.tsx
+  8:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/src/components/PinKeypad.tsx
+  16:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+  26:7  warning  'PinKeypad' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+
+/workspaces/ipm-event/.worktrees/home-space-production/frontend/src/components/SplashScreen.tsx
+  6:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+✖ 46 problems (0 errors, 46 warnings)
+

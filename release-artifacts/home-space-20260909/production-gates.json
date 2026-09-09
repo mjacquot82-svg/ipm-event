@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "checks": {
+    "staging_live_36": true,
+    "production_preview_36": true,
+    "production_local_36": true,
+    "itinerary_3": true,
+    "unit_263": true,
+    "types": true,
+    "lint": true,
+    "byte_readback": true
+  },
+  "only_home_presentation_changed": true
+}

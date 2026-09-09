@@ -1,0 +1,3 @@
+PASS https://fix-home-space-staging-20260909--ipm-web-staging.netlify.app 390 onboarding, save, confirmations, nonblocking dismissal, cooldown, no overflow; blocked write attempts 14
+PASS https://fix-home-space-staging-20260909--ipm-web-staging.netlify.app 1440 onboarding, save, confirmations, nonblocking dismissal, cooldown, no overflow; blocked write attempts 13
+PASS granted permission no suggestion

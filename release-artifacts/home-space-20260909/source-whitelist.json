@@ -1,0 +1,18 @@
+{
+  "home-space-production": {
+    "baseline": "abcdc31a",
+    "source": "1999c69e89b9fdcb77f0cc6ad81f26aa43eb54ae",
+    "application_files_changed": [
+      "frontend/src/components/NotificationOptIn.tsx"
+    ],
+    "all_exclusions_unchanged": true
+  },
+  "home-space-staging": {
+    "baseline": "51cf73ab",
+    "source": "e96f2763ecd468351d7a922223618c52ea79a030",
+    "application_files_changed": [
+      "frontend/src/components/NotificationOptIn.tsx"
+    ],
+    "all_exclusions_unchanged": true
+  }
+}

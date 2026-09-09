@@ -1,0 +1,26 @@
+{
+  "schedule": {
+    "count": 218,
+    "identical": true
+  },
+  "vendors": {
+    "count": 127,
+    "identical": true
+  },
+  "reconciliation": {
+    "build_commit": "70e068ab2930bdeddee3c5817477cc97e9ca0b01",
+    "repair_cohort_percent": 100,
+    "repair_enabled": true,
+    "observation_enabled": true,
+    "operating_mode": "POPULATION_REPAIR_STAGED",
+    "pilot_only": false
+  },
+  "published_bytes_verified": [
+    "/index.html",
+    "/webpushr-sw.js",
+    "/_expo/static/js/web/entry-381311dd4227ceb99138c421d5503233.js",
+    "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png"
+  ],
+  "worker_logic_changed": false,
+  "notifications_sent": 0
+}

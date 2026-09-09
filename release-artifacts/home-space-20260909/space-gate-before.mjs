@@ -4,22 +4,26 @@ const base=process.env.IPM_TEST_URL||'http://localhost:8098';
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true,args:['--no-sandbox']});
 const android='Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/130.0.0.0 Mobile Safari/537.36';
 const iphone='Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1';
-const cases=[];
-for(const [width,height] of [[320,568],[360,640],[1440,900]])
- for(const installed of [true,false])for(const permission of ['granted','default','denied'])for(const next of [true,false])
- cases.push({name:`${width}-${installed?'installed':'browser'}-${permission}-${next?'next':'no-next'}`,width,height,installed,permission,next});
-for(const {name,width,height,installed,permission,next} of cases){
- const ua=android,dismissed=false;
+for (const [name,width,height,installed,permission,next] of [
+ ['320 installed enabled',320,568,true,'granted',false],
+ ['320 installed next',320,568,true,'granted',true],
+ ['320 installed disabled',320,568,true,'default',false],
+ ['360 installed disabled',360,640,true,'default',true],
+ ['320 browser disabled',320,568,false,'default',false],
+ ['360 browser enabled',360,640,false,'granted',true],
+ ['360 browser denied',360,640,false,'denied',false],
+ ['desktop',1440,900,false,'default',true],
+]) { const ua=android,dismissed=false;
  const c=await browser.newContext({viewport:{width,height},userAgent:ua,serviceWorkers:'block'});
  await c.addInitScript(({installed,permission,dismissed,next})=>{
-  window.__permissionRequests=0;window.__enrollments=0;if(next)localStorage.setItem('@event_navigator_favorites',JSON.stringify({sessionIds:['11111111-1111-4111-8111-111111111111']}));
+  window.__permissionRequests=0;if(next)localStorage.setItem('@event_navigator_favorites',JSON.stringify({sessionIds:['11111111-1111-4111-8111-111111111111']}));
   if(permission==='unsupported'){delete window.Notification;}else Object.defineProperty(window,'Notification',{configurable:true,value:{permission,requestPermission:async()=>{window.__permissionRequests++;return permission;}}});
   Object.defineProperty(navigator,'standalone',{configurable:true,value:installed});
   const match=window.matchMedia.bind(window);window.matchMedia=q=>q==='(display-mode: standalone)'?{...match(q),matches:installed,addEventListener(){},removeEventListener(){}}:match(q);
   if(dismissed)localStorage.setItem('@ipm_home_notification_invitation_dismissed_v1','true');
-  const reg={update:async()=>{},addEventListener(){},removeEventListener(){},pushManager:{getSubscription:async()=>null}};
-  if(navigator.serviceWorker){Object.defineProperty(navigator.serviceWorker,'ready',{configurable:true,value:Promise.resolve(reg)});navigator.serviceWorker.register=async()=>reg;navigator.serviceWorker.getRegistration=async()=>reg;}
-  window.WonderPush={push(value){if(typeof value==='function')value();},isSubscribedToNotifications:async()=>window.Notification.permission==='granted',subscribeToNotifications:async()=>{window.__enrollments++;window.Notification.permission='granted';},getInstallationId:async()=>'0123456789abcdef0123456789abcdef',getUserId:async()=>null};
+  const reg={update:async()=>{},pushManager:{getSubscription:async()=>null}};
+  if(navigator.serviceWorker){navigator.serviceWorker.register=async()=>reg;navigator.serviceWorker.getRegistration=async()=>reg;}
+  window.WonderPush={push(value){if(typeof value==='function')value();},isSubscribedToNotifications:async()=>permission==='granted',getInstallationId:async()=>'0123456789abcdef0123456789abcdef',getUserId:async()=>null};
  },{installed,permission,dismissed,next});
  await c.route('**/*',r=>{
   const u=new URL(r.request().url());
@@ -41,32 +45,10 @@ for(const {name,width,height,installed,permission,next} of cases){
  const primary=p.getByText(next?'My Next Event':'Quick Actions',{exact:true});await primary.waitFor();
  const primaryBox=await primary.boundingBox();
  const promptBox=await invitation.count()?await invitation.boundingBox():null;
- assert.equal(Boolean(promptBox),permission==='default',name+' prompt eligibility');
- assert(primaryBox.y<height-60,name+' primary content should start above bottom navigation');
- if(promptBox){
-  assert(promptBox.height<=96,`${name}: compact invitation must be <=96px, got ${promptBox.height}`);
-  const lastAction=await p.getByRole('link',{name:'Interdenominational Worship Service',exact:true}).count()?p.getByRole('link',{name:'Interdenominational Worship Service',exact:true}):p.getByRole('button',{name:'Interdenominational Worship Service',exact:true});
-  const lastBox=await lastAction.boundingBox();assert(promptBox.y>=lastBox.y+lastBox.height,'prompt must follow Quick Actions');
- }
- assert.equal(await p.evaluate(()=>window.__enrollments),0);
- assert.equal(await p.evaluate(()=>window.__permissionRequests),0);
- if(process.env.IPM_ARTIFACT_DIR&&permission==='default'&&installed&&!next){
-  await p.screenshot({path:process.env.IPM_ARTIFACT_DIR+'/home-'+width+'.png'});
-  await invitation.screenshot({path:process.env.IPM_ARTIFACT_DIR+'/prompt-'+width+'.png'});
- }
- if(promptBox){
-  if(next){
-   await p.getByRole('button',{name:'Enable notifications',exact:true}).click();
-   await p.waitForFunction(()=>window.__enrollments===1);
-   await invitation.waitFor({state:'detached'});
-  }else{
-   await p.getByRole('button',{name:'Dismiss notification invitation',exact:true}).click();
-   await p.reload();await countdown.waitFor();await p.waitForTimeout(250);assert.equal(await invitation.count(),0);
-   assert.equal(await p.evaluate(()=>localStorage.getItem('@ipm_home_notification_invitation_dismissed_v1')),'true');
-  }
- }
- assert.deepEqual(errors,[]);
- console.log(JSON.stringify({name,width,height,primaryY:primaryBox.y,promptHeight:promptBox?.height||0,passed:true}));
+ if(promptBox)assert(promptBox.height<=96,`Compact invitation must be <=96px; got ${promptBox.height}px`);
+ console.log(JSON.stringify({name,width,height,primaryY:primaryBox.y,primaryVisible:primaryBox.y<height-60,promptHeight:promptBox?.height||0,promptY:promptBox?.y||null}));
+ assert(primaryBox.y<height-60,'Primary content should start above bottom navigation');
+ await p.screenshot({path:process.env.IPM_ARTIFACT_DIR+'/before-'+name.replaceAll(' ','-')+'.png'});
  await c.close();
 }
 await browser.close();

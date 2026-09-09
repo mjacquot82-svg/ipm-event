@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "browser_cases": 36,
+  "itinerary_checks": 3,
+  "focused_tests": 78,
+  "types": "pass",
+  "lint": "zero errors",
+  "one_application_file_only": true
+}

@@ -1,0 +1,146 @@
+✔ Home renders Action Buttons before Link Buttons (2.241611ms)
+✔ all production Home buttons remain present exactly once (0.539136ms)
+✔ Emergency Services appears exactly once in Quick Actions with internal analytics routing (0.514089ms)
+✔ Emergency Services uses the reviewed icon styling and accessibility label (0.234297ms)
+✔ Emergency Services is unconditional and has no responsive or stored-state visibility rule (0.583729ms)
+✔ Quick Actions reflow naturally without width-specific gaps (0.667595ms)
+✔ internal controls are isolated under Action Buttons (0.297494ms)
+✔ external controls are isolated under Link Buttons without URL changes (0.414673ms)
+✔ Camping uses a tent icon and retains its internal route (0.410295ms)
+✔ Worship Service appears once under Links and routes internally (0.341617ms)
+✔ Camping is an internal Quick Action and its external URL is retained by the Camping page (0.238454ms)
+✔ unrelated Home content remains present (0.229307ms)
+✔ Links feature the 2026 Show Guide PDF card (0.862479ms)
+(node:97) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspaces/ipm-event/.worktrees/home-space-staging/frontend/src/services/itinerarySuggestionPolicy.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspaces/ipm-event/.worktrees/home-space-staging/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ first addition is quiet; second offers once per session (2.14969ms)
+✔ dismissal persists seven-day cooldown and two-show lifetime limit (0.92194ms)
+✔ ineligible notification states suppress suggestions (1.002179ms)
+✔ concurrent additions show at most once (1.631884ms)
+✔ storage failure, invalid history and backwards clock fail quietly (2.705727ms)
+✔ favorite save is independent; enrollment UI only mounts after explicit action (4.294941ms)
+✔ admin explains notification health without promising receipt (1.457598ms)
+✔ announcement stats are exact-ledger aggregates with honest historical fallback (2.01597ms)
+✔ analytics contracts expose no installation IDs, tokens, hashes, or provider references (0.296663ms)
+✔ notification analytics remains additive when production backend is older (1.426611ms)
+(node:115) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspaces/ipm-event/.worktrees/home-space-staging/frontend/src/services/notificationDeepLinkCore.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspaces/ipm-event/.worktrees/home-space-staging/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ production WonderPush clicks retain the announcement detail destination (1.542297ms)
+✔ staging, external, malformed, and non-announcement destinations are rejected (0.416567ms)
+✔ slow SDK startup and loader/readiness failures receive one bounded retry (1.717764ms)
+✔ subscription-status timeout is transient and a successful retry preserves state (0.266407ms)
+✔ denied permission and unsupported browsers remain distinct and do not initialize SDK (0.276566ms)
+✔ status checks never prompt permission and retry cannot loop infinitely (0.410105ms)
+✔ focus and online recovery are event-driven, deduplicated, and offer bounded retry (0.540268ms)
+✔ a transient failure offers recovery without initiating permission (0.377083ms)
+✔ recoverable mutations use internal state while confirmed error remains user-visible (0.642349ms)
+✔ confirmed setup and registration failures retain their explicit recovery UI (0.19837ms)
+(node:133) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspaces/ipm-event/.worktrees/home-space-staging/frontend/src/utils/notificationPromptEligibility.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspaces/ipm-event/.worktrees/home-space-staging/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ optional notification prompt uses a four-hour cooldown (53.716965ms)
+✔ America/Toronto calendar day limits prompts to two and resets next day (7.292702ms)
+✔ notification help never uses the retired recurring prompt policy (0.453516ms)
+✔ notification success stays visible and controls remain discoverable (0.261778ms)
+✔ registration stages are explicit and safely bounded (4.990689ms)
+✔ registration order preserves lookup and capability-scoped migration rebind (3.930251ms)
+✔ clean installation returns before migration recovery (0.331017ms)
+✔ initializing SDK waits for installation restoration before recovery subscription (2.192399ms)
+✔ restored installation proceeds through one normal setup attempt without a registration loop (0.878328ms)
+✔ missing legacy installation performs bounded provider recovery before targeted replacement (0.501686ms)
+✔ registration already in progress is observed without another provider mutation (2.109906ms)
+✔ stuck provider registration reports only bounded boolean lifecycle state (0.371152ms)
+✔ legacy replacement is narrow, permission-safe, idempotent, and bounded (1.647113ms)
+✔ completed legacy replacement reports only safe browser and provider lifecycle state (0.63243ms)
+✔ completed replacement resynchronizes through documented WonderPush lifecycle (0.391701ms)
+✔ invalid credentials and takeover responses do not retry (2.046537ms)
+✔ Home distinguishes subscribed, pending, ready and failed setup (2.965302ms)
+✔ session initialization remains pending and automatically resumes setup (0.363248ms)
+✔ pending startup remains visible until provider readiness while genuine failures retain recovery UI (0.51489ms)
+✔ provider-ready subscribers see success without another enrollment request (0.311401ms)
+✔ safe UI and diagnostics do not render sensitive device material (4.544537ms)
+✔ T-30 remains hard disabled (0.1768ms)
+✔ every existing registration operation publishes pending and completed stages (1.706513ms)
+✔ HTTP instrumentation distinguishes headers, parsing, completion, and safe failures (0.368698ms)
+✔ stage instrumentation does not add or reorder network requests (0.430493ms)
+✔ production About renders no registration workflow engineering metadata (0.543042ms)
+(node:166) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspaces/ipm-event/.worktrees/home-space-staging/frontend/src/utils/installEnvironment.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspaces/ipm-event/.worktrees/home-space-staging/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Unable to save PWA install dismissal: TypeError: async_storage_1.default.setItem is not a function
+    at Object.<anonymous> (evalmachine.<anonymous>:168:66)
+    at step (evalmachine.<anonymous>:67:23)
+    at Object.next (evalmachine.<anonymous>:48:53)
+    at evalmachine.<anonymous>:42:71
+    at new Promise (<anonymous>)
+    at __awaiter (evalmachine.<anonymous>:38:12)
+    at evalmachine.<anonymous>:156:65
+    at Object.<anonymous> (evalmachine.<anonymous>:205:42)
+    at step (evalmachine.<anonymous>:67:23)
+    at Object.next (evalmachine.<anonymous>:48:53)
+Unable to save PWA install dismissal: TypeError: async_storage_1.default.setItem is not a function
+    at Object.<anonymous> (evalmachine.<anonymous>:168:66)
+    at step (evalmachine.<anonymous>:67:23)
+    at Object.next (evalmachine.<anonymous>:48:53)
+    at evalmachine.<anonymous>:42:71
+    at new Promise (<anonymous>)
+    at __awaiter (evalmachine.<anonymous>:38:12)
+    at Object.onPress (evalmachine.<anonymous>:156:65)
+    at Object.click (file:///workspaces/ipm-event/.worktrees/home-space-staging/frontend/tests/onboarding-runtime.test.mjs:48:208)
+    at TestContext.<anonymous> (file:///workspaces/ipm-event/.worktrees/home-space-staging/frontend/tests/onboarding-runtime.test.mjs:85:165)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+Unable to save PWA install dismissal: TypeError: async_storage_1.default.setItem is not a function
+    at Object.<anonymous> (evalmachine.<anonymous>:168:66)
+    at step (evalmachine.<anonymous>:67:23)
+    at Object.next (evalmachine.<anonymous>:48:53)
+    at evalmachine.<anonymous>:42:71
+    at new Promise (<anonymous>)
+    at __awaiter (evalmachine.<anonymous>:38:12)
+    at Object.onPress (evalmachine.<anonymous>:156:65)
+    at Object.click (file:///workspaces/ipm-event/.worktrees/home-space-staging/frontend/tests/onboarding-runtime.test.mjs:48:208)
+    at TestContext.<anonymous> (file:///workspaces/ipm-event/.worktrees/home-space-staging/frontend/tests/onboarding-runtime.test.mjs:85:165)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+Unable to save PWA install dismissal: TypeError: async_storage_1.default.setItem is not a function
+    at Object.<anonymous> (evalmachine.<anonymous>:168:66)
+    at step (evalmachine.<anonymous>:67:23)
+    at Object.next (evalmachine.<anonymous>:48:53)
+    at evalmachine.<anonymous>:42:71
+    at new Promise (<anonymous>)
+    at __awaiter (evalmachine.<anonymous>:38:12)
+    at Object.onPress (evalmachine.<anonymous>:156:65)
+    at Object.click (file:///workspaces/ipm-event/.worktrees/home-space-staging/frontend/tests/onboarding-runtime.test.mjs:48:208)
+    at TestContext.<anonymous> (file:///workspaces/ipm-event/.worktrees/home-space-staging/frontend/tests/onboarding-runtime.test.mjs:85:165)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+✔ A first Android: opening and closing options never enrolls or prompts (363.032472ms)
+✔ D Android enabled: opening and closing options never enrolls or prompts (136.845048ms)
+✔ E Android denied: opening and closing options never enrolls or prompts (98.070806ms)
+✔ F first iPhone: opening and closing options never enrolls or prompts (103.244094ms)
+✔ H installed iPhone: opening and closing options never enrolls or prompts (84.892625ms)
+✔ J iPhone denied: opening and closing options never enrolls or prompts (126.570865ms)
+✔ K desktop: opening and closing options never enrolls or prompts (82.794578ms)
+✔ L unsupported: opening and closing options never enrolls or prompts (58.618331ms)
+✔ N returning enabled: opening and closing options never enrolls or prompts (90.447462ms)
+✔ O returning denied: opening and closing options never enrolls or prompts (71.216058ms)
+✔ explicit opt-in enrolls once and shows success; reopening is read-only (60.48052ms)
+✔ P offline launch and Q reconnect keep controls safe and refresh once (115.773198ms)
+✔ bounded status failure gives an explicit read retry, never a permission loop (102.971493ms)
+✔ B native install is captured without opening help, then used only on click (101.375854ms)
+✔ M dismissal never reopens install help: Android Chrome/130.0 (74.594246ms)
+✔ M dismissal never reopens install help: iPhone Safari/604.1 (60.145085ms)
+✔ M dismissal never reopens install help: Windows Chrome/130.0 (51.843491ms)
+✔ C installed Android and iPhone offer status instead of another install action (141.266586ms)
+✔ G/i iPhone notification help is capability-specific and preserves browser use (0.296212ms)
+ℹ tests 78
+ℹ suites 0
+ℹ pass 78
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4333.738479
