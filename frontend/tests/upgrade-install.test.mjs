@@ -40,7 +40,7 @@ test('upgrade installation inherits usable B without any network, then activatio
   assert.equal(h.stores.get('ipm-offline-shell-B').size, 4, 'incumbent cache is not modified');
   await h.run('activate');
   assert.equal(h.stores.size, 1);
-  const current = h.stores.get('ipm-offline-shell-development');
+  const current = h.stores.get('ipm-offline-shell-current-v1');
   assert.equal(current.get('/index.html'), html);
   assert.equal(current.get('/_expo/static/js/web/entry-B.js'), 'B');
   assert.equal(current.get('/font.ttf'), 'font');
@@ -53,10 +53,25 @@ test('incomplete failed-install caches cannot replace the last-known-good shell'
   });
   await h.run('install');
   assert.equal(h.downloads(), 0);
-  assert.equal(h.stores.get('ipm-offline-shell-development').get('/index.html'), html);
+  assert.equal(h.stores.get('ipm-offline-shell-current-v1').get('/index.html'), html);
 });
 test('failed first install rejects instead of activating an empty offline shell', async () => {
   const h = setup({});
   await assert.rejects(h.run('install'), /update server unavailable/);
   assert.equal(h.downloads(), 1);
+});
+
+test('new worker installation and activation preserve a concurrent navigation commit', async () => {
+  const h = setup({ 'ipm-offline-shell-current-v1': new Map([
+    ['/index.html', html], ['/_expo/static/js/web/entry-B.js', 'B'],
+  ]) });
+  await h.run('install');
+  const shared = h.stores.get('ipm-offline-shell-current-v1');
+  shared.set('/_expo/static/js/web/entry-C.js', 'C');
+  shared.set('/index.html', html.replace('entry-B', 'entry-C'));
+  await h.run('activate');
+  assert.equal(h.downloads(), 0);
+  assert.equal(h.stores.size, 1);
+  assert.equal(shared.get('/index.html'), html.replace('entry-B', 'entry-C'));
+  assert.equal(shared.get('/_expo/static/js/web/entry-C.js'), 'C');
 });

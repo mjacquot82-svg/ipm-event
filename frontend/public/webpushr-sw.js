@@ -14,11 +14,18 @@ try {
 const IPM_OFFLINE_VERSION = 'development';
 const IPM_SHELL_ASSETS = ['/', '/index.html', '/manifest.json'];
 const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
-const IPM_SHELL_CACHE = `${IPM_CACHE_PREFIX}${IPM_OFFLINE_VERSION}`;
+// Navigation and installation share a last-known-good shell across worker
+// versions. Activation must not delete a concurrent navigation's cached result.
+const IPM_SHELL_CACHE = `${IPM_CACHE_PREFIX}current-v1`;
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(IPM_SHELL_CACHE);
+    const current = await cache.match('/index.html');
+    if (current) {
+      const entry = (await current.text()).match(/src=["'](\/_expo\/static\/js\/web\/entry-[^"']+\.js)["']/)?.[1];
+      if (entry && await cache.match(entry)) return;
+    }
     // An upgrade must not hold the next navigation behind a network precache.
     // Carry forward a complete usable shell; fresh navigation already validates
     // and caches the current deployment before returning its HTML.
