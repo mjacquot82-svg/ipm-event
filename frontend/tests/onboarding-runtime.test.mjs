@@ -104,7 +104,7 @@ for (const [label, options, visible] of [
  ['offline', {online:false}, false], ['desktop', {state:'default',ua:'Windows Chrome/130.0'}, true],
 ]) test('Home presentation: '+label, async()=>{
  const h=harness('NotificationOptIn.tsx',{...options,props:{homePresentation:true}});await h.flush();
- assert.equal(h.text().includes('Stay up to date'),visible);
+ assert.equal(h.text().includes('Get important IPM announcements and updates.'),visible);
  assert.doesNotMatch(h.text(),/Notification options|delivery|verified|VERIFIED|MISMATCH|provider-ready|reconciliation|notification health|Home Screen/);
  assert.equal(h.calls.subscribe,0);assert.equal(h.calls.unsubscribe,0);assert.equal(h.calls.prompt,0);
 });

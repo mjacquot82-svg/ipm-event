@@ -187,18 +187,17 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
       (state !== 'default' && state !== 'unsubscribed') ||
       (typeof Notification !== 'undefined' && Notification.permission !== 'default')) return null;
     return <View style={[containerStyle, styles.homeInvitation]} accessibilityLabel="Optional IPM updates">
-      <View style={styles.copy}>
-        <Text style={styles.title}>Stay up to date</Text>
-        <Text style={styles.homeMessage}>Get important IPM announcements and updates.</Text>
+      <Text style={styles.homeMessage}>Get important IPM announcements and updates.</Text>
+      <View style={styles.homeActions}>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Enable notifications"
           disabled={working || setupState === 'pending'} onPress={updateSubscription} style={styles.homeAction}>
           <Text style={styles.retryButtonText}>{working ? 'Please wait…' : 'Enable notifications'}</Text>
         </TouchableOpacity>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Dismiss notification invitation"
+          onPress={dismissHomeInvitation} style={styles.homeDismiss}>
+          <Text style={styles.homeDismissText}>Not now</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Dismiss notification invitation"
-        onPress={dismissHomeInvitation} style={styles.homeDismiss}>
-        <Text style={styles.homeDismissText}>Not now</Text>
-      </TouchableOpacity>
     </View>;
   }
 
@@ -250,8 +249,9 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
 }
 
 const styles = StyleSheet.create({
-  homeInvitation: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 8 },
-  homeMessage: { color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginTop: 3 },
+  homeInvitation: { paddingVertical: 4 },
+  homeActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  homeMessage: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
   homeAction: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   homeDismiss: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
   homeDismissText: { color: colors.textSecondary, fontSize: 14 },
