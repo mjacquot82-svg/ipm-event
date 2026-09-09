@@ -16,7 +16,6 @@ import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
-import PWAInstallPrompt from '../../src/components/PWAInstallPrompt';
 import NotificationOptIn from '../../src/components/NotificationOptIn';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
@@ -413,13 +412,6 @@ export default function HomeScreen() {
       >
         <ResponsiveBanner />
 
-        <View style={sectionStyle}>
-          <Text accessibilityRole="header" style={{ fontSize: 24, fontWeight: '800', color: colors.textPrimary }}>Use IPM now</Text>
-          <Text style={{ fontSize: 16, lineHeight: 24, color: colors.textSecondary }}>You’re already in IPM. Explore below — no download needed.</Text>
-        </View>
-        <NotificationOptIn containerStyle={sectionStyle} />
-        <View style={sectionStyle}><PWAInstallPrompt /></View>
-
         {isShowingCachedData && (
           <View style={sectionStyle}>
             <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
@@ -666,6 +658,8 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        <NotificationOptIn containerStyle={sectionStyle} homePresentation />
 
         {happeningNow.length > 0 && (
           <View style={sectionStyle}>

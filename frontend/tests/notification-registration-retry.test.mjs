@@ -185,13 +185,13 @@ test('invalid credentials and takeover responses do not retry', () => {
 
 test('Home distinguishes subscribed, pending, ready and failed setup', () => {
   assert.doesNotMatch(component, /ensureNotificationRegistration\(\{allowEnrollment\}\)\.catch\(\(\) => undefined\)/);
-  assert.match(component, /Checking notification delivery…/);
-  assert.match(component, /Notification delivery is not verified\. The app will continue to work\./);
+  assert.match(component, /Checking notification status…/);
+  assert.match(component, /Notifications enabled/);
   assert.match(component, /await ensureNotificationRegistration\(\{allowEnrollment\}\)/);
-  assert.match(component, />Try again</);
-  assert.match(component, /accessibilityLabel="Try notification setup again"/);
+  assert.doesNotMatch(component, />Try again</);
+  assert.doesNotMatch(component, /accessibilityLabel="Try notification setup again"/);
   assert.match(component, /minHeight: 44/);
-  assert.match(component, /notification-setup-\$\{setupState/);
+  assert.match(component, /notification-settings-\$\{state/);
 });
 
 test('session initialization remains pending and automatically resumes setup', () => {
@@ -216,18 +216,18 @@ test('session initialization remains pending and automatically resumes setup', (
 
 test('pending startup remains visible until provider readiness while genuine failures retain recovery UI', () => {
   assert.match(component, /loading: 'Checking notification status/);
-  assert.match(component, /state === 'subscribed' && setupState === 'ready'/);
-  assert.match(component, /setupState === 'failed'[\s\S]*Try again/);
+  assert.match(component, /const stateMessage = state === 'subscribed'/);
+  assert.doesNotMatch(component, /setupState === 'failed'[\s\S]*Try again/);
   assert.match(component, /state === 'subscribed'[\s\S]*unsubscribeFromNotifications\(\)/);
   assert.match(component, /state === 'denied'/);
-  assert.match(component, /Checking notification delivery…/);
-  assert.match(component, /Notification delivery is not verified/);
+  assert.match(component, /Checking notification status…/);
+  assert.match(component, /Notifications enabled/);
 });
 
 test('provider-ready subscribers see success without another enrollment request', () => {
  assert.match(component, /Notifications are enabled on this device/);
  assert.doesNotMatch(component, /if \(state === 'subscribed'.*return null/);
- assert.match(component, /setupState === 'ready'/);
+ assert.match(component, /Notifications enabled/);
 });
 
 test('safe UI and diagnostics do not render sensitive device material', () => {

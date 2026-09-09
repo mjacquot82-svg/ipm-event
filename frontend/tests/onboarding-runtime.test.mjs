@@ -57,12 +57,12 @@ for(const [name,options] of [
  const h=harness('NotificationOptIn.tsx',options);await h.flush();const before=h.calls.register.length;
  await h.click('Notification options');assert.match(h.text(),/optional/);await h.click('Hide notification options');
  assert.equal(h.calls.subscribe,0);assert.equal(h.calls.unsubscribe,0);assert.equal(h.calls.register.length,before);
- if(options.state==='subscribed')assert.match(h.text(),/Notifications are enabled/);
+ if(options.state==='subscribed')assert.match(h.text(),/Notifications enabled/);
  if(options.state==='denied')assert.ok(!h.all().some(n=>n.props.accessibilityLabel==='Enable IPM notifications'));
 });
 test('explicit opt-in enrolls once and shows success; reopening is read-only',async()=>{
  const h=harness('NotificationOptIn.tsx');await h.flush();await h.click('Notification options');await h.click('Enable IPM notifications');
- assert.equal(h.calls.subscribe,1);assert.equal(h.calls.register.at(-1).allowEnrollment,true);assert.match(h.text(),/Notifications are enabled/);
+ assert.equal(h.calls.subscribe,1);assert.equal(h.calls.register.at(-1).allowEnrollment,true);assert.match(h.text(),/Notifications enabled/);
  await h.click('Hide notification options');await h.click('Notification options');assert.equal(h.calls.subscribe,1);
 });
 test('P offline launch and Q reconnect keep controls safe and refresh once',async()=>{
