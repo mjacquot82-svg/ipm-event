@@ -43,7 +43,7 @@ for(const [name,width,ua,installed,permission,dismissed] of [
  assert(!/Use IPM now|You’re already in IPM|Get important IPM updates|Notification options|IPM is on your Home Screen|Notification delivery|VERIFIED|MISMATCH|provider-ready|reconciliation|notification health/i.test(text));
  const box=await countdown.boundingBox();assert(box&&box.y<(width<720?500:800),`${name}: countdown top ${box?.y}`);
  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
- const invitation=p.getByText('Stay up to date',{exact:true});
+ const invitation=p.getByText('Get important IPM announcements and updates.',{exact:true});
  const expected=permission==='default'&&!dismissed;
  if(expected){await invitation.waitFor();assert((await invitation.boundingBox()).y>(await countdown.boundingBox()).y);await p.getByRole('button',{name:'Dismiss notification invitation'}).click();await p.reload();await countdown.waitFor();await p.waitForTimeout(300);assert.equal(await invitation.count(),0);}
  else assert.equal(await invitation.count(),0);
