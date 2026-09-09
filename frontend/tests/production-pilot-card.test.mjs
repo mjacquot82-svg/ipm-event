@@ -25,8 +25,8 @@ function render(state,setup,pilot){
  return module.exports.default({});
 }
 test('production reconciliation states retain honest status in optional help',()=>{
- const pending=JSON.stringify(render('subscribed','pending',true));assert.match(pending,/Checking notification delivery/);assert.doesNotMatch(pending,/Disable IPM notifications/);
- assert.match(JSON.stringify(render('subscribed','failed',true)),/Notification delivery is not verified/);
+ const pending=JSON.stringify(render('subscribed','pending',true));assert.match(pending,/Checking notification status/);assert.doesNotMatch(pending,/Disable IPM notifications/);
+ assert.match(JSON.stringify(render('subscribed','failed',true)),/Notifications are temporarily unavailable/);
  assert.match(JSON.stringify(render('subscribed','ready',true)),/Notifications are enabled on this device/);
  assert.match(JSON.stringify(render('unsubscribed','failed',true)),/Notifications are currently disabled/);
 });

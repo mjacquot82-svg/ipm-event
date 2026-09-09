@@ -8,8 +8,8 @@ import { notificationHelp } from '../src/utils/notificationHelp.ts';
 
 // Execute the actual components with deterministic hooks and inert platform/SDK adapters.
 // Provider and browser writes are counted, never sent to a real service.
-function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Chrome/130.0', standalone=false}={}) {
- const slots=[],effects=[],listeners=new Map(),storage=new Map();let index=0,tree,dirty=false;
+function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Chrome/130.0', standalone=false, props={}, storage=new Map()}={}) {
+ const slots=[],effects=[],listeners=new Map();let index=0,tree,dirty=false;
  const calls={read:0,subscribe:0,unsubscribe:0,register:[],prompt:0,holds:0};
  const equal=(a,b)=>a&&b&&a.length===b.length&&a.every((v,i)=>v===b[i]);
  const hooks={
@@ -29,7 +29,7 @@ function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Ch
   if(name==='react')return {...hooks,default:hooks};
   if(name==='react-native')return {Platform:{OS:'web'},StyleSheet:{create:x=>x},Text:'Text',View:'View',ScrollView:'ScrollView',TouchableOpacity:'Button',ActivityIndicator:'Spinner'};
   if(name==='expo-router')return {useFocusEffect:f=>hooks.useEffect(f,[f])};
-  if(name.includes('async-storage'))return {default:{setItem:async(k,v)=>storage.set(k,v),getItem:async k=>storage.get(k)||null}};
+  if(name.includes('async-storage'))return {__esModule:true,default:{setItem:async(k,v)=>storage.set(k,v),getItem:async k=>storage.get(k)||null}};
   if(name.includes('vector-icons'))return {Feather:'Icon'};
   if(name.includes('installEnvironment'))return {detectInstallEnvironment,getInstallGuidance:env=>({heading:'Optional instructions',intro:'Optional',steps:[],primaryLabel:env.installState==='install_prompt_available'?'Add IPM':null})};
   if(name.includes('notificationHelp'))return {notificationHelp};
@@ -42,7 +42,7 @@ function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Ch
   throw Error(name);
  }};
  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/'+file,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React,esModuleInterop:true}}).outputText,context);
- const render=()=>{index=0;dirty=false;tree=module.exports.default({});while(effects.length)effects.shift()();};
+ const render=()=>{index=0;dirty=false;tree=module.exports.default(props);while(effects.length)effects.shift()();};
  const flush=async()=>{for(let n=0;n<20;n++){if(dirty||!tree)render();await Promise.resolve();}return tree;};
  const all=(node=tree)=>!node||typeof node!=='object'?[]:[node,...node.children.flatMap(all)];
  const text=(node=tree)=>typeof node==='string'?node:node&&typeof node==='object'?node.children.map(text).join(' '):'';
@@ -91,4 +91,31 @@ test('C installed Android and iPhone offer status instead of another install act
 });
 test('G/i iPhone notification help is capability-specific and preserves browser use',()=>{
  const e=detectInstallEnvironment({userAgent:'iPhone Safari/604.1'});assert.match(notificationHelp(e,'unsupported'),/16.4/);assert.match(notificationHelp(e,'unsupported'),/browse IPM here/);
+});
+
+for (const [label, options, visible] of [
+ ['installed Android enabled', {state:'subscribed',standalone:true}, false],
+ ['installed Android not enabled', {state:'default',standalone:true}, true],
+ ['Android browser first visit', {state:'default'}, true],
+ ['iPhone Safari', {state:'unsupported',ua:'iPhone Safari/604.1'}, false],
+ ['installed iPhone', {state:'default',ua:'iPhone Safari/604.1',standalone:true}, true],
+ ['enabled', {state:'subscribed'}, false], ['denied', {state:'denied'}, false],
+ ['unsupported', {state:'unsupported'}, false], ['unavailable', {state:'error'}, false],
+ ['offline', {online:false}, false], ['desktop', {state:'default',ua:'Windows Chrome/130.0'}, true],
+]) test('Home presentation: '+label, async()=>{
+ const h=harness('NotificationOptIn.tsx',{...options,props:{homePresentation:true}});await h.flush();
+ assert.equal(h.text().includes('Stay up to date'),visible);
+ assert.doesNotMatch(h.text(),/Notification options|delivery|verified|VERIFIED|MISMATCH|provider-ready|reconciliation|notification health|Home Screen/);
+ assert.equal(h.calls.subscribe,0);assert.equal(h.calls.unsubscribe,0);assert.equal(h.calls.prompt,0);
+});
+test('Home dismissal survives remount without changing itinerary storage or enrolling',async()=>{
+ const storage=new Map([['@ipm_itinerary_notification_suggestion_v1','untouched']]);
+ const h=harness('NotificationOptIn.tsx',{props:{homePresentation:true},storage});await h.flush();
+ await h.click('Dismiss notification invitation');assert.equal(h.text(),'');
+ const returning=harness('NotificationOptIn.tsx',{props:{homePresentation:true},storage});await returning.flush();
+ assert.equal(returning.text(),'');assert.equal(storage.get('@ipm_itinerary_notification_suggestion_v1'),'untouched');assert.equal(h.calls.subscribe,0);
+});
+test('Home explicit enable still invokes existing enrollment once then hides promotion',async()=>{
+ const h=harness('NotificationOptIn.tsx',{props:{homePresentation:true}});await h.flush();await h.click('Enable notifications');
+ assert.equal(h.calls.subscribe,1);assert.equal(h.calls.register.length,1);assert.equal(h.text(),'');
 });

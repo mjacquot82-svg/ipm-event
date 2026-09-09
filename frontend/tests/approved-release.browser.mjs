@@ -15,7 +15,7 @@ for(const width of [390,1440]){
   return route.abort();
  });
  const page=await c.newPage();page.on('pageerror',e=>console.log('PAGE ERROR',e.message));
- await page.goto(base,{waitUntil:'domcontentloaded'});await page.getByText('Use IPM now',{exact:true}).waitFor();
+ await page.goto(base,{waitUntil:'domcontentloaded'});await page.getByText('IPM 2026 Starts In',{exact:true}).waitFor();
  assert.equal(await page.getByText('Do I need to install IPM?',{exact:true}).count(),0);
  await page.goto(base+'/schedule',{waitUntil:'domcontentloaded'});await page.waitForTimeout(2500);
 

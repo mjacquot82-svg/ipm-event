@@ -159,8 +159,8 @@ test('invalid credentials and takeover responses do not retry', () => {
 
 test('Home distinguishes subscribed, pending, ready and failed setup', () => {
   assert.doesNotMatch(component, /ensureNotificationRegistration\(\)\.catch\(\(\) => undefined\)/);
-  assert.match(component, /Checking notification delivery…/);
-  assert.match(component, /Notification delivery is not verified\. The app will continue to work\./);
+  assert.match(component, /Checking notification status…/);
+  assert.match(component, /Notifications are temporarily unavailable\. You can keep using IPM\./);
   assert.match(component, /await ensureNotificationRegistration\(\)/);
   assert.match(component, />Try again</);
   assert.match(component, /accessibilityLabel="Try notification setup again"/);
@@ -193,8 +193,8 @@ test('pending startup hides actions while genuine failures retain recovery UI', 
   assert.match(component, /setupState === 'failed'[\s\S]*Try again/);
   assert.match(component, /state === 'subscribed'[\s\S]*unsubscribeFromNotifications\(\)/);
   assert.match(component, /state === 'denied'/);
-  assert.match(component, /Checking notification delivery…/);
-  assert.match(component, /Notification delivery is not verified/);
+  assert.match(component, /Checking notification status…/);
+  assert.match(component, /Notifications are temporarily unavailable/);
 });
 
 test('optional notification controls preserve clear status without auto-opening', () => {

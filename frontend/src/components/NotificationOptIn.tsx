@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { watchReconciliation } from '../services/subscriptionReconciliation';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -30,7 +31,7 @@ const STATE_COPY: Record<NotificationState, string> = {
   error: 'Notifications are temporarily unavailable. The IPM app will continue to work.',
 };
 
-export default function NotificationOptIn({ containerStyle, initiallyExpanded = false }: { containerStyle?: StyleProp<ViewStyle>; initiallyExpanded?: boolean }) {
+export default function NotificationOptIn({ containerStyle, initiallyExpanded = false, homePresentation = false }: { containerStyle?: StyleProp<ViewStyle>; initiallyExpanded?: boolean; homePresentation?: boolean }) {
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
   const [verificationDeferred, setVerificationDeferred] = useState(false);
@@ -164,6 +165,16 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
     }
   }, [completeSetup, state]);
 
+  const [homeDismissed, setHomeDismissed] = useState(true);
+  useEffect(() => {
+    if (homePresentation) void AsyncStorage.getItem('@ipm_home_notification_invitation_dismissed_v1')
+      .then(value => setHomeDismissed(value === 'true')).catch(() => setHomeDismissed(true));
+  }, [homePresentation]);
+  const dismissHomeInvitation = () => {
+    setHomeDismissed(true);
+    void AsyncStorage.setItem('@ipm_home_notification_invitation_dismissed_v1', 'true').catch(() => {});
+  };
+
   if (Platform.OS !== 'web') return null;
   const environment = detectInstallEnvironment({ userAgent: navigator.userAgent, platformHint: navigator.platform, maxTouchPoints: navigator.maxTouchPoints,
     standalone: window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true });
@@ -172,14 +183,36 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
   const stateMessage = verificationDeferred
     ? 'Notification status will refresh when your connection improves.'
     : state === 'subscribed' && setupState === 'pending'
-    ? 'Checking notification delivery…'
+    ? 'Checking notification status…'
     : state === 'subscribed' && setupState === 'failed'
-    ? 'Notification delivery is not verified. The app will continue to work.'
+    ? 'Notifications are temporarily unavailable. You can keep using IPM.'
     : state === 'subscribed' && setupState !== 'ready'
-    ? 'Checking notification delivery…'
+    ? 'Checking notification status…'
     : state === 'unsupported'
     ? (environment.platform === 'ios' && environment.installState !== 'installed' ? 'Optional notifications are available when you open IPM from your Home Screen.' : 'Notifications aren’t available in this browser. You can still use IPM.')
     : STATE_COPY[state];
+
+  if (homePresentation) {
+    // Presentation only: keep all existing lifecycle and subscription handlers mounted.
+    // A Home dismissal does not affect itinerary suggestions or notification settings.
+    if (homeDismissed || verificationDeferred || state === 'subscribed' ||
+      (state !== 'default' && state !== 'unsubscribed') ||
+      (typeof Notification !== 'undefined' && Notification.permission !== 'default')) return null;
+    return <View style={[containerStyle, styles.homeInvitation]} accessibilityLabel="Optional IPM updates">
+      <View style={styles.copy}>
+        <Text style={styles.title}>Stay up to date</Text>
+        <Text style={styles.homeMessage}>Get important IPM announcements and updates.</Text>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Enable notifications"
+          disabled={working || setupState === 'pending'} onPress={updateSubscription} style={styles.homeAction}>
+          <Text style={styles.retryButtonText}>{working ? 'Please wait…' : 'Enable notifications'}</Text>
+        </TouchableOpacity>
+      </View>
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Dismiss notification invitation"
+        onPress={dismissHomeInvitation} style={styles.homeDismiss}>
+        <Text style={styles.homeDismissText}>Not now</Text>
+      </TouchableOpacity>
+    </View>;
+  }
 
   return (
     <View
@@ -240,6 +273,11 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
 }
 
 const styles = StyleSheet.create({
+  homeInvitation: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 8 },
+  homeMessage: { color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginTop: 3 },
+  homeAction: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
+  homeDismiss: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
+  homeDismissText: { color: colors.textSecondary, fontSize: 14 },
   card: { backgroundColor: '#FFFFFF', borderColor: colors.border, borderRadius: 16, borderWidth: 1, flexDirection: 'column', alignItems: 'stretch', gap: 12, padding: 14, paddingHorizontal: 14 },
   icon: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: 22, height: 44, justifyContent: 'center', width: 44 },
   copy: { flex: 1, minWidth: 0 },

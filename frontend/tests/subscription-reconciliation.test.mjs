@@ -64,5 +64,5 @@ test('pilot recovery bypasses legacy enrollment; nonpilot baseline stays separat
  assert.match(guarded,/pilot_verification_pending/);
  const component=readFileSync(new URL('../src/components/NotificationOptIn.tsx',import.meta.url),'utf8');
  assert.match(component,/watchReconciliation/);
- assert.match(component,/Notification delivery is not verified/);
+ assert.match(component,/Notifications are temporarily unavailable/);
 });
