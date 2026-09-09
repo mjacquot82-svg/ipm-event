@@ -12,11 +12,13 @@ test('one root worker assigns push and notificationclick to WonderPush', () => {
   assert.doesNotMatch(worker, /addEventListener\(['"]notificationclick/);
 });
 
-test('IPM retains versioned shell and cache-first navigation ownership', () => {
+test('IPM retains versioned shell and bounded network-first navigation ownership', () => {
   assert.match(worker, /IPM_OFFLINE_VERSION/);
   assert.match(worker, /IPM_SHELL_CACHE/);
   assert.match(worker, /cache\.match\(['"]\/index\.html['"]\)/);
   assert.match(worker, /if \(cached\) return cached/);
+  assert.match(worker, /event\.respondWith\(currentLaunch\(request\)\)/);
+  assert.match(worker, /IPM_LAUNCH_TIMEOUT_MS = 5000/);
   assert.match(generator, /sha256/);
 });
 
