@@ -46,7 +46,7 @@ export type NotificationRegistrationFailure =
   | 'legacy_association_recovery_subscribed_session_not_ready_installation_unavailable'
   | 'legacy_association_recovery_not_subscribed_installation_unavailable'
   | 'legacy_association_recovery_subscription_state_unavailable'
-  | 'other';
+  | 'pilot_verification_pending' | 'other';
 
 export type NotificationRegistrationResult = {
   stage: 'success'; status: Record<string, unknown>; attempts: number;

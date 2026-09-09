@@ -144,9 +144,13 @@ class WonderPushClient:
         form = {
             "accessToken": self.access_token,
             "notification": json.dumps(notification, separators=(",", ":")),
-            "filterPlatforms": "Web",
             **target,
         }
+        # Exact-installation test targeting is already bounded and must not be
+        # silently reduced to zero by an additional provider platform filter.
+        # Broadcast sends retain the Web-only guard.
+        if audience_classification != "test":
+            form["filterPlatforms"] = "Web"
         if disable_capping:
             # WonderPush's deliveries endpoint expects this as a form field, not
             # inside the JSON-encoded notification payload.
@@ -1147,9 +1151,6 @@ class SupabaseNotificationDeliveryService:
         notification_title: str,
         notification_message: str,
         provider: str = "wonderpush",
-        audience_device_count: int | None = None,
-        audience_stale_device_count: int | None = None,
-        audience_snapshot_at: str | None = None,
     ) -> dict[str, Any]:
         resolved_event_id = await self._get_event_id(event_id)
         rows = await self.client.request(
@@ -1165,31 +1166,10 @@ class SupabaseNotificationDeliveryService:
                 "target_url": target_url,
                 "notification_title": notification_title,
                 "notification_message": notification_message,
-                "audience_device_count": audience_device_count,
-                "audience_count_basis": (
-                    "verified_deliverable_registrations"
-                    if audience_device_count is not None else None
-                ),
-                "audience_snapshot_at": audience_snapshot_at,
-                "audience_stale_device_count": audience_stale_device_count,
             },
             headers={"Prefer": "return=representation"},
         )
         return rows[0]
-
-    async def list_announcement_stats(self, *, event_id: str) -> list[dict[str, Any]]:
-        resolved_event_id = await self._get_event_id(event_id)
-        return await self.client.request(
-            "GET", "/notification_deliveries", params={
-                "select": (
-                    "announcement_id,status,sent_at,audience_device_count,"
-                    "audience_count_basis,audience_snapshot_at,audience_stale_device_count"
-                ),
-                "event_id": f"eq.{resolved_event_id}",
-                "audience": "eq.everyone",
-                "order": "requested_at.desc",
-            },
-        )
 
     async def mark_sent(self, delivery_id: str, provider_campaign_id: str) -> dict[str, Any]:
         rows = await self.client.request(

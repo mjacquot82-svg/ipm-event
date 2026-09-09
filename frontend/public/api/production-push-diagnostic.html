@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src https://ipm-backend-eoiw.onrender.com; base-uri 'none'; form-action 'none'">
+<title>IPM production push check</title></head><body>
+<h1>Production notification target check</h1>
+<p>This check reads your existing subscription. It does not send a notification or change notification settings.</p>
+<button id="compare" type="button">Compare current production subscription</button>
+<pre id="result" aria-live="polite"></pre>
+<script type="module" src="./production-push-compare.mjs"></script>
+</body></html>

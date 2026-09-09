@@ -1,3 +1,4 @@
+import { startSubscriptionReconciliation } from '../src/services/subscriptionReconciliation';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useEffect, useState } from 'react';
@@ -21,6 +22,7 @@ import { initializeOfflineShell, initializeWonderPush } from '../src/services/wo
 import { listenForWonderPushNotificationDeepLinks } from '../src/services/notificationDeepLink';
 
 export default function RootLayout() {
+  useEffect(() => startSubscriptionReconciliation(), []);
   const [isInitializing, setIsInitializing] = useState(Platform.OS !== 'web');
   const pathname = usePathname();
   const router = useRouter();
