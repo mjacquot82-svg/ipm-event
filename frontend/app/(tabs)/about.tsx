@@ -1,6 +1,7 @@
 // © 2026 Jacquot Digital Solutions. All Rights Reserved.
 
 import React from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -38,6 +39,7 @@ const EVENT_HISTORY = [
 ] as const;
 
 export default function AboutScreen() {
+  const router = useRouter();
   usePageAnalytics('about', 'bottom_nav');
   const { frameStyle } = useAttendeeLayout();
   const openMaps = () => {
@@ -159,6 +161,15 @@ export default function AboutScreen() {
               <Text style={styles.resourceButtonText}>Accessibility Information</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.resourceButton} activeOpacity={0.8}
+            accessibilityRole="button" accessibilityLabel="Emergency Services / Need Help"
+            onPress={() => router.push('/emergency-services' as never)}>
+            <Feather name="phone" size={20} color="#FFFFFF" />
+            <Text style={styles.resourceButtonText}>Emergency Services / Need Help</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Event History */}

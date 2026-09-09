@@ -203,7 +203,13 @@ app = FastAPI(
 )
 
 # Create a router with the /api prefix
+try:
+    from backend.what3words import what3words_router
+except ModuleNotFoundError:
+    from what3words import what3words_router
+
 api_router = APIRouter(prefix="/api")
+api_router.include_router(what3words_router)
 
 
 # Define Models
