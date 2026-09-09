@@ -1,0 +1,26 @@
+{
+  "staging_authority": {
+    "id": "6aa091b2b8f161cc3b981158",
+    "site_id": "0932cc5d-9cb8-4cd3-8418-7e486df75bf1",
+    "state": "ready",
+    "title": "Consolidated staging 317ccd4f: onboarding preserved; health analytics and itinerary UX",
+    "commit_ref": null,
+    "published_at": "2026-09-08T22:54:59.542Z",
+    "deploy_ssl_url": "https://codex-consolidated-staging-20260908--ipm-web-staging.netlify.app",
+    "ssl_url": "https://staging.theipm.ca"
+  },
+  "production_frontend": {
+    "id": "6aa0bd481c247632e1a18d16",
+    "site_id": "c64b53c9-5b39-441c-910a-dc00db77b4a5",
+    "state": "ready",
+    "title": "Share IPM release 1b63ce2e140015fb25ef6137143217e25c856c27",
+    "commit_ref": null,
+    "published_at": "2026-09-09T02:00:08.353Z",
+    "deploy_ssl_url": "https://fix-church-share-production--lustrous-cranachan-e30cba.netlify.app",
+    "ssl_url": "https://theipm.ca"
+  },
+  "production_backend": {
+    "id": "dep-dagbgj740ujc73c4eqi0",
+    "sha": "70e068ab2930bdeddee3c5817477cc97e9ca0b01"
+  }
+}

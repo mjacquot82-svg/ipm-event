@@ -1,0 +1,12 @@
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => quickAction('emergency_services', 'internal', () => router.push('/emergency-services' as never))}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Emergency Services"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.error }]}>
+                <Feather name="alert-triangle" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Emergency Services</Text>
+            </TouchableOpacity>

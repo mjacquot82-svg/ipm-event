@@ -1,0 +1,9 @@
+PASS native 320 online canonical payload; keyboard; aggregate selection only; no side effects; countdown y 343
+PASS native 390 offline canonical payload; keyboard; aggregate selection only; no side effects; countdown y 408
+PASS native 1440 online canonical payload; keyboard; aggregate selection only; no side effects; countdown y 691
+PASS cancel 390 online canonical payload; keyboard; aggregate selection only; no side effects; countdown y 408
+PASS failure 390 online canonical payload; keyboard; aggregate selection only; no side effects; countdown y 408
+PASS copy 320 online canonical payload; keyboard; aggregate selection only; no side effects; countdown y 343
+PASS copy 1440 offline canonical payload; keyboard; aggregate selection only; no side effects; countdown y 691
+PASS manual 320 online canonical payload; keyboard; aggregate selection only; no side effects; countdown y 343
+PASS clipboard-error 390 offline canonical payload; keyboard; aggregate selection only; no side effects; countdown y 408

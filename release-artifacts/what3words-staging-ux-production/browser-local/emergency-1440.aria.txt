@@ -1,0 +1,7 @@
+- button "Back to attendee Home":  Back
+- text: 
+- heading "Emergency Services" [level=1]
+- region:  Call 911 first If this is an emergency, call 911 now. Then use your 3-word location below so the dispatcher can find you on site. Site 911 address 95 Durham Road Entrances 9 & 10
+- text: Need help finding your location? Tap “Get my 3-word location” below. If prompted, allow location access so we can determine your 3-word location to share with the 911 dispatcher.
+- button "Get my 3-word location":  Get my 3-word location
+- text: Your browser may ask for location permission.  Home  Map  Schedule  About

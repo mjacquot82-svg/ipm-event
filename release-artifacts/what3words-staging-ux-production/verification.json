@@ -1,0 +1,28 @@
+{
+  "completed": false,
+  "deployed": false,
+  "frontend_sha": "1b63ce2e140015fb25ef6137143217e25c856c27",
+  "frontend_deployment_id": "6aa0bd481c247632e1a18d16",
+  "backend_sha": "70e068ab2930bdeddee3c5817477cc97e9ca0b01",
+  "backend_deployment_id": "dep-dagbgj740ujc73c4eqi0",
+  "staging_authority_sha": "317ccd4faf72d5adcae086e84ee51bea5321892a",
+  "tests_passed": true,
+  "home_verified": true,
+  "emergency_verified": true,
+  "privacy_verified": true,
+  "map_unchanged": true,
+  "schedule_published_count": 218,
+  "schedule_archived_count": 10,
+  "vendor_count": 127,
+  "reconciliation_percent": 100,
+  "notification_sent": false,
+  "blocker": null,
+  "phase": "pre-deployment; local candidate gates passed",
+  "legacy_test_failures": [
+    "test_adoption_semantics_freshness_and_zero_state",
+    "test_delivery_snapshot_is_immutable_and_stats_are_announcement_scoped",
+    "test_delivery_stats_authorization_preserves_communications_and_owner_access"
+  ],
+  "legacy_failure_disposition": "All three reproduce on unchanged production source; no unrelated fixes.",
+  "notification_health_verification": "14 health tests plus controlled browser aggregate presentation; production live endpoint authentication boundary checked separately, no organizer session requested."
+}

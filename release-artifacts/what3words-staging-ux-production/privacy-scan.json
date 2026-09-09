@@ -1,0 +1,8 @@
+{
+  "built_bundle_canaries_absent": true,
+  "provider_endpoint_absent": true,
+  "provider_key_variable_absent": true,
+  "secret_patterns_absent": true,
+  "actual_server_key_not_read_or_changed": true,
+  "privacy_backend_sha": "70e068ab2930bdeddee3c5817477cc97e9ca0b01"
+}

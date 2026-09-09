@@ -1,0 +1,93 @@
+......................................................................FF [ 81%]
+.F..............                                                         [100%]
+=================================== FAILURES ===================================
+_______________ test_adoption_semantics_freshness_and_zero_state _______________
+
+    def test_adoption_semantics_freshness_and_zero_state():
+        now = datetime(2026, 9, 1, 12, tzinfo=timezone.utc)
+        rows = [
+            row("optIn", True, True, (now - timedelta(hours=2)).isoformat()),
+            row("optIn", True, True, (now - timedelta(hours=25)).isoformat()),
+            row("optIn", False, False, (now - timedelta(hours=1)).isoformat()),
+            row("softOptOut", True, False, (now - timedelta(hours=1)).isoformat()),
+            row("unknown", False, False, None),
+        ]
+        repository = SupabaseNotificationRegistrationRepository(RegistrationClient(rows), "ipm-2026")
+>       result = asyncio.run(repository.adoption_summary(now=now))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'SupabaseNotificationRegistrationRepository' object has no attribute 'adoption_summary'
+
+tests/test_notification_analytics.py:44: AttributeError
+____ test_delivery_snapshot_is_immutable_and_stats_are_announcement_scoped _____
+
+    def test_delivery_snapshot_is_immutable_and_stats_are_announcement_scoped():
+        service = SupabaseNotificationDeliveryService(
+            supabase_url="https://example.supabase.co", service_role_key="test", event_slug="ipm-2026")
+        service.client = DeliveryClient()
+>       created = asyncio.run(service.create_requested(
+            event_id="ipm-2026", announcement_id="announcement-a", audience="everyone",
+            requested_by="Jen", target_url="https://theipm.ca/announcements/announcement-a",
+            notification_title="Title", notification_message="Message",
+            audience_device_count=19, audience_stale_device_count=2,
+            audience_snapshot_at="2026-09-01T11:59:59+00:00"))
+E       TypeError: SupabaseNotificationDeliveryService.create_requested() got an unexpected keyword argument 'audience_device_count'
+
+tests/test_notification_analytics.py:81: TypeError
+_ test_delivery_stats_authorization_preserves_communications_and_owner_access __
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x77095f0509b0>
+
+    def test_delivery_stats_authorization_preserves_communications_and_owner_access(monkeypatch):
+        class StatsService:
+            async def list_announcement_stats(self, *, event_id):
+                assert event_id == "event-production"
+                return []
+
+        monkeypatch.setattr(server, "notification_delivery_service", StatsService())
+        for role in ("Owner", "Communications"):
+>           result = asyncio.run(server.list_announcement_delivery_stats({
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                "role": role, "event_id": "event-production"
+            }))
+E           AttributeError: module 'backend.server' has no attribute 'list_announcement_delivery_stats'
+
+tests/test_notification_analytics.py:115: AttributeError
+=============================== warnings summary ===============================
+../../../../home/codespace/.local/lib/python3.12/site-packages/starlette/formparsers.py:12
+  /home/codespace/.local/lib/python3.12/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+backend/server.py:2633
+  /workspaces/ipm-event/.worktrees/what3words-staging-ux-production/backend/server.py:2633: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("startup")
+
+../../../../usr/local/python/3.12.1/lib/python3.12/site-packages/fastapi/applications.py:4495
+../../../../usr/local/python/3.12.1/lib/python3.12/site-packages/fastapi/applications.py:4495
+  /usr/local/python/3.12.1/lib/python3.12/site-packages/fastapi/applications.py:4495: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    return self.router.on_event(event_type)
+
+backend/server.py:2662
+  /workspaces/ipm-event/.worktrees/what3words-staging-ux-production/backend/server.py:2662: DeprecationWarning:
+          on_event is deprecated, use lifespan event handlers instead.
+
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+
+    @app.on_event("shutdown")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_notification_analytics.py::test_adoption_semantics_freshness_and_zero_state
+FAILED tests/test_notification_analytics.py::test_delivery_snapshot_is_immutable_and_stats_are_announcement_scoped
+FAILED tests/test_notification_analytics.py::test_delivery_stats_authorization_preserves_communications_and_owner_access
+3 failed, 85 passed, 5 warnings in 1.85s

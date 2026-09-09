@@ -1,0 +1,4 @@
+PASS 390 success REAL production provider HTTP 200 body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 390 denied controlled error fixture body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 390 network controlled error fixture body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS About entry and map-independent Emergency route

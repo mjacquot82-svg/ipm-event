@@ -1,0 +1,18 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(cards[1].includes('Map'))
+
+    at file:///workspaces/ipm-event/.worktrees/what3words-staging-ux-production/frontend/tests/emergency-staging-ux.browser.mjs:37:50 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.14.0

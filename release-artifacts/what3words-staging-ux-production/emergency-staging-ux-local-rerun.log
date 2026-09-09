@@ -1,0 +1,14 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Error: strict mode violation: getByText('Emergency Services', { exact: true }) resolved to 2 elements:
+    1) <div dir="auto" class="css-146c3p1 r-1v7ji4x r-1enofrn r-1kfrs79 r-q4m81j">Emergency Services</div> aka getByLabel('Emergency Services')
+    2) <h1 dir="auto" role="heading" class="css-146c3p1 r-1v7ji4x r-13awgt0 r-zz5t5d r-1vr29t4 r-2agvir">Emergency Services</h1> aka getByRole('heading', { name: 'Emergency Services' })
+
+Call log:
+[2m  - waiting for getByText('Emergency Services', { exact: true }) to be visible[22m
+
+    at /workspaces/ipm-event/.worktrees/what3words-staging-ux-production/frontend/tests/emergency-staging-ux.browser.mjs:45:86
+
+Node.js v24.14.0

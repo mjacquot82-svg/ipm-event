@@ -1,0 +1,4 @@
+frontend/app/(tabs)/index.tsx
+frontend/tests/emergency-staging-ux.test.mjs
+frontend/tests/emergency-staging-ux.browser.mjs
+release-artifacts/what3words-staging-ux-production/ (verification evidence only)

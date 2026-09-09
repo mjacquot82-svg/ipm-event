@@ -1,0 +1,8 @@
+{
+  "status": 400,
+  "response": {
+    "detail": "Invalid location coordinates"
+  },
+  "cache_control": "no-store",
+  "request": "POST body with out-of-range synthetic latitude; no query"
+}

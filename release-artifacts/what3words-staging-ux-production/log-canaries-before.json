@@ -1,0 +1,21 @@
+{
+  "workspace_resolution": "ownerId returned by the existing explicitly authorized production service; no workspace guess",
+  "query_start": "2026-09-09T02:59:00Z",
+  "canaries": [
+    "51.521251",
+    "-0.203586",
+    "filled.count.soap",
+    "synthetic-secret-canary-not-a-real-key",
+    "X-Api-Key",
+    "coordinates="
+  ],
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"hasMore\":false,\"logs\":[],\"nextEndTime\":\"2026-09-09T03:01:38.69803137Z\",\"nextStartTime\":\"2026-09-09T02:59:00Z\"}"
+      }
+    ],
+    "isError": false
+  }
+}

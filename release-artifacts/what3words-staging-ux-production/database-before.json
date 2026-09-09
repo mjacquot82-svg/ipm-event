@@ -1,0 +1,28 @@
+{
+  "church": {
+    "id": "72b96b59-c480-5fb2-a1ed-25acb63ae379",
+    "title": "Church Service",
+    "source": "ipm_show_guide_2026_public_programs",
+    "status": "published",
+    "ends_at": null,
+    "category": "Church Service",
+    "event_id": "5119d9d0-ea63-4677-9bea-36e32dbcfa46",
+    "latitude": null,
+    "timezone": "America/Toronto",
+    "longitude": null,
+    "starts_at": "2026-09-20T18:30:00+00:00",
+    "created_at": "2026-09-08T18:16:56.34664+00:00",
+    "sort_order": 0,
+    "updated_at": "2026-09-08T18:16:56.34664+00:00",
+    "days_active": "Sunday",
+    "description": null,
+    "external_id": "show-guide-2026-worship-2026-09-20-1430-church-service",
+    "location_id": null,
+    "location_name": "CKNX Centennial Pavilion (GFO Stage)"
+  },
+  "counts": {
+    "archived": 10,
+    "published": 218
+  },
+  "all_rows_md5": "fd2f818eb6b2013cf535a985840c0f17"
+}

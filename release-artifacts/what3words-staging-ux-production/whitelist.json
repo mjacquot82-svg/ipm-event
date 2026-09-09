@@ -1,0 +1,37 @@
+{
+  "application_files": [
+    "frontend/app/(tabs)/index.tsx"
+  ],
+  "test_files": [
+    "frontend/tests/emergency-staging-ux.test.mjs",
+    "frontend/tests/emergency-staging-ux.browser.mjs"
+  ],
+  "evidence_directory": "release-artifacts/what3words-staging-ux-production",
+  "excluded_changes": [
+    "backend",
+    "map",
+    "schedule",
+    "vendors",
+    "notifications",
+    "reconciliation",
+    "Share IPM",
+    "itinerary",
+    "analytics infrastructure"
+  ],
+  "gate": "PASS",
+  "changed_application_files": [
+    "frontend/app/(tabs)/index.tsx"
+  ],
+  "application_diff": "exact staging card only, 13 added lines",
+  "backend_changes": 0,
+  "map_changes": 0,
+  "schedule_changes": 0,
+  "vendor_changes": 0,
+  "notification_behavior_changes": 0,
+  "reconciliation_changes": 0,
+  "share_ipm_changes": 0,
+  "itinerary_changes": 0,
+  "home_redesign_changes": 0,
+  "analytics_infrastructure_changes": 0,
+  "analytics_note": "Exact staging card invokes existing quickAction helper with emergency_services; no new analytics schema, backend, page telemetry or Share wiring."
+}
