@@ -1,0 +1,12 @@
+{
+  "fixture": "provider initialization deliberately unavailable; exact production worker source",
+  "before": {
+    "waiting": true,
+    "controlled": true
+  },
+  "after": {
+    "waiting": false,
+    "active": "activated",
+    "saved": "preserved"
+  }
+}

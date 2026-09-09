@@ -1,0 +1,13 @@
+{
+  "verified": [
+    "/_expo/static/js/web/entry-16348af012b4db16e77298f28b6ec7e7.js",
+    "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+    "/index.html",
+    "/webpushr-sw.js",
+    "/_expo/static/js/web/entry-e8a4c411363b533729e8d9e6296c3a0e.js",
+    "/_expo/static/js/web/entry-49627d554cef2cad8a9504556ab8aa8b.js",
+    "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+    "/_expo/static/js/web/entry-7d65f0a4a8d86d9ea57aeaf7e7204c79.js"
+  ],
+  "worker_logic_unchanged": true
+}

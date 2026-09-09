@@ -1,0 +1,7 @@
+frontend/app/(tabs)/about.tsx
+frontend/src/components/AppStatus.tsx
+frontend/src/components/NotificationOptIn.tsx
+frontend/tests/emergency-staging-ux.test.mjs
+frontend/tests/notification-registration-retry.test.mjs
+frontend/tests/onboarding-runtime.test.mjs
+frontend/tests/production-pilot-card.test.mjs

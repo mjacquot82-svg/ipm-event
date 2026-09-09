@@ -1,0 +1,229 @@
+[
+  {
+    "scenario": "open",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-9311de845cb7a8b7"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "after": {
+      "entry": "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "controlled": true,
+      "waiting": true,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-9311de845cb7a8b7",
+        "ipm-offline-shell-91e1a05576814011"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "reopened": {
+      "entry": "/_expo/static/js/web/entry-44de99e937117c4596a098a14fd611f5.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-91e1a05576814011"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "build": "IPM App • Build 362198",
+    "unexpectedNavigationsWhileOpen": 0,
+    "subscriptionTest": "actual unsubscribed state preserved; no enrollment or unsubscribe allowed"
+  },
+  {
+    "scenario": "closed",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-9311de845cb7a8b7"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "after": {
+      "entry": "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "controlled": true,
+      "waiting": true,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-9311de845cb7a8b7",
+        "ipm-offline-shell-91e1a05576814011"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "reopened": {
+      "entry": "/_expo/static/js/web/entry-44de99e937117c4596a098a14fd611f5.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-91e1a05576814011"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "build": "IPM App • Build 362198",
+    "unexpectedNavigationsWhileOpen": 0,
+    "subscriptionTest": "actual unsubscribed state preserved; no enrollment or unsubscribe allowed"
+  },
+  {
+    "scenario": "offline",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-9311de845cb7a8b7"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "after": {
+      "entry": "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-91e1a05576814011"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "reopened": {
+      "entry": "/_expo/static/js/web/entry-44de99e937117c4596a098a14fd611f5.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-91e1a05576814011"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "build": "IPM App • Build 362198",
+    "unexpectedNavigationsWhileOpen": 1,
+    "subscriptionTest": "actual unsubscribed state preserved; no enrollment or unsubscribe allowed"
+  },
+  {
+    "scenario": "standalone-chrome",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-9311de845cb7a8b7"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "after": {
+      "entry": "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-91e1a05576814011"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "reopened": {
+      "entry": "/_expo/static/js/web/entry-44de99e937117c4596a098a14fd611f5.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-91e1a05576814011"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "build": "IPM App • Build 362198",
+    "unexpectedNavigationsWhileOpen": 0,
+    "subscriptionTest": "actual unsubscribed state preserved; no enrollment or unsubscribe allowed"
+  },
+  {
+    "scenario": "ios-standalone-path",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-9311de845cb7a8b7"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "after": {
+      "entry": "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-91e1a05576814011"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "reopened": {
+      "entry": "/_expo/static/js/web/entry-44de99e937117c4596a098a14fd611f5.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-91e1a05576814011"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "dismissed": "true",
+      "subscriptionPresent": false,
+      "forbiddenPushWrites": 0
+    },
+    "build": "IPM App • Build 362198",
+    "unexpectedNavigationsWhileOpen": 0,
+    "subscriptionTest": "actual unsubscribed state preserved; no enrollment or unsubscribe allowed"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "id": "6aa156c72aa93a677211488a",
+  "state": "ready",
+  "title": "Attendee UX cleanup; no worker logic change d43bd91dca9cb6cfcbc4185717691f02f110b941",
+  "published_at": null,
+  "deploy_ssl_url": "https://fix-public-ux-pwa-audit-20260909--lustrous-cranachan-e30cba.netlify.app",
+  "commit_ref": null,
+  "error_message": null
+}

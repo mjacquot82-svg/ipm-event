@@ -1,0 +1,9 @@
+{
+  "id": "6aa156252cf3f0faf2aa6a74",
+  "state": "ready",
+  "title": "Attendee UX cleanup; no worker logic change 51cf73ab3c7e3f73ead87887bcc9fe2be85a234c",
+  "published_at": null,
+  "deploy_ssl_url": "https://fix-public-ux-staging-20260909--ipm-web-staging.netlify.app",
+  "commit_ref": null,
+  "error_message": null
+}

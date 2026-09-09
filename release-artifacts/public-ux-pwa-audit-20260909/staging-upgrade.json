@@ -1,0 +1,218 @@
+[
+  {
+    "scenario": "open",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-190cff821a290811"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "firstOpen": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-190cff821a290811"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "afterUpdate": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-b13e70c7538fabd4",
+        "ipm-admin-bootstrap-recovery-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "reopened": {
+      "entry": "/_expo/static/js/web/entry-7d65f0a4a8d86d9ea57aeaf7e7204c79.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-b13e70c7538fabd4",
+        "ipm-admin-bootstrap-recovery-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "reloads": 0
+  },
+  {
+    "scenario": "closed",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-190cff821a290811"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "firstOpen": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-190cff821a290811"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "afterUpdate": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-b13e70c7538fabd4",
+        "ipm-admin-bootstrap-recovery-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "reopened": {
+      "entry": "/_expo/static/js/web/entry-7d65f0a4a8d86d9ea57aeaf7e7204c79.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-b13e70c7538fabd4",
+        "ipm-admin-bootstrap-recovery-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "reloads": 0
+  },
+  {
+    "scenario": "offline",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-190cff821a290811"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "firstOpen": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-190cff821a290811"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "afterUpdate": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-b13e70c7538fabd4",
+        "ipm-admin-bootstrap-recovery-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "reopened": {
+      "entry": "/_expo/static/js/web/entry-7d65f0a4a8d86d9ea57aeaf7e7204c79.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-b13e70c7538fabd4",
+        "ipm-admin-bootstrap-recovery-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "reloads": 0
+  },
+  {
+    "scenario": "standalone",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-190cff821a290811"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "firstOpen": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-190cff821a290811"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "afterUpdate": {
+      "entry": "/_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-b13e70c7538fabd4",
+        "ipm-admin-bootstrap-recovery-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "reopened": {
+      "entry": "/_expo/static/js/web/entry-7d65f0a4a8d86d9ea57aeaf7e7204c79.js",
+      "controlled": true,
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-b13e70c7538fabd4",
+        "ipm-admin-bootstrap-recovery-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "subscriptionPresent": false
+    },
+    "reloads": 0
+  }
+]

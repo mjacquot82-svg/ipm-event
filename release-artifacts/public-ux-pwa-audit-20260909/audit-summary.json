@@ -1,0 +1,12 @@
+{
+  "source_sha": "d43bd91dca9cb6cfcbc4185717691f02f110b941",
+  "old_build": "361615",
+  "new_build": "362198",
+  "sdk_version": "1.1.44.0",
+  "sdk_sha256": "54da6744dfec0c39edb93ff0c0b92394c448d072512868d44d6070ac962aaf86",
+  "worker_logic_changed": false,
+  "production_worker_before_sha256": "ce4a802da4f601fe8e33d990fe0741a30249c7c38d77ac13cf1b536544700568",
+  "production_worker_after_sha256": "bacca863f4dc00ada78371c12be0cda7e2eb60203f94cb089cbae9ec89a9bc72",
+  "raw_package_path": "/workspaces/ipm-event/release-artifacts/public-ux-pwa-audit-20260909/production-candidate",
+  "evidence_limit": "Physical iOS/OS install and existing real push subscription survival await attendee verification."
+}

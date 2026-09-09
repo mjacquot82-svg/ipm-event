@@ -1,0 +1,12 @@
+{
+  "verified": [
+    "/webpushr-sw.js",
+    "/index.html",
+    "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+    "/_expo/static/js/web/entry-44de99e937117c4596a098a14fd611f5.js"
+  ],
+  "schedule": 218,
+  "vendors": 127,
+  "reconciliation_percent": 100,
+  "data_unchanged": true
+}

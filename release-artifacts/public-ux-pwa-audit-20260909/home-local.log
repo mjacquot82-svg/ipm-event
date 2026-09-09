@@ -1,0 +1,10 @@
+PASS installed Android enabled countdown y 408 no setup wall, no install promotion, dismissal/navigation/permission safety
+PASS installed Android disabled countdown y 408 no setup wall, no install promotion, dismissal/navigation/permission safety
+PASS Android first visit countdown y 408 no setup wall, no install promotion, dismissal/navigation/permission safety
+PASS Android returning dismissed countdown y 408 no setup wall, no install promotion, dismissal/navigation/permission safety
+PASS iPhone Safari countdown y 408 no setup wall, no install promotion, dismissal/navigation/permission safety
+PASS installed iPhone countdown y 408 no setup wall, no install promotion, dismissal/navigation/permission safety
+PASS denied countdown y 408 no setup wall, no install promotion, dismissal/navigation/permission safety
+PASS unsupported countdown y 408 no setup wall, no install promotion, dismissal/navigation/permission safety
+PASS small mobile countdown y 343 no setup wall, no install promotion, dismissal/navigation/permission safety
+PASS desktop countdown y 691 no setup wall, no install promotion, dismissal/navigation/permission safety

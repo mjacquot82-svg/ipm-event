@@ -1,0 +1,5 @@
+PASS open IPM App • Build 362198 existing controlled client; favorites/dismissal; deep link; offline; no push mutations
+PASS closed IPM App • Build 362198 existing controlled client; favorites/dismissal; deep link; offline; no push mutations
+PASS offline IPM App • Build 362198 existing controlled client; favorites/dismissal; deep link; offline; no push mutations
+PASS standalone-chrome IPM App • Build 362198 existing controlled client; favorites/dismissal; deep link; offline; no push mutations
+PASS ios-standalone-path IPM App • Build 362198 existing controlled client; favorites/dismissal; deep link; offline; no push mutations

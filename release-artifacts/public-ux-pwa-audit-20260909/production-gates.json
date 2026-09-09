@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "checks": {
+    "unit_263": true,
+    "types": true,
+    "lint": true,
+    "staging_live_home": true,
+    "staging_upgrade": true,
+    "production_package_upgrade": true,
+    "waiting_fallback": true,
+    "preview_home": true,
+    "preview_help": true,
+    "itinerary": true,
+    "byte_readback": true
+  },
+  "service_worker_logic_change": false,
+  "production_authorization": "Issue A only; read-only PWA diagnostic in About"
+}

@@ -1,0 +1,8 @@
+READY open /_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js
+READY closed /_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js
+READY offline /_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js
+READY standalone /_expo/static/js/web/entry-acd64df49b64990b340a1a3c26db9561.js
+PASS open existing staging client survived deployment; itinerary/preference/offline/deep link preserved
+PASS closed existing staging client survived deployment; itinerary/preference/offline/deep link preserved
+PASS offline existing staging client survived deployment; itinerary/preference/offline/deep link preserved
+PASS standalone existing staging client survived deployment; itinerary/preference/offline/deep link preserved

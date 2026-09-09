@@ -1,0 +1,24 @@
+{
+  "component": "PRODUCTION_RECONCILIATION_V2",
+  "build_commit": "70e068ab2930bdeddee3c5817477cc97e9ca0b01",
+  "pilot_only": false,
+  "pilot_restriction_count": 1,
+  "operating_mode": "POPULATION_REPAIR_STAGED",
+  "repair_cohort_percent": 100,
+  "metadata_rows": 50,
+  "status_counts": {
+    "VERIFIED": 33,
+    "INELIGIBLE": 15,
+    "VERIFYING": 1,
+    "MISMATCH": 1
+  },
+  "active_leases": 0,
+  "pending_retries": 0,
+  "uncertain_outcomes": 0,
+  "provider_ready_count": 50,
+  "failure_count": 36,
+  "circuit_open": false,
+  "observation_enabled": true,
+  "repair_enabled": true,
+  "metadata_read": "SUCCESS"
+}

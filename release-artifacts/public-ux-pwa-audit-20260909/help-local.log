@@ -1,0 +1,2 @@
+PASS http://localhost:8113 390 enabled enrollment despite unavailable backend; explicit install help; privacy-safe status
+PASS http://localhost:8113 1440 enabled enrollment despite unavailable backend; explicit install help; privacy-safe status

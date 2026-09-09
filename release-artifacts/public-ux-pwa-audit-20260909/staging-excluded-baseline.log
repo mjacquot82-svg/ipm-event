@@ -1,0 +1,63 @@
+✔ 1A has three parents and 38 lots (1.771584ms)
+✔ 1A-01 is on the west edge of 1A 1-12 (2.139651ms)
+✔ 1A-12 ends at the east edge of 1A 1-12 (0.303927ms)
+✔ 1A-09 is the ninth equal slice and matches ACE PDF geometry (0.378756ms)
+✔ 1A 25-38 is 14 lots that fill the parent and are not copied from 1A 1-12 (0.446403ms)
+✔ 1A adapter still exports 1A helpers from PDF geometry (0.427908ms)
+✔ TentedCityMap highlights vendor footprints from PDF geometry (0.509691ms)
+✖ map screen keeps Grounds MapComponent and passes verify1A (6.900952ms)
+✔ stages without PDF lots can still use the pin path (0.914907ms)
+node:fs:1569
+  const result = binding.readdir(
+                         ^
+
+Error: ENOENT: no such file or directory, scandir '/tmp/ipm-ux-baseline-tests/frontend/data'
+    at Object.readdirSync (node:fs:1569:26)
+    at loadExhibitors (file:///tmp/ipm-ux-baseline-tests/frontend/tests/tented-city-map.test.mjs:13:25)
+    at file:///tmp/ipm-ux-baseline-tests/frontend/tests/tented-city-map.test.mjs:114:17
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:661:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'scandir',
+  path: '/tmp/ipm-ux-baseline-tests/frontend/data'
+}
+
+Node.js v24.14.0
+✖ frontend/tests/tented-city-map.test.mjs (47.392447ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 8
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 191.315848
+
+✖ failing tests:
+
+test at frontend/tests/tented-city-1a.test.mjs:135:1
+✖ map screen keeps Grounds MapComponent and passes verify1A (6.900952ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(screen.includes('import MapComponent from'))
+  
+      at TestContext.<anonymous> (file:///tmp/ipm-ux-baseline-tests/frontend/tests/tented-city-1a.test.mjs:137:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at frontend/tests/tented-city-map.test.mjs:1:1
+✖ frontend/tests/tented-city-map.test.mjs (47.392447ms)
+  'test failed'

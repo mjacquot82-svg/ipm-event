@@ -1,0 +1,2 @@
+PASS https://fix-public-ux-staging-20260909--ipm-web-staging.netlify.app 390 enabled enrollment despite unavailable backend; explicit install help; privacy-safe status
+PASS https://fix-public-ux-staging-20260909--ipm-web-staging.netlify.app 1440 enabled enrollment despite unavailable backend; explicit install help; privacy-safe status

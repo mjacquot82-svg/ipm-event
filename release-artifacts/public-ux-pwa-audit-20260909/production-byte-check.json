@@ -1,0 +1,16 @@
+{
+  "verified": [
+    "/webpushr-sw.js",
+    "/index.html",
+    "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+    "/_expo/static/js/web/entry-48c4d95947f1e6a82d14f12e919dc828.js",
+    "/_expo/static/js/web/entry-37853976efcd06d37462427866a35bea.js",
+    "/_expo/static/js/web/entry-c5e3e1169be104732668a1eb6101e22e.js",
+    "/_expo/static/js/web/entry-14b446228878e4f5b525ff4ebe52c38a.js",
+    "/_expo/static/js/web/entry-741d9b22cd2bfd6c0662b65f502e9855.js",
+    "/_expo/static/js/web/entry-3b91f93fff82cdc3da841001cbaacc8c.js",
+    "/_expo/static/js/web/entry-c3ea4a341fcf65789de2607d0bd41bbc.js",
+    "/_expo/static/js/web/entry-44de99e937117c4596a098a14fd611f5.js"
+  ],
+  "worker_logic_unchanged": true
+}
