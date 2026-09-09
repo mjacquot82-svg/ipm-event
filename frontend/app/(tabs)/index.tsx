@@ -23,6 +23,7 @@ import { openTrackedLink, IpmDestinationId } from '../../src/analytics/trackedLi
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { getFavorites } from '../../src/utils/favoritesStorage';
+import { IPM_SHARE_PAYLOAD, shareIpm } from '../../src/utils/shareIpm';
 import { excludeDismissedAnnouncements, getUnreadAnnouncementIds, useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
 import {
   CachedApiSource,
@@ -212,6 +213,13 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shareFeedback, setShareFeedback] = useState<'copied' | 'manual' | null>(null);
+  const shareInFlight = useRef(false);
+  useEffect(() => {
+    if (shareFeedback !== 'copied') return;
+    const timeout = setTimeout(() => setShareFeedback(null), 3000);
+    return () => clearTimeout(timeout);
+  }, [shareFeedback]);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -338,6 +346,17 @@ export default function HomeScreen() {
 
   const openQuickLink = (actionId: string, destinationId: IpmDestinationId) => {
     quickAction(actionId, 'outbound_link', () => { void openTrackedLink(destinationId, 'home_quick_action'); });
+  };
+
+  const onShareIpm = () => {
+    if (shareInFlight.current) return;
+    shareInFlight.current = true;
+    setShareFeedback(null);
+    quickAction('share_ipm', 'share', () => {
+      void shareIpm().then((result) => {
+        if (result === 'copied' || result === 'manual') setShareFeedback(result);
+      }).finally(() => { shareInFlight.current = false; });
+    });
   };
 
   const renderEventCard = (event: ScheduleEvent, index: number, showTimeUntil = false) => {
@@ -543,7 +562,30 @@ export default function HomeScreen() {
               )}
               <Text style={[styles.actionTitle, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionText]}>Announcements</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={onShareIpm}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Share IPM"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
+                <Feather name="share-2" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Share IPM</Text>
+            </TouchableOpacity>
           </View>
+
+          {shareFeedback && (
+            <View accessibilityLiveRegion="polite" style={{ marginTop: 8 }}>
+              <Text style={{ color: colors.textSecondary }}>
+                {shareFeedback === 'copied' ? 'IPM link copied' : 'Copy this link to share IPM:'}
+              </Text>
+              {shareFeedback === 'manual' && (
+                <Text selectable style={{ color: colors.primary, marginTop: 4 }}>{IPM_SHARE_PAYLOAD.url}</Text>
+              )}
+            </View>
+          )}
 
           <Text style={[styles.sectionTitle, styles.linksTitle]}>Links</Text>
             <TouchableOpacity

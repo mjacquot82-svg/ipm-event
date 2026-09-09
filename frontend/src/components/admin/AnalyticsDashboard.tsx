@@ -25,7 +25,7 @@ const ACTION_LABELS: Record<string, string> = {
   map: 'Map', schedule: 'Schedule', vendors: 'Vendor Directory', sponsors: 'Sponsors',
   volunteer: 'Volunteer', exhibitors: 'Exhibitors', tickets: 'Tickets', camping: 'Camping',
   souvenirs: 'Souvenirs', itinerary: 'My Itinerary', queen_archive: 'Queen of the Furrow',
-  announcements: 'Announcements', sos: 'SOS',
+  announcements: 'Announcements', sos: 'SOS', share_ipm: 'Share IPM',
   show_guide: '2026 Show Guide',
 };
 const DESTINATION_LABELS: Record<string, string> = {
