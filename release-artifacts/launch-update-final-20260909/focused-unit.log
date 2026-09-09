@@ -1,0 +1,45 @@
+(node:86) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspaces/ipm-event/.worktrees/launch-update-production/frontend/src/services/notificationDeepLinkCore.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspaces/ipm-event/.worktrees/launch-update-production/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ production WonderPush clicks retain the announcement detail destination (0.995739ms)
+✔ staging, external, malformed, and non-announcement destinations are rejected (0.260937ms)
+✔ registration stages are explicit and safely bounded (1.610496ms)
+✔ registration order preserves lookup and capability-scoped migration rebind (0.259925ms)
+✔ clean installation returns before migration recovery (0.207207ms)
+✔ missing legacy installation performs bounded provider recovery before targeted replacement (0.315699ms)
+✔ registration already in progress is observed without another provider mutation (0.419863ms)
+✔ stuck provider registration reports only bounded boolean lifecycle state (0.256929ms)
+✔ legacy replacement is narrow, permission-safe, idempotent, and bounded (0.313776ms)
+✔ completed legacy replacement reports only safe browser and provider lifecycle state (0.30563ms)
+✔ completed replacement resynchronizes through documented WonderPush lifecycle (0.404686ms)
+✔ invalid credentials and takeover responses do not retry (1.295949ms)
+✔ Home distinguishes subscribed, pending, ready and failed setup (0.270024ms)
+✔ session initialization remains pending and automatically resumes setup (0.229217ms)
+✔ pending startup hides actions while genuine failures retain recovery UI (0.311982ms)
+✔ optional notification controls preserve clear status without auto-opening (0.204602ms)
+✔ safe UI and diagnostics do not render sensitive device material (1.564961ms)
+✔ T-30 remains hard disabled (0.213859ms)
+✔ one root worker assigns push and notificationclick to WonderPush (0.95407ms)
+✔ IPM retains versioned shell and bounded network-first navigation ownership (0.226623ms)
+✔ legacy Webpushr bell remains suppressed without loading its SDK (0.20374ms)
+✔ first navigation gets B then C; each startup asset is cached before HTML changes (45.463881ms)
+✔ offline, server errors, non-app HTML and missing JS retain known-good HTML (7.276703ms)
+✔ hung network is bounded; late completion cannot replace fallback HTML (52.672077ms)
+✔ failed startup asset never commits B, including a body read failure (2.331822ms)
+✔ cached startup assets from newer HTML are served by the incumbent worker (2.10016ms)
+✔ no reload/activation messages and no interception of APIs, POST or external requests (1.043808ms)
+✔ production frontend reads WonderPush configuration from deployment environment (1.702699ms)
+✔ normal announcement delivery has TTL and idempotency but no campaignId (0.261788ms)
+✔ production announcement links are same-origin and never staging (0.327551ms)
+✔ exact-device tests cannot degrade to broadcast and remain Owner-only in UI (0.312754ms)
+✔ ordinary registration preserves register-before-status lifecycle (0.346276ms)
+✔ T-30 delivery and scheduling are hard-disabled by the cutover (0.211996ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1028.998146

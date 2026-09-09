@@ -1,0 +1,1846 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "phase": "B",
+      "name": "browser320",
+      "remain": {
+        "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "fresh": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 930
+      },
+      "offline": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b",
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "requests": [
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": false,
+          "navigation": false
+        },
+        {
+          "path": "/webpushr-sw.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        }
+      ]
+    },
+    {
+      "phase": "B",
+      "name": "installed360",
+      "remain": {
+        "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "fresh": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 794
+      },
+      "offline": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b",
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "requests": [
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": false,
+          "navigation": false
+        },
+        {
+          "path": "/webpushr-sw.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        }
+      ]
+    },
+    {
+      "phase": "B",
+      "name": "desktop",
+      "remain": {
+        "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "granted",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "fresh": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "granted",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 734
+      },
+      "offline": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b",
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "granted",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "requests": [
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/webpushr-sw.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        }
+      ]
+    },
+    {
+      "phase": "B",
+      "name": "closed",
+      "fresh": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 852
+      },
+      "offline": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b",
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "requests": [
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": false,
+          "navigation": false
+        },
+        {
+          "path": "/webpushr-sw.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        }
+      ]
+    },
+    {
+      "phase": "B",
+      "name": "offline",
+      "remain": {
+        "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "fresh": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 2392
+      },
+      "offline": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "requests": [
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        }
+      ]
+    },
+    {
+      "phase": "B",
+      "name": "slow",
+      "remain": {
+        "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "fallback": {
+        "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 5415
+      },
+      "fresh": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": true,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b",
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 1872
+      },
+      "offline": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "requests": [
+        {
+          "path": "/webpushr-sw.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        }
+      ]
+    },
+    {
+      "phase": "B",
+      "name": "failed-asset",
+      "remain": {
+        "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "fallback": {
+        "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 429
+      },
+      "fresh": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": true,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b",
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 1119
+      },
+      "offline": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "requests": [
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        }
+      ]
+    },
+    {
+      "phase": "B",
+      "name": "waiting",
+      "remain": {
+        "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "fresh": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": true,
+        "cache": [
+          "ipm-offline-shell-f8fe84b8e814e88b",
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 943,
+        "waitingAfterInstall": true
+      },
+      "offline": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-e638eb1646edb8c7"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "requests": [
+        {
+          "path": "/webpushr-sw.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": false,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/itinerary",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/index.html",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-any-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-192.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/ipm-icon-maskable-512.png",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/manifest.json",
+          "worker": true,
+          "navigation": false
+        },
+        {
+          "path": "/v2-icon.png",
+          "worker": true,
+          "navigation": false
+        }
+      ]
+    }
+  ]
+}

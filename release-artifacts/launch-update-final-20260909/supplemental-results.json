@@ -1,0 +1,113 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "name": "unavailable",
+      "fallback": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-101ff85a937e173b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 374
+      },
+      "recovered": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-101ff85a937e173b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "spontaneousNavigations": 0,
+      "blockedWrites": 10
+    },
+    {
+      "name": "failed-network",
+      "fallback": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-101ff85a937e173b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 946
+      },
+      "recovered": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-101ff85a937e173b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "spontaneousNavigations": 0,
+      "blockedWrites": 10
+    },
+    {
+      "name": "already-current",
+      "fallback": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-101ff85a937e173b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 528
+      },
+      "recovered": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-101ff85a937e173b"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary"
+      },
+      "spontaneousNavigations": 0,
+      "blockedWrites": 10
+    }
+  ]
+}

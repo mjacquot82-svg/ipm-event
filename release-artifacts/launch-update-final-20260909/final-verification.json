@@ -1,0 +1,30 @@
+{
+  "production": {
+    "id": "6aa15e88b199e77b4e5fccf7",
+    "title": "Compact Home notification invitation 1999c69e89b9fdcb77f0cc6ad81f26aa43eb54ae",
+    "published_at": "2026-09-09T13:31:22.869Z"
+  },
+  "staging": {
+    "id": "6aa174ee87a47f2cf274b3b6",
+    "title": "Bounded online launch C 73e523040e4c755b3aa7f1d99da839e59b0edef0",
+    "published_at": "2026-09-09T22:02:05.585Z"
+  },
+  "schedule": {
+    "count": 218,
+    "contents_unchanged": true
+  },
+  "vendors": {
+    "count": 127,
+    "contents_unchanged": true
+  },
+  "reconciliation": {
+    "repair_cohort_percent": 100,
+    "repair_enabled": true,
+    "build_commit": "70e068ab2930bdeddee3c5817477cc97e9ca0b01"
+  },
+  "production_entry": "/_expo/static/js/web/entry-381311dd4227ceb99138c421d5503233.js",
+  "candidate_js_only_build_metadata_changed": true,
+  "production_build": "362242",
+  "production_promotion": false,
+  "notification_sent": false
+}

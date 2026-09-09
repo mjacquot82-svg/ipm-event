@@ -1,0 +1,17 @@
+{
+  "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+  "controlled": true,
+  "active": "activated",
+  "waiting": false,
+  "installing": false,
+  "cache": [
+    "ipm-offline-shell-e638eb1646edb8c7",
+    "ipm-offline-shell-101ff85a937e173b"
+  ],
+  "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+  "preference": "true",
+  "permission": "denied",
+  "subscriptionPresent": false,
+  "path": "/itinerary",
+  "elapsedMs": 12104
+}

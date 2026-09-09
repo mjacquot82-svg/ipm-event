@@ -1,0 +1,24 @@
+{
+  "A": {
+    "id": "6aa172e36307a145eaab4ba8",
+    "state": "ready",
+    "build": "362330",
+    "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+    "worker": "f8fe84b8e814e88b"
+  },
+  "B": {
+    "id": "6aa174216307a15981ab4bcb",
+    "state": "ready",
+    "build": "362335",
+    "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+    "worker": "e638eb1646edb8c7"
+  },
+  "C": {
+    "id": "6aa174ee87a47f2cf274b3b6",
+    "state": "ready",
+    "build": "362339",
+    "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+    "worker": "101ff85a937e173b"
+  },
+  "application_bytes_equal_except_build": true
+}

@@ -1,0 +1,7 @@
+{
+  "origin/main": "1b63ce2e140015fb25ef6137143217e25c856c27",
+  "origin/staging": "bbabc4b4f7e957abc60e92100b510d80698f779f",
+  "origin/fix/launch-update-production-20260909": "9ea6c7daa54f319a623ec1e0f9de1c88d4241364",
+  "origin/fix/launch-update-staging-20260909": "f8667a893e60bc13a91ccc74d25bca8fe82708ad",
+  "recovery/disk-space-20260909": "4d049da8de24b10af3003155fba5837487d285a1"
+}
