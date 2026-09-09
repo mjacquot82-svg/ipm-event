@@ -7,7 +7,7 @@ const require=createRequire(import.meta.url), ts=require('typescript');
 const source=readFileSync(new URL('../src/components/NotificationOptIn.tsx',import.meta.url),'utf8');
 const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
 function render(state,setup,pilot){
- let index=0;const values=[state,false,false,setup,null,null,false];
+ let index=0;const values=[state,false,false,setup,false];
  const react={...require('react'),useState:init=>[values[index++]??init,()=>{}],useCallback:fn=>fn,useEffect:()=>{},useRef:v=>({current:v})};
  const module={exports:{}};
  const mock=name=>{
@@ -24,10 +24,12 @@ function render(state,setup,pilot){
  vm.runInNewContext(code,{module,exports:module.exports,require:mock,navigator:{onLine:true,userAgent:'Android'},window:{matchMedia:()=>({matches:false}),navigator:{userAgent:'Android'}}});
  return module.exports.default({});
 }
-test('production reconciliation states retain honest status in optional help',()=>{
- const pending=JSON.stringify(render('subscribed','pending',true));assert.match(pending,/Checking notification status/);assert.doesNotMatch(pending,/Disable IPM notifications/);
- assert.match(JSON.stringify(render('subscribed','failed',true)),/Notifications are temporarily unavailable/);
- assert.match(JSON.stringify(render('subscribed','ready',true)),/Notifications are enabled on this device/);
+test('successful enrollment stays successful for every background health state',()=>{
+ for(const setup of ['idle','pending','failed','ready']) {
+  const ui=JSON.stringify(render('subscribed',setup,true));
+  assert.match(ui,/Notifications enabled/);
+  assert.doesNotMatch(ui,/Checking notification status|temporarily unavailable|Try again|Setup reference|VERIFIED|MISMATCH/);
+ }
  assert.match(JSON.stringify(render('unsubscribed','failed',true)),/Notifications are currently disabled/);
 });
 test('returning subscribers have status without an open enrollment prompt',()=>{

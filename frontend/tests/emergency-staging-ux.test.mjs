@@ -30,10 +30,10 @@ test('Emergency JSX, copy, layout and location flow exactly match staging while 
   assert.match(page,/method: 'POST'/);
   assert.doesNotMatch(page,/what3words\?|localStorage|sessionStorage|console\.|WHAT3WORDS_API_KEY|usePageAnalytics/);
 });
-test('shared responsive styling, Share, About, map, notification and itinerary source remain production bytes',()=>{
+test('shared responsive styling, Share, map, notification and itinerary source remain production bytes',()=>{
   for(const p of ['frontend/src/theme/attendeePageLayout.ts','frontend/src/theme/colors.ts',
     'frontend/src/utils/shareIpm.ts','frontend/src/components/admin/AnalyticsDashboard.tsx',
-    'frontend/app/(tabs)/about.tsx','frontend/app/(tabs)/map.tsx',
+    'frontend/app/(tabs)/map.tsx',
     'frontend/app/(tabs)/schedule.tsx','backend/what3words.py']) {
     assert.equal(read(p),historical(baseline,p),p);
   }

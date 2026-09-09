@@ -1,6 +1,6 @@
 // © 2026 Jacquot Digital Solutions. All Rights Reserved.
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -18,6 +18,9 @@ import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendee
 import { eventInfo } from '../../src/data/mockData';
 import { openTrackedLink, trackControlledOutbound } from '../../src/analytics/trackedLinks';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import PWAInstallPrompt from '../../src/components/PWAInstallPrompt';
+import NotificationOptIn from '../../src/components/NotificationOptIn';
+import AppStatus from '../../src/components/AppStatus';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 
 const BUILD_NUMBER = process.env.EXPO_PUBLIC_IPM_BUILD_NUMBER || 'development';
@@ -40,6 +43,7 @@ const EVENT_HISTORY = [
 
 export default function AboutScreen() {
   const router = useRouter();
+  const [appHelp, setAppHelp] = useState(false);
   usePageAnalytics('about', 'bottom_nav');
   const { frameStyle } = useAttendeeLayout();
   const openMaps = () => {
@@ -182,6 +186,18 @@ export default function AboutScreen() {
           </View>
         </View>
 
+        {Platform.OS === 'web' ? <View style={styles.helpSection}>
+          <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: appHelp }}
+            onPress={() => setAppHelp(!appHelp)} style={styles.helpButton}>
+            <Text style={styles.helpLabel}>{appHelp ? 'Hide app help' : 'App help'}</Text>
+          </TouchableOpacity>
+          {appHelp ? <>
+            <PWAInstallPrompt />
+            <NotificationOptIn />
+            <AppStatus />
+          </> : null}
+        </View> : null}
+
         <AttendeeAttribution source="about_attribution" />
 
         <Text style={styles.buildNumber} accessibilityLabel={`${APP_LABEL}, build ${BUILD_NUMBER}`}>
@@ -201,6 +217,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  helpSection: { marginHorizontal: 16, gap: 12 },
+  helpButton: { minHeight: 44, justifyContent: 'center' },
+  helpLabel: { color: colors.primary, fontSize: 16, fontWeight: '700' },
   buildNumber: { color: colors.textMuted, fontSize: 11, marginBottom: 24, marginTop: 18, textAlign: 'center' },
   heroLogoCard: {
     width: '92%',

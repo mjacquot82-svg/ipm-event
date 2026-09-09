@@ -160,12 +160,12 @@ test('invalid credentials and takeover responses do not retry', () => {
 test('Home distinguishes subscribed, pending, ready and failed setup', () => {
   assert.doesNotMatch(component, /ensureNotificationRegistration\(\)\.catch\(\(\) => undefined\)/);
   assert.match(component, /Checking notification status…/);
-  assert.match(component, /Notifications are temporarily unavailable\. You can keep using IPM\./);
+  assert.match(component, /Notifications enabled/);
   assert.match(component, /await ensureNotificationRegistration\(\)/);
-  assert.match(component, />Try again</);
-  assert.match(component, /accessibilityLabel="Try notification setup again"/);
+  assert.doesNotMatch(component, />Try again</);
+  assert.doesNotMatch(component, /accessibilityLabel="Try notification setup again"/);
   assert.match(component, /minHeight: 44/);
-  assert.match(component, /notification-setup-\$\{setupState/);
+  assert.match(component, /notification-settings-\$\{state/);
 });
 
 test('session initialization remains pending and automatically resumes setup', () => {
@@ -189,8 +189,8 @@ test('session initialization remains pending and automatically resumes setup', (
 });
 
 test('pending startup hides actions while genuine failures retain recovery UI', () => {
-  assert.match(component, /canAct && !working && setupState !== 'pending'/);
-  assert.match(component, /setupState === 'failed'[\s\S]*Try again/);
+  assert.match(component, /canAct && !working/);
+  assert.doesNotMatch(component, /setupState === 'failed'[\s\S]*Try again/);
   assert.match(component, /state === 'subscribed'[\s\S]*unsubscribeFromNotifications\(\)/);
   assert.match(component, /state === 'denied'/);
   assert.match(component, /Checking notification status…/);
@@ -200,13 +200,13 @@ test('pending startup hides actions while genuine failures retain recovery UI', 
 test('optional notification controls preserve clear status without auto-opening', () => {
   assert.match(component, /initiallyExpanded = false/);
   assert.match(component, /expanded && !verificationDeferred && canAct/);
-  assert.match(component, /state === 'subscribed' && setupState === 'ready'/);
+  assert.match(component, /const stateMessage = state === 'subscribed'/);
   assert.match(component, /Notifications are enabled on this device/);
   assert.match(component, /watchReconciliation/);
 });
 
 test('safe UI and diagnostics do not render sensitive device material', () => {
-  assert.match(component, /testID=\{`notification-setup-/);
+  assert.match(component, /testID=\{`notification-settings-/);
   for (const safeStage of ['sdk_unavailable', 'installation_still_unavailable',
     'wonderpush_recovery_subscribe_timed_out',
     'wonderpush_recovery_snapshot_failed',

@@ -14,7 +14,6 @@ import {
 import {
   ensureNotificationRegistration,
   NotificationRegistrationFailure,
-  NotificationRegistrationStage,
 } from '../services/notificationRegistration';
 import { recordNotificationWorkflowDiagnostic } from '../services/wonderPushRuntimeDiagnostic';
 import { colors } from '../theme/colors';
@@ -36,8 +35,6 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
   const [working, setWorking] = useState(false);
   const [verificationDeferred, setVerificationDeferred] = useState(false);
   const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'failed'>('idle');
-  const [failureStage, setFailureStage] = useState<NotificationRegistrationStage | null>(null);
-  const [failureClassification, setFailureClassification] = useState<NotificationRegistrationFailure | null>(null);
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const triggerRef = useRef<any>(null);
   const actionInFlightRef = useRef(false);
@@ -47,7 +44,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
 
   useEffect(() => watchReconciliation((result) => {
     // Preserve the deployed reconciliation watcher as the source of check status.
-    if (result.status === 'VERIFIED') { setSetupState('ready'); setState('subscribed'); }
+    if (result.status === 'VERIFIED') { setSetupState('ready'); }
     else if (['SDK_SETTLING','COMPARING','PATCH_PENDING','VERIFYING','CHECK_DUE'].includes(result.status)) setSetupState('pending');
     else setSetupState('failed');
   }), []);
@@ -55,8 +52,6 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
   const completeSetup = useCallback(async () => {
     recordNotificationWorkflowDiagnostic('PENDING');
     setSetupState('pending');
-    setFailureStage(null);
-    setFailureClassification(null);
     try {
       await ensureNotificationRegistration();
       recordNotificationWorkflowDiagnostic('SUCCESS');
@@ -83,10 +78,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
           }
         }
       }
-      const safeStage = (finalError as { stage?: NotificationRegistrationStage }).stage;
       const safeClassification = (finalError as { classification?: NotificationRegistrationFailure }).classification;
-      setFailureStage(safeStage || 'installation_retrieval');
-      setFailureClassification(safeClassification || 'other');
       recordNotificationWorkflowDiagnostic('FAILED', safeClassification || 'other');
       setSetupState('failed');
 
@@ -104,8 +96,6 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
       } else if (nextState !== 'loading') {
         recordNotificationWorkflowDiagnostic('IDLE');
         setSetupState('idle');
-        setFailureStage(null);
-        setFailureClassification(null);
       }
     } catch {
       setState('error');
@@ -179,15 +169,13 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
   const environment = detectInstallEnvironment({ userAgent: navigator.userAgent, platformHint: navigator.platform, maxTouchPoints: navigator.maxTouchPoints,
     standalone: window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true });
   const help = notificationHelp(environment, state);
-  const canAct = state === 'default' || state === 'unsubscribed' || (state === 'subscribed' && setupState === 'ready');
-  const stateMessage = verificationDeferred
+  const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
+  // Browser/provider enrollment determines attendee success. Background health
+  // remains recorded above, but never downgrades an enabled subscription here.
+  const stateMessage = state === 'subscribed'
+    ? 'Notifications enabled'
+    : verificationDeferred
     ? 'Notification status will refresh when your connection improves.'
-    : state === 'subscribed' && setupState === 'pending'
-    ? 'Checking notification status…'
-    : state === 'subscribed' && setupState === 'failed'
-    ? 'Notifications are temporarily unavailable. You can keep using IPM.'
-    : state === 'subscribed' && setupState !== 'ready'
-    ? 'Checking notification status…'
     : state === 'unsupported'
     ? (environment.platform === 'ios' && environment.installState !== 'installed' ? 'Optional notifications are available when you open IPM from your Home Screen.' : 'Notifications aren’t available in this browser. You can still use IPM.')
     : STATE_COPY[state];
@@ -218,8 +206,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
     <View
       style={[containerStyle, styles.card]}
       accessibilityLabel="IPM notification settings"
-      testID={`notification-setup-${setupState === 'failed'
-        ? `${failureStage}-${failureClassification}` : setupState}`}
+      testID={`notification-settings-${state}`}
     >
       <View style={styles.copy}>
         <Text accessibilityRole="header" style={styles.title}>Get important IPM updates</Text>
@@ -228,23 +215,13 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
           <Text style={styles.retryButtonText}>{expanded ? 'Hide notification options' : 'Notification options'}</Text>
         </TouchableOpacity>
         {expanded ? <Text style={styles.hint}>Notifications are optional. Get important IPM announcements on this device. You can keep using IPM without them.</Text> : null}
-        {expanded && state === 'subscribed' && setupState === 'failed' ? (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="Try notification setup again"
-            disabled={working || verificationDeferred} onPress={() => { void refresh(); }}
-            style={styles.retryButton}
-          >
-            <Text style={styles.retryButtonText}>Try again</Text>
-          </TouchableOpacity>
-        ) : null}
         {expanded && !verificationDeferred && (state === 'denied' || state === 'error') ? <TouchableOpacity accessibilityRole="button" onPress={() => { void refresh(); }} style={styles.retryButton}><Text style={styles.retryButtonText}>Check notification status again</Text></TouchableOpacity> : null}
         {expanded && state === 'unsupported' ? <Text style={styles.hint}>{help}</Text> : null}
         {expanded && state === 'denied' ? <Text style={styles.hint}>{help}</Text> : null}
 
       </View>
       {!verificationDeferred && working ? <ActivityIndicator color={colors.primary} /> : null}
-      {expanded && !verificationDeferred && canAct && !working && setupState !== 'pending' ? (
+      {expanded && !verificationDeferred && canAct && !working ? (
         <View style={styles.actions}>
           <TouchableOpacity
             accessibilityRole="button"
@@ -284,7 +261,6 @@ const styles = StyleSheet.create({
   title: { color: colors.textPrimary, fontSize: 16, fontWeight: '800' },
   message: { color: colors.textSecondary, fontSize: 16, lineHeight: 24, marginTop: 3 },
   hint: { color: colors.textMuted, fontSize: 16, lineHeight: 24, marginTop: 4 },
-  diagnostic: { color: colors.textMuted, fontSize: 11, lineHeight: 15, marginTop: 4 },
   button: { minHeight: 48, justifyContent: 'center', backgroundColor: colors.primary, borderRadius: 10, minWidth: 76, paddingHorizontal: 13, paddingVertical: 11 },
   actions: { alignItems: 'center', gap: 2 },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', textAlign: 'center' },

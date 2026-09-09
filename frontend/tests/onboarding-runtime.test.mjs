@@ -8,7 +8,7 @@ import { notificationHelp } from '../src/utils/notificationHelp.ts';
 
 // Execute the actual components with deterministic hooks and inert platform/SDK adapters.
 // Provider and browser writes are counted, never sent to a real service.
-function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Chrome/130.0', standalone=false, props={}, storage=new Map()}={}) {
+function harness(file, {state='default', health='VERIFIED', setupFails=false, online=true, ua='Mozilla/5.0 Android Chrome/130.0', standalone=false, props={}, storage=new Map()}={}) {
  const slots=[],effects=[],listeners=new Map();let index=0,tree,dirty=false;
  const calls={read:0,subscribe:0,unsubscribe:0,register:[],prompt:0,holds:0};
  const equal=(a,b)=>a&&b&&a.length===b.length&&a.every((v,i)=>v===b[i]);
@@ -34,9 +34,9 @@ function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Ch
   if(name.includes('installEnvironment'))return {detectInstallEnvironment,getInstallGuidance:env=>({heading:'Optional instructions',intro:'Optional',steps:[],primaryLabel:env.installState==='install_prompt_available'?'Add IPM':null})};
   if(name.includes('notificationHelp'))return {notificationHelp};
   if(name.includes('pwaUpdateService'))return {holdPwaUpdate:()=>{calls.holds++;return()=>calls.holds--;}};
-  if(name.endsWith('subscriptionReconciliation'))return {watchReconciliation:()=>()=>{}};
+  if(name.endsWith('subscriptionReconciliation'))return {watchReconciliation:fn=>{fn({status:health});return()=>{};}};
   if(name.endsWith('wonderPushService'))return sdk;
-  if(name.endsWith('notificationRegistration'))return {ensureNotificationRegistration:async opts=>{calls.register.push(opts);}};
+  if(name.endsWith('notificationRegistration'))return {ensureNotificationRegistration:async opts=>{calls.register.push(opts);if(setupFails)throw {classification:'other'};}};
   if(name.includes('wonderPushRuntimeDiagnostic'))return {recordNotificationWorkflowDiagnostic:()=>{}};
   if(name.includes('theme/colors'))return {default:{},colors:{}};
   throw Error(name);
@@ -58,12 +58,12 @@ for(const [name,options] of [
  const h=harness('NotificationOptIn.tsx',options);await h.flush();const before=h.calls.register.length;
  await h.click('Notification options');assert.match(h.text(),/optional/);await h.click('Hide notification options');
  assert.equal(h.calls.subscribe,0);assert.equal(h.calls.unsubscribe,0);assert.equal(h.calls.register.length,before);
- if(options.state==='subscribed')assert.match(h.text(),/Notifications are enabled/);
+ if(options.state==='subscribed')assert.match(h.text(),/Notifications enabled/);
  if(options.state==='denied')assert.ok(!h.all().some(n=>n.props.accessibilityLabel==='Enable IPM notifications'));
 });
 test('explicit opt-in enrolls once and shows success; reopening is read-only',async()=>{
  const h=harness('NotificationOptIn.tsx');await h.flush();await h.click('Notification options');await h.click('Enable IPM notifications');
- assert.equal(h.calls.subscribe,1);assert.equal(h.calls.register.length,1);assert.match(h.text(),/Notifications are enabled/);
+ assert.equal(h.calls.subscribe,1);assert.equal(h.calls.register.length,1);assert.match(h.text(),/Notifications enabled/);
  await h.click('Hide notification options');await h.click('Notification options');assert.equal(h.calls.subscribe,1);
 });
 test('P offline launch and Q reconnect keep controls safe and refresh once',async()=>{
@@ -118,4 +118,13 @@ test('Home dismissal survives remount without changing itinerary storage or enro
 test('Home explicit enable still invokes existing enrollment once then hides promotion',async()=>{
  const h=harness('NotificationOptIn.tsx',{props:{homePresentation:true}});await h.flush();await h.click('Enable notifications');
  assert.equal(h.calls.subscribe,1);assert.equal(h.calls.register.length,1);assert.equal(h.text(),'');
+});
+
+for (const health of ['VERIFIED','MISMATCH','KEY_MISMATCH','CHECK_DUE']) test('attendee success is independent of background '+health,async()=>{
+ const h=harness('NotificationOptIn.tsx',{state:'subscribed',health,setupFails:true,props:{initiallyExpanded:true}});
+ await h.flush();assert.match(h.text(),/Notifications enabled/);
+ assert.doesNotMatch(h.text(),/verified|mismatch|reconciliation|temporarily unavailable|Setup reference|Try again/i);
+ assert.equal(h.calls.subscribe,0);assert.equal(h.calls.unsubscribe,0);
+ const home=harness('NotificationOptIn.tsx',{state:'subscribed',health,setupFails:true,props:{homePresentation:true}});
+ await home.flush();assert.equal(home.text(),'');
 });
