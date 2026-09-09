@@ -17,8 +17,8 @@ for(const {name,width,height,installed,permission,next} of cases){
   Object.defineProperty(navigator,'standalone',{configurable:true,value:installed});
   const match=window.matchMedia.bind(window);window.matchMedia=q=>q==='(display-mode: standalone)'?{...match(q),matches:installed,addEventListener(){},removeEventListener(){}}:match(q);
   if(dismissed)localStorage.setItem('@ipm_home_notification_invitation_dismissed_v1','true');
-  const reg={update:async()=>{},pushManager:{getSubscription:async()=>null}};
-  if(navigator.serviceWorker){navigator.serviceWorker.register=async()=>reg;navigator.serviceWorker.getRegistration=async()=>reg;}
+  const reg={update:async()=>{},addEventListener(){},removeEventListener(){},pushManager:{getSubscription:async()=>null}};
+  if(navigator.serviceWorker){Object.defineProperty(navigator.serviceWorker,'ready',{configurable:true,value:Promise.resolve(reg)});navigator.serviceWorker.register=async()=>reg;navigator.serviceWorker.getRegistration=async()=>reg;}
   window.WonderPush={push(value){if(typeof value==='function')value();},isSubscribedToNotifications:async()=>window.Notification.permission==='granted',subscribeToNotifications:async()=>{window.__enrollments++;window.Notification.permission='granted';},getInstallationId:async()=>'0123456789abcdef0123456789abcdef',getUserId:async()=>null};
  },{installed,permission,dismissed,next});
  await c.route('**/*',r=>{
