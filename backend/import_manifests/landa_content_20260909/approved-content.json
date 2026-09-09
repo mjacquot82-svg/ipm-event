@@ -1,0 +1,302 @@
+{
+  "READ_ONLY_NOT_EXECUTED": true,
+  "description_changes": [
+    {
+      "id": "cdd99df2-3edb-4f2e-b8b7-cb7c3cedcfad",
+      "external_id": "2026-09-24-foodland-h23",
+      "field": "description",
+      "old_value": null,
+      "proposed_value": "Ruth is a personal development coach who teaches through the lens of spiritual development. A professional interior designer and expert in energy within the home, she explores the powerful connection between our spaces, our energy, and how we feel. She is a collector of experiences, an avid learner, and a natural connector. Ruth is based out of Lucknow, ON",
+      "action": "ADD",
+      "source": "S01 data/IPM.docx",
+      "source_date": "2026-08-26 document modified metadata; email date unavailable",
+      "reason": "Source explicitly says Ruth Montgomery, Energy in the home (BIO ABOVE AGAIN).",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "51d59805-0a15-4bba-b026-1fd6ae1f4742",
+      "external_id": "2026-09-25-foodland-k33",
+      "field": "description",
+      "old_value": null,
+      "proposed_value": "Angela is the creative force behind Upstaged Design in Hanover, Ontario, and an interior designer who believes your home should feel unmistakably like you. Known for embracing colour, personality, and a little bit of fun, Angela creates spaces that feel collected, welcoming, and full of life—proving that great design doesn’t have to mean playing it safe.",
+      "action": "ADD",
+      "source": "S01 data/IPM.docx",
+      "source_date": "2026-08-26 document modified metadata; email date unavailable",
+      "reason": "Friday source explicitly says Angela Wainscott, Upstage (bio above).",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "a5c22a8c-3f8a-40e2-9088-823cff65d51c",
+      "external_id": "2026-09-24-foodland-h27",
+      "field": "description",
+      "old_value": null,
+      "proposed_value": "Essentially Lavender is a lavender farm that offers guided tours and showcases a variety of beautiful features, including lavender gardens, shrub and perennial gardens, a labyrinth, an apiary, and a xeriscape garden.",
+      "action": "ADD",
+      "source": "S01 data/IPM.docx",
+      "source_date": "2026-08-26 document modified metadata; email date unavailable",
+      "reason": "Same named business in both current appearances; generic business description.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "03bb0dea-95f3-4ab6-8f4c-db0e15f38562",
+      "external_id": "2026-09-24-harleys-i31",
+      "field": "description",
+      "old_value": null,
+      "proposed_value": "Essentially Lavender is a lavender farm that offers guided tours and showcases a variety of beautiful features, including lavender gardens, shrub and perennial gardens, a labyrinth, an apiary, and a xeriscape garden.",
+      "action": "ADD",
+      "source": "S01 data/IPM.docx",
+      "source_date": "2026-08-26 document modified metadata; email date unavailable",
+      "reason": "Same named business in both current appearances; generic business description.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "e71c646d-e284-4ee7-880d-aa9e4fbcccd5",
+      "external_id": "2026-09-25-foodland-k31",
+      "field": "description",
+      "old_value": "Carrie Lynn Floral",
+      "proposed_value": "Carrie Lynn Floral is a Mildmay, Ontario-based florist bringing creativity and beauty to weddings, special events, businesses, and everyday moments. With a passion for thoughtful, artful florals, Carrie Lynn believes flowers have the power to transform a space, set a mood, and make any occasion feel a little more special.",
+      "action": "UPDATE",
+      "source": "S01 data/IPM.docx",
+      "source_date": "2026-08-26 document modified metadata; email date unavailable",
+      "reason": "Supplied Friday business biography replaces business-name-only placeholder.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "2e0e76f9-8ad0-4cdb-8854-2dcecfa33feb",
+      "external_id": "2026-09-23-harleys-f24",
+      "field": "description",
+      "old_value": null,
+      "proposed_value": "Heather is the creative hands behind Willow Home, a furniture refinisher based in Walkerton, Ontario. With a love for seeing the beauty and potential in pieces others may overlook, she gives furniture a second chance through thoughtful refinishing and restoration. Heather believes a home is made more meaningful by pieces with a story—and sometimes, the best pieces are the ones given new life.",
+      "action": "ADD",
+      "source": "S01 data/IPM.docx",
+      "source_date": "2026-08-26 document modified metadata; email date unavailable",
+      "reason": "Current Willow Home demonstration matches the same business; generic biography already on its other appearance.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "5393aace-cc8b-48da-b604-6be9bdc22442",
+      "external_id": "2026-09-24-foodland-h20",
+      "field": "description",
+      "old_value": "Home and Garden",
+      "proposed_value": "Tracy Irwin, Everlasting Flowers and Gifts in Lucknow, ON Tracy is the owner of Everlasting Flowers & Gifts, a beloved staple in Lucknow, Ontario. With a passion for beautiful florals and beautiful homes, she has created a destination where flowers, home décor, and thoughtful touches come together to make everyday spaces feel a little more special.\n\nLyndsey Matheson, WavescapeS Design in Ripley, ON. Wavescapes Design specializes in creating custom landscapes for residential and commercial properties across Ontario. Our team works with a wide range of clients—from DIY enthusiasts to high-profile homeowners who prefer a completely hands-off approach, and everyone in between.\n\nRuth Montgomery\nRuth is a personal development coach who teaches through the lens of spiritual development. A professional interior designer and expert in energy within the home, she explores the powerful connection between our spaces, our energy, and how we feel. She is a collector of experiences, an avid learner, and a natural connector. Ruth is based out of Lucknow, ON\n\nAngela Wainscott\nAngela is the creative force behind Upstaged Design in Hanover, Ontario, and an interior designer who believes your home should feel unmistakably like you. Known for embracing colour, personality, and a little bit of fun, Angela creates spaces that feel collected, welcoming, and full of life—proving that great design doesn’t have to mean playing it safe.",
+      "action": "UPDATE",
+      "source": "S01 data/IPM.docx",
+      "source_date": "2026-08-26 document modified metadata; email date unavailable",
+      "reason": "Source identifies four members of Thursday Home and Garden panel; keep their supplied biographies, not generic Home and Garden placeholder.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "e7b34b71-442e-482a-bf10-d2829600e8af",
+      "external_id": "2026-09-22-quality-homes-d12",
+      "field": "description",
+      "old_value": null,
+      "proposed_value": "A local garden centre and nursery near Walkerton owned and operated by Jeff Davis.",
+      "action": "ADD",
+      "source": "S09 approved production description at 2026-09-22-foodland-b9; S13 Tuesday manifest",
+      "source_date": "Original email date unavailable; preserved in approved September 8 snapshot",
+      "reason": "Same Davishill business; existing generic nursery description applies to both appearances.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "b84aa2ed-9ad5-421e-bed2-d0e1e5e57ed1",
+      "external_id": "2026-09-23-foodland-e6",
+      "field": "description",
+      "old_value": null,
+      "proposed_value": "Movement is Medicine - together with the Freezer Fitness team, exploring the opportunity for every age, body and ability to confidently move and recover.",
+      "action": "ADD",
+      "source": "S09 approved production description at 2026-09-25-foodland-k21; S17 approved Sept4 reuse decisions",
+      "source_date": "Original email date unavailable; approved reuse preserved September 8",
+      "reason": "Generic Freezer Fitness team description already reused for Functional Movement and Line Dancing; applies to current morning movement appearances.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "317815a5-15b2-42e2-a524-c709bb4ef817",
+      "external_id": "2026-09-25-foodland-k6",
+      "field": "description",
+      "old_value": "Freezer Fitness",
+      "proposed_value": "Movement is Medicine - together with the Freezer Fitness team, exploring the opportunity for every age, body and ability to confidently move and recover.",
+      "action": "UPDATE",
+      "source": "S09 approved production description at 2026-09-25-foodland-k21; S17 approved Sept4 reuse decisions",
+      "source_date": "Original email date unavailable; approved reuse preserved September 8",
+      "reason": "Generic Freezer Fitness team description already reused for Functional Movement and Line Dancing; applies to current morning movement appearances.",
+      "confidence": "HIGH"
+    },
+    {
+      "id": "4009199c-80a9-4ccb-bea1-29800db38493",
+      "external_id": "2026-09-24-foodland-h28",
+      "field": "description",
+      "old_value": "",
+      "proposed_value": "Explore the people side of succession planning including how to create clarity during transition, prepare the next generation for leadership, and establish communication and governance practices that support long-term success. \nSpeakers:\nHali VanVilet, Partner, Human Resources Consulting\nBruce Dick, manager, Family Office Services\nModerator: \nBarry Heaney, Partner, Assurance and Accounting Services",
+      "action": "ADD",
+      "source": "Package trifold DOCX/PDF; prior S04 flyer text also contained this (first-pass omission)",
+      "source_date": "2026-09-04",
+      "confidence": "HIGH",
+      "reason": "Exact panel description and named speakers/moderator for this current panel; no scheduling text included."
+    },
+    {
+      "id": "5d437f2a-614e-4c9b-9dd1-8f3c4571fc44",
+      "external_id": "2026-09-25-foodland-k28",
+      "field": "description",
+      "old_value": "",
+      "proposed_value": "Succession planning can feel overwhelming, but understanding the process is the first step. Learn when and where to start, what a typical succession plan involves, and how to identify priorities for your farm and family. This session will also explore common pitfalls and key tax considerations when transferring farm property to the next generation.\nSpeakers:\nLarry Batte, Partner and Business Advisor, Agriculture Services\nKurt Oelschlagel, Partner and Ontario Agriculture Tax Leader\nModerator: Dennis Kraemer, Partner Assurance and Accounting Services",
+      "action": "ADD",
+      "source": "Package trifold DOCX/PDF; prior S04 flyer text also contained this (first-pass omission)",
+      "source_date": "2026-09-04",
+      "confidence": "HIGH",
+      "reason": "Exact panel description and named speakers/moderator for this current panel; no scheduling text included."
+    },
+    {
+      "id": "4513f63c-a170-4a75-b3f2-55ca1a3f85e8",
+      "external_id": "2026-09-22-harleys-c11",
+      "field": "description",
+      "old_value": "",
+      "proposed_value": "Meet Katie Hohnstein of The Bread Barn\nMom of 4 • Baker • Dreamer\n\nHi, I’m Katie!\n\nI’m a wife and mom of 4. The Bread Barn started as a dream, but quickly became reality.\n\nI enjoy making homemade sourdough with simple, quality ingredients and being able to share it with family and friends.\n\nIt has been a creative outlet for me, and has allowed me to stay at home with my kids.\n\nWhat You Can Expect:\n\nHOMEMADE SOURDOUGH\nMade with simple ingredients and lots of love.\n\nMADE WITH CARE\nSimple, real ingredients and time-honored methods for the best flavor and texture.\n\nFAMILY FOCUSED\nEverything I do is for my family and the community we love.\n\nBAKED FOR YOU\nMade in our home, for yours—because you deserve the best.",
+      "action": "ADD",
+      "source": "Package Bread Barn Bio.jpg + 03 forwarding context; visual transcription",
+      "source_date": "2026-09-02",
+      "confidence": "HIGH",
+      "reason": "Image explicitly names Katie Hohnstein of The Bread Barn; use biography and product-description sections with layout cleanup only; omit decorative slogans."
+    },
+    {
+      "id": "b8996b70-0d29-486a-badd-c359d499b808",
+      "external_id": "2026-09-22-foodland-b16",
+      "field": "description",
+      "old_value": "",
+      "proposed_value": "Nikk Wise (nee Schmalz) is a born & raised Mildmay Resident, wife to Ryan, mother of 3 awesome daughters and finally you may know her best as the proud owner of Harley’s Pub & Perk for over 20 years.\n\nShe started her career off as a nurse but decided to switch it up & began working at the old Coffee Perk (which was located directly behind Harley’s!).\n\nShe was presented an opportunity to purchase the business in 1999. She ran that successfully until she was presented with another big opportunity to purchase the Commercial Hotel in 2004. It was a large undertaking but anyone who knows Nikk, knows she does not back down from a challenge.\n\nThe Commercial Hotel was built in 1872 & has been owned by many Schmalz’s throughout the years starting in 1919. It was operated under many names including The Commercial Hotel, Schmalz Country Inn, Cornerstone Inn and finally in 2004 it became Harley’s Pub & Perk (named after Nikk’s Uncle Harley who ran the hotel with her Grandpa Chucks for many years).\n\nSince 2004, Nikk has expanded her business from a bar, to a beloved Pub, Coffee Shop & Catering Business.\n\nHer passion for Mildmay, Bruce County & local businesses is on the forefront of all she does and she truly loves serving her community, one meal at a time.\n\n“When you support a small business, you are supporting a dream”",
+      "action": "ADD",
+      "source": "Package 03_Nikk_Wise_Harleys_bio.txt",
+      "source_date": "2026-09-02",
+      "confidence": "HIGH",
+      "reason": "Generic owner/business biography applies to all four current Harleys presentations/samplings; not proof Nikk personally leads every session."
+    },
+    {
+      "id": "27610df2-3e9d-4917-bc3e-7f4e77c33a0c",
+      "external_id": "2026-09-22-harleys-c19",
+      "field": "description",
+      "old_value": "",
+      "proposed_value": "Nikk Wise (nee Schmalz) is a born & raised Mildmay Resident, wife to Ryan, mother of 3 awesome daughters and finally you may know her best as the proud owner of Harley’s Pub & Perk for over 20 years.\n\nShe started her career off as a nurse but decided to switch it up & began working at the old Coffee Perk (which was located directly behind Harley’s!).\n\nShe was presented an opportunity to purchase the business in 1999. She ran that successfully until she was presented with another big opportunity to purchase the Commercial Hotel in 2004. It was a large undertaking but anyone who knows Nikk, knows she does not back down from a challenge.\n\nThe Commercial Hotel was built in 1872 & has been owned by many Schmalz’s throughout the years starting in 1919. It was operated under many names including The Commercial Hotel, Schmalz Country Inn, Cornerstone Inn and finally in 2004 it became Harley’s Pub & Perk (named after Nikk’s Uncle Harley who ran the hotel with her Grandpa Chucks for many years).\n\nSince 2004, Nikk has expanded her business from a bar, to a beloved Pub, Coffee Shop & Catering Business.\n\nHer passion for Mildmay, Bruce County & local businesses is on the forefront of all she does and she truly loves serving her community, one meal at a time.\n\n“When you support a small business, you are supporting a dream”",
+      "action": "ADD",
+      "source": "Package 03_Nikk_Wise_Harleys_bio.txt",
+      "source_date": "2026-09-02",
+      "confidence": "HIGH",
+      "reason": "Generic owner/business biography applies to all four current Harleys presentations/samplings; not proof Nikk personally leads every session."
+    },
+    {
+      "id": "1ded47dc-c794-4cb9-b1b2-8e73c1abaee4",
+      "external_id": "2026-09-23-foodland-e9",
+      "field": "description",
+      "old_value": "Personalized Support for Your Family’s Needs at Every Stage",
+      "proposed_value": "Personalized Support for Your Family’s Needs at Every Stage\n\nRachel Stroeder/Evergreen Connections; Katie Franklin/Katie Franklin Doula Services; Madison Kittel/Grey Bruce Doula & Home Services.",
+      "action": "UPDATE",
+      "source": "Package 04_Sept1_business_descriptions.txt",
+      "source_date": "2026-09-01",
+      "confidence": "HIGH",
+      "reason": "Retain approved existing tagline and append exact source panel business affiliations; no invented individual biographies."
+    },
+    {
+      "id": "ac1fb6cf-1505-49e7-b89b-e38f5a1e0ebe",
+      "external_id": "2026-09-23-harleys-f10",
+      "field": "description",
+      "old_value": "Independent beauty consultant providing personalized beauty and skin care guidance.",
+      "proposed_value": "Since 1988, I’ve had the joy of serving as a Mary Kay Sales Director, and I still love this business with all my heart. Mary Kay has given me more than a career — it’s given me a life filled with purpose, possibility, and miracles. I’d be delighted to share my personal service with you, so feel free to reach out.",
+      "action": "UPDATE",
+      "source": "Package 02_Cheryl_McNair_writeup.txt",
+      "source_date": "2026-09-02",
+      "confidence": "HIGH",
+      "reason": "Newer full generic Cheryl biography replaces older brief fashion description on all three appearances. Source URL retained separately as a structured link proposal."
+    },
+    {
+      "id": "62fc542d-9977-4358-b3f9-d42e3ac7a60d",
+      "external_id": "2026-09-23-foodland-e32",
+      "field": "description",
+      "old_value": "Independent beauty consultant providing personalized beauty and skin care guidance.",
+      "proposed_value": "Since 1988, I’ve had the joy of serving as a Mary Kay Sales Director, and I still love this business with all my heart. Mary Kay has given me more than a career — it’s given me a life filled with purpose, possibility, and miracles. I’d be delighted to share my personal service with you, so feel free to reach out.",
+      "action": "UPDATE",
+      "source": "Package 02_Cheryl_McNair_writeup.txt",
+      "source_date": "2026-09-02",
+      "confidence": "HIGH",
+      "reason": "Newer full generic Cheryl biography replaces older brief fashion description on all three appearances. Source URL retained separately as a structured link proposal."
+    },
+    {
+      "id": "ddf229b9-5c90-4482-8de5-b3c2ae5cdd0e",
+      "external_id": "2026-09-24-harleys-i7",
+      "field": "description",
+      "old_value": "Brenda Kreamer",
+      "proposed_value": "Brenda is an avid gardener turned greenhouse owner, whose love for plants and all things flowers is revealed through her passion to create beautiful seasonal pieces for you and your home.\n\nCountry Garden Greenhouse is located on the outskirts of Mildmay, and keeps Brenda busy throughout the spring, fall and Christmas seasons.\n\nShe offers springtime annuals, hanging baskets, planters and all your garden favourites to beautify your outdoor living spaces.\n\nBrenda brings the coziness of fall in with colourful fall mums and planters along with an array of different pumpkins, gourds and squash. Stop in today to pick out your front porch must haves!\n\nWith Christmas just around the corner, you will soon find the greenhouse transform into a Hallmark Christmas wonderland filled with an assortment of handmade centrepieces, Christmas urns, grinch trees and greenery!\n\nEnjoy a night out with friends to socialize and build your own Christmas urns during one the many workshops available!\n\nCustom orders, workshops, and Christmas parties are available for booking for the upcoming holiday season!",
+      "action": "UPDATE",
+      "source": "Package 01_Brenda_Kraemer_bio.txt",
+      "source_date": "2026-09-09",
+      "confidence": "HIGH",
+      "reason": "Full supplied biography replaces Brenda Kreamer placeholder; no identity/title/schedule correction."
+    },
+    {
+      "id": "32a8e896-6fe3-4d77-87b1-b07d3ce0936f",
+      "external_id": "2026-09-24-harleys-i24",
+      "field": "description",
+      "old_value": "Independent beauty consultant providing personalized beauty and skin care guidance.",
+      "proposed_value": "Since 1988, I’ve had the joy of serving as a Mary Kay Sales Director, and I still love this business with all my heart. Mary Kay has given me more than a career — it’s given me a life filled with purpose, possibility, and miracles. I’d be delighted to share my personal service with you, so feel free to reach out.",
+      "action": "UPDATE",
+      "source": "Package 02_Cheryl_McNair_writeup.txt",
+      "source_date": "2026-09-02",
+      "confidence": "HIGH",
+      "reason": "Newer full generic Cheryl biography replaces older brief fashion description on all three appearances. Source URL retained separately as a structured link proposal."
+    },
+    {
+      "id": "2398b047-7762-4cb4-89f0-9c85bca7c36b",
+      "external_id": "2026-09-25-foodland-k9",
+      "field": "description",
+      "old_value": "",
+      "proposed_value": "Nikk Wise (nee Schmalz) is a born & raised Mildmay Resident, wife to Ryan, mother of 3 awesome daughters and finally you may know her best as the proud owner of Harley’s Pub & Perk for over 20 years.\n\nShe started her career off as a nurse but decided to switch it up & began working at the old Coffee Perk (which was located directly behind Harley’s!).\n\nShe was presented an opportunity to purchase the business in 1999. She ran that successfully until she was presented with another big opportunity to purchase the Commercial Hotel in 2004. It was a large undertaking but anyone who knows Nikk, knows she does not back down from a challenge.\n\nThe Commercial Hotel was built in 1872 & has been owned by many Schmalz’s throughout the years starting in 1919. It was operated under many names including The Commercial Hotel, Schmalz Country Inn, Cornerstone Inn and finally in 2004 it became Harley’s Pub & Perk (named after Nikk’s Uncle Harley who ran the hotel with her Grandpa Chucks for many years).\n\nSince 2004, Nikk has expanded her business from a bar, to a beloved Pub, Coffee Shop & Catering Business.\n\nHer passion for Mildmay, Bruce County & local businesses is on the forefront of all she does and she truly loves serving her community, one meal at a time.\n\n“When you support a small business, you are supporting a dream”",
+      "action": "ADD",
+      "source": "Package 03_Nikk_Wise_Harleys_bio.txt",
+      "source_date": "2026-09-02",
+      "confidence": "HIGH",
+      "reason": "Generic owner/business biography applies to all four current Harleys presentations/samplings; not proof Nikk personally leads every session."
+    },
+    {
+      "id": "0828ef20-9910-4084-b042-55219517a877",
+      "external_id": "2026-09-25-quality-homes-m12",
+      "field": "description",
+      "old_value": "",
+      "proposed_value": "Nikk Wise (nee Schmalz) is a born & raised Mildmay Resident, wife to Ryan, mother of 3 awesome daughters and finally you may know her best as the proud owner of Harley’s Pub & Perk for over 20 years.\n\nShe started her career off as a nurse but decided to switch it up & began working at the old Coffee Perk (which was located directly behind Harley’s!).\n\nShe was presented an opportunity to purchase the business in 1999. She ran that successfully until she was presented with another big opportunity to purchase the Commercial Hotel in 2004. It was a large undertaking but anyone who knows Nikk, knows she does not back down from a challenge.\n\nThe Commercial Hotel was built in 1872 & has been owned by many Schmalz’s throughout the years starting in 1919. It was operated under many names including The Commercial Hotel, Schmalz Country Inn, Cornerstone Inn and finally in 2004 it became Harley’s Pub & Perk (named after Nikk’s Uncle Harley who ran the hotel with her Grandpa Chucks for many years).\n\nSince 2004, Nikk has expanded her business from a bar, to a beloved Pub, Coffee Shop & Catering Business.\n\nHer passion for Mildmay, Bruce County & local businesses is on the forefront of all she does and she truly loves serving her community, one meal at a time.\n\n“When you support a small business, you are supporting a dream”",
+      "action": "ADD",
+      "source": "Package 03_Nikk_Wise_Harleys_bio.txt",
+      "source_date": "2026-09-02",
+      "confidence": "HIGH",
+      "reason": "Generic owner/business biography applies to all four current Harleys presentations/samplings; not proof Nikk personally leads every session."
+    }
+  ],
+  "structured_link_proposals": [
+    {
+      "id": "ac1fb6cf-1505-49e7-b89b-e38f5a1e0ebe",
+      "external_id": "2026-09-23-harleys-f10",
+      "links": [
+        {
+          "label": "Mary Kay — Cheryl McNair",
+          "url": "https://www.marykay.ca/cmcnair"
+        }
+      ]
+    },
+    {
+      "id": "62fc542d-9977-4358-b3f9-d42e3ac7a60d",
+      "external_id": "2026-09-23-foodland-e32",
+      "links": [
+        {
+          "label": "Mary Kay — Cheryl McNair",
+          "url": "https://www.marykay.ca/cmcnair"
+        }
+      ]
+    },
+    {
+      "id": "32a8e896-6fe3-4d77-87b1-b07d3ce0936f",
+      "external_id": "2026-09-24-harleys-i24",
+      "links": [
+        {
+          "label": "Mary Kay — Cheryl McNair",
+          "url": "https://www.marykay.ca/cmcnair"
+        }
+      ]
+    }
+  ],
+  "schedule_changes": []
+}

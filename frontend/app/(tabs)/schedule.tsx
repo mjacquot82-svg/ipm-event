@@ -1,3 +1,4 @@
+import { EventDetailMedia } from '@/src/components/EventDetailMedia';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -1025,6 +1026,8 @@ export default function ScheduleScreen() {
                       </View>
                     </View>
                   )}
+
+                  <EventDetailMedia key={selectedEvent.id} image={selectedEvent.event_image} links={selectedEvent.external_links} />
 
                   {/* Description */}
                   {selectedEvent.description && (

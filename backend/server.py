@@ -1,3 +1,4 @@
+from backend.event_media import EventDetailContent
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from dotenv import load_dotenv
@@ -233,7 +234,7 @@ class Event(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-class ScheduleEvent(BaseModel):
+class ScheduleEvent(EventDetailContent):
     id: str
     title: str
     description: Optional[str] = ""
@@ -259,7 +260,7 @@ class AdminScheduleResponse(BaseModel):
     last_updated: datetime
     total_count: int
 
-class ScheduleEventPayload(BaseModel):
+class ScheduleEventPayload(EventDetailContent):
     title: str
     description: Optional[str] = ""
     start_date: str

@@ -1,3 +1,4 @@
+from backend.event_media import content_patch
 """Platform service abstractions.
 
 These services define backend-owned content boundaries for the reusable event
@@ -669,6 +670,8 @@ class SupabaseScheduleService:
             "id": row["id"],
             "title": row.get("title") or "Untitled Event",
             "description": row.get("description") or "",
+            "event_image": row.get("event_image"),
+            "external_links": row.get("external_links") or [],
             "start_date": self._format_date(row.get("starts_at")),
             "start_time": self._format_time(row.get("starts_at")),
             "end_time": self._format_time(row.get("ends_at")),
@@ -685,6 +688,7 @@ class SupabaseScheduleService:
     def _payload_to_row(self, payload: Any, event_id: str) -> dict[str, Any]:
         return {
             "event_id": event_id,
+            **content_patch(payload),
             "title": payload.title.strip(),
             "description": (payload.description or "").strip(),
             "starts_at": self._combine_datetime(payload.start_date, payload.start_time),
@@ -748,6 +752,9 @@ class SupabaseScheduleService:
 
     async def replace_schedule(self, rows: Any, event_id: Optional[str] = None) -> Any:
         event_id = await self._get_event_id(event_id)
+        existing = await self._list_rows(event_id)
+        if any(row.get("event_image") or row.get("external_links") for row in existing):
+            raise ValueError("This schedule has event media or links. Edit individual events to preserve their identities and content.")
         await self.client.request(
             "DELETE",
             "/schedule_items",

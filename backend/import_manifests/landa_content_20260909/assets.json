@@ -1,0 +1,38 @@
+[
+  {
+    "asset": "cheryl-mcnair-b939c515fcc1.jpg",
+    "source_sha256": "b939c515fcc1dbebb3526e16dc0e733063324cec269e11d7ece7145365a11057",
+    "alt": "Cheryl McNair, Mary Kay Sales Director",
+    "width": 360,
+    "height": 640,
+    "external_ids": [
+      "2026-09-23-harleys-f10",
+      "2026-09-23-foodland-e32",
+      "2026-09-24-harleys-i24"
+    ]
+  },
+  {
+    "asset": "nikk-wise-572a68bc731a.jpg",
+    "source_sha256": "572a68bc731a1a117c54ec255663969fd315b8c571037ae6371ec36e9337c4ff",
+    "alt": "Nikk Wise outside Harley’s Pub & Perk",
+    "width": 1152,
+    "height": 1440,
+    "external_ids": [
+      "2026-09-22-foodland-b16",
+      "2026-09-22-harleys-c19",
+      "2026-09-25-foodland-k9",
+      "2026-09-25-quality-homes-m12"
+    ]
+  },
+  {
+    "asset": "gina-livy-a94c541cec05.png",
+    "source_sha256": "a94c541cec053a0329cf8797584103e970b535689437a2994b20ce5b74b74c84",
+    "alt": "Gina Livy, The Livy Method",
+    "width": 156,
+    "height": 221,
+    "external_ids": [
+      "2026-09-26-foodland-o8",
+      "2026-09-26-foodland-o18"
+    ]
+  }
+]
