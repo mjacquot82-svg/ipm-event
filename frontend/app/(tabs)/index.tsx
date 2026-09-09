@@ -17,6 +17,7 @@ import { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import NotificationOptIn from '../../src/components/NotificationOptIn';
+import PWAInstallPrompt from '../../src/components/PWAInstallPrompt';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { openTrackedLink, IpmDestinationId } from '../../src/analytics/trackedLinks';
@@ -412,7 +413,12 @@ export default function HomeScreen() {
       >
         <ResponsiveBanner />
 
+        <View style={sectionStyle}>
+          <Text accessibilityRole="header" style={{ fontSize: 24, fontWeight: '800', color: colors.textPrimary }}>Use IPM now</Text>
+          <Text style={{ fontSize: 16, lineHeight: 24, color: colors.textSecondary }}>You’re already in IPM. Explore below — no download needed.</Text>
+        </View>
         <NotificationOptIn containerStyle={sectionStyle} />
+        <View style={sectionStyle}><PWAInstallPrompt /></View>
 
         {isShowingCachedData && (
           <View style={sectionStyle}>

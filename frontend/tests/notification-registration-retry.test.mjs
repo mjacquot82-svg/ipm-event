@@ -159,8 +159,8 @@ test('invalid credentials and takeover responses do not retry', () => {
 
 test('Home distinguishes subscribed, pending, ready and failed setup', () => {
   assert.doesNotMatch(component, /ensureNotificationRegistration\(\)\.catch\(\(\) => undefined\)/);
-  assert.match(component, /Notifications are enabled\. Finishing setup…/);
-  assert.match(component, /Notifications are enabled, but setup could not be completed\. Tap to try again\./);
+  assert.match(component, /Checking notification delivery…/);
+  assert.match(component, /Notification delivery is not verified\. The app will continue to work\./);
   assert.match(component, /await ensureNotificationRegistration\(\)/);
   assert.match(component, />Try again</);
   assert.match(component, /accessibilityLabel="Try notification setup again"/);
@@ -189,26 +189,24 @@ test('session initialization remains pending and automatically resumes setup', (
 });
 
 test('pending startup hides actions while genuine failures retain recovery UI', () => {
-  assert.match(component, /!pilotVerification && setupState !== 'failed'/);
+  assert.match(component, /canAct && !working && setupState !== 'pending'/);
   assert.match(component, /setupState === 'failed'[\s\S]*Try again/);
   assert.match(component, /state === 'subscribed'[\s\S]*unsubscribeFromNotifications\(\)/);
   assert.match(component, /state === 'denied'/);
-  assert.match(component, /Notifications are enabled\. Finishing setup…/);
-  assert.match(component, /Notifications are enabled, but setup could not be completed/);
+  assert.match(component, /Checking notification delivery…/);
+  assert.match(component, /Notification delivery is not verified/);
 });
 
-test('nonpilot healthy and initializing subscribers do not render the Home card or Disable action', () => {
-  const hidden = component.indexOf("!pilotVerification && setupState !== 'failed'");
-  const card = component.indexOf('accessibilityLabel="IPM notification settings"');
-  assert.ok(hidden > 0 && hidden < card);
-  assert.match(component, /style=\{\[styles\.card, containerStyle\]\}/);
-  assert.match(component, /state === 'default' \|\| state === 'unsubscribed'/);
-  assert.match(component, /state === 'denied'/);
-  assert.match(component, /state === 'unsupported' && isIphoneSafari/);
+test('optional notification controls preserve clear status without auto-opening', () => {
+  assert.match(component, /initiallyExpanded = false/);
+  assert.match(component, /expanded && !verificationDeferred && canAct/);
+  assert.match(component, /state === 'subscribed' && setupState === 'ready'/);
+  assert.match(component, /Notifications are enabled on this device/);
+  assert.match(component, /watchReconciliation/);
 });
 
 test('safe UI and diagnostics do not render sensitive device material', () => {
-  assert.match(component, /Setup reference: \{failureClassification \|\| 'other'\}/);
+  assert.match(component, /testID=\{`notification-setup-/);
   for (const safeStage of ['sdk_unavailable', 'installation_still_unavailable',
     'wonderpush_recovery_subscribe_timed_out',
     'wonderpush_recovery_snapshot_failed',

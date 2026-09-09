@@ -113,3 +113,17 @@ export function getAnalyticsContent(range: AnalyticsRange) {
 export function getNotificationAdoption() {
   return adminRequest<NotificationAdoptionResponse>('/api/admin/analytics/notifications');
 }
+
+export type NotificationHealthResponse = {
+  registrations: number; checked: number; not_yet_checked: number; verified: number;
+  repairable_mismatch: number; key_mismatch: number; other_ineligible: number; other_checked: number;
+  uncertain: number; active_leases: number; expired_leases: number; retries_due: number; retries_scheduled: number;
+  provider_ready: number; provider_ready_stale: number; verified_expired: number; current_check_failures: number;
+  repairs_attempted: null; repairs_verified: null; repair_failures: null; repair_history: 'NOT_RECORDED';
+  circuit: 'OPEN' | 'CLOSED' | 'UNKNOWN'; circuit_open_until: string | null;
+  latest_activity_at: string | null; snapshot_at: string;
+};
+
+export function getNotificationHealth() {
+  return adminRequest<NotificationHealthResponse>('/api/admin/analytics/notification-health');
+}

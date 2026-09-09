@@ -6,8 +6,8 @@ import { AdminRequestError } from '../../services/adminAuthService';
 import {
   AnalyticsContentResponse, AnalyticsLiveResponse, AnalyticsRange,
   AnalyticsSummaryResponse, AnalyticsTrafficResponse, RankedMetric,
-  NotificationAdoptionResponse, getAnalyticsContent, getAnalyticsLive, getAnalyticsSummary,
-  getAnalyticsTraffic, getNotificationAdoption,
+  NotificationHealthResponse, getAnalyticsContent, getAnalyticsLive, getAnalyticsSummary,
+  getAnalyticsTraffic, getNotificationHealth,
 } from '../../services/adminAnalyticsService';
 import { ContentPage, EmptyState, ErrorState, LoadingState } from './ContentScaffold';
 
@@ -131,7 +131,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
   const [traffic, setTraffic] = useState<AnalyticsTrafficResponse | null>(null);
   const [content, setContent] = useState<AnalyticsContentResponse | null>(null);
   const [live, setLive] = useState<AnalyticsLiveResponse | null>(null);
-  const [notifications, setNotifications] = useState<NotificationAdoptionResponse | null>(null);
+  const [notifications, setNotifications] = useState<NotificationHealthResponse | null>(null);
   const [aggregateLoading, setAggregateLoading] = useState(true);
   const [aggregateErrors, setAggregateErrors] = useState<string[]>([]);
   const [liveError, setLiveError] = useState<string | null>(null);
@@ -149,7 +149,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
     if (manual) setRefreshing(true); else setAggregateLoading(true);
     const results = await Promise.allSettled([
       getAnalyticsSummary(selectedRange), getAnalyticsTraffic(selectedRange), getAnalyticsContent(selectedRange),
-      getNotificationAdoption(),
+      getNotificationHealth(),
     ]);
     if (request !== aggregateRequest.current) return;
     const errors: string[] = [];
@@ -159,9 +159,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
     if (results[3].status === 'fulfilled') setNotifications(results[3].value);
     else {
       setNotifications(null);
-      if (!(results[3].reason instanceof AdminRequestError && results[3].reason.status === 404)) {
-        errors.push(`Notifications: ${handleError(results[3].reason)}`);
-      }
+      errors.push(`Notification health: ${handleError(results[3].reason)}`);
     }
     setAggregateErrors(errors); setAggregateLoading(false); setRefreshing(false);
   }, [handleError]);
@@ -220,15 +218,36 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
       </MetricGrid>
     </Section> : null}
 
-    {notifications ? <Section title="Notification Adoption" subtitle="Aggregate device readiness; no installation identifiers are exposed." initiallyOpen>
+    {notifications ? <Section title="Notification Health" subtitle="Current registration health across all time; independent of the date filter." initiallyOpen>
+      <Text style={styles.collectionStart}>A registration is a browser/device notification record. It does not necessarily represent a unique attendee or guarantee delivery.</Text>
       <MetricGrid>
-        <MetricCard label="Notifications Enabled" value={notifications.deliverable_devices} icon="bell" help="Registered devices last verified as WonderPush opt-in with a push token." />
+        <MetricCard label="Notification registrations" value={notifications.registrations} icon="bell" />
+        <MetricCard label="Checked" value={notifications.checked} icon="search" help="Registrations with reconciliation metadata, including checks still in progress." />
+        <MetricCard label="Verified" value={notifications.verified} icon="check-circle" help="The browser and provider were confirmed to agree at the most recent successful check." />
+        <MetricCard label="Repairable mismatch" value={notifications.repairable_mismatch} icon="tool" help="Subscription information differs and may be eligible for automatic repair when the device next participates." />
+        <MetricCard label="Key mismatch" value={notifications.key_mismatch} icon="alert-triangle" help="Detected but intentionally not automatically repaired because the notification security key differs." />
+        <MetricCard label="Other ineligible" value={notifications.other_ineligible} icon="slash" help="Other ineligible states, excluding key mismatch; this may include notification opt-out." />
+        <MetricCard label="Not yet checked" value={notifications.not_yet_checked} icon="clock" help="These registrations have not yet participated in the current notification health check. They are not automatically considered broken." />
+        <MetricCard label="Other checked states" value={notifications.other_checked} icon="activity" help="Pending, deferred, uncertain, or other states that have not reached a classification above." />
+        <MetricCard label="Provider-ready at last check" value={notifications.provider_ready} icon="cloud" help="Latest stored provider evidence indicated readiness. It does not prove browser agreement or device receipt." />
       </MetricGrid>
-      <Text style={styles.collectionStart}>
-        {notifications.stale_deliverable_devices > 0
-          ? `${notifications.stale_deliverable_devices.toLocaleString()} enabled device check${notifications.stale_deliverable_devices === 1 ? ' is' : 's are'} older than 24 hours; this is a readiness mirror, not a real-time provider count.`
-          : `All enabled device checks are within 24 hours. Readiness mirror updated ${formatTime(notifications.newest_provider_check_at)}.`}
-      </Text>
+      <Text style={styles.collectionStart}>{notifications.provider_ready_stale} provider-ready records have checks older than 24 hours. {notifications.verified_expired} verified records are due for another equality check.</Text>
+      <Text style={styles.miniTitle}>Repair and check health</Text>
+      <MetricGrid>
+        <MetricCard label="Repairs attempted" value="Not recorded" icon="tool" help="Historical attempts cannot be proven from current metadata." />
+        <MetricCard label="Repairs verified" value="Not recorded" icon="check-circle" help="Already-healthy and repaired registrations share the same verified state." />
+        <MetricCard label="Repair failures" value="Not recorded" icon="alert-circle" help="Stored failure counters include checks and reset; they are not repair history." />
+        <MetricCard label="Current check failures" value={notifications.current_check_failures} icon="alert-circle" help="Registrations whose latest deferred or uncertain check reports a provider, network, data, identity, or rate-limit error." />
+        <MetricCard label="Uncertain outcomes" value={notifications.uncertain} icon="help-circle" help="Registrations with an uncertainty flag or unknown outcome. This can overlap an active operation." />
+        <MetricCard label="Active operations" value={notifications.active_leases} icon="activity" help="Unexpired check or confirmation leases; this does not prove a worker is running." />
+        <MetricCard label="Expired leases" value={notifications.expired_leases} icon="clock" help="Stored operation leases that have elapsed; fresh lifecycle activity may be needed." />
+        <MetricCard label="Retries due" value={notifications.retries_due} icon="repeat" help="Stored retry time has arrived. A device must participate; this is not a batch queue." />
+        <MetricCard label="Retries scheduled" value={notifications.retries_scheduled} icon="clock" help="Stored retry time is in the future; eligibility and circuit guards still apply." />
+        <MetricCard label="Circuit" value={notifications.circuit === 'CLOSED' ? 'Closed — allowing checks' : notifications.circuit === 'OPEN' ? 'Open — checks paused' : 'Unknown'} icon="shield" help="Project-wide circuit state only; a closed circuit does not prove notification delivery or that repairs are enabled." />
+      </MetricGrid>
+      {notifications.circuit !== 'CLOSED' || notifications.uncertain > 0 || notifications.key_mismatch > 0 || notifications.current_check_failures > 0 ? <Text accessibilityRole="alert" style={styles.healthWarning}>Needs attention: {notifications.key_mismatch} key mismatches, {notifications.uncertain} uncertain outcomes, {notifications.current_check_failures} current check failures. Circuit: {notifications.circuit.toLowerCase()}.{notifications.circuit_open_until ? ` Paused until ${formatTime(notifications.circuit_open_until)}.` : ''}</Text> : null}
+      <Text style={styles.collectionStart}>Latest notification-health activity: {formatTime(notifications.latest_activity_at)}. Loaded {formatTime(notifications.snapshot_at)}. Use Refresh for a new read-only snapshot.</Text>
+      <Text style={styles.collectionStart}>Send acceptance and audience snapshots are shown with announcements. “Sent” means accepted by the provider, not delivered to a device. True device delivery and provider click totals are not available. Announcement views and tracked notification deep-link opens are engagement events, not delivery receipts.</Text>
     </Section> : null}
 
     <Section title="Live Activity" subtitle="Aggregate recent activity; refreshes every 30 seconds." initiallyOpen>
@@ -307,6 +326,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
 }
 
 const styles = StyleSheet.create({
+  healthWarning: { color: colors.error, padding: 12, borderWidth: 1, borderColor: colors.error, borderRadius: 8 },
   collectionStart: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
   toolbar: { flexDirection: 'row', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' },
   rangeRow: { gap: 8 }, rangeButton: { minHeight: 40, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'center' },

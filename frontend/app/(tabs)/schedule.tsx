@@ -26,6 +26,7 @@ import {
 } from '../../src/theme/attendeePageLayout';
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
+import ItineraryNotificationSuggestion from '../../src/components/ItineraryNotificationSuggestion';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
@@ -58,6 +59,11 @@ export default function ScheduleScreen() {
   const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showStarConfirmation, setShowStarConfirmation] = useState(false);
+  const [successfulAddition, setSuccessfulAddition] = useState(0);
+  const [confirmationText, setConfirmationText] = useState('Added to Personal Itinerary');
+  const starConfirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current); }, []);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
@@ -149,6 +155,14 @@ export default function ScheduleScreen() {
     });
     // Sync with backend for notifications
     syncStarredEventsWithBackend(result.favorites);
+    const starSucceeded = result.isFavorite && result.favorites.includes(eventId);
+    if (starSucceeded || (!result.isFavorite && !result.favorites.includes(eventId))) {
+      setConfirmationText(starSucceeded ? 'Added to Personal Itinerary' : 'Removed from your itinerary');
+      if (starSucceeded) setSuccessfulAddition(value => value + 1);
+      if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current);
+      setShowStarConfirmation(true);
+      starConfirmationTimerRef.current = setTimeout(() => setShowStarConfirmation(false), 2800);
+    }
   };
 
   const onRefresh = useCallback(() => {
@@ -692,6 +706,8 @@ export default function ScheduleScreen() {
                             e.stopPropagation();
                             handleToggleFavorite(event.id);
                           }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${isFavorite ? 'Remove' : 'Add'} ${event.title} ${isFavorite ? 'from' : 'to'} itinerary`}
                           style={styles.favoriteButton}
                         >
                           <Feather
@@ -966,11 +982,26 @@ export default function ScheduleScreen() {
           </View>
         </View>
       </Modal>
+      <ItineraryNotificationSuggestion successfulAddition={successfulAddition} />
+      {showStarConfirmation ? (
+        <View style={styles.starConfirmation} accessibilityLiveRegion="polite" accessibilityRole="alert">
+          <Feather name="check-circle" size={20} color="#FFFFFF" />
+          <Text style={styles.starConfirmationText}>{confirmationText}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  starConfirmation: {
+    position: 'absolute', left: 16, right: 16, bottom: 82, minHeight: 72,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    paddingHorizontal: 18, backgroundColor: '#1F2937',
+    borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 }, elevation: 8,
+  },
+  starConfirmationText: { color: '#FFFFFF', fontSize: 15, lineHeight: 20, fontWeight: '800' },
   container: {
     flex: 1,
     backgroundColor: colors.background,

@@ -6,11 +6,14 @@ const dashboard = await readFile(new URL('../src/components/admin/AnalyticsDashb
 const admin = await readFile(new URL('../app/admin/index.tsx', import.meta.url), 'utf8');
 const service = await readFile(new URL('../src/services/adminAuthService.ts', import.meta.url), 'utf8');
 
-test('admin shows strict deliverable-device adoption with mirror freshness disclosure', () => {
-  assert.match(dashboard, /label="Notifications Enabled" value=\{notifications\.deliverable_devices\}/);
-  assert.match(dashboard, /WonderPush opt-in with a push token/);
+test('admin explains notification health without promising receipt', () => {
+  assert.match(dashboard, /title="Notification Health"/);
+  assert.match(dashboard, /label="Notification registrations"/);
+  assert.match(dashboard, /does not necessarily represent a unique attendee or guarantee delivery/);
   assert.match(dashboard, /older than 24 hours/);
-  assert.match(dashboard, /readiness mirror, not a real-time provider count/);
+  assert.match(dashboard, /True device delivery and provider click totals are not available/);
+  assert.match(dashboard, /Repairs verified.*Not recorded/);
+  assert.match(dashboard, /intentionally not automatically repaired/);
 });
 
 test('announcement stats are exact-ledger aggregates with honest historical fallback', () => {
@@ -29,5 +32,5 @@ test('analytics contracts expose no installation IDs, tokens, hashes, or provide
 
 test('notification analytics remains additive when production backend is older', () => {
   assert.match(admin, /Delivery analytics is additive; an older backend must not block Announcements/);
-  assert.match(dashboard, /results\[3\]\.reason instanceof AdminRequestError && results\[3\]\.reason\.status === 404/);
+  assert.match(dashboard, /Notification health:.*handleError/);
 });

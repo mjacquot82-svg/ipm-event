@@ -18,6 +18,14 @@ test('component preserves standalone bypass, appinstalled handling, and dismissa
 
 test('component keeps an accessible optional continuation and labelled instructional cues', () => {
   assert.match(source, /accessibilityLabel="Continue without installing"/);
-  assert.match(source, /Maybe later — continue to the app/);
+  assert.match(source, /Close help — keep using IPM/);
   assert.match(source, /accessibilityLabel=\{label\}/);
+});
+
+const layout = await readFile(new URL('../app/_layout.tsx', import.meta.url), 'utf8');
+test('R deep-linked first visits retain the route without a global installation overlay', () => {
+ assert.doesNotMatch(layout, /<PWAInstallPrompt/);
+ assert.match(layout, /startInstallPromptCapture/);
+ assert.doesNotMatch(source, /router\.replace|router\.push|location\.href/);
+ assert.doesNotMatch(source, /absoluteFillObject|isInstallGuidanceEligible/);
 });
