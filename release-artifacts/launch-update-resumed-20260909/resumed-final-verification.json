@@ -1,0 +1,32 @@
+{
+  "production": {
+    "id": "6aa15e88b199e77b4e5fccf7",
+    "published_at": "2026-09-09T13:31:22.869Z",
+    "title": "Compact Home notification invitation 1999c69e89b9fdcb77f0cc6ad81f26aa43eb54ae"
+  },
+  "staging": {
+    "id": "6aa174216307a15981ab4bcb",
+    "published_at": "2026-09-09T16:16:02.970Z",
+    "title": "Bounded online launch B 73e523040e4c755b3aa7f1d99da839e59b0edef0"
+  },
+  "schedule": {
+    "count": 218,
+    "unchanged": true
+  },
+  "vendors": {
+    "count": 127,
+    "unchanged": true
+  },
+  "reconciliation": {
+    "repair_cohort_percent": 100,
+    "repair_enabled": true,
+    "build_commit": "70e068ab2930bdeddee3c5817477cc97e9ca0b01"
+  },
+  "candidate_source_unchanged": true,
+  "production_existing_entry_still_served": true,
+  "production_promotion": false,
+  "blocked_gate": "First browser320 online launch with no injected network fault after B publication returned A entry",
+  "root_cause": "NOT PROVEN",
+  "production_build": "362242",
+  "staging_build": "362335"
+}

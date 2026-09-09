@@ -1,0 +1,29 @@
+BASELINE browser320 /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+BASELINE installed360 /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+BASELINE desktop /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+BASELINE closed /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+BASELINE offline /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+BASELINE slow /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+BASELINE failed-asset /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+BASELINE waiting /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+READY A clients preserved 
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: FIRST clean online launch must get new entry
++ actual - expected
+
++ '/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js'
+- '/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js'
+
+    at file:///workspaces/ipm-event/release-artifacts/launch-update-20260909/transition.mjs:64:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: '/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js',
+  expected: '/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.14.0
