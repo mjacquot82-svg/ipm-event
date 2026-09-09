@@ -1,0 +1,276 @@
+{
+  "error": "AssertionError [ERR_ASSERTION]: FIRST clean online launch must get new entry\n+ actual - expected\n\n+ '/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js'\n- '/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js'\n",
+  "diagnostics": [
+    {
+      "name": "browser320",
+      "workers": [
+        {
+          "version": "e2b926ecc05323a4",
+          "cache": [
+            {
+              "key": "ipm-offline-shell-current-v1",
+              "requests": [
+                "/",
+                "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+                "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+                "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+                "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+                "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+                "/ipm-icon-any-192.png",
+                "/ipm-icon-any-512.png",
+                "/ipm-icon-maskable-192.png",
+                "/ipm-icon-maskable-512.png",
+                "/manifest.json",
+                "/v2-icon.png",
+                "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+                "/index.html"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "installed360",
+      "workers": [
+        {
+          "version": "e2b926ecc05323a4",
+          "cache": [
+            {
+              "key": "ipm-offline-shell-current-v1",
+              "requests": [
+                "/",
+                "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+                "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+                "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+                "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+                "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+                "/ipm-icon-any-192.png",
+                "/ipm-icon-any-512.png",
+                "/ipm-icon-maskable-192.png",
+                "/ipm-icon-maskable-512.png",
+                "/manifest.json",
+                "/v2-icon.png",
+                "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+                "/index.html"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "desktop",
+      "workers": [
+        {
+          "version": "9a23ff5575d0a8d8",
+          "cache": [
+            {
+              "key": "ipm-offline-shell-current-v1",
+              "requests": [
+                "/",
+                "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+                "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+                "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+                "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+                "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+                "/ipm-icon-any-192.png",
+                "/ipm-icon-any-512.png",
+                "/ipm-icon-maskable-192.png",
+                "/ipm-icon-maskable-512.png",
+                "/manifest.json",
+                "/v2-icon.png",
+                "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+                "/index.html"
+              ]
+            }
+          ]
+        },
+        {
+          "version": "e2b926ecc05323a4",
+          "cache": [
+            {
+              "key": "ipm-offline-shell-current-v1",
+              "requests": [
+                "/",
+                "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+                "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+                "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+                "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+                "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+                "/ipm-icon-any-192.png",
+                "/ipm-icon-any-512.png",
+                "/ipm-icon-maskable-192.png",
+                "/ipm-icon-maskable-512.png",
+                "/manifest.json",
+                "/v2-icon.png",
+                "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+                "/index.html"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "closed",
+      "workers": [
+        {
+          "version": "e2b926ecc05323a4",
+          "cache": [
+            {
+              "key": "ipm-offline-shell-current-v1",
+              "requests": [
+                "/",
+                "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+                "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+                "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+                "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+                "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+                "/ipm-icon-any-192.png",
+                "/ipm-icon-any-512.png",
+                "/ipm-icon-maskable-192.png",
+                "/ipm-icon-maskable-512.png",
+                "/manifest.json",
+                "/v2-icon.png",
+                "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+                "/index.html"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "offline",
+      "workers": [
+        {
+          "version": "e2b926ecc05323a4",
+          "cache": [
+            {
+              "key": "ipm-offline-shell-current-v1",
+              "requests": [
+                "/",
+                "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+                "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+                "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+                "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+                "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+                "/ipm-icon-any-192.png",
+                "/ipm-icon-any-512.png",
+                "/ipm-icon-maskable-192.png",
+                "/ipm-icon-maskable-512.png",
+                "/manifest.json",
+                "/v2-icon.png",
+                "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+                "/index.html"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "slow",
+      "workers": [
+        {
+          "version": "9a23ff5575d0a8d8",
+          "cache": [
+            {
+              "key": "ipm-offline-shell-current-v1",
+              "requests": [
+                "/",
+                "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+                "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+                "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+                "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+                "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+                "/ipm-icon-any-192.png",
+                "/ipm-icon-any-512.png",
+                "/ipm-icon-maskable-192.png",
+                "/ipm-icon-maskable-512.png",
+                "/manifest.json",
+                "/v2-icon.png",
+                "/index.html"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "failed-asset",
+      "workers": [
+        {
+          "version": "9a23ff5575d0a8d8",
+          "cache": [
+            {
+              "key": "ipm-offline-shell-current-v1",
+              "requests": [
+                "/",
+                "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+                "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+                "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+                "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+                "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+                "/ipm-icon-any-192.png",
+                "/ipm-icon-any-512.png",
+                "/ipm-icon-maskable-192.png",
+                "/ipm-icon-maskable-512.png",
+                "/manifest.json",
+                "/v2-icon.png",
+                "/index.html"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "waiting",
+      "workers": [
+        {
+          "version": "9a23ff5575d0a8d8",
+          "cache": [
+            {
+              "key": "ipm-offline-shell-current-v1",
+              "requests": [
+                "/",
+                "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ca4b48e04dc1ce10bfbddb262c8b835f.ttf",
+                "/assets/___frontend/node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf",
+                "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
+                "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
+                "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",
+                "/assets/assets/images/ipm-logo.b1a4d05af46b7d0f64d746577b425f0c.png",
+                "/ipm-icon-any-192.png",
+                "/ipm-icon-any-512.png",
+                "/ipm-icon-maskable-192.png",
+                "/ipm-icon-maskable-512.png",
+                "/manifest.json",
+                "/v2-icon.png",
+                "/index.html"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

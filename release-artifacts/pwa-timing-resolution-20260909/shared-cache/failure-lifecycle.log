@@ -1,0 +1,5 @@
+BASELINE worker-check /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+PASS worker-check
+PASS activation-overlap
+PASS slow 5412
+PASS server 384

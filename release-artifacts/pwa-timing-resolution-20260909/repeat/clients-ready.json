@@ -1,0 +1,146 @@
+[
+  {
+    "name": "browser320",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+      "controlled": true,
+      "active": "activated",
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-current-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "permission": "denied",
+      "subscriptionPresent": false,
+      "path": "/itinerary"
+    }
+  },
+  {
+    "name": "installed360",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+      "controlled": true,
+      "active": "activated",
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-current-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "permission": "denied",
+      "subscriptionPresent": false,
+      "path": "/itinerary"
+    }
+  },
+  {
+    "name": "desktop",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+      "controlled": true,
+      "active": "activated",
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-current-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "permission": "granted",
+      "subscriptionPresent": false,
+      "path": "/itinerary"
+    }
+  },
+  {
+    "name": "closed",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+      "controlled": true,
+      "active": "activated",
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-current-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "permission": "denied",
+      "subscriptionPresent": false,
+      "path": "/itinerary"
+    }
+  },
+  {
+    "name": "offline",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+      "controlled": true,
+      "active": "activated",
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-current-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "permission": "denied",
+      "subscriptionPresent": false,
+      "path": "/itinerary"
+    }
+  },
+  {
+    "name": "slow",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+      "controlled": true,
+      "active": "activated",
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-current-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "permission": "denied",
+      "subscriptionPresent": false,
+      "path": "/itinerary"
+    }
+  },
+  {
+    "name": "failed-asset",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+      "controlled": true,
+      "active": "activated",
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-current-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "permission": "denied",
+      "subscriptionPresent": false,
+      "path": "/itinerary"
+    }
+  },
+  {
+    "name": "waiting",
+    "before": {
+      "entry": "/_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js",
+      "controlled": true,
+      "active": "activated",
+      "waiting": false,
+      "installing": false,
+      "cache": [
+        "ipm-offline-shell-current-v1"
+      ],
+      "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+      "preference": "true",
+      "permission": "denied",
+      "subscriptionPresent": false,
+      "path": "/itinerary"
+    }
+  }
+]

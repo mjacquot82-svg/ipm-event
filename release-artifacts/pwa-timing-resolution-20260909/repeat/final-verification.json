@@ -1,0 +1,37 @@
+{
+  "production": {
+    "id": "6aa15e88b199e77b4e5fccf7",
+    "title": "Compact Home notification invitation 1999c69e89b9fdcb77f0cc6ad81f26aa43eb54ae",
+    "published_at": "2026-09-09T13:31:22.869Z"
+  },
+  "staging": {
+    "id": "6aa1dc6505ffe0c83c6ec61d",
+    "title": "Bounded install C 9ef1968f0650dd5b3235f066a5c7efddf43cb652",
+    "published_at": "2026-09-09T22:33:09.091Z"
+  },
+  "A-changed-paths": [
+    "/webpushr-sw.js"
+  ],
+  "B-changed-paths": [
+    "/webpushr-sw.js"
+  ],
+  "C-changed-paths": [
+    "/webpushr-sw.js"
+  ],
+  "schedule": {
+    "count": 218,
+    "contents_unchanged": true
+  },
+  "vendors": {
+    "count": 127,
+    "contents_unchanged": true
+  },
+  "reconciliation": {
+    "repair_cohort_percent": 100,
+    "repair_enabled": true,
+    "build_commit": "70e068ab2930bdeddee3c5817477cc97e9ca0b01"
+  },
+  "production_promotion": false,
+  "notification_sent": false,
+  "production_build": "362242"
+}

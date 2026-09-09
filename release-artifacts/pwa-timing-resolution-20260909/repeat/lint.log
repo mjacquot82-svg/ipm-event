@@ -1,0 +1,10 @@
+
+/workspaces/ipm-event/.worktrees/launch-update-staging/frontend/public/webpushr-sw.js
+   5:3  error    'importScripts' is not defined                            no-undef
+  14:7  warning  'IPM_OFFLINE_VERSION' is assigned a value but never used  no-unused-vars
+
+/workspaces/ipm-event/.worktrees/launch-update-staging/frontend/scripts/generate-offline-worker.js
+  5:19  error  '__dirname' is not defined  no-undef
+
+✖ 3 problems (2 errors, 1 warning)
+

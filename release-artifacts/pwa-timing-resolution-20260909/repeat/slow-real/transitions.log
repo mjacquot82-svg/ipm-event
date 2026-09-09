@@ -1,0 +1,6 @@
+BASELINE slow /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+READY A clients preserved 
+PASS B slow first launch /_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js
+COMPLETE B
+PASS C slow first launch /_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js
+COMPLETE C

@@ -1,0 +1,197 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "name": "worker-check-503",
+      "failedCheck": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-current-v1"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 1203
+      },
+      "failedScriptRequests": 3
+    },
+    {
+      "name": "recovery-offline-B",
+      "offlineB": {
+        "entry": "/_expo/static/js/web/entry-03184dc2e7f3b50c7a7ec3982a87a58c.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-current-v1"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 382
+      }
+    },
+    {
+      "name": "activation-overlap",
+      "race": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activating",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-current-v1"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 893
+      },
+      "raceOffline": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-current-v1"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 379
+      }
+    },
+    {
+      "name": "slow",
+      "fallback": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-current-v1"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 5412
+      }
+    },
+    {
+      "name": "server",
+      "fallback": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-current-v1"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 384
+      }
+    },
+    {
+      "name": "already-current-0",
+      "current": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-current-v1"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 378
+      },
+      "registrations": 1
+    },
+    {
+      "name": "already-current-1",
+      "current": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-current-v1"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 385
+      },
+      "registrations": 1
+    },
+    {
+      "name": "already-current-2",
+      "current": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-current-v1"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 559
+      },
+      "registrations": 1
+    },
+    {
+      "name": "already-current-3",
+      "current": {
+        "entry": "/_expo/static/js/web/entry-5978ee06819a519ddcb3aae9b20072ba.js",
+        "controlled": true,
+        "active": "activated",
+        "waiting": false,
+        "installing": false,
+        "cache": [
+          "ipm-offline-shell-current-v1"
+        ],
+        "favorites": "{\"sessionIds\":[\"11111111-1111-4111-8111-111111111111\"]}",
+        "preference": "true",
+        "permission": "denied",
+        "subscriptionPresent": false,
+        "path": "/itinerary",
+        "elapsedMs": 412
+      },
+      "registrations": 1
+    }
+  ]
+}

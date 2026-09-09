@@ -1,0 +1,16 @@
+BASELINE worker-check /_expo/static/js/web/entry-40efbaa8399049d7a310627fee215c2e.js
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: must observe real browser worker HTTP check failing
+    at file:///workspaces/ipm-event/release-artifacts/launch-update-timing-20260909/failure-lifecycle.mjs:58:164 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.14.0
