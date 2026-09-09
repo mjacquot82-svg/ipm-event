@@ -1,0 +1,182 @@
+[
+  {
+    "number": 1,
+    "check": "Home Emergency action",
+    "passed": true,
+    "evidence": "emergency-staging-ux-production.log"
+  },
+  {
+    "number": 2,
+    "check": "Exact staging wording",
+    "passed": true,
+    "evidence": "staging-vs-production-ux.json"
+  },
+  {
+    "number": 3,
+    "check": "Exact icon/label",
+    "passed": true,
+    "evidence": "frontend-tests.log"
+  },
+  {
+    "number": 4,
+    "check": "Share IPM present",
+    "passed": true,
+    "evidence": "emergency-staging-ux-production.log"
+  },
+  {
+    "number": 5,
+    "check": "320px Quick Actions",
+    "passed": true,
+    "evidence": "browser-production/home-320.png"
+  },
+  {
+    "number": 6,
+    "check": "Normal mobile",
+    "passed": true,
+    "evidence": "browser-production/home-390.png"
+  },
+  {
+    "number": 7,
+    "check": "Desktop",
+    "passed": true,
+    "evidence": "browser-production/home-1440.png"
+  },
+  {
+    "number": 8,
+    "check": "Emergency navigation",
+    "passed": true,
+    "evidence": "emergency-staging-ux-production.log"
+  },
+  {
+    "number": 9,
+    "check": "Exact Emergency copy",
+    "passed": true,
+    "evidence": "staging-screenshot-parity.json"
+  },
+  {
+    "number": 10,
+    "check": "Explicit location action",
+    "passed": true,
+    "evidence": "emergency-staging-ux-production.log"
+  },
+  {
+    "number": 11,
+    "check": "Real/synthetic safe conversion",
+    "passed": true,
+    "evidence": "real-lookup-production.log"
+  },
+  {
+    "number": 12,
+    "check": "GPS denied",
+    "passed": true,
+    "evidence": "emergency-privacy-production.log"
+  },
+  {
+    "number": 13,
+    "check": "GPS unavailable",
+    "passed": true,
+    "evidence": "emergency-privacy-production.log"
+  },
+  {
+    "number": 14,
+    "check": "Provider/network failure",
+    "passed": true,
+    "evidence": "emergency-privacy-production.log"
+  },
+  {
+    "number": 15,
+    "check": "Malformed coordinates",
+    "passed": true,
+    "evidence": "malformed-live.json"
+  },
+  {
+    "number": 16,
+    "check": "No automatic lookup",
+    "passed": true,
+    "evidence": "emergency-staging-ux-production.log"
+  },
+  {
+    "number": 17,
+    "check": "No coordinate URL leakage",
+    "passed": true,
+    "evidence": "emergency-privacy-production.log"
+  },
+  {
+    "number": 18,
+    "check": "No coordinate log leakage",
+    "passed": true,
+    "evidence": "log-canaries-production.json"
+  },
+  {
+    "number": 19,
+    "check": "No coordinate persistence",
+    "passed": true,
+    "evidence": "emergency-privacy-production.log"
+  },
+  {
+    "number": 20,
+    "check": "No browser API key exposure",
+    "passed": true,
+    "evidence": "privacy-scan.json"
+  },
+  {
+    "number": 21,
+    "check": "No API key log exposure",
+    "passed": true,
+    "evidence": "backend-privacy.log"
+  },
+  {
+    "number": 22,
+    "check": "Keyboard",
+    "passed": true,
+    "evidence": "emergency-staging-ux-production.log"
+  },
+  {
+    "number": 23,
+    "check": "Screen reader",
+    "passed": true,
+    "evidence": "browser-production/emergency-320.aria.txt"
+  },
+  {
+    "number": 24,
+    "check": "Offline/fallback",
+    "passed": true,
+    "evidence": "offline-production.log"
+  },
+  {
+    "number": 25,
+    "check": "About access",
+    "passed": true,
+    "evidence": "public-smoke-production.log"
+  },
+  {
+    "number": 26,
+    "check": "Share regression",
+    "passed": true,
+    "evidence": "share-ipm-production.log"
+  },
+  {
+    "number": 27,
+    "check": "Itinerary regression",
+    "passed": true,
+    "evidence": "approved-release-production.log"
+  },
+  {
+    "number": 28,
+    "check": "Home/countdown",
+    "passed": true,
+    "evidence": "home-presentation-production.log"
+  },
+  {
+    "number": 29,
+    "check": "Notification Health regression",
+    "passed": true,
+    "evidence": "notification-health-layout-production.log"
+  },
+  {
+    "number": 30,
+    "check": "Production map",
+    "passed": true,
+    "evidence": "production-byte-readback.json"
+  }
+]

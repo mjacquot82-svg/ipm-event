@@ -1,0 +1,24 @@
+{
+  "window_start": "2026-09-09T03:06:28Z",
+  "canary_query_result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"hasMore\":false,\"logs\":[],\"nextEndTime\":\"2026-09-09T03:08:18.074599655Z\",\"nextStartTime\":\"2026-09-09T03:06:28Z\"}"
+      }
+    ],
+    "isError": false
+  },
+  "endpoint_access_logs_sanitized": [
+    {
+      "timestamp": "2026-09-09T03:07:14.737211102Z",
+      "method": "POST",
+      "path": "/api/what3words",
+      "status": 200,
+      "query_present": false,
+      "body_logged": false
+    }
+  ],
+  "has_more": false,
+  "client_addresses_omitted": true
+}

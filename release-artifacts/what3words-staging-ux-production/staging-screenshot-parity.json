@@ -1,0 +1,17 @@
+[
+  {
+    "width": 320,
+    "pixel_artifact_bytes_equal": true,
+    "sha256": "740eae3716e6ac20970ee9135b3a1440418c638b1e711ee4e3bcdd945f33327c"
+  },
+  {
+    "width": 390,
+    "pixel_artifact_bytes_equal": true,
+    "sha256": "38a42dfb1c0deff1dbb6871c292758f088cf6250fd65dd4f286d939e55f9cd24"
+  },
+  {
+    "width": 1440,
+    "pixel_artifact_bytes_equal": true,
+    "sha256": "1176081bf6fe3290dc6a17698e50118699f15aaa55b91596e973b710b3d45bb1"
+  }
+]

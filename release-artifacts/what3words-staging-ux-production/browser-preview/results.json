@@ -1,0 +1,32 @@
+[
+  {
+    "width": 320,
+    "home": true,
+    "exact_copy": true,
+    "keyboard": true,
+    "screen_reader": true,
+    "explicit_gps": true,
+    "post_body": true,
+    "privacy": true
+  },
+  {
+    "width": 390,
+    "home": true,
+    "exact_copy": true,
+    "keyboard": true,
+    "screen_reader": true,
+    "explicit_gps": true,
+    "post_body": true,
+    "privacy": true
+  },
+  {
+    "width": 1440,
+    "home": true,
+    "exact_copy": true,
+    "keyboard": true,
+    "screen_reader": true,
+    "explicit_gps": true,
+    "post_body": true,
+    "privacy": true
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "all_required_gates_passed": true,
+  "exact_staging_source_proven": true,
+  "rendered_staging_parity": true,
+  "clean_whitelist": true,
+  "frontend_tests": 259,
+  "backend_privacy_and_health": 42,
+  "backend_analytics_reporting_health": 84,
+  "preview_browser_passed": true,
+  "private_post_proven": true,
+  "interactive_map_excluded": true,
+  "existing_assets_unchanged": true,
+  "backend_deployment_unchanged": "dep-dagbgj740ujc73c4eqi0",
+  "legacy_failures": "3 unrelated notification analytics failures reproduced on unchanged production; excluded from required suite, no fixes",
+  "source_sha": "1db1e1db373c114b242bd792af3a809a85573001",
+  "preview_deployment": "6aa0ccd4556bd25f58ba346d"
+}

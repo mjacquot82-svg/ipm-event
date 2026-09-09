@@ -33,5 +33,9 @@
   "itinerary_changes": 0,
   "home_redesign_changes": 0,
   "analytics_infrastructure_changes": 0,
-  "analytics_note": "Exact staging card invokes existing quickAction helper with emergency_services; no new analytics schema, backend, page telemetry or Share wiring."
+  "analytics_note": "Exact staging card invokes existing quickAction helper with emergency_services; no new analytics schema, backend, page telemetry or Share wiring.",
+  "source_sha": "1db1e1db373c114b242bd792af3a809a85573001",
+  "final_gate": "PASS",
+  "final_production_package_verified": true,
+  "all_application_changes_after_source_commit": 0
 }

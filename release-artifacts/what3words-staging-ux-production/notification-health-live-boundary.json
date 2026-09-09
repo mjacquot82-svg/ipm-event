@@ -1,0 +1,6 @@
+{
+  "status": 401,
+  "unauthenticated_boundary": "PASS",
+  "authenticated_browser": "controlled fixtures only; no organizer session requested or used",
+  "backend_source_and_deployment": "unchanged"
+}

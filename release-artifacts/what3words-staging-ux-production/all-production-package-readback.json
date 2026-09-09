@@ -1,0 +1,18 @@
+{
+  "all_uploaded_files_match": true,
+  "canonical_uploaded_file_count": 128,
+  "public_asset_paths_verified": 137,
+  "control_or_proxied_paths_verified_via_netlify_manifest": [
+    "_redirects",
+    "api/production-controlled-target-binding.html",
+    "api/production-controlled-target-binding.mjs",
+    "api/production-pilot-binding-check.html",
+    "api/production-pilot-binding-check.mjs",
+    "api/production-pilot-binding.html",
+    "api/production-pilot-binding.mjs",
+    "api/production-push-compare.mjs",
+    "api/production-push-diagnostic.html",
+    "netlify.toml"
+  ],
+  "no_unverified_release_files": true
+}

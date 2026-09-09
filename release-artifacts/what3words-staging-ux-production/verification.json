@@ -1,8 +1,8 @@
 {
-  "completed": false,
-  "deployed": false,
-  "frontend_sha": "1b63ce2e140015fb25ef6137143217e25c856c27",
-  "frontend_deployment_id": "6aa0bd481c247632e1a18d16",
+  "completed": true,
+  "deployed": true,
+  "frontend_sha": "1db1e1db373c114b242bd792af3a809a85573001",
+  "frontend_deployment_id": "6aa0ccd4556bd25f58ba346d",
   "backend_sha": "70e068ab2930bdeddee3c5817477cc97e9ca0b01",
   "backend_deployment_id": "dep-dagbgj740ujc73c4eqi0",
   "staging_authority_sha": "317ccd4faf72d5adcae086e84ee51bea5321892a",
@@ -17,12 +17,24 @@
   "reconciliation_percent": 100,
   "notification_sent": false,
   "blocker": null,
-  "phase": "pre-deployment; local candidate gates passed",
+  "phase": "Complete: independently verified production",
   "legacy_test_failures": [
     "test_adoption_semantics_freshness_and_zero_state",
     "test_delivery_snapshot_is_immutable_and_stats_are_announcement_scoped",
     "test_delivery_stats_authorization_preserves_communications_and_owner_access"
   ],
   "legacy_failure_disposition": "All three reproduce on unchanged production source; no unrelated fixes.",
-  "notification_health_verification": "14 health tests plus controlled browser aggregate presentation; production live endpoint authentication boundary checked separately, no organizer session requested."
+  "notification_health_verification": "14 health tests plus controlled browser aggregate presentation; production live endpoint authentication boundary checked separately, no organizer session requested.",
+  "preview_deployment_id": "6aa0ccd4556bd25f58ba346d",
+  "staging_authority_deployment_id": "6aa091b2b8f161cc3b981158",
+  "final_status": "WHAT3WORDS STAGING UX LIVE",
+  "verified_at": "2026-09-09T03:11:52.506894+00:00",
+  "task_branch": "fix/what3words-staging-ux-production",
+  "production_data_writes": 0,
+  "backend_deployments": 0,
+  "environment_changes": 0,
+  "all_schedule_rows_unchanged": true,
+  "all_vendor_records_unchanged": true,
+  "main_branch_unchanged": "1b63ce2e140015fb25ef6137143217e25c856c27",
+  "evidence_commit": "Final documentation-only descendant of frontend_sha on task_branch; identify via Git history."
 }

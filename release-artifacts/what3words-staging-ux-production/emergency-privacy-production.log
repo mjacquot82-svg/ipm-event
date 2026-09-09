@@ -1,0 +1,19 @@
+PASS 320 success body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 320 denied body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 320 unavailable body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 320 network body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 320 provider body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 320 rate body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 390 success body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 390 denied body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 390 unavailable body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 390 network body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 390 provider body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 390 rate body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 1440 success body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 1440 denied body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 1440 unavailable body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 1440 network body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 1440 provider body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS 1440 rate body-only POST, safe errors, no URL/log/storage leak, no automatic lookup
+PASS About entry and map-independent Emergency route
