@@ -19,6 +19,8 @@ test('IPM retains versioned shell and navigation ownership with fresh admin logi
   assert.match(worker, /IPM_SHELL_CACHE/);
   assert.match(worker, /cache\.match\(['"]\/index\.html['"]\)/);
   assert.match(worker, /if \(cached\) return cached/);
+  assert.match(worker, /event\.respondWith\(currentLaunch\(request\)\)/);
+  assert.match(worker, /IPM_LAUNCH_TIMEOUT_MS = 5000/);
   assert.match(worker, /url\.pathname === IPM_ADMIN_LOGIN_PATH[\s\S]*return await fetch\(request\)/);
   assert.match(generator, /sha256/);
 });

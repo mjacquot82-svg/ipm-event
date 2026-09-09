@@ -19,7 +19,6 @@ import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext
 import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
 import { initializeOfflineShell, initializeWonderPush } from '../src/services/wonderPushService';
 import { listenForWonderPushNotificationDeepLinks } from '../src/services/notificationDeepLink';
-import { setPwaUpdateSafeState, startPwaUpdateFlow } from '../src/services/pwaUpdateService';
 
 import { startSubscriptionReconciliation } from '../src/services/subscriptionReconciliation';
 
@@ -39,29 +38,14 @@ export default function RootLayout() {
   }, [pathname]);
 
   useEffect(() => {
-    // Home and the signed-out Organizer login have no attendee flow that an
-    // update reload could interrupt. Treat every other route as sensitive.
-    setPwaUpdateSafeState(pathname === '/' || pathname === '/admin/login');
-  }, [pathname]);
-
-  useEffect(() => {
     if (Platform.OS === 'web') {
-      let disposed = false;
-      let disposeUpdateFlow = () => undefined;
-      void initializeOfflineShell()
-        .then((registration) => {
-          if (registration && !disposed) disposeUpdateFlow = startPwaUpdateFlow(registration);
-        })
-        .catch((error) => {
-          console.warn('Offline shell service worker unavailable:', error);
-        });
+      void initializeOfflineShell().catch((error) => {
+        console.warn('Offline shell service worker unavailable:', error);
+      });
       void initializeWonderPush().catch((error) => {
         console.warn('WonderPush initialization unavailable:', error);
       });
-      return () => {
-        disposed = true;
-        disposeUpdateFlow();
-      };
+      return undefined;
     }
 
     let cleanupNotifications: () => void = () => undefined;
