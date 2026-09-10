@@ -7,7 +7,7 @@ This isolated map branch extends the existing official app-ready SVG interaction
 ## Branch and sources
 
 - Starting branch/SHA: `feature/tented-city-vector-map-20260910` at `edce2bf036f737c66f3a4b315a1e16eb22984437` (`edce2bf0`).
-- Final branch/SHA: `feature/tented-city-vector-map-20260910` at `45e2008e` (pushed to origin).
+- Final branch/SHA: `feature/tented-city-vector-map-20260910` (tip pushed to origin; SHA is recorded by the accompanying commit history).
 - Authoritative artwork: `frontend/assets/images/tented-city-map-app-ready.svg`.
 - Existing semantic manifest: `frontend/src/data/tented-city-map-manifest.json` (99 regions; unchanged).
 - Range geometry evidence: `frontend/src/data/tented-city-geometry-areas.json`, an existing PDF-extracted geometry audit from `tented-city.pdf` page 17. It records official range labels and rectangular bounds; no screenshot, OCR, recreated image, or AI artwork was used.
