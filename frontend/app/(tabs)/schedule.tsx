@@ -102,6 +102,14 @@ export default function ScheduleScreen() {
     }
   }, [router]);
 
+  // Map navigation replaces the modal marker instead of consuming browser
+  // history. This keeps the event detail dismissal separate from normal Back.
+  const dismissEventModalForMap = useCallback(() => {
+    eventModalHistoryRef.current = false;
+    setShowEventModal(false);
+    setSelectedEvent(null);
+  }, []);
+
   useEffect(() => {
     returnToItineraryRef.current = returnTo === 'itinerary';
   }, [returnTo]);
@@ -1044,8 +1052,8 @@ export default function ScheduleScreen() {
                       style={[styles.detailSection, styles.locationClickable, { borderColor: selectedEventCategoryStyle.primary }]}
                       onPress={() => {
                         console.log('Location clicked:', selectedEvent.location_name);
-                        closeEventModal();
-                        router.push({
+                        dismissEventModalForMap();
+                        router.replace({
                           pathname: '/(tabs)/map',
                           params: { location: selectedEvent.location_name, showOnly: 'true', source: 'schedule' }
                         });
