@@ -14,6 +14,7 @@ import {
   Modal,
   TextInput,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -76,9 +77,35 @@ export default function ScheduleScreen() {
   const [successfulAddition, setSuccessfulAddition] = useState(0);
   const [confirmationText, setConfirmationText] = useState('Added to Personal Itinerary');
   const starConfirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const eventModalHistoryRef = useRef(false);
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
   const appliedCategoryQueryRef = useRef<string | string[] | undefined>(undefined);
+
+  // RN Web's Modal is a portal and does not participate in browser history.
+  // Give an open event detail one history entry so Back closes the modal before
+  // the schedule route is popped. Native Back still uses Modal.onRequestClose.
+  const closeEventModal = useCallback(() => {
+    const hadHistoryEntry = eventModalHistoryRef.current;
+    eventModalHistoryRef.current = false;
+    setShowEventModal(false);
+    setSelectedEvent(null);
+    if (Platform.OS === 'web' && hadHistoryEntry) window.history.back();
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !showEventModal || eventModalHistoryRef.current) return undefined;
+    window.history.pushState({ ...(window.history.state || {}), __ipmEventModal: true }, '', window.location.href);
+    eventModalHistoryRef.current = true;
+    const handlePopState = () => {
+      if (!eventModalHistoryRef.current) return;
+      eventModalHistoryRef.current = false;
+      setShowEventModal(false);
+      setSelectedEvent(null);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showEventModal]);
 
   const selectedCategoryStyle = getScheduleCategoryStyle(selectedCategory);
   const selectedEventCategoryStyle = getScheduleCategoryStyle(selectedEvent?.category);
@@ -909,7 +936,7 @@ export default function ScheduleScreen() {
         visible={showEventModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowEventModal(false)}
+        onRequestClose={closeEventModal}
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { borderTopColor: selectedEventCategoryStyle.primary }]}>
@@ -942,7 +969,7 @@ export default function ScheduleScreen() {
                     </TouchableOpacity>
                   </View>
                   <TouchableOpacity
-                    onPress={() => setShowEventModal(false)}
+                    onPress={closeEventModal}
                     style={styles.modalCloseButton}
                   >
                     <Feather name="x" size={24} color={colors.textMuted} />
@@ -989,7 +1016,7 @@ export default function ScheduleScreen() {
                       style={[styles.detailSection, styles.locationClickable, { borderColor: selectedEventCategoryStyle.primary }]}
                       onPress={() => {
                         console.log('Location clicked:', selectedEvent.location_name);
-                        setShowEventModal(false);
+                        closeEventModal();
                         router.push({
                           pathname: '/(tabs)/map',
                           params: { location: selectedEvent.location_name, showOnly: 'true', source: 'schedule' }
