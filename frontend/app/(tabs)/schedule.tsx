@@ -86,8 +86,9 @@ export default function ScheduleScreen() {
     setShowEventModal(false);
     setSelectedEvent(null);
     if (Platform.OS === 'web' && hadHistoryEntry) {
-      window.history.back();
-      if (returnToItineraryRef.current) window.setTimeout(() => window.history.back(), 0);
+      // The marker is one entry and the Schedule route is a second entry when
+      // opened from Itinerary. One go() avoids racing two history.back() calls.
+      window.history.go(returnToItineraryRef.current ? -2 : -1);
     } else if (returnToItineraryRef.current) {
       router.back();
     }
@@ -120,7 +121,7 @@ export default function ScheduleScreen() {
       eventModalHistoryRef.current = false;
       setShowEventModal(false);
       setSelectedEvent(null);
-      if (returnToItineraryRef.current) window.setTimeout(() => window.history.back(), 0);
+      if (returnToItineraryRef.current) window.history.back();
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
