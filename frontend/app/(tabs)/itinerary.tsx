@@ -159,7 +159,7 @@ export default function ItineraryScreen() {
           <TouchableOpacity
             style={styles.card}
             activeOpacity={0.8}
-            onPress={() => router.push('/schedule')}
+            onPress={() => router.push({ pathname: '/schedule', params: { eventId: item.id, returnTo: 'itinerary' } })}
           >
             <View style={styles.cardTop}>
               <View style={styles.cardText}>
