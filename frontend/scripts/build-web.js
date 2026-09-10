@@ -1,6 +1,10 @@
 const { spawnSync } = require('node:child_process');
 const { readFileSync, writeFileSync } = require('node:fs');
 
+if (process.env.IPM_RELEASE_TARGET === 'production' && process.env.CONTEXT !== 'production') {
+  throw new Error('Production release requires CONTEXT=production');
+}
+
 const BUILD_EPOCH = Date.UTC(2026, 0, 1);
 const buildNumber = String(Math.floor((Date.now() - BUILD_EPOCH) / 60000));
 const appLabel = process.env.CONTEXT === 'production' ? 'production' : 'staging';
@@ -28,5 +32,10 @@ const redirects = readFileSync(redirectsPath, 'utf8').replace(
   (_match, route, destination) => route + backend + destination,
 );
 writeFileSync(redirectsPath, redirects);
+
+if (process.env.IPM_RELEASE_TARGET === 'production') {
+  const bundle = readFileSync('./dist/_expo/static/js/web/' + require('node:fs').readdirSync('./dist/_expo/static/js/web').find((name) => name.endsWith('.js')), 'utf8');
+  if (bundle.includes('IPM Staging') || !bundle.includes('IPM App')) throw new Error('Production artifact failed environment-label guard');
+}
 
 console.log(`Embedded ${appLabel} frontend build ${env.EXPO_PUBLIC_IPM_BUILD_NUMBER}`);

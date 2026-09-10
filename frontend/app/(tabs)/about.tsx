@@ -21,6 +21,7 @@ import PWAInstallPrompt from '../../src/components/PWAInstallPrompt';
 import NotificationOptIn from '../../src/components/NotificationOptIn';
 import AppStatus from '../../src/components/AppStatus';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
+import { clearDiagnostics, getDiagnostics } from '../../src/utils/diagnostics';
 
 const BUILD_NUMBER = process.env.EXPO_PUBLIC_IPM_BUILD_NUMBER || 'development';
 const APP_LABEL = process.env.EXPO_PUBLIC_IPM_APP_LABEL === 'staging' ? 'IPM Staging' : 'IPM App';
@@ -44,6 +45,9 @@ export default function AboutScreen() {
   const [appHelp, setAppHelp] = useState(false);
   usePageAnalytics('about', 'bottom_nav');
   const { frameStyle } = useAttendeeLayout();
+  const [diagnosticsText, setDiagnosticsText] = useState('');
+  const diagnostics = getDiagnostics();
+  const copyDiagnostics = async () => { const text = JSON.stringify(getDiagnostics(), null, 2); setDiagnosticsText(text); if (Platform.OS === 'web' && navigator.clipboard) await navigator.clipboard.writeText(text).catch(() => undefined); };
   const openMaps = () => {
     const { lat, lng } = eventInfo.coordinates;
     const url = Platform.select({
@@ -181,6 +185,16 @@ export default function AboutScreen() {
             <Text style={styles.helpLabel}>{appHelp ? 'Hide app help' : 'App help'}</Text>
           </TouchableOpacity>
           {appHelp ? <>
+            <View style={styles.diagnostics}>
+              <Text style={styles.diagnosticsTitle}>Diagnostics</Text>
+              <Text style={styles.diagnosticsText}>Build {diagnostics.appBuild} · {diagnostics.appLabel}</Text>
+              <Text style={styles.diagnosticsText}>Route {diagnostics.pathname} · {diagnostics.online === null ? 'network unknown' : diagnostics.online ? 'online' : 'offline'}</Text>
+              <Text style={styles.diagnosticsText}>History marker {diagnostics.historyMarker === null ? 'unknown' : diagnostics.historyMarker ? 'present' : 'absent'} · service worker {diagnostics.serviceWorker}</Text>
+              <Text style={styles.diagnosticsText}>Last action {diagnostics.events.at(-1)?.action || 'none'} · exception {diagnostics.events.findLast?.((entry) => entry.exception)?.exception?.name || 'none'}</Text>
+              <TouchableOpacity accessibilityRole="button" onPress={copyDiagnostics} style={styles.copyDiagnostics}><Text style={styles.copyDiagnosticsText}>Copy diagnostics</Text></TouchableOpacity>
+              {diagnosticsText ? <Text style={styles.diagnosticsText}>Diagnostics copied ({diagnostics.events.length} trace entries)</Text> : null}
+              <TouchableOpacity accessibilityRole="button" onPress={() => { clearDiagnostics(); setDiagnosticsText(''); }}><Text style={styles.clearDiagnosticsText}>Clear diagnostics</Text></TouchableOpacity>
+            </View>
             <PWAInstallPrompt />
             <NotificationOptIn />
             <AppStatus />
@@ -209,6 +223,12 @@ const styles = StyleSheet.create({
   helpSection: { marginHorizontal: 16, gap: 12 },
   helpButton: { minHeight: 44, justifyContent: 'center' },
   helpLabel: { color: colors.primary, fontSize: 16, fontWeight: '700' },
+  diagnostics: { backgroundColor: colors.surface, borderRadius: 10, padding: 12, gap: 6 },
+  diagnosticsTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  diagnosticsText: { color: colors.textMuted, fontSize: 12 },
+  copyDiagnostics: { alignSelf: 'flex-start', backgroundColor: colors.primary, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7 },
+  copyDiagnosticsText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  clearDiagnosticsText: { color: colors.primary, fontSize: 12 },
   buildNumber: { color: colors.textMuted, fontSize: 11, marginBottom: 24, marginTop: 18, textAlign: 'center' },
   heroLogoCard: {
     width: '92%',

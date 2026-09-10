@@ -50,6 +50,8 @@ import {
   hasAcknowledgedScheduleOnboarding,
 } from '../../src/services/scheduleOnboardingState';
 
+import { recordDiagnostic } from '../../src/utils/diagnostics';
+
 export default function ScheduleScreen() {
   const { frameStyle, sectionStyle } = useAttendeeLayout();
   const { width: viewportWidth } = useWindowDimensions();
@@ -89,6 +91,7 @@ export default function ScheduleScreen() {
   // Give an open event detail one history entry so Back closes the modal before
   // the schedule route is popped. Native Back still uses Modal.onRequestClose.
   const closeEventModal = useCallback(() => {
+    recordDiagnostic({ action: Platform.OS === 'web' ? 'X-close' : 'native-close', source: returnToItineraryRef.current ? 'itinerary' : 'schedule', modalOpen: true, selectedEvent: selectedEvent ? 'present' : 'absent' });
     const hadHistoryEntry = eventModalHistoryRef.current;
     eventModalHistoryRef.current = false;
     setShowEventModal(false);
@@ -113,6 +116,7 @@ export default function ScheduleScreen() {
     if (!event) return;
     setSelectedEvent(event);
     setShowEventModal(true);
+    recordDiagnostic({ action: 'open', source: returnTo === 'itinerary' ? 'itinerary' : 'deep-link', modalOpen: true, selectedEvent: 'present' });
     void queueAnalyticsEvent('schedule_event_opened', {
       schedule_item_id: event.id,
       category: event.category || 'uncategorized',
@@ -125,6 +129,7 @@ export default function ScheduleScreen() {
     window.history.pushState({ ...(window.history.state || {}), __ipmEventModal: true }, '', window.location.href);
     eventModalHistoryRef.current = true;
     const handlePopState = () => {
+      recordDiagnostic({ action: 'browser-back', source: returnToItineraryRef.current ? 'itinerary' : 'schedule', modalOpen: true, selectedEvent: 'present' });
       if (!eventModalHistoryRef.current) return;
       eventModalHistoryRef.current = false;
       setShowEventModal(false);
