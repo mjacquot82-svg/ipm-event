@@ -21,3 +21,20 @@ test('back-navigation fix is web-only and does not alter event data', () => {
   assert.match(source, /window\.history\.back\(\)/);
   assert.match(source, /selectedEvent\.description/);
 });
+
+test('Itinerary passes the tapped event identity and return context to Schedule', () => {
+  const itinerary = fs.readFileSync(new URL('../app/(tabs)/itinerary.tsx', import.meta.url), 'utf8');
+  assert.match(itinerary, /pathname: '\/schedule', params: \{ eventId: item\.id, returnTo: 'itinerary' \}/);
+});
+
+test('Schedule resolves a valid event parameter once and fails safely for unknown IDs', () => {
+  assert.match(source, /events\.find\(\(candidate\) => candidate\.id === eventId\)/);
+  assert.match(source, /if \(!event\) return/);
+  assert.match(source, /openedEventParamRef/);
+  assert.match(source, /returnToItineraryRef/);
+});
+
+test('Itinerary-origin Back returns to Itinerary after closing the detail state', () => {
+  assert.match(source, /if \(returnToItineraryRef\.current\) window\.setTimeout\(\(\) => window\.history\.back\(\), 0\)/);
+  assert.match(source, /else if \(returnToItineraryRef\.current\) \{\s*router\.back\(\);/s);
+});

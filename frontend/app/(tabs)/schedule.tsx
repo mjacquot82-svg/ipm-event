@@ -56,6 +56,7 @@ export default function ScheduleScreen() {
   const isDesktop = viewportWidth >= ATTENDEE_DESKTOP_BREAKPOINT;
   const router = useRouter();
   const { source, category } = useLocalSearchParams<{ source?: string; category?: string | string[] }>();
+  const { eventId, returnTo } = useLocalSearchParams<{ eventId?: string; returnTo?: string }>();
   usePageAnalytics('schedule', source || 'other', 'schedule_viewed');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +79,8 @@ export default function ScheduleScreen() {
   const [confirmationText, setConfirmationText] = useState('Added to Personal Itinerary');
   const starConfirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventModalHistoryRef = useRef(false);
+  const openedEventParamRef = useRef<string | null>(null);
+  const returnToItineraryRef = useRef(returnTo === 'itinerary');
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
   const appliedCategoryQueryRef = useRef<string | string[] | undefined>(undefined);
@@ -90,8 +93,31 @@ export default function ScheduleScreen() {
     eventModalHistoryRef.current = false;
     setShowEventModal(false);
     setSelectedEvent(null);
-    if (Platform.OS === 'web' && hadHistoryEntry) window.history.back();
-  }, []);
+    if (Platform.OS === 'web' && hadHistoryEntry) {
+      window.history.back();
+      if (returnToItineraryRef.current) window.setTimeout(() => window.history.back(), 0);
+    } else if (returnToItineraryRef.current) {
+      router.back();
+    }
+  }, [router]);
+
+  useEffect(() => {
+    returnToItineraryRef.current = returnTo === 'itinerary';
+  }, [returnTo]);
+
+  useEffect(() => {
+    if (!eventId || typeof eventId !== 'string' || events.length === 0 || openedEventParamRef.current === eventId) return;
+    openedEventParamRef.current = eventId;
+    const event = events.find((candidate) => candidate.id === eventId);
+    if (!event) return;
+    setSelectedEvent(event);
+    setShowEventModal(true);
+    void queueAnalyticsEvent('schedule_event_opened', {
+      schedule_item_id: event.id,
+      category: event.category || 'uncategorized',
+      source: returnTo === 'itinerary' ? 'itinerary' : 'deep_link',
+    });
+  }, [eventId, events, returnTo]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || !showEventModal || eventModalHistoryRef.current) return undefined;
@@ -102,6 +128,7 @@ export default function ScheduleScreen() {
       eventModalHistoryRef.current = false;
       setShowEventModal(false);
       setSelectedEvent(null);
+      if (returnToItineraryRef.current) window.setTimeout(() => window.history.back(), 0);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
