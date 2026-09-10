@@ -1669,7 +1669,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   modalCloseButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    marginLeft: 12,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalBody: {
     flex: 1,
