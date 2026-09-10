@@ -25,6 +25,9 @@ test('exact semantic lookup resolves known regions and safely rejects unknown la
   assert.equal(find('ACCESSIBLE PARKING')?.id, 'accessible-parking');
   assert.equal(find('not an official region'), null);
   assert.match(helper, /findSemanticAreaForVendor/);
+  assert.match(helper, /findSemanticAreaForLocation/);
+  assert.match(helper, /EVENT CENTRE 1 WEST 2/);
+  assert.match(helper, /dancing-tractors-combine-derby-west-2/);
 });
 
 test('map wires semantic areas, selection, focus, and official SVG source', () => {
@@ -33,4 +36,6 @@ test('map wires semantic areas, selection, focus, and official SVG source', () =
   assert.match(component, /selectSemanticArea/);
   assert.match(component, /semanticAreaRect/);
   assert.match(component, /accessibilityLabel={`Select \$\{area\.label\}`}/);
+  assert.match(component, /findSemanticAreaForLocation\(initialQuery\)/);
+  assert.match(component, /selectSemanticArea\(semanticArea\)/);
 });

@@ -18,6 +18,12 @@ export const TENTED_CITY_SEMANTIC_AREAS = manifest.areas as SemanticMapArea[];
 
 const normalize = (value: string) => value.toUpperCase().replace(/[\u2019']/g, '').replace(/[^A-Z0-9]+/g, ' ').trim();
 
+// These are published schedule labels whose wording differs from the audited
+// map manifest. Keep this list explicit so an unknown location stays unmapped.
+const LOCATION_ALIASES: Record<string, string> = {
+  'EVENT CENTRE 1 WEST 2': 'dancing-tractors-combine-derby-west-2',
+};
+
 /** Convert the supplied PDF-point region into the map's existing percentage coordinate space. */
 export function semanticAreaRect(area: SemanticMapArea): Rect {
   return {
@@ -32,6 +38,13 @@ export function findSemanticArea(query: string): SemanticMapArea | null {
   const key = normalize(query);
   if (!key) return null;
   return TENTED_CITY_SEMANTIC_AREAS.find((area) => normalize(area.id) === key || normalize(area.label) === key) || null;
+}
+
+export function findSemanticAreaForLocation(query: string): SemanticMapArea | null {
+  const direct = findSemanticArea(query);
+  if (direct) return direct;
+  const aliasId = LOCATION_ALIASES[normalize(query)];
+  return aliasId ? TENTED_CITY_SEMANTIC_AREAS.find((area) => area.id === aliasId) || null : null;
 }
 
 /** Exact label matching only; no individual booth position is inferred from a range. */

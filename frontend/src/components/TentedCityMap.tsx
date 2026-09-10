@@ -17,7 +17,7 @@ import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tented
 import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, focusRectForFootprint, AREA_BY_LABEL, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
 import { footprintForVendor } from '../config/tentedCityVendorMatch';
 import {
-  findSemanticAreaForVendor, findSemanticAreaForGeometryArea, semanticAreaRect, TENTED_CITY_SEMANTIC_AREAS,
+  findSemanticAreaForVendor, findSemanticAreaForGeometryArea, findSemanticAreaForLocation, semanticAreaRect, TENTED_CITY_SEMANTIC_AREAS,
   type SemanticMapArea,
 } from '../config/tentedCitySemanticMap';
 import { getScheduleData, ScheduleEvent } from '../services/spreadsheetDataService';
@@ -185,7 +185,11 @@ export default function TentedCityMap({
   useEffect(() => {
     if (mapUnavailable || !initialQuery) return;
     const place = findTentedCityPlace(initialQuery, tentedCityVendors);
-    if (!place) return;
+    if (!place) {
+      const semanticArea = findSemanticAreaForLocation(initialQuery);
+      if (semanticArea) selectSemanticArea(semanticArea);
+      return;
+    }
     if (exactInitialPlace && (place.kind !== 'vendor' || place.vendor.name !== initialQuery)) return;
     selectPlace(place, placeTitle(place));
     // eslint-disable-next-line react-hooks/exhaustive-deps
