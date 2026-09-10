@@ -87,7 +87,7 @@ The preserved vendor report contains 230 confident-lot matches, 49 range/named m
 - Focused semantic/geometry/1A/search/camera tests after the recovery fix: **55 passed, 0 failed**. The legacy `tented-city-map.test.mjs` runner requires a missing `frontend/data` compatibility directory and was not counted.
 - TypeScript `tsc --noEmit`: **passed**.
 - `npm run lint`: **passed with 60 pre-existing warnings, 0 errors**.
-- Production web export with staging-safe environment (`CONTEXT=deploy-preview`, staging backend, placeholder staging key): **passed**, generated frontend build `363062`; no production endpoint or deployment was used.
+- Production web export with staging-safe environment (`CONTEXT=deploy-preview`, staging backend, placeholder staging key): **passed**, generated frontend build `363512`; no production endpoint or deployment was used.
 - The generated layer was checked programmatically for exact counts, unique IDs, parent containment, and exclusion of flagged `6B 26-29`.
 - Existing 99-region semantic functionality and range fallback tests remain passing.
 - Mobile/desktop behavior: no browser automation or isolated preview deployment was available in this recovery environment. Physical 320px/common-phone/desktop verification remains required for Marc; pinch gesture is explicitly PHYSICAL TEST REQUIRED.
