@@ -1488,7 +1488,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalStarButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(45, 41, 38, 0.14)',
   },
   modalCategoryBadge: {
     alignSelf: 'flex-start',
