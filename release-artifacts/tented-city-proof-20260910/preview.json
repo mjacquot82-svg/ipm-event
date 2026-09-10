@@ -1,15 +1,14 @@
 {
-  "id": "6aa29e560f0cc5b8f65cf613",
+  "id": "6aa2a5274d2e844cb232d983",
   "url": "https://feature-tented-city-vector-map-20260910--ipm-web-staging.netlify.app",
-  "immutableURL": "https://6aa29e560f0cc5b8f65cf613--ipm-web-staging.netlify.app",
+  "immutableURL": "https://6aa2a5274d2e844cb232d983--ipm-web-staging.netlify.app",
   "context": "deploy-preview",
   "state": "ready",
-  "sourceSHA": "f5202fefa3698d064841b7696d2264965b02b129",
-  "branch": "feature-tented-city-vector-map-20260910",
-  "build": "363603",
+  "sourceSHA": "35df71f0b4c5ddd1ab276165b84ec9197e2c8fb9",
+  "netlifyCommitRef": null,
+  "sourceEvidence": "Local clean export of source commit 35df71f0b4c5ddd1ab276165b84ec9197e2c8fb9; manual draft upload does not populate Netlify commit_ref.",
+  "build": "363631",
   "publishedBefore": "6aa213374dc76a1128be3a31",
   "publishedAfter": "6aa213374dc76a1128be3a31",
-  "stagingPreserved": true,
-  "netlifyCommitRef": null,
-  "sourceEvidence": "Local export of unchanged app source at f5202fe; file hashes in build-inventory.json. Manual Netlify upload does not populate commit_ref."
+  "stagingPreserved": true
 }

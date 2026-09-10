@@ -1,0 +1,15 @@
+{
+  "sourceSHA": "35df71f0b4c5ddd1ab276165b84ec9197e2c8fb9",
+  "geometryRange": "6B 26-29",
+  "individualNavigation": false,
+  "orientation": "B_to_T",
+  "orientationVerified": false,
+  "matcherWholeRangeReason": "6B-26-29-whole-parent-only",
+  "matcherPartialRangeReason": "6B-26-29-numbering-unproven-parent-fallback",
+  "matcherClass": "range_or_named",
+  "parentFootprint": "AREA_BY_LABEL['6B 26-29'].rect",
+  "bundledVendorAssignments": 0,
+  "runningLookup": "6B-26",
+  "runningLookupResult": "No matching places on this map",
+  "safetyConclusion": "No exact 6B booth is fabricated. Any future whole or partial 6B vendor assignment is parent-only; current bundled data has no vendor to exercise the parent highlight live."
+}

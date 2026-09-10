@@ -1,0 +1,114 @@
+PASS 320 initial-svg-and-overflow
+PASS 320 vendor-1A-09
+PASS 320 exact-painted-width-1A-09
+PASS 320 vendor-2B-23
+PASS 320 exact-painted-width-2B-23
+PASS 320 vendor-2B-06
+PASS 320 exact-painted-width-2B-06
+PASS 320 vendor-4A-14
+PASS 320 exact-painted-width-4A-14
+PASS 320 vendor-5A-33
+PASS 320 exact-painted-width-5A-33
+PASS 320 vendor-1B-15
+PASS 320 exact-painted-width-1B-15
+PASS 320 pan-after-autozoom
+PASS 320 touch-pan-after-autozoom
+PASS 320 reset
+PASS 320 range-1A 1-12
+PASS 320 tap-1A-01
+PASS 320 tap-1A-06
+PASS 320 tap-1A-12
+PASS 320 range-4A 25-38
+PASS 320 tap-4A-25
+PASS 320 tap-4A-31
+PASS 320 tap-4A-38
+PASS 320 range-5A 39-44
+PASS 320 tap-5A-39
+PASS 320 tap-5A-41
+PASS 320 tap-5A-44
+PASS 320 range-5A 5-12
+PASS 320 tap-5A-05
+PASS 320 tap-5A-08
+PASS 320 tap-5A-12
+PASS 320 lookup-1A--oops
+PASS 320 lookup-9Z-999
+PASS 320 lookup-6B-26
+PASS 320 orientation-unverified-Quilt Jeannie
+PASS 320 orientation-unverified-Avenir Energy
+PASS 320 final-svg-and-overflow
+PASS 390 initial-svg-and-overflow
+PASS 390 vendor-1A-09
+PASS 390 exact-painted-width-1A-09
+PASS 390 vendor-2B-23
+PASS 390 exact-painted-width-2B-23
+PASS 390 vendor-2B-06
+PASS 390 exact-painted-width-2B-06
+PASS 390 vendor-4A-14
+PASS 390 exact-painted-width-4A-14
+PASS 390 vendor-5A-33
+PASS 390 exact-painted-width-5A-33
+PASS 390 vendor-1B-15
+PASS 390 exact-painted-width-1B-15
+PASS 390 pan-after-autozoom
+PASS 390 touch-pan-after-autozoom
+PASS 390 reset
+PASS 390 range-1A 1-12
+PASS 390 tap-1A-01
+PASS 390 tap-1A-06
+PASS 390 tap-1A-12
+PASS 390 range-4A 25-38
+PASS 390 tap-4A-25
+PASS 390 tap-4A-31
+PASS 390 tap-4A-38
+PASS 390 range-5A 39-44
+PASS 390 tap-5A-39
+PASS 390 tap-5A-41
+PASS 390 tap-5A-44
+PASS 390 range-5A 5-12
+PASS 390 tap-5A-05
+PASS 390 tap-5A-08
+PASS 390 tap-5A-12
+PASS 390 lookup-1A--oops
+PASS 390 lookup-9Z-999
+PASS 390 lookup-6B-26
+PASS 390 orientation-unverified-Quilt Jeannie
+PASS 390 orientation-unverified-Avenir Energy
+PASS 390 final-svg-and-overflow
+PASS 1440 initial-svg-and-overflow
+PASS 1440 vendor-1A-09
+PASS 1440 exact-painted-width-1A-09
+PASS 1440 vendor-2B-23
+PASS 1440 exact-painted-width-2B-23
+PASS 1440 vendor-2B-06
+PASS 1440 exact-painted-width-2B-06
+PASS 1440 vendor-4A-14
+PASS 1440 exact-painted-width-4A-14
+PASS 1440 vendor-5A-33
+PASS 1440 exact-painted-width-5A-33
+PASS 1440 vendor-1B-15
+PASS 1440 exact-painted-width-1B-15
+PASS 1440 pan-after-autozoom
+PASS 1440 reset
+PASS 1440 range-1A 1-12
+PASS 1440 tap-1A-01
+PASS 1440 tap-1A-06
+PASS 1440 tap-1A-12
+PASS 1440 range-4A 25-38
+PASS 1440 tap-4A-25
+PASS 1440 tap-4A-31
+PASS 1440 tap-4A-38
+PASS 1440 range-5A 39-44
+PASS 1440 tap-5A-39
+PASS 1440 tap-5A-41
+PASS 1440 tap-5A-44
+PASS 1440 range-5A 5-12
+PASS 1440 tap-5A-05
+PASS 1440 tap-5A-08
+PASS 1440 tap-5A-12
+PASS 1440 lookup-1A--oops
+PASS 1440 lookup-9Z-999
+PASS 1440 lookup-6B-26
+PASS 1440 orientation-unverified-Quilt Jeannie
+PASS 1440 orientation-unverified-Avenir Energy
+PASS 1440 final-svg-and-overflow
+{"pass":113,"fail":0,"pageErrors":0}
