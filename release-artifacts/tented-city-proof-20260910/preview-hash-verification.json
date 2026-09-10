@@ -1,0 +1,30 @@
+[
+  {
+    "path": "/_expo/static/js/web/entry-8dc9c2025f29b7cff80d6e158e6a42e1.js",
+    "status": 200,
+    "expected": "91dcdad1348043fb66ee78cbfc91585618f1af46",
+    "actual": "91dcdad1348043fb66ee78cbfc91585618f1af46",
+    "matched": true
+  },
+  {
+    "path": "/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+    "status": 200,
+    "expected": "093e152c1c7c4d2d30a1c25536bd2c4047ccc798",
+    "actual": "093e152c1c7c4d2d30a1c25536bd2c4047ccc798",
+    "matched": true
+  },
+  {
+    "path": "/index.html",
+    "status": 200,
+    "expected": "06c39a10953029aa7382d87dde0b0d6f24df5142",
+    "actual": "06c39a10953029aa7382d87dde0b0d6f24df5142",
+    "matched": true
+  },
+  {
+    "path": "/webpushr-sw.js",
+    "status": 200,
+    "expected": "d9fc2b0d1bf7c9de5216597dce08453dfb6e509e",
+    "actual": "d9fc2b0d1bf7c9de5216597dce08453dfb6e509e",
+    "matched": true
+  }
+]

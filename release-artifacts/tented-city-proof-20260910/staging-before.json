@@ -1,0 +1,10 @@
+{
+  "id": "0932cc5d-9cb8-4cd3-8418-7e486df75bf1",
+  "name": "ipm-web-staging",
+  "url": "https://staging.theipm.ca",
+  "publishedDeploy": "6aa213374dc76a1128be3a31",
+  "branch": "staging",
+  "branchDeploys": [
+    "staging"
+  ]
+}

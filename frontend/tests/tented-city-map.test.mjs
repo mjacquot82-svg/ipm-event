@@ -8,7 +8,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
 
 function loadExhibitors() {
-  const dir = path.join(root, 'data');
+  const dir = path.join(root, 'src/data');
   const rows = [];
   for (const file of fs.readdirSync(dir).filter((f) => f.startsWith('tentedCityVendorsPart') && f.endsWith('.ts')).sort()) {
     const text = fs.readFileSync(path.join(dir, file), 'utf8');
@@ -199,9 +199,10 @@ test('booth pin/selection data remains intact for mapped exhibitors', () => {
   }
 });
 
-test('Grounds map screen still imports MapComponent', () => {
-  const mapTsx = fs.readFileSync(path.join(root, 'map.tsx'), 'utf8');
-  assert.match(mapTsx, /import MapComponent from/);
+test('map screen preserves GroundsMap and the mounted TentedCityMap', () => {
+  const mapTsx = fs.readFileSync(path.join(root, 'app/(tabs)/map.tsx'), 'utf8');
+  assert.match(mapTsx, /import GroundsMap from/);
+  assert.match(mapTsx, /import TentedCityMap from/);
   assert.match(mapTsx, /highlightedLocation=/);
   assert.match(mapTsx, /mode === 'tented'/);
 });

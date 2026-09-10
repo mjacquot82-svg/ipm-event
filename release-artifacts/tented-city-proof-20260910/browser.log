@@ -1,0 +1,201 @@
+PASS 320 initial-svg-and-overflow
+PASS 320 vendor-1A-09
+FAIL 320 exact-painted-width-1A-09 Painted booth width 18.90px exceeds cell width 7.64px
+PASS 320 vendor-2B-23
+FAIL 320 exact-painted-width-2B-23 Painted booth width 18.90px exceeds cell width 7.64px
+PASS 320 vendor-2B-06
+FAIL 320 exact-painted-width-2B-06 Painted booth width 18.90px exceeds cell width 7.64px
+PASS 320 vendor-4A-14
+FAIL 320 exact-painted-width-4A-14 Painted booth width 18.90px exceeds cell width 7.64px
+PASS 320 vendor-5A-33
+FAIL 320 exact-painted-width-5A-33 Painted booth width 18.90px exceeds cell width 6.95px
+PASS 320 vendor-1B-15
+FAIL 320 exact-painted-width-1B-15 Painted booth width 18.90px exceeds cell width 7.64px
+FAIL 320 pan-after-autozoom Expected values to be strictly equal:
+
+3.4 !== 3.15
+
+PASS 320 touch-pan-after-autozoom
+FAIL 320 reset locator.tap: Timeout 7000ms exceeded.
+Call log:
+[2m  - waiting for getByLabel('Reset map zoom')[22m
+[2m    - locator resolved to <div tabindex="0" aria-label="Reset map zoom" class="css-g5y9jx r-1i6wzkk r-lrvibr r-1loqt21 r-1otgn73 r-1awozwy r-14lw9ot r-16uyjmq r-1fh5135 r-1ugchlj r-1777fci r-usgzl9">…</div>[22m
+[2m  - attempting tap action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div class="css-g5y9jx r-1habvwh r-18u37iz">…</div> from <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> subtree intercepts pointer events[22m
+[2m    - retrying tap action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div class="css-g5y9jx r-1habvwh r-18u37iz">…</div> from <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> subtree intercepts pointer events[22m
+[2m    - retrying tap action[22m
+[2m      - waiting 100ms[22m
+[2m    13 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <div class="css-g5y9jx r-1habvwh r-18u37iz">…</div> from <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> subtree intercepts pointer events[22m
+[2m     - retrying tap action[22m
+[2m       - waiting 500ms[22m
+
+PASS 320 range-1A 1-12
+PASS 320 tap-1A-01
+PASS 320 tap-1A-06
+PASS 320 tap-1A-12
+PASS 320 range-4A 25-38
+PASS 320 tap-4A-25
+PASS 320 tap-4A-31
+PASS 320 tap-4A-38
+PASS 320 range-5A 39-44
+PASS 320 tap-5A-39
+PASS 320 tap-5A-41
+PASS 320 tap-5A-44
+PASS 320 range-5A 5-12
+PASS 320 tap-5A-05
+PASS 320 tap-5A-08
+PASS 320 tap-5A-12
+PASS 320 lookup-1A--oops
+PASS 320 lookup-9Z-999
+PASS 320 lookup-6B-26
+PASS 320 orientation-unverified-Quilt Jeannie
+PASS 320 orientation-unverified-Avenir Energy
+PASS 320 final-svg-and-overflow
+PASS 390 initial-svg-and-overflow
+PASS 390 vendor-1A-09
+FAIL 390 exact-painted-width-1A-09 Painted booth width 18.90px exceeds cell width 9.31px
+PASS 390 vendor-2B-23
+FAIL 390 exact-painted-width-2B-23 Painted booth width 18.90px exceeds cell width 9.31px
+PASS 390 vendor-2B-06
+FAIL 390 exact-painted-width-2B-06 Painted booth width 18.90px exceeds cell width 9.31px
+PASS 390 vendor-4A-14
+FAIL 390 exact-painted-width-4A-14 Painted booth width 18.90px exceeds cell width 9.31px
+PASS 390 vendor-5A-33
+FAIL 390 exact-painted-width-5A-33 Painted booth width 18.90px exceeds cell width 8.46px
+PASS 390 vendor-1B-15
+FAIL 390 exact-painted-width-1B-15 Painted booth width 18.90px exceeds cell width 9.31px
+FAIL 390 pan-after-autozoom Expected values to be strictly equal:
+
+2.38117 !== 3.15
+
+PASS 390 touch-pan-after-autozoom
+FAIL 390 reset locator.tap: Timeout 7000ms exceeded.
+Call log:
+[2m  - waiting for getByLabel('Reset map zoom')[22m
+[2m    - locator resolved to <div tabindex="0" aria-label="Reset map zoom" class="css-g5y9jx r-1i6wzkk r-lrvibr r-1loqt21 r-1otgn73 r-1awozwy r-14lw9ot r-16uyjmq r-1fh5135 r-1ugchlj r-1777fci r-usgzl9">…</div>[22m
+[2m  - attempting tap action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div dir="auto" class="css-146c3p1 r-lrvibr"></div> from <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> subtree intercepts pointer events[22m
+[2m    - retrying tap action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div dir="auto" class="css-146c3p1 r-lrvibr"></div> from <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> subtree intercepts pointer events[22m
+[2m    - retrying tap action[22m
+[2m      - waiting 100ms[22m
+[2m    13 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <div dir="auto" class="css-146c3p1 r-lrvibr"></div> from <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> subtree intercepts pointer events[22m
+[2m     - retrying tap action[22m
+[2m       - waiting 500ms[22m
+
+PASS 390 range-1A 1-12
+PASS 390 tap-1A-01
+PASS 390 tap-1A-06
+PASS 390 tap-1A-12
+PASS 390 range-4A 25-38
+PASS 390 tap-4A-25
+PASS 390 tap-4A-31
+PASS 390 tap-4A-38
+PASS 390 range-5A 39-44
+PASS 390 tap-5A-39
+PASS 390 tap-5A-41
+PASS 390 tap-5A-44
+PASS 390 range-5A 5-12
+PASS 390 tap-5A-05
+PASS 390 tap-5A-08
+PASS 390 tap-5A-12
+PASS 390 lookup-1A--oops
+PASS 390 lookup-9Z-999
+PASS 390 lookup-6B-26
+PASS 390 orientation-unverified-Quilt Jeannie
+PASS 390 orientation-unverified-Avenir Energy
+PASS 390 final-svg-and-overflow
+PASS 1440 initial-svg-and-overflow
+PASS 1440 vendor-1A-09
+PASS 1440 exact-painted-width-1A-09
+PASS 1440 vendor-2B-23
+PASS 1440 exact-painted-width-2B-23
+PASS 1440 vendor-2B-06
+PASS 1440 exact-painted-width-2B-06
+PASS 1440 vendor-4A-14
+PASS 1440 exact-painted-width-4A-14
+PASS 1440 vendor-5A-33
+PASS 1440 exact-painted-width-5A-33
+PASS 1440 vendor-1B-15
+PASS 1440 exact-painted-width-1B-15
+FAIL 1440 pan-after-autozoom Expected values to be strictly equal:
+
+3.4 !== 3.15
+
+FAIL 1440 reset locator.click: Timeout 7000ms exceeded.
+Call log:
+[2m  - waiting for getByLabel('Reset map zoom')[22m
+[2m    - locator resolved to <div tabindex="0" aria-label="Reset map zoom" class="css-g5y9jx r-1i6wzkk r-lrvibr r-1loqt21 r-1otgn73 r-1awozwy r-14lw9ot r-16uyjmq r-1fh5135 r-1ugchlj r-1777fci r-usgzl9">…</div>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> intercepts pointer events[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    13 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> intercepts pointer events[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+PASS 1440 range-1A 1-12
+PASS 1440 tap-1A-01
+PASS 1440 tap-1A-06
+PASS 1440 tap-1A-12
+PASS 1440 range-4A 25-38
+PASS 1440 tap-4A-25
+PASS 1440 tap-4A-31
+PASS 1440 tap-4A-38
+PASS 1440 range-5A 39-44
+PASS 1440 tap-5A-39
+PASS 1440 tap-5A-41
+PASS 1440 tap-5A-44
+PASS 1440 range-5A 5-12
+PASS 1440 tap-5A-05
+PASS 1440 tap-5A-08
+PASS 1440 tap-5A-12
+PASS 1440 lookup-1A--oops
+PASS 1440 lookup-9Z-999
+PASS 1440 lookup-6B-26
+PASS 1440 orientation-unverified-Quilt Jeannie
+PASS 1440 orientation-unverified-Avenir Energy
+PASS 1440 final-svg-and-overflow
+{"pass":95,"fail":18,"pageErrors":0}

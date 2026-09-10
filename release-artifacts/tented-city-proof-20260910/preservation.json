@@ -1,0 +1,12 @@
+{
+  "sourceSHA": "f5202fefa3698d064841b7696d2264965b02b129",
+  "applicationDiffFromSource": [],
+  "officialSvgSHA256": "b1a2b9148ab843da62972fb63b15552da94183062cfe4f24e12ef52517afec49",
+  "changedTrackedFiles": [
+    "CODEX_TENTED_CITY_INDIVIDUAL_BOOTHS_REPORT.md",
+    "frontend/tests/tented-city-map.test.mjs"
+  ],
+  "productionWrites": false,
+  "notificationSent": false,
+  "sharedStagingPublishedDeploy": "6aa213374dc76a1128be3a31"
+}

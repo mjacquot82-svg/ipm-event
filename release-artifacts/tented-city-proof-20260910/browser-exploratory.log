@@ -1,0 +1,67 @@
+PASS 320 initial-svg-and-overflow
+FAIL 320 vendor-1A-09 Highlight center occluded by Select booth 1A-10
+FAIL 320 exact-painted-width-1A-09 Painted booth width 18.90px exceeds cell width 7.64px
+FAIL 320 vendor-2B-23 Highlight center occluded by Select booth 2B-24
+FAIL 320 exact-painted-width-2B-23 Painted booth width 18.90px exceeds cell width 7.64px
+FAIL 320 vendor-2B-06 Highlight center occluded by Select booth 2B-07
+FAIL 320 exact-painted-width-2B-06 Painted booth width 18.90px exceeds cell width 7.64px
+FAIL 320 vendor-4A-14 Highlight center occluded by Select booth 4A-15
+FAIL 320 exact-painted-width-4A-14 Painted booth width 18.90px exceeds cell width 7.64px
+FAIL 320 vendor-5A-33 Highlight center occluded by Select booth 5A-34
+FAIL 320 exact-painted-width-5A-33 Painted booth width 18.90px exceeds cell width 6.95px
+FAIL 320 vendor-1B-15 Highlight center occluded by Select booth 1B-16
+FAIL 320 exact-painted-width-1B-15 Painted booth width 18.90px exceeds cell width 7.64px
+FAIL 320 pan-after-autozoom locator.evaluate: Timeout 7000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'Select booth 1B-15', exact: true })[22m
+
+FAIL 320 touch-pan-after-autozoom locator.evaluate: Timeout 7000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'Select booth 1B-15', exact: true })[22m
+
+FAIL 320 reset locator.tap: Timeout 7000ms exceeded.
+Call log:
+[2m  - waiting for getByLabel('Reset map zoom')[22m
+[2m    - locator resolved to <div tabindex="0" aria-label="Reset map zoom" class="css-g5y9jx r-1i6wzkk r-lrvibr r-1loqt21 r-1otgn73 r-1awozwy r-14lw9ot r-16uyjmq r-1fh5135 r-1ugchlj r-1777fci r-usgzl9">…</div>[22m
+[2m  - attempting tap action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> intercepts pointer events[22m
+[2m    - retrying tap action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> intercepts pointer events[22m
+[2m    - retrying tap action[22m
+[2m      - waiting 100ms[22m
+[2m    13 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - <div class="css-g5y9jx r-14lw9ot r-1867qdf r-ajlgsb r-5oul0u r-jusfrs r-1slz7xr r-wc24c3">…</div> intercepts pointer events[22m
+[2m     - retrying tap action[22m
+[2m       - waiting 500ms[22m
+
+PASS 320 range-1A 1-12
+FAIL 320 tap-1A-01 Highlight center occluded by Select booth 1A-02
+FAIL 320 tap-1A-06 Highlight center occluded by Select booth 1A-07
+PASS 320 tap-1A-12
+PASS 320 range-4A 25-38
+FAIL 320 tap-4A-25 Highlight center occluded by Select booth 4A-26
+FAIL 320 tap-4A-31 Highlight center occluded by Select booth 4A-32
+PASS 320 tap-4A-38
+PASS 320 range-5A 39-44
+FAIL 320 tap-5A-39 Highlight center occluded by Select booth 5A-40
+FAIL 320 tap-5A-41 Highlight center occluded by Select booth 5A-42
+PASS 320 tap-5A-44
+PASS 320 range-5A 5-12
+FAIL 320 tap-5A-05 Highlight center occluded by Select booth 5A-06
+FAIL 320 tap-5A-08 Highlight center occluded by Select booth 5A-09
+PASS 320 tap-5A-12
+PASS 320 lookup-1A--oops
+PASS 320 lookup-9Z-999
+PASS 320 lookup-6B-26

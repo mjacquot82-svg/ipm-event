@@ -1,0 +1,128 @@
+
+> frontend@1.0.0 lint
+> expo lint
+
+
+/tmp/ipm-tented-proof/frontend/app/(tabs)/_layout.tsx
+  8:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/(tabs)/about.tsx
+  15:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/(tabs)/announcements.tsx
+  8:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/(tabs)/camping.tsx
+  9:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/(tabs)/emergency-services.tsx
+  17:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/(tabs)/index.tsx
+  20:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/(tabs)/map.tsx
+  8:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/(tabs)/queen-of-the-furrow.tsx
+  15:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/(tabs)/schedule.tsx
+  21:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/(tabs)/worship-service.tsx
+  9:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/_layout.tsx
+  9:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/announcements/[announcement_id].tsx
+  10:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/coming-soon.tsx
+  11:3  warning  'Platform' is defined but never used                           @typescript-eslint/no-unused-vars
+  14:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/preview-2026/(tabs)/_layout.tsx
+   8:8   warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+  38:38  warning  A `require()` style import is forbidden                        @typescript-eslint/no-require-imports
+
+/tmp/ipm-tented-proof/frontend/app/preview-2026/(tabs)/about.tsx
+  15:8   warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+  16:21  warning  'locations' is defined but never used                          @typescript-eslint/no-unused-vars
+  16:32  warning  'sessions' is defined but never used                           @typescript-eslint/no-unused-vars
+
+/tmp/ipm-tented-proof/frontend/app/preview-2026/(tabs)/index.tsx
+   11:3  warning  'Platform' is defined but never used                           @typescript-eslint/no-unused-vars
+   15:3  warning  'Pressable' is defined but never used                          @typescript-eslint/no-unused-vars
+   22:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+   24:3  warning  'sessions' is defined but never used                           @typescript-eslint/no-unused-vars
+   25:3  warning  'locations' is defined but never used                          @typescript-eslint/no-unused-vars
+   33:3  warning  'eventInfo' is defined but never used                          @typescript-eslint/no-unused-vars
+  290:9  warning  'formatDate' is assigned a value but never used                @typescript-eslint/no-unused-vars
+
+/tmp/ipm-tented-proof/frontend/app/preview-2026/(tabs)/map.tsx
+  7:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/preview-2026/(tabs)/schedule.tsx
+  16:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/app/preview-2026/index.tsx
+  2:64  warning  'Image' is defined but never used                              @typescript-eslint/no-unused-vars
+  4:8   warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+  4:8   warning  'colors' is defined but never used                             @typescript-eslint/no-unused-vars
+
+/tmp/ipm-tented-proof/frontend/src/components/AnnouncementCard.tsx
+  4:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/src/components/AttendeeAttribution.tsx
+  4:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/src/components/BottomSheet.tsx
+  22:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/src/components/CachedDataBanner.tsx
+  6:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/src/components/ErrorBoundary.tsx
+  13:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/src/components/GroundsMap.tsx
+    6:8   warning  Using exported name 'colors' as identifier for default import                                                                                                                                                           import/no-named-as-default
+    8:10  warning  'GROUNDS_MAP' is defined but never used                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   41:61  warning  React Hook useMemo has a missing dependency: 'viewport'. Either include it or remove the dependency array                                                                                                               react-hooks/exhaustive-deps
+   52:6   warning  React Hook useEffect has missing dependencies: 'mapH', 'mapW', 'originX', 'originY', 'viewH', and 'viewW'. Either include them or remove the dependency array                                                           react-hooks/exhaustive-deps
+   64:6   warning  React Hook useCallback has missing dependencies: 'scale', 'tx', and 'ty'. Either include them or remove the dependency array                                                                                            react-hooks/exhaustive-deps
+   76:6   warning  React Hook useCallback has missing dependencies: 'scale.value', 'tx.value', and 'ty.value'. Either include them or remove the dependency array                                                                          react-hooks/exhaustive-deps
+   83:6   warning  React Hook useEffect has a missing dependency: 'flyTo'. Either include it or remove the dependency array                                                                                                                react-hooks/exhaustive-deps
+  150:6   warning  React Hook useEffect has missing dependencies: 'mapH.value', 'mapW.value', 'originX.value', 'originY.value', 'scale', 'tx', 'ty', 'viewH.value', and 'viewW.value'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/tmp/ipm-tented-proof/frontend/src/components/MapComponent.tsx
+   15:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+   92:9  warning  'renderPin' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  146:9  warning  'pinsToShow' is assigned a value but never used                @typescript-eslint/no-unused-vars
+
+/tmp/ipm-tented-proof/frontend/src/components/MapComponent.web.tsx
+   15:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+   91:9  warning  'renderPin' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  145:9  warning  'pinsToShow' is assigned a value but never used                @typescript-eslint/no-unused-vars
+
+/tmp/ipm-tented-proof/frontend/src/components/PWAInstallPrompt.tsx
+  9:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/src/components/PinKeypad.tsx
+  16:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+  26:7  warning  'PinKeypad' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+
+/tmp/ipm-tented-proof/frontend/src/components/SplashScreen.tsx
+  6:8  warning  Using exported name 'colors' as identifier for default import  import/no-named-as-default
+
+/tmp/ipm-tented-proof/frontend/src/components/TentedCityMap.tsx
+   11:8  warning  Using exported name 'colors' as identifier for default import                                                                                                                                                           import/no-named-as-default
+   31:7  warning  'INFO_CARD_BOTTOM' is assigned a value but never used                                                                                                                                                                   @typescript-eslint/no-unused-vars
+  100:6  warning  React Hook useEffect has missing dependencies: 'mapH', 'mapW', 'originX', 'originY', 'viewH', and 'viewW'. Either include them or remove the dependency array                                                           react-hooks/exhaustive-deps
+  389:6  warning  React Hook useEffect has missing dependencies: 'mapH.value', 'mapW.value', 'originX.value', 'originY.value', 'scale', 'tx', 'ty', 'viewH.value', and 'viewW.value'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  491:6  warning  React Hook useEffect has missing dependencies: 'fillOpacity' and 'vendorFootprint'. Either include them or remove the dependency array                                                                                  react-hooks/exhaustive-deps
+  491:7  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked                                                                                react-hooks/exhaustive-deps
+
+✖ 60 problems (0 errors, 60 warnings)

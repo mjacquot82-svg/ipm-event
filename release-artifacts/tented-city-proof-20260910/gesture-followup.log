@@ -1,0 +1,142 @@
+[
+  {
+    "viewport": {
+      "width": 320,
+      "height": 568
+    },
+    "before": {
+      "camera": {
+        "scale": 3.15,
+        "tx": -193.818,
+        "ty": -243.895
+      },
+      "query": "Harkness Equipment, Harriston"
+    },
+    "after": {
+      "camera": {
+        "scale": 3.4,
+        "tx": -231.343,
+        "ty": -365.971
+      },
+      "query": "RV"
+    },
+    "resetOverlap": {
+      "rect": {
+        "x": 264,
+        "y": 416,
+        "width": 44,
+        "height": 44,
+        "top": 416,
+        "right": 308,
+        "bottom": 460,
+        "left": 264
+      },
+      "hitText": "Harkness Equipment, Harriston1B-15outdoor",
+      "clickable": false
+    },
+    "zoomedWithoutSelection": {
+      "scale": 2.05443,
+      "tx": -168.709,
+      "ty": -71.3772
+    },
+    "resetWithoutSelection": {
+      "scale": 1,
+      "tx": 0,
+      "ty": 0
+    }
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "before": {
+      "camera": {
+        "scale": 3.15,
+        "tx": -236.216,
+        "ty": -286.412
+      },
+      "query": "Harkness Equipment, Harriston"
+    },
+    "after": {
+      "camera": {
+        "scale": 2.38117,
+        "tx": -154.608,
+        "ty": -260.283
+      },
+      "query": "SECOND STREET"
+    },
+    "resetOverlap": {
+      "rect": {
+        "x": 334,
+        "y": 692,
+        "width": 44,
+        "height": 44,
+        "top": 692,
+        "right": 378,
+        "bottom": 736,
+        "left": 334
+      },
+      "hitLabel": "Dismiss",
+      "hitText": "",
+      "clickable": false
+    },
+    "zoomedWithoutSelection": {
+      "scale": 2.05443,
+      "tx": -205.614,
+      "ty": -70.6143
+    },
+    "resetWithoutSelection": {
+      "scale": 1,
+      "tx": 0,
+      "ty": 0
+    }
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "before": {
+      "camera": {
+        "scale": 3.15,
+        "tx": -699.466,
+        "ty": -632.581
+      },
+      "query": "Harkness Equipment, Harriston"
+    },
+    "after": {
+      "camera": {
+        "scale": 3.4,
+        "tx": -838.286,
+        "ty": -800.174
+      },
+      "query": "RV"
+    },
+    "resetOverlap": {
+      "rect": {
+        "x": 1384,
+        "y": 748,
+        "width": 44,
+        "height": 44,
+        "top": 748,
+        "right": 1428,
+        "bottom": 792,
+        "left": 1384
+      },
+      "hitLabel": "Dismiss",
+      "hitText": "",
+      "clickable": false
+    },
+    "zoomedWithoutSelection": {
+      "scale": 2.05443,
+      "tx": -608.851,
+      "ty": -379.596
+    },
+    "resetWithoutSelection": {
+      "scale": 1,
+      "tx": 0,
+      "ty": 0
+    }
+  }
+]
