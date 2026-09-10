@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, Image, StyleSheet, TextInput, TouchableOpacity, Keyboard,
   LayoutChangeEvent, Platform, useWindowDimensions, ScrollView,
+  type StyleProp, type ViewStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -14,6 +15,7 @@ import { tentedCityVenues } from '../config/tentedCityVenues';
 import type { Rect, TentedCityPlace } from '../config/tentedCityTypes';
 import { findTentedCityPlace, placeRect, placeTitle, searchTentedCity } from '../config/tentedCitySearch';
 import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tentedCityLayout';
+import { boothHighlightStyle } from '../config/tentedCityHighlight';
 import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, focusRectForFootprint, AREA_BY_LABEL, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
 import { footprintForVendor } from '../config/tentedCityVendorMatch';
 import {
@@ -31,6 +33,22 @@ const INFO_CARD_GAP = 8;
 const INFO_CARD_BOTTOM = TAB_BAR_HEIGHT + INFO_CARD_GAP;
 const SELECTED_RESERVED_BOTTOM = TAB_BAR_HEIGHT + 108;
 const WEB_TOUCH_LOCK = { touchAction: 'none', overscrollBehavior: 'none', userSelect: 'none' } as object;
+
+function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, testID, children }: {
+  rect: Rect; layer: { width: number; height: number }; border: number; borderColor: string;
+  outset?: number; style: StyleProp<ViewStyle>; testID: string; children?: React.ReactNode;
+}) {
+  const { borderWidth: edge, ...frame } = boothHighlightStyle(rect, layer, border, outset);
+  const stroke = { position: 'absolute' as const, backgroundColor: borderColor };
+  return <View testID={testID} pointerEvents="none" style={[style, frame]}>
+    <View style={{ position: 'absolute', top: edge, bottom: edge, left: edge, right: edge }}>{children}</View>
+    {/* Filled edges allow subpixel widths; CSS borders round up and enlarge tiny cells. */}
+    <View style={[stroke, { top: 0, left: 0, right: 0, height: edge }]} />
+    <View style={[stroke, { bottom: 0, left: 0, right: 0, height: edge }]} />
+    <View style={[stroke, { top: 0, bottom: 0, left: 0, width: edge }]} />
+    <View style={[stroke, { top: 0, bottom: 0, right: 0, width: edge }]} />
+  </View>;
+}
 
 type FilterId = 'all' | 'food' | 'stages' | 'vendors';
 const FILTERS: { id: FilterId; label: string }[] = [
@@ -577,16 +595,15 @@ export default function TentedCityMap({
         })}
         {visibleIndividualBooths.map((booth) => {
           const active = selectedBoothId === booth.semanticId;
-          return <TouchableOpacity
-            key={booth.semanticId}
+          return <React.Fragment key={booth.semanticId}><TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel={`Select booth ${booth.humanLabel}`}
             onPress={() => selectIndividualBooth(booth)}
             activeOpacity={1}
             style={[styles.individualBoothHitbox, { left: `${booth.rect.x}%`, top: `${booth.rect.y}%`, width: `${booth.rect.w}%`, height: `${booth.rect.h}%` }, active && styles.individualBoothSelected]}
-          >
-            {active ? <View pointerEvents="none" style={styles.individualBoothActiveOverlay} /> : null}
-          </TouchableOpacity>;
+          />
+            {active ? <BoothHighlight testID="selected-booth-highlight" rect={booth.rect} layer={layer} border={3} borderColor="#F5C518" style={styles.individualBoothActiveOverlay} /> : null}
+          </React.Fragment>;
         })}
         {filterDots.map((dot) => (
           <TouchableOpacity key={dot.key} activeOpacity={0.8} onPress={() => selectPlace(dot.place)} style={[styles.filterDot, { left: `${dot.rect.x + dot.rect.w / 2}%`, top: `${dot.rect.y + dot.rect.h / 2}%` }]} />
@@ -598,10 +615,10 @@ export default function TentedCityMap({
         )) : null}
         {vendorFootprint ? vendorFootprint.rects.map((rect, i) => (
           <React.Fragment key={`fp-${i}-${rect.x}-${rect.y}`}>
-            <View pointerEvents="none" style={[styles.footprintHalo, { left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.w}%`, height: `${rect.h}%` }]} />
-            <View pointerEvents="none" style={[styles.footprint, { left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.w}%`, height: `${rect.h}%` }]}>
+            <BoothHighlight testID="vendor-booth-halo" rect={rect} layer={layer} border={1} outset={1} borderColor="rgba(245,197,24,0.55)" style={styles.footprintHalo} />
+            <BoothHighlight testID="vendor-booth-highlight" rect={rect} layer={layer} border={4} borderColor="#F5C518" style={styles.footprint}>
               <Animated.View style={[styles.footprintFill, footprintFillStyle]} />
-            </View>
+            </BoothHighlight>
           </React.Fragment>
         )) : highlight ? (
           <View pointerEvents="none" style={[styles.pulse, { left: `${highlight.x + highlight.w / 2}%`, top: `${highlight.y + highlight.h / 2}%` }]}>
@@ -717,7 +734,7 @@ const styles = StyleSheet.create({
   semanticHitboxActive: { borderWidth: 3, borderColor: '#F5C518', backgroundColor: 'rgba(166,38,45,0.22)' },
   individualBoothHitbox: { position: 'absolute', backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(245,197,24,0.22)' },
   individualBoothSelected: { backgroundColor: 'rgba(166,38,45,0.24)' },
-  individualBoothActiveOverlay: { ...StyleSheet.absoluteFillObject, borderWidth: 3, borderColor: '#F5C518', backgroundColor: 'rgba(166,38,45,0.14)' },
+  individualBoothActiveOverlay: { position: 'absolute', backgroundColor: 'rgba(166,38,45,0.14)' },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
   pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
   pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },
@@ -751,8 +768,8 @@ const styles = StyleSheet.create({
   eventLine: { fontSize: 13, color: '#374151' },
   hint: { alignSelf: 'center', marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   hintText: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
-  footprintHalo: { position: 'absolute', marginLeft: -1, marginTop: -1, paddingRight: 2, paddingBottom: 2, borderWidth: 1, borderColor: 'rgba(245,197,24,0.55)', backgroundColor: 'rgba(245,197,24,0.18)' },
-  footprint: { position: 'absolute', borderWidth: 4, borderColor: '#F5C518', overflow: 'hidden' },
+  footprintHalo: { position: 'absolute', backgroundColor: 'rgba(245,197,24,0.18)' },
+  footprint: { position: 'absolute', overflow: 'hidden' },
   footprintFill: { ...StyleSheet.absoluteFillObject, backgroundColor: '#A6262D' },
   verifyParent: { position: 'absolute', borderWidth: 2, borderColor: '#22D3EE', backgroundColor: 'transparent' },
   verifyParentLabel: { position: 'absolute', top: -14, left: 0, fontSize: 10, fontWeight: '800', color: '#0E7490', backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 4 },
