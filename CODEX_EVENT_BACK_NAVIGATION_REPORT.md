@@ -29,4 +29,4 @@ On web only, opening event detail pushes a same-URL history marker. A `popstate`
 
 ## Promotion status
 
-This branch is based on production main and is suitable for narrow promotion after staging verification. Staging deployment of the fix is pending; production promotion is not performed in this change. The Landa production promotion remains paused.
+This branch is based on production main and is suitable for narrow promotion after staging verification. Staging deployment `6aa1fbbb4bb23c00080e1576` is ready at https://staging.theipm.ca on staging commit `8e9e3c13`; the deployed bundle contains the history marker. Production promotion is not performed because this environment cannot independently execute production browser/device Back or capture the physical exception stack. The Landa production promotion remains paused.
