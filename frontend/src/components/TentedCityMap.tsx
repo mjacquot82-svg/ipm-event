@@ -16,12 +16,16 @@ import { findTentedCityPlace, placeRect, placeTitle, searchTentedCity } from '..
 import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tentedCityLayout';
 import { TENTED_CITY_VERIFY_PARENTS, focusRectForFootprint } from '../config/tentedCityGeometry';
 import { footprintForVendor } from '../config/tentedCityVendorMatch';
+import {
+  findSemanticAreaForVendor, semanticAreaRect, TENTED_CITY_SEMANTIC_AREAS,
+  type SemanticMapArea,
+} from '../config/tentedCitySemanticMap';
 import { getScheduleData, ScheduleEvent } from '../services/spreadsheetDataService';
 import {
   clampTranslation, DOUBLE_TAP_SCALE, flyToRect, pinchAroundMovingFocal, rubberBandTranslation, translationBounds, zoomAroundFocal,
 } from '../config/tentedCityCamera';
 
-const MAP_SOURCE = require('../../assets/images/tented-city-map.png');
+const MAP_SOURCE = require('../../assets/images/tented-city-map-app-ready.svg');
 const TAB_BAR_HEIGHT = 60;
 const INFO_CARD_GAP = 8;
 const INFO_CARD_BOTTOM = TAB_BAR_HEIGHT + INFO_CARD_GAP;
@@ -60,6 +64,7 @@ export default function TentedCityMap({
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [selected, setSelected] = useState<TentedCityPlace | null>(null);
+  const [selectedSemanticArea, setSelectedSemanticArea] = useState<SemanticMapArea | null>(null);
   const [filter, setFilter] = useState<FilterId>('all');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [unavailable, setUnavailable] = useState(Boolean(mapUnavailable));
@@ -121,6 +126,7 @@ export default function TentedCityMap({
 
   const selectPlace = (place: TentedCityPlace, fromQuery?: string) => {
     setSelected(place);
+    setSelectedSemanticArea(place.kind === 'vendor' ? findSemanticAreaForVendor(place.vendor) : null);
     setQuery(fromQuery ?? placeTitle(place));
     setFocused(false);
     Keyboard.dismiss();
@@ -129,8 +135,17 @@ export default function TentedCityMap({
     else if (place.kind === 'stage') applyFocus(placeRect(place), false, SELECTED_RESERVED_BOTTOM);
   };
 
+  const selectSemanticArea = (area: SemanticMapArea) => {
+    setSelectedSemanticArea(area);
+    setSelected(null);
+    setQuery(area.label);
+    setFocused(false);
+    Keyboard.dismiss();
+    applyFocus(semanticAreaRect(area), false, SELECTED_RESERVED_BOTTOM);
+  };
+
   const clearSelection = () => {
-    setSelected(null); setQuery(''); setFocused(false); setUnavailable(false); Keyboard.dismiss(); resetView();
+    setSelected(null); setSelectedSemanticArea(null); setQuery(''); setFocused(false); setUnavailable(false); Keyboard.dismiss(); resetView();
   };
 
   useEffect(() => { setUnavailable(Boolean(mapUnavailable)); }, [mapUnavailable]);
@@ -454,7 +469,7 @@ export default function TentedCityMap({
     fillOpacity.value = withRepeat(withTiming(0.78, { duration: 700 }), -1, true);
   }, [vendorFootprint?.lotIds.join('|'), vendorFootprint?.areaId]);
   const footprintFillStyle = useAnimatedStyle(() => ({ opacity: fillOpacity.value }));
-  const selectedTitle = selected ? placeTitle(selected) : '';
+  const selectedTitle = selected ? placeTitle(selected) : selectedSemanticArea?.label || '';
   const selectedBooth = selected?.kind === 'vendor' ? selected.vendor.locationLabel : '';
   const selectedMeta = selected?.kind === 'vendor'
     ? `${selected.vendor.category}${selected.vendor.tent ? `  \u00b7  ${selected.vendor.tent}` : ''}${vendorFootprint ? '' : '  \u00b7  map location not available'}`
@@ -466,6 +481,18 @@ export default function TentedCityMap({
     <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
       <Animated.View style={[styles.mapLayer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, mapStyle]}>
         <Image source={MAP_SOURCE} style={[styles.mapImage, { width: layer.width, height: layer.height }]} resizeMode="stretch" />
+        {TENTED_CITY_SEMANTIC_AREAS.map((area) => {
+          const rect = semanticAreaRect(area);
+          const active = selectedSemanticArea?.id === area.id;
+          return <TouchableOpacity
+            key={area.id}
+            activeOpacity={1}
+            accessibilityRole="button"
+            accessibilityLabel={`Select ${area.label}`}
+            onPress={() => selectSemanticArea(area)}
+            style={[styles.semanticHitbox, { left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.w}%`, height: `${rect.h}%` }, active && styles.semanticHitboxActive]}
+          />;
+        })}
         {filterDots.map((dot) => (
           <TouchableOpacity key={dot.key} activeOpacity={0.8} onPress={() => selectPlace(dot.place)} style={[styles.filterDot, { left: `${dot.rect.x + dot.rect.w / 2}%`, top: `${dot.rect.y + dot.rect.h / 2}%` }]} />
         ))}
@@ -546,12 +573,13 @@ export default function TentedCityMap({
       <View style={styles.fabCol}>
         <TouchableOpacity style={styles.fab} onPress={resetView} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
       </View>
-      {selected ? (
+      {selected || selectedSemanticArea ? (
         <View style={styles.infoCard}>
           <View style={styles.infoHeader}>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <Text style={styles.infoTitle} numberOfLines={2}>{selectedTitle}</Text>
               {selectedBooth ? <Text style={styles.infoBooth} numberOfLines={1}>{selectedBooth}</Text> : null}
+              {selectedSemanticArea && !selected ? <Text style={styles.infoBooth} numberOfLines={2}>{selectedSemanticArea.category}</Text> : null}
               {selectedMeta ? <Text style={styles.infoMeta} numberOfLines={1}>{selectedMeta}</Text> : null}
             </View>
             <TouchableOpacity onPress={clearSelection} hitSlop={10} accessibilityLabel="Dismiss"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity>
@@ -580,6 +608,8 @@ const styles = StyleSheet.create({
   chrome: { ...StyleSheet.absoluteFillObject, paddingBottom: TAB_BAR_HEIGHT, justifyContent: 'flex-end' },
   mapLayer: { position: 'absolute', overflow: 'visible' },
   mapImage: { width: '100%', height: '100%' },
+  semanticHitbox: { position: 'absolute', backgroundColor: 'transparent' },
+  semanticHitboxActive: { borderWidth: 3, borderColor: '#F5C518', backgroundColor: 'rgba(166,38,45,0.22)' },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
   pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
   pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },
