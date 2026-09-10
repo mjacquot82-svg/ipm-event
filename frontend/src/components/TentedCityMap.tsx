@@ -69,6 +69,7 @@ export default function TentedCityMap({
   const [filter, setFilter] = useState<FilterId>('all');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [unavailable, setUnavailable] = useState(Boolean(mapUnavailable));
+  const [unmappedInitialLocation, setUnmappedInitialLocation] = useState(false);
   const [verify1A, setVerify1A] = useState(Boolean(verify1AProp));
   const verifyTaps = useRef({ count: 0, at: 0 });
   const viewportRef = useRef<View>(null);
@@ -132,11 +133,13 @@ export default function TentedCityMap({
     setQuery('');
     setFocused(false);
     setUnavailable(false);
+    setUnmappedInitialLocation(false);
     Keyboard.dismiss();
     resetView();
   };
 
   const selectPlace = (place: TentedCityPlace, fromQuery?: string) => {
+    setUnmappedInitialLocation(false);
     setSelected(place);
     const footprint = place.kind === 'vendor' ? footprintForVendor(place.vendor) : null;
     const individual = footprint?.class === 'confident_lot' && footprint.lotIds.length === 1
@@ -156,6 +159,7 @@ export default function TentedCityMap({
   };
 
   const selectSemanticArea = (area: SemanticMapArea) => {
+    setUnmappedInitialLocation(false);
     setSelectedSemanticArea(area);
     setSelectedBoothId(null);
     setSelected(null);
@@ -177,20 +181,36 @@ export default function TentedCityMap({
   };
 
   const clearSelection = () => {
-    setSelected(null); setSelectedSemanticArea(null); setSelectedBoothId(null); setQuery(''); setFocused(false); setUnavailable(false); Keyboard.dismiss(); resetView();
+    setSelected(null); setSelectedSemanticArea(null); setSelectedBoothId(null); setQuery(''); setFocused(false); setUnavailable(false); setUnmappedInitialLocation(false); Keyboard.dismiss(); resetView();
   };
 
   useEffect(() => { setUnavailable(Boolean(mapUnavailable)); }, [mapUnavailable]);
   useEffect(() => { setVerify1A(Boolean(verify1AProp)); }, [verify1AProp]);
   useEffect(() => {
+    setUnmappedInitialLocation(false);
     if (mapUnavailable || !initialQuery) return;
     const place = findTentedCityPlace(initialQuery, tentedCityVendors);
     if (!place) {
       const semanticArea = findSemanticAreaForLocation(initialQuery);
       if (semanticArea) selectSemanticArea(semanticArea);
+      else {
+        setSelected(null);
+        setSelectedSemanticArea(null);
+        setSelectedBoothId(null);
+        setQuery(initialQuery);
+        setUnmappedInitialLocation(true);
+      }
       return;
     }
     if (exactInitialPlace && (place.kind !== 'vendor' || place.vendor.name !== initialQuery)) return;
+    if (place.kind === 'stage' && !place.venue.rect) {
+      setSelected(null);
+      setSelectedSemanticArea(null);
+      setSelectedBoothId(null);
+      setQuery(initialQuery);
+      setUnmappedInitialLocation(true);
+      return;
+    }
     selectPlace(place, placeTitle(place));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery, mapUnavailable, exactInitialPlace, viewport.width]);
@@ -619,7 +639,7 @@ export default function TentedCityMap({
         </View>
         <View style={styles.searchCard}>
           <Feather name="search" size={18} color="#6B7280" />
-          <TextInput value={query} onChangeText={(text) => { setQuery(text); setFocused(true); if (!text.trim()) setSelected(null); }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, or stage" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectPlace(results[0]); }} />
+          <TextInput value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) setSelected(null); }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, or stage" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectPlace(results[0]); }} />
           {query ? <TouchableOpacity onPress={clearSelection} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
         </View>
         <View style={styles.filters}>
@@ -648,7 +668,17 @@ export default function TentedCityMap({
       <View style={styles.fabCol}>
         <TouchableOpacity style={styles.fab} onPress={resetMap} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
       </View>
-      {selected || selectedSemanticArea ? (
+      {unmappedInitialLocation ? (
+        <View style={styles.infoCard} accessibilityRole="alert">
+          <View style={styles.infoHeader}>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <Text style={styles.infoTitle}>This location isn’t mapped yet.</Text>
+              <Text style={styles.infoMeta}>We only show locations matched confidently to the current site map.</Text>
+            </View>
+            <TouchableOpacity onPress={clearSelection} hitSlop={10} accessibilityLabel="Dismiss"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity>
+          </View>
+        </View>
+      ) : selected || selectedSemanticArea ? (
         <View style={styles.infoCard}>
           <View style={styles.infoHeader}>
             <View style={{ flex: 1, paddingRight: 8 }}>

@@ -21,3 +21,11 @@ test('initial location selection activates a semantic region and focuses its cam
   assert.match(map, /applyFocus\(semanticAreaRect\(area\)/);
   assert.match(map, /semanticHitboxActive/);
 });
+
+test('unmapped initial locations show a safe attendee message without a highlight', () => {
+  assert.match(map, /setUnmappedInitialLocation\(true\)/);
+  assert.match(map, /This location isn’t mapped yet\./);
+  assert.match(map, /accessibilityRole="alert"/);
+  assert.match(map, /unmappedInitialLocation \? \(/);
+  assert.match(map, /place\.kind === 'stage' && !place\.venue\.rect/);
+});
