@@ -125,6 +125,17 @@ export default function TentedCityMap({
     ty.value = withTiming(0, { duration: 220 });
   };
 
+  const resetMap = () => {
+    setSelected(null);
+    setSelectedSemanticArea(null);
+    setSelectedBoothId(null);
+    setQuery('');
+    setFocused(false);
+    setUnavailable(false);
+    Keyboard.dismiss();
+    resetView();
+  };
+
   const selectPlace = (place: TentedCityPlace, fromQuery?: string) => {
     setSelected(place);
     const footprint = place.kind === 'vendor' ? footprintForVendor(place.vendor) : null;
@@ -199,6 +210,7 @@ export default function TentedCityMap({
     let lastTapAt = 0;
     let lastTapX = 0;
     let lastTapY = 0;
+    let suppressClick = false;
 
     const currentLayout = () => ({
       viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value,
@@ -341,6 +353,10 @@ export default function TentedCityMap({
       applyWebGesture();
     };
     const onTouchEnd = (event: any) => {
+      if (moved) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
       for (const t of event.changedTouches) pointers.delete('t' + t.identifier);
       onLift();
     };
@@ -361,8 +377,19 @@ export default function TentedCityMap({
     };
     const onPointerUp = (event: any) => {
       if (fromTouch) return;
+      if (moved) {
+        suppressClick = true;
+        event.preventDefault();
+        event.stopPropagation();
+      }
       pointers.delete('p' + event.pointerId);
       onLift();
+    };
+    const onClick = (event: any) => {
+      if (!suppressClick) return;
+      suppressClick = false;
+      event.preventDefault();
+      event.stopPropagation();
     };
 
     const capture = { passive: false, capture: true };
@@ -371,6 +398,7 @@ export default function TentedCityMap({
     node.addEventListener('pointermove', onPointerMove, capture);
     node.addEventListener('pointerup', onPointerUp, capture);
     node.addEventListener('pointercancel', onPointerUp, capture);
+    node.addEventListener('click', onClick, capture);
     node.addEventListener('touchstart', onTouchStart, capture);
     node.addEventListener('touchmove', onTouchMove, capture);
     node.addEventListener('touchend', onTouchEnd, capture);
@@ -381,6 +409,7 @@ export default function TentedCityMap({
       node.removeEventListener('pointermove', onPointerMove, capture);
       node.removeEventListener('pointerup', onPointerUp, capture);
       node.removeEventListener('pointercancel', onPointerUp, capture);
+      node.removeEventListener('click', onClick, capture);
       node.removeEventListener('touchstart', onTouchStart, capture);
       node.removeEventListener('touchmove', onTouchMove, capture);
       node.removeEventListener('touchend', onTouchEnd, capture);
@@ -530,8 +559,10 @@ export default function TentedCityMap({
             accessibilityLabel={`Select booth ${booth.humanLabel}`}
             onPress={() => selectIndividualBooth(booth)}
             activeOpacity={1}
-            style={[styles.individualBoothHitbox, { left: `${booth.rect.x}%`, top: `${booth.rect.y}%`, width: `${booth.rect.w}%`, height: `${booth.rect.h}%` }, active && styles.individualBoothActive]}
-          />;
+            style={[styles.individualBoothHitbox, { left: `${booth.rect.x}%`, top: `${booth.rect.y}%`, width: `${booth.rect.w}%`, height: `${booth.rect.h}%` }, active && styles.individualBoothSelected]}
+          >
+            {active ? <View pointerEvents="none" style={styles.individualBoothActiveOverlay} /> : null}
+          </TouchableOpacity>;
         })}
         {filterDots.map((dot) => (
           <TouchableOpacity key={dot.key} activeOpacity={0.8} onPress={() => selectPlace(dot.place)} style={[styles.filterDot, { left: `${dot.rect.x + dot.rect.w / 2}%`, top: `${dot.rect.y + dot.rect.h / 2}%` }]} />
@@ -611,7 +642,7 @@ export default function TentedCityMap({
         ) : null}
       </View>
       <View style={styles.fabCol}>
-        <TouchableOpacity style={styles.fab} onPress={resetView} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
+        <TouchableOpacity style={styles.fab} onPress={resetMap} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
       </View>
       {selected || selectedSemanticArea ? (
         <View style={styles.infoCard}>
@@ -651,7 +682,8 @@ const styles = StyleSheet.create({
   semanticHitbox: { position: 'absolute', backgroundColor: 'transparent' },
   semanticHitboxActive: { borderWidth: 3, borderColor: '#F5C518', backgroundColor: 'rgba(166,38,45,0.22)' },
   individualBoothHitbox: { position: 'absolute', backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(245,197,24,0.22)' },
-  individualBoothActive: { borderWidth: 3, borderColor: '#F5C518', backgroundColor: 'rgba(166,38,45,0.36)' },
+  individualBoothSelected: { backgroundColor: 'rgba(166,38,45,0.24)' },
+  individualBoothActiveOverlay: { ...StyleSheet.absoluteFillObject, borderWidth: 3, borderColor: '#F5C518', backgroundColor: 'rgba(166,38,45,0.14)' },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
   pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
   pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },
@@ -674,7 +706,7 @@ const styles = StyleSheet.create({
   resultName: { fontSize: 15, fontWeight: '700', color: '#111827' },
   resultMeta: { fontSize: 12, color: '#6B7280', marginTop: 1 },
   empty: { padding: 14, color: '#6B7280' },
-  fabCol: { position: 'absolute', right: 12, bottom: 108, zIndex: 15 },
+  fabCol: { position: 'absolute', right: 12, bottom: 108, zIndex: 30 },
   fab: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   infoCard: { marginHorizontal: 12, marginBottom: INFO_CARD_GAP, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 6, zIndex: 20 },
   infoHeader: { flexDirection: 'row', alignItems: 'flex-start' },

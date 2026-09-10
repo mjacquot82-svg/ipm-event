@@ -226,8 +226,8 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
 
   if (flagged6b.length) {
     const unique = [...new Set(flagged6b)].sort();
+    const parent = AREA_BY_LABEL.get('6B 26-29');
     if (unique.join() === '6B-26,6B-27,6B-28,6B-29') {
-      const parent = AREA_BY_LABEL.get('6B 26-29');
       return emptyMatch({
         class: 'range_or_named',
         reason: '6B-26-29-whole-parent-only',
@@ -238,12 +238,12 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
       });
     }
     return emptyMatch({
-      class: 'ambiguous',
-      reason: '6B-26-29-numbering-unproven',
-      rect: null,
-      parentRect: null,
+      class: 'range_or_named',
+      reason: '6B-26-29-numbering-unproven-parent-fallback',
+      rect: parent?.rect || null,
+      parentRect: parent?.rect || null,
       lotIds: unique,
-      areaId: null,
+      areaId: parent?.id || 'range-6B-26-29',
     });
   }
 
