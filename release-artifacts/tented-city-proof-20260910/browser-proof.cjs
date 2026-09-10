@@ -51,6 +51,6 @@ const vendors=[['ACE','ACE / JCB, Harriston','1A-09','1A 1-12'],['GGS Structures
   await ctx.close();
  }
  await browser.close();
- const result={base,version,sourceSHA:'f5202fefa3698d064841b7696d2264965b02b129',networkPolicy:'Only same-origin static GET/HEAD; APIs and all external requests aborted. Actual bundled map/vendor data, no map/vendor mocks.',pinch:'PHYSICAL TEST REQUIRED',rows,measurements,pageErrors:errors,blockedRequests:blocked};
+ const result={base,version,sourceSHA:'35df71f0b4c5ddd1ab276165b84ec9197e2c8fb9',networkPolicy:'Only same-origin static GET/HEAD; APIs and all external requests aborted. Actual bundled map/vendor data, no map/vendor mocks.',pinch:'PHYSICAL TEST REQUIRED',rows,measurements,pageErrors:errors,blockedRequests:blocked};
  fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify(result,null,2));console.log(JSON.stringify({pass:rows.filter(r=>r.status==='PASS').length,fail:rows.filter(r=>r.status==='FAIL').length,pageErrors:errors.length}));
 })().catch(e=>{console.error(e);process.exitCode=1});
