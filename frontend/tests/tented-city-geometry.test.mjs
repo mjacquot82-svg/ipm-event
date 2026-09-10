@@ -163,7 +163,7 @@ test('TentedCityMap uses footprintForVendor and does not draw all lots', () => {
   assert.match(map, /styles.footprint/);
   assert.match(map, /onSwitchToGrounds/);
   assert.match(map, /MAP_SOURCE/);
-  assert.match(map, /tented-city-map\.png/);
+  assert.match(map, /tented-city-map-app-ready\.svg/);
   assert.match(map, /map location not available/);
 });
 
@@ -348,4 +348,28 @@ test('Hanover / RAM / Wroxeter / Bell leftovers stay unmatched or 5A-missing', (
   const hanover = allVendors.find((v) => v.name === 'Hanover' && v.locationLabel === '5A-01-04');
   assert.ok(hanover);
   assert.equal(hanover.booths.every((id) => !lots[id]), true);
+});
+
+test('safe individual booth layer derives exact counts and stays inside parents', () => {
+  const safe = geo.areas.filter((a) => a.n_lots > 0 && !a.flagged && a.split_axis === 'L_to_R');
+  assert.equal(safe.length, 28);
+  const generated = safe.flatMap(lotsForArea);
+  assert.equal(generated.length, 322);
+  for (const area of safe) {
+    const lots = generated.filter((lot) => lot.parent === area.label);
+    assert.equal(lots.length, area.lot_end - area.lot_start + 1);
+    for (const lot of lots) {
+      assert.ok(lot.rect.x >= area.rect.x - 0.001 && lot.rect.x + lot.rect.w <= area.rect.x + area.rect.w + 0.001);
+      assert.ok(lot.rect.y >= area.rect.y - 0.001 && lot.rect.y + lot.rect.h <= area.rect.y + area.rect.h + 0.001);
+    }
+  }
+  assert.equal(generated.filter((lot) => lot.id === '6B-26').length, 0);
+  assert.equal(new Set(generated.map((lot) => lot.id)).size, generated.length);
+});
+
+test('individual semantic IDs normalize safe booth lookup variants', () => {
+  const src = fs.readFileSync(geoTsPath, 'utf8');
+  assert.match(src, /TENTED_CITY_INDIVIDUAL_BOOTHS/);
+  assert.match(src, /booth-\$\{lot\.id\.toLowerCase\(\)\}/);
+  assert.match(src, /compactBoothKey/);
 });

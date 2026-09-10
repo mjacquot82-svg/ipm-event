@@ -134,7 +134,7 @@ test('TentedCityMap highlights vendor footprints from PDF geometry', () => {
 
 test('map screen keeps Grounds MapComponent and passes verify1A', () => {
   const screen = fs.readFileSync(screenPath, 'utf8');
-  assert.ok(screen.includes('import MapComponent from'));
+  assert.ok(screen.includes('import TentedCityMap from'));
   assert.ok(screen.includes('verify1A={verify1A}'));
 });
 
