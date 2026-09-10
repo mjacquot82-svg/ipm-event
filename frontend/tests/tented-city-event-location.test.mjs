@@ -13,6 +13,7 @@ test('schedule event map locations resolve audited Foxton and Davishill labels',
   assert.match(semantic, /'EVENT CENTRE 1 WEST 2':\s*'dancing-tractors-combine-derby-west-2'/);
   assert.match(venues, /'Quality Homes - Stage'/);
   assert.match(venues, /'The Beyond Wireless Stage'/);
+  assert.match(venues, /id: 'quality-homes-stage'[\s\S]*?rect: null/);
 });
 
 test('initial location selection activates a semantic region and focuses its camera', () => {

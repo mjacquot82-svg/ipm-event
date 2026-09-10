@@ -36,7 +36,9 @@ export const tentedCityVenues: TentedCityVenue[] = [
     label: 'Quality Homes Stage',
     names: ['Quality Homes - Stage', 'Quality Homes'],
     kind: 'stage',
-    rect: { x: 30.146, y: 37.495, w: 4.973, h: 3.854 },
+    // No audited stage footprint is available. Do not reuse the nearby
+    // Quality Homes exhibitor booth rectangle as a stage location.
+    rect: null,
   },
   {
     id: 'mnp-lifestyles',
