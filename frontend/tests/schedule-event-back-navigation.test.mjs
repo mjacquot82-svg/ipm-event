@@ -35,6 +35,25 @@ test('Schedule resolves a valid event parameter once and fails safely for unknow
 });
 
 test('Itinerary-origin Back returns to Itinerary after closing the detail state', () => {
-  assert.match(source, /if \(returnToItineraryRef\.current\) window\.setTimeout\(\(\) => window\.history\.back\(\), 0\)/);
+  assert.match(source, /if \(returnToItineraryRef\.current\) window\.history\.back\(\)/);
   assert.match(source, /else if \(returnToItineraryRef\.current\) \{\s*router\.back\(\);/s);
+});
+
+test('X close uses one history traversal and cannot race a second back call', () => {
+  assert.match(source, /window\.history\.go\(returnToItineraryRef\.current \? -2 : -1\)/);
+  assert.doesNotMatch(source, /setTimeout\(\(\) => window\.history\.back\(\)/);
+});
+
+test('close contract has deterministic one-step semantics for X and Back', () => {
+  const calls = [];
+  const closeByX = (returnToItinerary) => calls.push(['go', returnToItinerary ? -2 : -1]);
+  const closeByBack = (returnToItinerary) => {
+    calls.push(['popstate-close']);
+    if (returnToItinerary) calls.push(['back']);
+  };
+  closeByX(true);
+  closeByX(false);
+  closeByBack(true);
+  closeByBack(false);
+  assert.deepEqual(calls, [['go', -2], ['go', -1], ['popstate-close'], ['back'], ['popstate-close']]);
 });
