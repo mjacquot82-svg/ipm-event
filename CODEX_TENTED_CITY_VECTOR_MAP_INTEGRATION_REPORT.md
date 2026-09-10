@@ -8,7 +8,7 @@ Staging-only integration of the supplied official app-ready SVG. Production was 
 
 - Starting branch/SHA: `staging` / `fadb31d6c176ff480a600898cb3bbb2e2463459a`
 - Working branch: `feature/tented-city-vector-map-20260910`
-- Final SHA: `e017e25dd3f4d13b9b877f627189c23830862e17`
+- Final SHA: `ab729852` (feature branch tip; staging published the preceding functional commit `e017e25d`)
 
 ## Files inspected
 
