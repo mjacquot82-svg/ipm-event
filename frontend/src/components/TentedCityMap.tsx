@@ -16,7 +16,7 @@ import type { Rect, TentedCityPlace } from '../config/tentedCityTypes';
 import { findTentedCityPlace, placeRect, placeTitle, searchTentedCity } from '../config/tentedCitySearch';
 import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tentedCityLayout';
 import { boothHighlightStyle } from '../config/tentedCityHighlight';
-import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, focusRectForFootprint, AREA_BY_LABEL, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
+import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, TENTED_CITY_BOOTH_DIVIDER_SEGMENTS, focusRectForFootprint, AREA_BY_LABEL, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
 import { footprintForVendor } from '../config/tentedCityVendorMatch';
 import {
   findSemanticAreaForVendor, findSemanticAreaForGeometryArea, findSemanticAreaForLocation, semanticAreaRect, TENTED_CITY_SEMANTIC_AREAS,
@@ -24,7 +24,7 @@ import {
 } from '../config/tentedCitySemanticMap';
 import { getScheduleData, ScheduleEvent } from '../services/spreadsheetDataService';
 import {
-  clampTranslation, DOUBLE_TAP_SCALE, flyToRect, pinchAroundMovingFocal, rubberBandTranslation, translationBounds, zoomAroundFocal,
+  clampTranslation, BOOTH_DIVIDER_VISIBLE_SCALE, DOUBLE_TAP_SCALE, flyToRect, pinchAroundMovingFocal, rubberBandTranslation, translationBounds, zoomAroundFocal,
 } from '../config/tentedCityCamera';
 
 const MAP_SOURCE = require('../../assets/images/tented-city-map-app-ready.svg');
@@ -548,6 +548,9 @@ export default function TentedCityMap({
   pinch.blocksExternalGesture(pan);
   const composed = Gesture.Simultaneous(pinch, pan, doubleTap);
   const mapStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }] }));
+  const boothDividerStyle = useAnimatedStyle(() => ({
+    opacity: scale.value >= BOOTH_DIVIDER_VISIBLE_SCALE ? 0.5 : 0,
+  }));
   const webLock = Platform.OS === 'web' ? WEB_TOUCH_LOCK : null;
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -581,6 +584,24 @@ export default function TentedCityMap({
     <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
       <Animated.View style={[styles.mapLayer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, mapStyle]}>
         <Image source={MAP_SOURCE} style={[styles.mapImage, { width: layer.width, height: layer.height }]} resizeMode="stretch" />
+        {TENTED_CITY_BOOTH_DIVIDER_SEGMENTS.map((seg) => (
+          <Animated.View
+            key={seg.key}
+            pointerEvents="none"
+            testID="booth-divider"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={[
+              styles.boothDivider,
+              boothDividerStyle,
+              {
+                left: `${seg.x}%`,
+                top: `${seg.y}%`,
+                height: `${seg.h}%`,
+              },
+            ]}
+          />
+        ))}
         {TENTED_CITY_SEMANTIC_AREAS.map((area) => {
           const rect = semanticAreaRect(area);
           const active = selectedSemanticArea?.id === area.id;
@@ -730,6 +751,7 @@ const styles = StyleSheet.create({
   chrome: { ...StyleSheet.absoluteFillObject, paddingBottom: TAB_BAR_HEIGHT, justifyContent: 'flex-end' },
   mapLayer: { position: 'absolute', overflow: 'visible' },
   mapImage: { width: '100%', height: '100%' },
+  boothDivider: { position: 'absolute', width: StyleSheet.hairlineWidth, marginLeft: -StyleSheet.hairlineWidth / 2, backgroundColor: 'rgba(60, 42, 28, 0.42)', zIndex: 1 },
   semanticHitbox: { position: 'absolute', backgroundColor: 'transparent' },
   semanticHitboxActive: { borderWidth: 3, borderColor: '#F5C518', backgroundColor: 'rgba(166,38,45,0.22)' },
   individualBoothHitbox: { position: 'absolute', backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(245,197,24,0.22)' },

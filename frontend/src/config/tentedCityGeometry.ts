@@ -230,6 +230,43 @@ export function clusterLotRects(lots: ClusterableLot[]): Rect[] {
   return clusters;
 }
 
+
+/** Shared edges between adjacent trusted individual booth cells (L→R only). */
+export type BoothDividerSegment = {
+  key: string;
+  parentRangeId: string;
+  parentRangeLabel: string;
+  /** Percent x of the shared vertical edge (left edge of the higher booth number). */
+  x: number;
+  y: number;
+  h: number;
+};
+
+/** Divider lines for one safe individual range; empty for parent-only / unverified. */
+export function boothDividerSegmentsForArea(area: GeometryArea): BoothDividerSegment[] {
+  const booths = individualBoothsForArea(area);
+  if (booths.length < 2) return [];
+  const sorted = [...booths].sort((a, b) => a.boothNumber - b.boothNumber);
+  const segments: BoothDividerSegment[] = [];
+  for (let i = 1; i < sorted.length; i += 1) {
+    const left = sorted[i - 1];
+    const right = sorted[i];
+    segments.push({
+      key: `div-${left.id}-${right.id}`,
+      parentRangeId: right.parentRangeId,
+      parentRangeLabel: right.parentRangeLabel,
+      x: right.rect.x,
+      y: right.rect.y,
+      h: right.rect.h,
+    });
+  }
+  return segments;
+}
+
+/** Precomputed overlay segments — only TENTED_CITY_SAFE_INDIVIDUAL_RANGES. */
+export const TENTED_CITY_BOOTH_DIVIDER_SEGMENTS =
+  TENTED_CITY_SAFE_INDIVIDUAL_RANGES.flatMap(boothDividerSegmentsForArea);
+
 export function focusRectForFootprint(lotRect: Rect, _parent: Rect | null | undefined): Rect {
   const padX = Math.max(5.5, lotRect.w * 9);
   const padY = Math.max(7, lotRect.h * 2.4);

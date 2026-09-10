@@ -3,6 +3,8 @@
 export const MIN_SCALE = 1;
 export const MAX_SCALE = 4.5;
 export const DOUBLE_TAP_SCALE = 2.4;
+/** Camera scale at/above which trusted booth divider overlays become visible. */
+export const BOOTH_DIVIDER_VISIBLE_SCALE = 2;
 export const MIN_OVERLAP_FRACTION = 0.15;
 export const RUBBER_BAND_PIXELS = 72;
 
