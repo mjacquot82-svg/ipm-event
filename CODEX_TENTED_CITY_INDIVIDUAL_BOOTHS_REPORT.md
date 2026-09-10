@@ -7,7 +7,7 @@ This isolated map branch extends the existing official app-ready SVG interaction
 ## Branch and sources
 
 - Starting branch/SHA: `feature/tented-city-vector-map-20260910` at `edce2bf036f737c66f3a4b315a1e16eb22984437` (`edce2bf0`).
-- Final branch/SHA before this recovery: `0e7bc2842aa58ce4d165c0f35a439b29929a5890`.
+- Final branch/SHA before this recovery: `0e7bc2842aa58ce4d165c0f35a439b29929a5890`; recovery tip: `656b733e`.
 - Authoritative artwork: `frontend/assets/images/tented-city-map-app-ready.svg`.
 - Existing semantic manifest: `frontend/src/data/tented-city-map-manifest.json` (99 regions; unchanged).
 - Range geometry evidence: `frontend/src/data/tented-city-geometry-areas.json`, an existing PDF-extracted geometry audit from `tented-city.pdf` page 17. It records official range labels and rectangular bounds; no screenshot, OCR, recreated image, or AI artwork was used.
@@ -105,3 +105,5 @@ Marc should review an isolated/local map build on a phone at 320px and common ph
 ## Current recovery status
 
 The work remains partial. The exact remaining gates are real end-to-end running-app vendor lookups for ACE/JCB, GGS Structures, Kodiak Boots, Hip Town Hype, StumpedIt, and Harkness Equipment; browser checks at 320px, a common phone width, and desktop; overflow/blank-SVG/highlight checks; and physical pinch validation. No isolated individual-booth preview was created. Shared staging, production, Landa content/media, schedule, vendors, PWA lifecycle, notifications, reconciliation, Notification Health, WonderPush, what3words, announcements, and production data were not changed by this recovery checkout. No notification was sent.
+
+INDIVIDUAL BOOTH WORK STILL PARTIAL — running-app vendor lookup and browser/mobile/physical validation remain incomplete; no isolated preview was created.
