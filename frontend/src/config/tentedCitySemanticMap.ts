@@ -1,5 +1,6 @@
 import manifest from '../data/tented-city-map-manifest.json';
 import type { Rect, TentedCityVendor } from './tentedCityTypes';
+import type { GeometryArea } from './tentedCityGeometry';
 
 export const TENTED_CITY_SEMANTIC_VIEWBOX = { width: 774, height: 603 } as const;
 
@@ -37,4 +38,12 @@ export function findSemanticArea(query: string): SemanticMapArea | null {
 export function findSemanticAreaForVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationLabel'>): SemanticMapArea | null {
   const labels = [...(vendor.booths || []), vendor.locationLabel || ''].map(normalize).filter(Boolean);
   return TENTED_CITY_SEMANTIC_AREAS.find((area) => labels.includes(normalize(area.label))) || null;
+}
+
+/** Resolve audited geometry ranges using the official SVG manifest labels. */
+export function findSemanticAreaForGeometryArea(area: Pick<GeometryArea, 'section' | 'lot_start' | 'lot_end' | 'label'>): SemanticMapArea | null {
+  const section = area.section?.toUpperCase();
+  if (!section || area.lot_start == null || area.lot_end == null) return findSemanticArea(area.label);
+  const range = new RegExp(`\\b${section}\\s*[- ]?${area.lot_start}\\s*[-–]\\s*${area.lot_end}\\b`, 'i');
+  return TENTED_CITY_SEMANTIC_AREAS.find((candidate) => range.test(candidate.label)) || findSemanticArea(area.label);
 }

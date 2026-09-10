@@ -108,9 +108,10 @@ export type TentedCityIndividualBooth = GeometryLot & {
   orientationVerified: true;
 };
 
-/** Ranges whose rectangular geometry and audited L-to-R ordering are safe for individual selection. */
+/** Only high-confidence ordinary ranges expose individual selection. */
 export const TENTED_CITY_SAFE_INDIVIDUAL_RANGES = TENTED_CITY_RANGE_AREAS.filter(
-  (area) => !area.flagged && area.split_axis === 'L_to_R' && area.orientation === 'horizontal',
+  (area) => !area.flagged && area.confidence === 'high'
+    && area.split_axis === 'L_to_R' && area.orientation === 'horizontal',
 );
 
 export function individualBoothsForArea(area: GeometryArea): TentedCityIndividualBooth[] {
