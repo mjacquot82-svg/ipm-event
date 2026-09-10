@@ -17,7 +17,7 @@ import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tented
 import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, focusRectForFootprint, AREA_BY_LABEL, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
 import { footprintForVendor } from '../config/tentedCityVendorMatch';
 import {
-  findSemanticAreaForVendor, semanticAreaRect, TENTED_CITY_SEMANTIC_AREAS,
+  findSemanticAreaForVendor, findSemanticAreaForGeometryArea, semanticAreaRect, TENTED_CITY_SEMANTIC_AREAS,
   type SemanticMapArea,
 } from '../config/tentedCitySemanticMap';
 import { getScheduleData, ScheduleEvent } from '../services/spreadsheetDataService';
@@ -127,10 +127,16 @@ export default function TentedCityMap({
 
   const selectPlace = (place: TentedCityPlace, fromQuery?: string) => {
     setSelected(place);
-    const semanticArea = place.kind === 'vendor' ? findSemanticAreaForVendor(place.vendor) : null;
-    setSelectedSemanticArea(semanticArea);
     const footprint = place.kind === 'vendor' ? footprintForVendor(place.vendor) : null;
-    setSelectedBoothId(footprint?.class === 'confident_lot' && footprint.lotIds.length === 1 ? `booth-${footprint.lotIds[0].toLowerCase()}` : null);
+    const individual = footprint?.class === 'confident_lot' && footprint.lotIds.length === 1
+      ? TENTED_CITY_INDIVIDUAL_BOOTHS.find((booth) => booth.id === footprint.lotIds[0]) || null
+      : null;
+    const individualParent = individual ? AREA_BY_LABEL.get(individual.parentRangeLabel) : null;
+    const semanticArea = individual && individualParent
+      ? findSemanticAreaForGeometryArea(individualParent)
+      : place.kind === 'vendor' ? findSemanticAreaForVendor(place.vendor) : null;
+    setSelectedSemanticArea(semanticArea);
+    setSelectedBoothId(individual?.semanticId || null);
     setQuery(fromQuery ?? placeTitle(place));
     setFocused(false);
     Keyboard.dismiss();
@@ -151,7 +157,8 @@ export default function TentedCityMap({
   const selectIndividualBooth = (booth: TentedCityIndividualBooth) => {
     setSelectedBoothId(booth.semanticId);
     setSelected(null);
-    setSelectedSemanticArea(TENTED_CITY_SEMANTIC_AREAS.find((area) => area.label === booth.parentRangeLabel) || null);
+    const parent = AREA_BY_LABEL.get(booth.parentRangeLabel);
+    setSelectedSemanticArea(parent ? findSemanticAreaForGeometryArea(parent) : null);
     setQuery(booth.humanLabel);
     setFocused(false);
     Keyboard.dismiss();
@@ -492,9 +499,11 @@ export default function TentedCityMap({
       : '';
 
   const visibleIndividualBooths = useMemo(() => {
-    const label = selectedSemanticArea?.label;
-    if (!label) return [];
-    return TENTED_CITY_INDIVIDUAL_BOOTHS.filter((booth) => booth.parentRangeLabel === label);
+    if (!selectedSemanticArea) return [];
+    return TENTED_CITY_INDIVIDUAL_BOOTHS.filter((booth) => {
+      const parent = AREA_BY_LABEL.get(booth.parentRangeLabel);
+      return parent ? findSemanticAreaForGeometryArea(parent)?.id === selectedSemanticArea.id : false;
+    });
   }, [selectedSemanticArea]);
 
   const mapGestures = (

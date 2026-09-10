@@ -351,10 +351,10 @@ test('Hanover / RAM / Wroxeter / Bell leftovers stay unmatched or 5A-missing', (
 });
 
 test('safe individual booth layer derives exact counts and stays inside parents', () => {
-  const safe = geo.areas.filter((a) => a.n_lots > 0 && !a.flagged && a.split_axis === 'L_to_R');
-  assert.equal(safe.length, 28);
+  const safe = geo.areas.filter((a) => a.n_lots > 0 && !a.flagged && a.confidence === 'high' && a.split_axis === 'L_to_R');
+  assert.equal(safe.length, 26);
   const generated = safe.flatMap(lotsForArea);
-  assert.equal(generated.length, 322);
+  assert.equal(generated.length, 310);
   for (const area of safe) {
     const lots = generated.filter((lot) => lot.parent === area.label);
     assert.equal(lots.length, area.lot_end - area.lot_start + 1);
@@ -364,6 +364,7 @@ test('safe individual booth layer derives exact counts and stays inside parents'
     }
   }
   assert.equal(generated.filter((lot) => lot.id === '6B-26').length, 0);
+  assert.equal(generated.filter((lot) => /^3[AB]-(39|40|41|42|43|44)$/.test(lot.id)).length, 0);
   assert.equal(new Set(generated.map((lot) => lot.id)).size, generated.length);
 });
 
@@ -372,4 +373,21 @@ test('individual semantic IDs normalize safe booth lookup variants', () => {
   assert.match(src, /TENTED_CITY_INDIVIDUAL_BOOTHS/);
   assert.match(src, /booth-\$\{lot\.id\.toLowerCase\(\)\}/);
   assert.match(src, /compactBoothKey/);
+});
+
+test('vendor selection resolves individual booth through the manifest parent mapper', () => {
+  const map = fs.readFileSync(mapPath, 'utf8');
+  const semantic = fs.readFileSync(path.join(root, 'src/config/tentedCitySemanticMap.ts'), 'utf8');
+  assert.match(map, /findSemanticAreaForGeometryArea/);
+  assert.match(map, /individualParent/);
+  assert.match(semantic, /official SVG manifest labels/);
+  assert.match(semantic, /lot_start/);
+  assert.match(semantic, /lot_end/);
+});
+
+test('medium-confidence special ranges remain parent-only', () => {
+  const src = fs.readFileSync(geoTsPath, 'utf8');
+  assert.match(src, /confidence === 'high'/);
+  assert.match(src, /confidence === 'high'/);
+  assert.match(src, /TENTED_CITY_SAFE_INDIVIDUAL_RANGES/);
 });
