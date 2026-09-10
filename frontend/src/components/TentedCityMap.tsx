@@ -14,7 +14,7 @@ import { tentedCityVenues } from '../config/tentedCityVenues';
 import type { Rect, TentedCityPlace } from '../config/tentedCityTypes';
 import { findTentedCityPlace, placeRect, placeTitle, searchTentedCity } from '../config/tentedCitySearch';
 import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tentedCityLayout';
-import { TENTED_CITY_VERIFY_PARENTS, focusRectForFootprint } from '../config/tentedCityGeometry';
+import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, focusRectForFootprint, AREA_BY_LABEL, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
 import { footprintForVendor } from '../config/tentedCityVendorMatch';
 import {
   findSemanticAreaForVendor, semanticAreaRect, TENTED_CITY_SEMANTIC_AREAS,
@@ -65,6 +65,7 @@ export default function TentedCityMap({
   const [focused, setFocused] = useState(false);
   const [selected, setSelected] = useState<TentedCityPlace | null>(null);
   const [selectedSemanticArea, setSelectedSemanticArea] = useState<SemanticMapArea | null>(null);
+  const [selectedBoothId, setSelectedBoothId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterId>('all');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [unavailable, setUnavailable] = useState(Boolean(mapUnavailable));
@@ -126,17 +127,20 @@ export default function TentedCityMap({
 
   const selectPlace = (place: TentedCityPlace, fromQuery?: string) => {
     setSelected(place);
-    setSelectedSemanticArea(place.kind === 'vendor' ? findSemanticAreaForVendor(place.vendor) : null);
+    const semanticArea = place.kind === 'vendor' ? findSemanticAreaForVendor(place.vendor) : null;
+    setSelectedSemanticArea(semanticArea);
+    const footprint = place.kind === 'vendor' ? footprintForVendor(place.vendor) : null;
+    setSelectedBoothId(footprint?.class === 'confident_lot' && footprint.lotIds.length === 1 ? `booth-${footprint.lotIds[0].toLowerCase()}` : null);
     setQuery(fromQuery ?? placeTitle(place));
     setFocused(false);
     Keyboard.dismiss();
-    const footprint = place.kind === 'vendor' ? footprintForVendor(place.vendor) : null;
     if (footprint) applyFocus(focusRectForFootprint(footprint.rect, footprint.parentRect), true, SELECTED_RESERVED_BOTTOM);
     else if (place.kind === 'stage') applyFocus(placeRect(place), false, SELECTED_RESERVED_BOTTOM);
   };
 
   const selectSemanticArea = (area: SemanticMapArea) => {
     setSelectedSemanticArea(area);
+    setSelectedBoothId(null);
     setSelected(null);
     setQuery(area.label);
     setFocused(false);
@@ -144,8 +148,18 @@ export default function TentedCityMap({
     applyFocus(semanticAreaRect(area), false, SELECTED_RESERVED_BOTTOM);
   };
 
+  const selectIndividualBooth = (booth: TentedCityIndividualBooth) => {
+    setSelectedBoothId(booth.semanticId);
+    setSelected(null);
+    setSelectedSemanticArea(TENTED_CITY_SEMANTIC_AREAS.find((area) => area.label === booth.parentRangeLabel) || null);
+    setQuery(booth.humanLabel);
+    setFocused(false);
+    Keyboard.dismiss();
+    applyFocus(focusRectForFootprint(booth.rect, AREA_BY_LABEL.get(booth.parentRangeLabel)?.rect), true, SELECTED_RESERVED_BOTTOM);
+  };
+
   const clearSelection = () => {
-    setSelected(null); setSelectedSemanticArea(null); setQuery(''); setFocused(false); setUnavailable(false); Keyboard.dismiss(); resetView();
+    setSelected(null); setSelectedSemanticArea(null); setSelectedBoothId(null); setQuery(''); setFocused(false); setUnavailable(false); Keyboard.dismiss(); resetView();
   };
 
   useEffect(() => { setUnavailable(Boolean(mapUnavailable)); }, [mapUnavailable]);
@@ -470,12 +484,18 @@ export default function TentedCityMap({
   }, [vendorFootprint?.lotIds.join('|'), vendorFootprint?.areaId]);
   const footprintFillStyle = useAnimatedStyle(() => ({ opacity: fillOpacity.value }));
   const selectedTitle = selected ? placeTitle(selected) : selectedSemanticArea?.label || '';
-  const selectedBooth = selected?.kind === 'vendor' ? selected.vendor.locationLabel : '';
+  const selectedBooth = selected?.kind === 'vendor' ? selected.vendor.locationLabel : selectedBoothId ? TENTED_CITY_INDIVIDUAL_BOOTHS.find((booth) => booth.semanticId === selectedBoothId)?.humanLabel || '' : '';
   const selectedMeta = selected?.kind === 'vendor'
     ? `${selected.vendor.category}${selected.vendor.tent ? `  \u00b7  ${selected.vendor.tent}` : ''}${vendorFootprint ? '' : '  \u00b7  map location not available'}`
     : selected?.kind === 'stage'
       ? selected.venue.note || (selected.venue.rect ? 'Stage' : 'On the schedule \u2014 booth not on this map yet')
       : '';
+
+  const visibleIndividualBooths = useMemo(() => {
+    const label = selectedSemanticArea?.label;
+    if (!label) return [];
+    return TENTED_CITY_INDIVIDUAL_BOOTHS.filter((booth) => booth.parentRangeLabel === label);
+  }, [selectedSemanticArea]);
 
   const mapGestures = (
     <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
@@ -491,6 +511,17 @@ export default function TentedCityMap({
             accessibilityLabel={`Select ${area.label}`}
             onPress={() => selectSemanticArea(area)}
             style={[styles.semanticHitbox, { left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.w}%`, height: `${rect.h}%` }, active && styles.semanticHitboxActive]}
+          />;
+        })}
+        {visibleIndividualBooths.map((booth) => {
+          const active = selectedBoothId === booth.semanticId;
+          return <TouchableOpacity
+            key={booth.semanticId}
+            accessibilityRole="button"
+            accessibilityLabel={`Select booth ${booth.humanLabel}`}
+            onPress={() => selectIndividualBooth(booth)}
+            activeOpacity={1}
+            style={[styles.individualBoothHitbox, { left: `${booth.rect.x}%`, top: `${booth.rect.y}%`, width: `${booth.rect.w}%`, height: `${booth.rect.h}%` }, active && styles.individualBoothActive]}
           />;
         })}
         {filterDots.map((dot) => (
@@ -610,6 +641,8 @@ const styles = StyleSheet.create({
   mapImage: { width: '100%', height: '100%' },
   semanticHitbox: { position: 'absolute', backgroundColor: 'transparent' },
   semanticHitboxActive: { borderWidth: 3, borderColor: '#F5C518', backgroundColor: 'rgba(166,38,45,0.22)' },
+  individualBoothHitbox: { position: 'absolute', backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(245,197,24,0.22)' },
+  individualBoothActive: { borderWidth: 3, borderColor: '#F5C518', backgroundColor: 'rgba(166,38,45,0.36)' },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
   pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
   pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },

@@ -96,6 +96,50 @@ export function lotsForArea(area: GeometryArea): GeometryLot[] {
 
 export const TENTED_CITY_LOTS: GeometryLot[] = TENTED_CITY_RANGE_AREAS.flatMap(lotsForArea);
 
+export type TentedCityIndividualBooth = GeometryLot & {
+  semanticId: string;
+  humanLabel: string;
+  parentRangeId: string;
+  parentRangeLabel: string;
+  section: string;
+  boothNumber: number;
+  orientation: string;
+  orientationEvidence: string;
+  orientationVerified: true;
+};
+
+/** Ranges whose rectangular geometry and audited L-to-R ordering are safe for individual selection. */
+export const TENTED_CITY_SAFE_INDIVIDUAL_RANGES = TENTED_CITY_RANGE_AREAS.filter(
+  (area) => !area.flagged && area.split_axis === 'L_to_R' && area.orientation === 'horizontal',
+);
+
+export function individualBoothsForArea(area: GeometryArea): TentedCityIndividualBooth[] {
+  if (!TENTED_CITY_SAFE_INDIVIDUAL_RANGES.some((candidate) => candidate.id === area.id)) return [];
+  return lotsForArea(area).map((lot) => ({
+    ...lot,
+    semanticId: `booth-${lot.id.toLowerCase()}`,
+    humanLabel: lot.id,
+    parentRangeId: area.id,
+    parentRangeLabel: area.label,
+    section: area.section as string,
+    boothNumber: lot.n,
+    orientation: area.orientation as string,
+    orientationEvidence: 'audited PDF-extracted rectangular range; consistent horizontal L-to-R split',
+    orientationVerified: true as const,
+  }));
+}
+
+export const TENTED_CITY_INDIVIDUAL_BOOTHS = TENTED_CITY_SAFE_INDIVIDUAL_RANGES.flatMap(individualBoothsForArea);
+export const INDIVIDUAL_BOOTH_BY_ID = new Map(TENTED_CITY_INDIVIDUAL_BOOTHS.map((booth) => [booth.semanticId, booth]));
+export const INDIVIDUAL_BOOTH_BY_LABEL = new Map(TENTED_CITY_INDIVIDUAL_BOOTHS.map((booth) => [booth.humanLabel, booth]));
+const compactBoothKey = (value: string) => value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+export const INDIVIDUAL_BOOTH_BY_COMPACT = new Map(TENTED_CITY_INDIVIDUAL_BOOTHS.map((booth) => [compactBoothKey(booth.humanLabel), booth]));
+
+export function findIndividualBooth(value: string) {
+  const normalized = value.trim().replace(/^booth[-_]?/i, '');
+  return INDIVIDUAL_BOOTH_BY_COMPACT.get(compactBoothKey(normalized)) || null;
+}
+
 export const LOT_BY_ID = new Map(TENTED_CITY_LOTS.map((lot) => [lot.id, lot]));
 export const AREA_BY_ID = new Map(TENTED_CITY_AREAS.map((area) => [area.id, area]));
 export const AREA_BY_LABEL = new Map(TENTED_CITY_AREAS.map((area) => [area.label, area]));
