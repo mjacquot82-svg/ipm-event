@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -29,6 +30,7 @@ import {
 import {
   Announcement,
   AnnouncementDeliveryStats,
+  AnnouncementImage,
   AnnouncementPayload,
   AnnouncementStatus,
   AdminScheduleEvent,
@@ -42,6 +44,7 @@ import {
   createScheduleEvent,
   deleteAdminVendor,
   deleteAnnouncement,
+  deleteAnnouncementImageObject,
   deleteScheduleEvent,
   getCurrentOrganizer,
   importSchedule,
@@ -57,7 +60,9 @@ import {
   updateAnnouncement,
   setAnnouncementStatus,
   updateScheduleEvent,
+  uploadAnnouncementImage,
 } from '../../src/services/adminAuthService';
+
 
 type AdminSection = 'dashboard' | 'analytics' | 'vendors' | 'schedule' | 'communications' | 'team' | 'settings';
 type VendorEditorMode = 'closed' | 'create' | 'edit';
@@ -110,6 +115,7 @@ const EMPTY_ANNOUNCEMENT_FORM: AnnouncementPayload = {
   priority: 'Information',
   expires_at: null,
   status: 'published',
+  image: null,
 };
 
 const IDLE_NOTIFICATION_STATE: NotificationActionState = {
@@ -301,6 +307,7 @@ export default function AdminDashboardScreen() {
       priority: announcement.priority,
       expires_at: announcement.expires_at,
       status: announcement.status,
+      image: announcement.image || null,
     } : EMPTY_ANNOUNCEMENT_FORM);
     setAnnouncementsError(null);
     setAnnouncementSaveMessage(null);
@@ -327,6 +334,7 @@ export default function AdminDashboardScreen() {
         priority: saved.priority,
         expires_at: saved.expires_at,
         status: saved.status,
+        image: saved.image || null,
       });
       setEditingAnnouncement(saved);
       setAnnouncementEditorMode('edit');
@@ -336,6 +344,30 @@ export default function AdminDashboardScreen() {
       setAnnouncementsError(err instanceof Error ? err.message : 'Unable to save announcement');
     } finally {
       setAnnouncementSaving(false);
+    }
+  };
+
+
+  const uploadEditorImage = async (file: Blob, filename: string) => {
+    setAnnouncementsError(null);
+    try {
+      const alt = (announcementForm.title || 'Announcement image').trim() || 'Announcement image';
+      const previousPath = announcementForm.image?.storage_path;
+      const uploaded = await uploadAnnouncementImage(file, alt, filename);
+      setAnnouncementForm((current) => ({ ...current, image: uploaded }));
+      if (previousPath && previousPath !== uploaded.storage_path) {
+        try { await deleteAnnouncementImageObject(previousPath); } catch { /* orphan cleanup best-effort */ }
+      }
+    } catch (err) {
+      setAnnouncementsError(err instanceof Error ? err.message : 'Unable to upload image');
+    }
+  };
+
+  const removeEditorImage = async () => {
+    const previousPath = announcementForm.image?.storage_path;
+    setAnnouncementForm((current) => ({ ...current, image: null }));
+    if (previousPath) {
+      try { await deleteAnnouncementImageObject(previousPath); } catch { /* orphan cleanup best-effort */ }
     }
   };
 
@@ -676,6 +708,8 @@ export default function AdminDashboardScreen() {
           onSave={saveAnnouncement}
           onSendTest={() => sendAnnouncementNotification('test')}
           onNotifyEveryone={() => sendAnnouncementNotification('everyone')}
+          onUploadImage={uploadEditorImage}
+          onRemoveImage={removeEditorImage}
         />
       )}
     </AdminShell>
@@ -1550,7 +1584,7 @@ function AnnouncementsPage({
   announcements, totalCount, loading, error, search, editorMode, form, saving,
   saveMessage, notificationAction, deliveryStats,
   editingAnnouncement, showTestAction, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
-  onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone,
+  onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone, onUploadImage, onRemoveImage,
 }: {
   announcements: Announcement[]; totalCount: number; loading: boolean; error: string | null;
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
@@ -1562,6 +1596,8 @@ function AnnouncementsPage({
   onDelete: (item: Announcement) => void; onFormChange: (value: AnnouncementPayload) => void;
   onCloseEditor: () => void; onSave: (status: AnnouncementStatus) => void;
   onSendTest: () => void; onNotifyEveryone: () => void;
+  onUploadImage: (file: Blob, filename: string) => Promise<void>;
+  onRemoveImage: () => Promise<void>;
 }) {
   const isMobile = useWindowDimensions().width < 600;
   const statusLabel = (status: AnnouncementStatus) => status.charAt(0).toUpperCase() + status.slice(1);
@@ -1586,6 +1622,7 @@ function AnnouncementsPage({
           showTestAction={showTestAction}
           onChange={onFormChange} onClose={onCloseEditor} onSave={onSave}
           onSendTest={onSendTest} onNotifyEveryone={onNotifyEveryone}
+          onUploadImage={onUploadImage} onRemoveImage={onRemoveImage}
         />
       )}
       {loading ? <LoadingState label="Loading announcements..." /> : announcements.length === 0 ? (
@@ -1638,15 +1675,18 @@ function AnnouncementsPage({
 
 function AnnouncementEditor({
   mode, form, saving, saveMessage, notificationAction, editingAnnouncement, showTestAction,
-  onChange, onClose, onSave, onSendTest, onNotifyEveryone,
+  onChange, onClose, onSave, onSendTest, onNotifyEveryone, onUploadImage, onRemoveImage,
 }: {
   mode: Exclude<AnnouncementEditorMode, 'closed'>; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
   editingAnnouncement: Announcement | null; showTestAction: boolean; onChange: (value: AnnouncementPayload) => void;
   onClose: () => void; onSave: (status: AnnouncementStatus) => void;
   onSendTest: () => void; onNotifyEveryone: () => void;
+  onUploadImage: (file: Blob, filename: string) => Promise<void>;
+  onRemoveImage: () => Promise<void>;
 }) {
   const [confirmEveryone, setConfirmEveryone] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
   const isSending = notificationAction.status === 'sending';
   const isPublished = editingAnnouncement?.status === 'published';
   const isArchived = editingAnnouncement?.status === 'archived';
@@ -1655,13 +1695,16 @@ function AnnouncementEditor({
     editingAnnouncement?.expires_at
     && new Date(editingAnnouncement.expires_at).getTime() <= Date.now()
   );
+  const imagePath = form.image?.storage_path || null;
+  const savedImagePath = editingAnnouncement?.image?.storage_path || null;
   const hasUnsavedChanges = Boolean(editingAnnouncement && (
     form.title !== editingAnnouncement.title
     || form.message !== editingAnnouncement.message
     || form.priority !== editingAnnouncement.priority
     || (form.expires_at || null) !== (editingAnnouncement.expires_at || null)
+    || imagePath !== savedImagePath
   ));
-  const notificationDisabled = saving || isSending || isExpired || hasUnsavedChanges;
+  const notificationDisabled = saving || isSending || imageBusy || isExpired || hasUnsavedChanges;
   const everyoneSentThisSession = notificationAction.audience === 'everyone' && notificationAction.status === 'sent';
   const notificationTitle = shortenNotificationText(form.title, 100);
   const notificationMessage = shortenNotificationText(form.message, 255);
@@ -1696,6 +1739,75 @@ function AnnouncementEditor({
           {(['Information', 'Important', 'Emergency'] as const).map((priority) => <Pressable key={priority} style={[styles.filterPill, form.priority === priority && styles.filterPillActive]} onPress={() => onChange({ ...form, priority })}><Text style={[styles.filterPillText, form.priority === priority && styles.filterPillTextActive]}>{priority}</Text></Pressable>)}
         </View></View>
         <FormTextField label="Message" value={form.message} required multiline placeholder="Message shown to attendees" onChangeText={(message) => onChange({ ...form, message })} />
+        <View style={styles.formField}>
+          <FieldLabel label="Notification / in-app image (optional)" />
+          <Text style={styles.editorSubtitle}>JPEG, PNG, or GIF up to 5MB. Not required — text-only announcements work as before.</Text>
+          {form.image ? (
+            <View style={{ gap: 10, marginTop: 8 }}>
+              {Platform.OS === 'web' ? (
+                <img src={form.image.url} alt={form.image.alt} style={{ maxWidth: 280, maxHeight: 180, borderRadius: 8, objectFit: 'contain' }} />
+              ) : null}
+              <Text style={styles.vendorMeta}>{form.image.width}×{form.image.height} · {form.image.alt}</Text>
+              <View style={styles.choiceRow}>
+                {Platform.OS === 'web' ? (
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, cursor: imageBusy || saving || isSending ? 'not-allowed' : 'pointer' }}>
+                    <Feather name="image" size={16} color={colors.textPrimary} />
+                    <span>{imageBusy ? 'Uploading…' : 'Replace image'}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,.jpg,.jpeg,.png,.gif"
+                      disabled={imageBusy || saving || isSending}
+                      style={{ display: 'none' }}
+                      onChange={async (event) => {
+                        const input = event.target as HTMLInputElement;
+                        const file = input.files?.[0];
+                        input.value = '';
+                        if (!file) return;
+                        setImageBusy(true);
+                        try { await onUploadImage(file, file.name || 'announcement-image.jpg'); }
+                        finally { setImageBusy(false); }
+                      }}
+                    />
+                  </label>
+                ) : null}
+                <Pressable
+                  style={[styles.secondaryButton, (imageBusy || saving || isSending) && styles.buttonDisabled]}
+                  disabled={imageBusy || saving || isSending}
+                  onPress={async () => {
+                    setImageBusy(true);
+                    try { await onRemoveImage(); }
+                    finally { setImageBusy(false); }
+                  }}
+                >
+                  <Feather name="trash-2" size={16} color={colors.error} />
+                  <Text style={styles.secondaryButtonText}>Remove image</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : Platform.OS === 'web' ? (
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '10px 14px', borderRadius: 10, border: `1px solid ${colors.border}`, cursor: imageBusy || saving || isSending ? 'not-allowed' : 'pointer', alignSelf: 'flex-start' }}>
+              <Feather name="image" size={16} color={colors.textPrimary} />
+              <span>{imageBusy ? 'Uploading…' : 'Choose image'}</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/gif,.jpg,.jpeg,.png,.gif"
+                disabled={imageBusy || saving || isSending}
+                style={{ display: 'none' }}
+                onChange={async (event) => {
+                  const input = event.target as HTMLInputElement;
+                  const file = input.files?.[0];
+                  input.value = '';
+                  if (!file) return;
+                  setImageBusy(true);
+                  try { await onUploadImage(file, file.name || 'announcement-image.jpg'); }
+                  finally { setImageBusy(false); }
+                }}
+              />
+            </label>
+          ) : (
+            <Text style={styles.vendorMeta}>Image upload is available in the web admin portal.</Text>
+          )}
+        </View>
       </View>
 
       {saveMessage && <View style={styles.successNotice}><Feather name="check-circle" size={16} color={colors.success} /><Text style={styles.successNoticeText}>{saveMessage}</Text></View>}
@@ -1746,6 +1858,7 @@ function AnnouncementEditor({
               <ConfirmationRow label="Notification title" value={notificationTitle} />
               <ConfirmationRow label="Notification preview" value={notificationMessage} />
               <ConfirmationRow label="Audience" value="Everyone subscribed to this event" />
+              <ConfirmationRow label="Image" value={form.image ? 'Included in web notification and in-app' : 'None (text-only)'} />
               <ConfirmationRow label="Target" value="Opens this announcement when tapped" />
             </View>
             <View style={styles.editorActions}>

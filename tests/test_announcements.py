@@ -117,6 +117,7 @@ class CrudClient:
             "severity": body.get("severity", "info"), "status": body["status"],
             "created_by": body.get("created_by", "Organizer"), "created_at": now,
             "updated_at": now, "expires_at": body.get("expires_at"),
+            "image": body.get("image"),
         }]
 
 
@@ -247,9 +248,9 @@ class FakeWonderPush:
         self.test_options = None
         self.everyone_options = None
 
-    def notification_content(self, title, message, target_url):
+    def notification_content(self, title, message, target_url, image_url=None):
         return WonderPushClient(access_token="token").notification_content(
-            title, message, target_url
+            title, message, target_url, image_url=image_url
         )
 
     async def send_test(self, *, title, message, target_url, installation_ids, **kwargs):
@@ -422,7 +423,8 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
     assert captured["url"] == "https://management-api.wonderpush.com/v1/deliveries"
     assert captured["data"]["accessToken"] == "not-a-credential"
     assert captured["data"]["targetInstallationIds"] == "123,456"
-    assert captured["data"]["filterPlatforms"] == "Web"
+    # send_test uses audience_classification="test" and intentionally omits filterPlatforms
+    assert "filterPlatforms" not in captured["data"]
     assert "campaignId" not in captured["data"]
     assert "disableCapping" not in captured["data"]
     assert captured["headers"] == {
@@ -460,6 +462,7 @@ def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
     ))
     assert result == "wonderpush:accepted"
     assert captured["data"]["targetSegmentIds"] == "@ALL"
+    assert captured["data"]["filterPlatforms"] == "Web"
     assert "campaignId" not in captured["data"]
     assert "targetInstallationIds" not in captured["data"]
     assert "disableCapping" not in captured["data"]
