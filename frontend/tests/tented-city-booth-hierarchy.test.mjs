@@ -99,22 +99,24 @@ test('ACE and Kodiak resolve confident_lot with parent range + one individual bo
   }
 });
 
-test('TentedCityMap source encodes yellow parent + blue exact hierarchy markers', () => {
+test('TentedCityMap source encodes yellow parent + full-cell opaque blue exact booth', () => {
   assert.equal(colors.userLocation, '#3A7BC8');
   assert.match(mapSrc, /selected-parent-range-fill/);
   assert.match(mapSrc, /PARENT_RANGE_FILL = 'rgba\(245, 197, 24, 0\.45\)'/);
-  assert.match(mapSrc, /EXACT_BOOTH_FILL = 'rgba\(58, 123, 200, 0\.78\)'/);
-  assert.match(mapSrc, /EXACT_BOOTH_BORDER = colors\.userLocation/);
-  assert.match(mapSrc, /useExactBoothHierarchy/);
-  assert.match(mapSrc, /BoothHighlight testID="selected-booth-highlight" rect=\{booth\.rect\}/);
-  assert.match(mapSrc, /BoothHighlight testID="vendor-booth-highlight" rect=\{rect\}/);
-  // Exact blue uses user-location token; no heavy yellow booth outline on the exact cell.
-  assert.match(mapSrc, /borderColor=\{EXACT_BOOTH_BORDER\}/);
-  assert.doesNotMatch(mapSrc, /selected-booth-highlight"[^>]*borderColor="#F5C518"/);
+  // Exact booth is a percentage-geometry cell fill (same rect as hitbox), opaque userLocation —
+  // not a translucent fill under blue border edges (that read as a thin blue sliver over yellow).
+  assert.match(mapSrc, /EXACT_BOOTH_CELL_FILL = colors\.userLocation/);
+  assert.match(mapSrc, /exactBoothCellFill/);
+  assert.match(mapSrc, /testID="selected-booth-highlight"/);
+  assert.match(mapSrc, /left: `\$\{booth\.rect\.x\}%`/);
+  assert.match(mapSrc, /width: `\$\{booth\.rect\.w\}%`/);
+  assert.match(mapSrc, /height: `\$\{booth\.rect\.h\}%`/);
+  assert.doesNotMatch(mapSrc, /EXACT_BOOTH_FILL = 'rgba\(58, 123, 200/);
+  assert.doesNotMatch(mapSrc, /BoothHighlight testID="selected-booth-highlight"/);
   assert.doesNotMatch(mapSrc, /individualBoothSelected/);
-  // No double-stacked exact blue (vendor block skipped when hierarchy is active).
+  assert.match(mapSrc, /useExactBoothHierarchy/);
+  assert.match(mapSrc, /BoothHighlight testID="vendor-booth-highlight" rect=\{rect\}/);
   assert.match(mapSrc, /useExactBoothHierarchy \|\| parentOnlyFillRect \? null : parentOnlyFootprint/);
-  // Official SVG stays overlay-only.
   assert.match(mapSrc, /tented-city-map-app-ready\.svg/);
 });
 

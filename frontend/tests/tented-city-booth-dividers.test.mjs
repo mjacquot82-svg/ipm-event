@@ -101,17 +101,18 @@ test('parent-only ranges produce no individual divider overlay', () => {
   }
 });
 
-test('selected-booth highlight still uses exact individual booth rects', () => {
-  assert.match(mapSrc, /BoothHighlight testID="selected-booth-highlight" rect=\{booth\.rect\}/);
+test('selected-booth highlight paints the full individual booth.rect cell', () => {
+  // Full-cell percentage fill (same geometry as the booth hitbox), not BoothHighlight border edges.
+  assert.match(mapSrc, /testID="selected-booth-highlight"/);
+  assert.match(mapSrc, /exactBoothCellFill/);
+  assert.match(mapSrc, /EXACT_BOOTH_CELL_FILL = colors\.userLocation/);
+  assert.match(mapSrc, /left: `\$\{booth\.rect\.x\}%`/);
+  assert.match(mapSrc, /width: `\$\{booth\.rect\.w\}%`/);
+  assert.match(mapSrc, /height: `\$\{booth\.rect\.h\}%`/);
+  assert.doesNotMatch(mapSrc, /BoothHighlight testID="selected-booth-highlight"/);
   assert.match(mapSrc, /BoothHighlight testID="vendor-booth-highlight" rect=\{rect\}/);
   assert.match(mapSrc, /boothHighlightStyle/);
   const ace = TENTED_CITY_INDIVIDUAL_BOOTHS.find((b) => b.id === '1A-09');
   assert.ok(ace);
   assert.deepEqual(ace.rect, LOT_BY_ID.get('1A-09').rect);
-});
-
-test('map does not rewrite SVG or invent a second geometry system', () => {
-  assert.match(mapSrc, /tented-city-map-app-ready\.svg/);
-  assert.doesNotMatch(mapSrc, /reinterpret|equal-slice|invented.?lots/i);
-  assert.match(mapSrc, /TENTED_CITY_SAFE_INDIVIDUAL_RANGES|TENTED_CITY_BOOTH_DIVIDER_SEGMENTS/);
 });

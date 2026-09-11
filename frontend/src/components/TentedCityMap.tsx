@@ -33,9 +33,8 @@ const INFO_CARD_GAP = 8;
 const INFO_CARD_BOTTOM = TAB_BAR_HEIGHT + INFO_CARD_GAP;
 const SELECTED_RESERVED_BOTTOM = TAB_BAR_HEIGHT + 108;
 const PARENT_RANGE_FILL = 'rgba(245, 197, 24, 0.45)';
-/** Existing IPM map/user-location blue — exact selected booth focus. */
-const EXACT_BOOTH_FILL = 'rgba(58, 123, 200, 0.78)';
-const EXACT_BOOTH_BORDER = colors.userLocation;
+/** Exact selected booth: opaque user-location blue so the full cell stays blue over yellow parent. */
+const EXACT_BOOTH_CELL_FILL = colors.userLocation;
 const WEB_TOUCH_LOCK = { touchAction: 'none', overscrollBehavior: 'none', userSelect: 'none' } as object;
 
 function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, testID, children }: {
@@ -697,9 +696,19 @@ export default function TentedCityMap({
             style={[styles.individualBoothHitbox, { left: `${booth.rect.x}%`, top: `${booth.rect.y}%`, width: `${booth.rect.w}%`, height: `${booth.rect.h}%` }]}
           />
             {active ? (
-              <BoothHighlight testID="selected-booth-highlight" rect={booth.rect} layer={layer} border={2} borderColor={EXACT_BOOTH_BORDER} style={styles.exactBoothFill}>
-                <View style={styles.exactBoothFillInner} />
-              </BoothHighlight>
+              <View
+                pointerEvents="none"
+                testID="selected-booth-highlight"
+                style={[
+                  styles.exactBoothCellFill,
+                  {
+                    left: `${booth.rect.x}%`,
+                    top: `${booth.rect.y}%`,
+                    width: `${booth.rect.w}%`,
+                    height: `${booth.rect.h}%`,
+                  },
+                ]}
+              />
             ) : null}
           </React.Fragment>;
         })}
@@ -841,8 +850,7 @@ const styles = StyleSheet.create({
   parentRangeFillHighlight: { position: 'absolute', overflow: 'hidden', zIndex: 2 },
   footprint: { position: 'absolute', overflow: 'hidden', zIndex: 2 },
   parentRangeFillInner: { ...StyleSheet.absoluteFillObject },
-  exactBoothFill: { position: 'absolute', overflow: 'hidden', zIndex: 4 },
-  exactBoothFillInner: { ...StyleSheet.absoluteFillObject, backgroundColor: EXACT_BOOTH_FILL },
+  exactBoothCellFill: { position: 'absolute', backgroundColor: EXACT_BOOTH_CELL_FILL, zIndex: 4 },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
   pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
   pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },
