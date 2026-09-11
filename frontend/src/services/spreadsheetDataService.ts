@@ -79,6 +79,14 @@ export type VendorsResponse = {
   total_count: number;
 };
 
+export type AnnouncementImage = {
+  url: string;
+  alt: string;
+  width: number;
+  height: number;
+  storage_path?: string;
+};
+
 export type Announcement = {
   id: string;
   event_id: string;
@@ -90,6 +98,7 @@ export type Announcement = {
   created_at: string;
   updated_at: string;
   status: 'published';
+  image?: AnnouncementImage | null;
 };
 
 export type AnnouncementsResponse = {

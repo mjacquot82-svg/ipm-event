@@ -1,4 +1,9 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response
+from backend.announcement_images import (
+    AnnouncementImage,
+    AnnouncementImageDeletePayload,
+    AnnouncementImageStorage,
+)
+from fastapi import FastAPI, APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -390,6 +395,7 @@ class AnnouncementPayload(BaseModel):
     priority: AnnouncementPriority = "Information"
     expires_at: Optional[datetime] = None
     status: AnnouncementStatus = "published"
+    image: Optional[AnnouncementImage] = None
 
 class AnnouncementStatusPayload(BaseModel):
     status: AnnouncementStatus
@@ -405,6 +411,7 @@ class AnnouncementResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     status: AnnouncementStatus
+    image: Optional[AnnouncementImage] = None
 
 class AnnouncementsResponse(BaseModel):
     announcements: List[AnnouncementResponse]
@@ -811,6 +818,7 @@ else:
     )
 
 announcement_service = None
+announcement_image_storage = None
 notification_delivery_service = None
 notification_registration_repository = None
 if CONTENT_SOURCE == "supabase":
@@ -818,6 +826,10 @@ if CONTENT_SOURCE == "supabase":
         supabase_url=SUPABASE_URL,
         service_role_key=SUPABASE_SERVICE_ROLE_KEY,
         event_slug=event_service.get_public_event_id(),
+    )
+    announcement_image_storage = AnnouncementImageStorage(
+        supabase_url=SUPABASE_URL,
+        service_role_key=SUPABASE_SERVICE_ROLE_KEY,
     )
     notification_delivery_service = SupabaseNotificationDeliveryService(
         supabase_url=SUPABASE_URL,
@@ -967,6 +979,15 @@ def validate_announcement_payload(data: AnnouncementPayload):
             expires_at = expires_at.replace(tzinfo=timezone.utc)
         if expires_at <= datetime.now(timezone.utc):
             raise HTTPException(status_code=400, detail="Expiry date/time must be in the future")
+
+
+def require_announcement_image_storage():
+    if announcement_image_storage is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Announcement image storage requires the Supabase content source",
+        )
+    return announcement_image_storage
 
 
 def require_announcement_service():
@@ -1602,6 +1623,53 @@ async def list_admin_announcements(current_user: dict = Depends(get_current_orga
     return AnnouncementsResponse(announcements=announcements, total_count=len(announcements))
 
 
+@api_router.post(
+    "/admin/announcements/images",
+    response_model=AnnouncementImage,
+    status_code=201,
+)
+async def upload_announcement_image(
+    file: UploadFile = File(...),
+    alt: str = Form(...),
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    """Authenticated upload; returns durable public URL. Does not attach until announcement save.
+
+    Orphan cleanup: DELETE /api/admin/announcements/images with storage_path if unused.
+    """
+    require_announcement_manager_role(current_user)
+    storage = require_announcement_image_storage()
+    data = await file.read()
+    try:
+        return await storage.upload(
+            data=data,
+            event_id=get_admin_event_id(current_user),
+            alt=alt,
+            declared_content_type=file.content_type,
+            filename=file.filename,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=502, detail="Image upload failed") from exc
+
+
+@api_router.delete("/admin/announcements/images", status_code=204)
+async def delete_announcement_image_object(
+    data: AnnouncementImageDeletePayload,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    """Delete a storage object (orphan cleanup or explicit remove before save)."""
+    require_announcement_manager_role(current_user)
+    storage = require_announcement_image_storage()
+    try:
+        await storage.delete(data.storage_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=502, detail="Image delete failed") from exc
+
+
 @api_router.post("/admin/announcements", response_model=AnnouncementResponse, status_code=201)
 async def create_admin_announcement(
     data: AnnouncementPayload,
@@ -1626,9 +1694,20 @@ async def update_admin_announcement(
     require_announcement_manager_role(current_user)
     validate_announcement_payload(data)
     service = require_announcement_service()
-    announcement = await service.update(announcement_id, data, get_admin_event_id(current_user))
+    event_id = get_admin_event_id(current_user)
+    previous = await service.get(announcement_id, event_id)
+    if not previous:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    announcement = await service.update(announcement_id, data, event_id)
     if not announcement:
         raise HTTPException(status_code=404, detail="Announcement not found")
+    if "image" in data.model_fields_set:
+        previous_image = previous.get("image") if isinstance(previous.get("image"), dict) else None
+        next_image = announcement.get("image") if isinstance(announcement.get("image"), dict) else None
+        previous_path = (previous_image or {}).get("storage_path")
+        next_path = (next_image or {}).get("storage_path")
+        if previous_path and previous_path != next_path and announcement_image_storage is not None:
+            await announcement_image_storage.delete_if_present(previous_image)
     return announcement
 
 
@@ -1653,8 +1732,12 @@ async def delete_admin_announcement(
 ):
     require_announcement_manager_role(current_user)
     service = require_announcement_service()
-    if not await service.delete(announcement_id, get_admin_event_id(current_user)):
+    event_id = get_admin_event_id(current_user)
+    previous = await service.get(announcement_id, event_id)
+    if not await service.delete(announcement_id, event_id):
         raise HTTPException(status_code=404, detail="Announcement not found")
+    if previous and isinstance(previous.get("image"), dict) and announcement_image_storage is not None:
+        await announcement_image_storage.delete_if_present(previous.get("image"))
     return Response(status_code=204)
 
 
@@ -1699,8 +1782,10 @@ async def notify_announcement(
     expiration_time = announcement_expiration_time(announcement)
 
     target_url = f"{PUBLIC_APP_URL}/announcements/{quote(announcement_id, safe='')}"
+    image = announcement.get("image") if isinstance(announcement.get("image"), dict) else None
+    image_url = image.get("url") if image and image.get("url") else None
     content = provider.notification_content(
-        announcement["title"], announcement["message"], target_url
+        announcement["title"], announcement["message"], target_url, image_url=image_url
     )
     try:
         delivery = await deliveries.create_requested(

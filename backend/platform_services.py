@@ -46,14 +46,20 @@ class WonderPushClient:
         self.access_token = access_token
         self.timeout = timeout
 
-    def notification_content(self, title: str, message: str, target_url: str) -> dict[str, str]:
+    def notification_content(
+        self, title: str, message: str, target_url: str, image_url: str | None = None
+    ) -> dict[str, str]:
         clean_title = " ".join(title.split())
         branded_title = clean_title if clean_title.casefold().startswith("ipm") else f"IPM — {clean_title}"
-        return {
+        content = {
             "title": self._shorten(branded_title, 100),
             "message": self._shorten(" ".join(message.split()), 255),
             "target_url": target_url,
         }
+        # Include image URL only when present so text-only payloads stay identical.
+        if image_url:
+            content["image_url"] = image_url
+        return content
 
     @staticmethod
     def _shorten(value: str, limit: int) -> str:
@@ -121,17 +127,21 @@ class WonderPushClient:
         disable_capping: bool = False, campaign_id: str | None = None,
         audience_classification: str = "exact_installations") -> dict[str, Any]:
         notification_target = urlsplit(content["target_url"])
+        web = {
+            "icon": (
+                f"{notification_target.scheme}://{notification_target.netloc}"
+                "/ipm-icon-any-192.png"
+            ),
+        }
+        # WonderPush alert.web.image is optional; omit entirely when no image URL.
+        if content.get("image_url"):
+            web["image"] = content["image_url"]
         notification = {
             "alert": {
                 "title": content["title"],
                 "text": content["message"],
                 "targetUrl": content["target_url"],
-                "web": {
-                    "icon": (
-                        f"{notification_target.scheme}://{notification_target.netloc}"
-                        "/ipm-icon-any-192.png"
-                    ),
-                },
+                "web": web,
             },
             "push": {
                 "custom": {
@@ -212,8 +222,8 @@ class WonderPushClient:
 
     async def send_everyone(self, *, title: str, message: str, target_url: str,
         idempotency_key: str | None = None, campaign_id: str | None = None,
-        expiration_time: str | None = None) -> str:
-        content = self.notification_content(title, message, target_url)
+        expiration_time: str | None = None, image_url: str | None = None) -> str:
+        content = self.notification_content(title, message, target_url, image_url=image_url)
         result = await self._send_detailed(content=content, target={"targetSegmentIds": "@ALL"},
             idempotency_key=idempotency_key, campaign_id=campaign_id,
             expiration_time=expiration_time, audience_classification="broadcast")
@@ -222,11 +232,11 @@ class WonderPushClient:
     async def send_test(
         self, *, title: str, message: str, target_url: str, installation_ids: list[str],
         idempotency_key: str | None = None, campaign_id: str | None = None,
-        expiration_time: str | None = None,
+        expiration_time: str | None = None, image_url: str | None = None,
     ) -> str:
         if not installation_ids:
             raise WonderPushError("No WonderPush test installation IDs are configured")
-        content = self.notification_content(title, message, target_url)
+        content = self.notification_content(title, message, target_url, image_url=image_url)
         result = await self._send_detailed(
             content=content,
             target={"targetInstallationIds": ",".join(installation_ids)},
@@ -238,13 +248,14 @@ class WonderPushClient:
         return result["provider_delivery_id"]
 
     async def send_one_installation(
-        self, *, title: str, message: str, target_url: str, installation_id: str
+        self, *, title: str, message: str, target_url: str, installation_id: str,
+        image_url: str | None = None,
     ) -> str:
         """Send to exactly one installation; this method has no broadcast fallback."""
         target = installation_id.strip()
         if not target or "," in target or target == "@ALL":
             raise WonderPushError("Exactly one WonderPush installation ID is required")
-        content = self.notification_content(title, message, target_url)
+        content = self.notification_content(title, message, target_url, image_url=image_url)
         return await self._send(
             content=content,
             target={"targetInstallationIds": target},
@@ -253,7 +264,7 @@ class WonderPushClient:
     async def send_installations(self, *, title: str, message: str, target_url: str,
         installation_ids: list[str], idempotency_key: str,
         expiration_time: str = "15 minutes", disable_capping: bool = False,
-        campaign_id: str | None = None) -> dict[str, Any]:
+        campaign_id: str | None = None, image_url: str | None = None) -> dict[str, Any]:
         """Send one payload to an exact, bounded installation set; never broadcasts."""
         targets = [value.strip() for value in installation_ids]
         if not targets or len(targets) > 10000 or len(set(targets)) != len(targets):
@@ -262,7 +273,7 @@ class WonderPushClient:
             raise WonderPushError("Exact WonderPush installation IDs are required")
         if not idempotency_key or len(idempotency_key) > 64:
             raise WonderPushError("A valid WonderPush idempotency key is required")
-        content = self.notification_content(title, message, target_url)
+        content = self.notification_content(title, message, target_url, image_url=image_url)
         return await self._send_detailed(content=content,
             target={"targetInstallationIds": ",".join(targets)},
             idempotency_key=idempotency_key, expiration_time=expiration_time,
@@ -1006,6 +1017,7 @@ class SupabaseAnnouncementService:
         return await self.client.get_event_id(event_id or self.event_slug)
 
     def row_to_announcement(self, row: dict[str, Any]) -> dict[str, Any]:
+        image = row.get("image")
         return {
             "id": row["id"],
             "event_id": row["event_id"],
@@ -1017,6 +1029,7 @@ class SupabaseAnnouncementService:
             "created_at": row.get("created_at"),
             "updated_at": row.get("updated_at"),
             "status": row.get("status") or "draft",
+            "image": image if isinstance(image, dict) else None,
         }
 
     def _sort(self, announcements: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1080,6 +1093,11 @@ class SupabaseAnnouncementService:
                 "published_at": datetime.now(timezone.utc).isoformat() if payload.status == "published" else None,
                 "expires_at": payload.expires_at.isoformat() if payload.expires_at else None,
                 "created_by": created_by,
+                "image": (
+                    payload.image.model_dump(mode="json")
+                    if getattr(payload, "image", None) is not None
+                    else None
+                ),
             },
             headers={"Prefer": "return=representation"},
         )
@@ -1094,6 +1112,11 @@ class SupabaseAnnouncementService:
             "status": payload.status,
             "expires_at": payload.expires_at.isoformat() if payload.expires_at else None,
         }
+        # Explicit null clears the image; omitted fields from older clients preserve existing image.
+        if "image" in getattr(payload, "model_fields_set", set()):
+            body["image"] = (
+                payload.image.model_dump(mode="json") if payload.image is not None else None
+            )
         if payload.status == "published":
             body["published_at"] = datetime.now(timezone.utc).isoformat()
         rows = await self.client.request(
