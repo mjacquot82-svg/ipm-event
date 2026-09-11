@@ -13,11 +13,11 @@ const links = home.slice(linksStart, groupsEnd);
 const groupedButtons = home.slice(actionsStart, groupsEnd);
 
 const allButtons = [
-  'Map', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
+  'Emergency Services', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
   'Camping', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service',
   'Personal Itinerary', 'Queen of the Furrow', 'Announcements', '2026 Show Guide',
 ];
-const actionButtons = ['Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements'];
+const actionButtons = ['Emergency Services', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements'];
 const linkButtons = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service', '2026 Show Guide'];
 
 function occurrences(source, label) {
@@ -106,4 +106,16 @@ test('Links feature the 2026 Show Guide PDF card', () => {
   assert.match(links, /openQuickLink\('show_guide', 'show_guide'\)/);
   assert.ok(destinations.includes("show_guide: {"));
   assert.ok(destinations.includes("url: 'https://www.plowingmatch.org/ipm2026/wp-content/uploads/2026/08/IPM-2026-Show-Guide.pdf'"));
+});
+
+test('Emergency Services replaces Map as the first Home Quick Action', () => {
+  const firstCardStart = actions.indexOf('<TouchableOpacity');
+  const firstCard = actions.slice(firstCardStart, actions.indexOf('</TouchableOpacity>', firstCardStart) + '</TouchableOpacity>'.length);
+  assert.match(firstCard, /quickAction\('emergency_services'/);
+  assert.match(firstCard, /router\.push\('\/emergency-services' as never\)/);
+  assert.match(firstCard, /Feather name="alert-triangle"/);
+  assert.match(firstCard, /backgroundColor: colors\.error/);
+  assert.match(firstCard, />Emergency Services<\/Text>/);
+  assert.doesNotMatch(actions, /quickAction\('map'/);
+  assert.doesNotMatch(actions, />Map<\/Text>/);
 });
