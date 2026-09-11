@@ -33,8 +33,10 @@ const INFO_CARD_GAP = 8;
 const INFO_CARD_BOTTOM = TAB_BAR_HEIGHT + INFO_CARD_GAP;
 const SELECTED_RESERVED_BOTTOM = TAB_BAR_HEIGHT + 108;
 const PARENT_RANGE_FILL = 'rgba(245, 197, 24, 0.45)';
-/** Exact selected booth: opaque user-location blue so the full cell stays blue over yellow parent. */
-const EXACT_BOOTH_CELL_FILL = colors.userLocation;
+/** Exact selected booth: bright cyan + white border so the stall dominates the yellow parent on phone. */
+const EXACT_BOOTH_CELL_FILL = '#00E5FF';
+const EXACT_BOOTH_CELL_BORDER = '#FFFFFF';
+const EXACT_BOOTH_CELL_BORDER_WIDTH = 3;
 const WEB_TOUCH_LOCK = { touchAction: 'none', overscrollBehavior: 'none', userSelect: 'none' } as object;
 
 function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, testID, children }: {
@@ -850,7 +852,7 @@ const styles = StyleSheet.create({
   parentRangeFillHighlight: { position: 'absolute', overflow: 'hidden', zIndex: 2 },
   footprint: { position: 'absolute', overflow: 'hidden', zIndex: 2 },
   parentRangeFillInner: { ...StyleSheet.absoluteFillObject },
-  exactBoothCellFill: { position: 'absolute', backgroundColor: EXACT_BOOTH_CELL_FILL, zIndex: 4 },
+  exactBoothCellFill: { position: 'absolute', backgroundColor: EXACT_BOOTH_CELL_FILL, borderWidth: EXACT_BOOTH_CELL_BORDER_WIDTH, borderColor: EXACT_BOOTH_CELL_BORDER, zIndex: 4 },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
   pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
   pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },

@@ -99,18 +99,22 @@ test('ACE and Kodiak resolve confident_lot with parent range + one individual bo
   }
 });
 
-test('TentedCityMap source encodes yellow parent + full-cell opaque blue exact booth', () => {
+test('TentedCityMap source encodes yellow parent + high-visibility cyan exact booth', () => {
   assert.equal(colors.userLocation, '#3A7BC8');
   assert.match(mapSrc, /selected-parent-range-fill/);
   assert.match(mapSrc, /PARENT_RANGE_FILL = 'rgba\(245, 197, 24, 0\.45\)'/);
-  // Exact booth is a percentage-geometry cell fill (same rect as hitbox), opaque userLocation —
-  // not a translucent fill under blue border edges (that read as a thin blue sliver over yellow).
-  assert.match(mapSrc, /EXACT_BOOTH_CELL_FILL = colors\.userLocation/);
+  // Exact booth: bright cyan fill + white border so the stall dominates yellow parent on phone.
+  assert.match(mapSrc, /EXACT_BOOTH_CELL_FILL = '#00E5FF'/);
+  assert.match(mapSrc, /EXACT_BOOTH_CELL_BORDER = '#FFFFFF'/);
+  assert.match(mapSrc, /EXACT_BOOTH_CELL_BORDER_WIDTH = 3/);
   assert.match(mapSrc, /exactBoothCellFill/);
+  assert.match(mapSrc, /borderWidth: EXACT_BOOTH_CELL_BORDER_WIDTH/);
+  assert.match(mapSrc, /borderColor: EXACT_BOOTH_CELL_BORDER/);
   assert.match(mapSrc, /testID="selected-booth-highlight"/);
   assert.match(mapSrc, /left: `\$\{booth\.rect\.x\}%`/);
   assert.match(mapSrc, /width: `\$\{booth\.rect\.w\}%`/);
   assert.match(mapSrc, /height: `\$\{booth\.rect\.h\}%`/);
+  assert.doesNotMatch(mapSrc, /EXACT_BOOTH_CELL_FILL = colors\.userLocation/);
   assert.doesNotMatch(mapSrc, /EXACT_BOOTH_FILL = 'rgba\(58, 123, 200/);
   assert.doesNotMatch(mapSrc, /BoothHighlight testID="selected-booth-highlight"/);
   assert.doesNotMatch(mapSrc, /individualBoothSelected/);
@@ -189,6 +193,25 @@ test('3A/3B 39-44 trusted parent geometry fills yellow parent-only (no blue)', (
   assert.match(mapSrc, /parentOnlySemanticGeometry/);
   assert.match(mapSrc, /selected-parent-range-fill/);
   assert.equal((mapSrc.match(/testID="selected-booth-highlight"/g) || []).length, 1);
+});
+
+
+test('AmSpec Farming for the Future stays shared parent-only (no invented stall)', () => {
+  const amspec = vendors.find((row) => /AmSpec Group,? Hamilton/i.test(row.name));
+  assert.ok(amspec, 'AmSpec vendor');
+  assert.equal(amspec.tent, 'farming-for-the-future');
+  assert.equal(amspec.locationLabel, '1B-16-22');
+  assert.deepEqual(amspec.booths, ['1B-16', '1B-17', '1B-18', '1B-19', '1B-20', '1B-21', '1B-22']);
+  const match = matchVendor(amspec);
+  const footprint = footprintForVendor(amspec);
+  assert.ok(footprint);
+  assert.equal(footprint.lotIds.length, 7);
+  assert.notEqual(footprint.lotIds.length, 1);
+  // Multi-lot shared tent must not resolve to a single individual booth selection.
+  assert.equal(TENTED_CITY_INDIVIDUAL_BOOTHS.some((b) => b.id === '1B-16-22'), false);
+  assert.ok(footprint.parentRect || footprint.rect);
+  // UI source still gates exact cyan highlight behind useExactBoothHierarchy (single booth).
+  assert.match(mapSrc, /vendorFootprint\.lotIds\.length !== 1/);
 });
 
 test('6B 26-29 stays safe unmapped without yellow or blue', () => {
