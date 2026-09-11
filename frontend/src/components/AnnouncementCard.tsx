@@ -1,9 +1,10 @@
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import { ATTENDEE_CARD_RADIUS } from '../theme/attendeePageLayout';
 import { Announcement } from '../services/spreadsheetDataService';
+import { safeExternalUrl } from './EventDetailMedia';
 
 const PRIORITY_ORDER: Record<Announcement['priority'], number> = {
   Emergency: 0,
@@ -39,6 +40,58 @@ export function formatAnnouncementTime(value: string, includeDate = false) {
   return `Posted ${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
 }
 
+function AnnouncementImageView({ image }: { image: NonNullable<Announcement['image']> }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const show =
+    image
+    && image.url !== failedUrl
+    && safeExternalUrl(image.url)
+    && Boolean(image.alt?.trim())
+    && image.width > 0
+    && image.height > 0;
+  if (!show) return null;
+  const maxWidth = Math.min(280, image.width, 320 * image.width / image.height);
+  if (Platform.OS === 'web') {
+    return (
+      <img
+        src={image.url}
+        alt={image.alt}
+        loading="lazy"
+        decoding="async"
+        width={image.width}
+        height={image.height}
+        onError={() => setFailedUrl(image.url)}
+        style={{
+          display: 'block',
+          width: '100%',
+          maxWidth,
+          height: 'auto',
+          borderRadius: 8,
+          marginTop: 12,
+          alignSelf: 'center',
+        }}
+      />
+    );
+  }
+  return (
+    <Image
+      source={{ uri: image.url }}
+      accessible
+      accessibilityLabel={image.alt}
+      resizeMode="contain"
+      onError={() => setFailedUrl(image.url)}
+      style={{
+        width: '100%',
+        maxWidth,
+        aspectRatio: image.width / image.height,
+        alignSelf: 'center',
+        borderRadius: 8,
+        marginTop: 12,
+      }}
+    />
+  );
+}
+
 export default function AnnouncementCard({
   announcement,
   preview = false,
@@ -68,6 +121,10 @@ export default function AnnouncementCard({
       </View>
       <Text style={[styles.title, onDismiss && styles.dismissSpacing]}>{announcement.title}</Text>
       <Text style={styles.message} numberOfLines={preview ? 3 : undefined}>{announcement.message}</Text>
+      {!preview && announcement.image ? <AnnouncementImageView image={announcement.image} /> : null}
+      {preview && announcement.image ? (
+        <Text style={styles.imageHint}>Includes image</Text>
+      ) : null}
       {preview && <Feather name="chevron-right" size={20} color={colors.textMuted} style={styles.chevron} />}
     </>
   );
@@ -112,5 +169,6 @@ const styles = StyleSheet.create({
   posted: { color: colors.textMuted, fontSize: 12 },
   title: { color: colors.textPrimary, fontSize: 18, fontWeight: '800', paddingRight: 20 },
   message: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 7 },
+  imageHint: { color: colors.textMuted, fontSize: 12, marginTop: 8 },
   chevron: { position: 'absolute', right: 12, top: 52 },
 });
