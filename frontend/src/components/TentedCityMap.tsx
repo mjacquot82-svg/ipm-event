@@ -7,7 +7,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  cancelAnimation, useAnimatedStyle, useSharedValue, withDecay, withRepeat, withTiming,
+  cancelAnimation, useAnimatedStyle, useSharedValue, withDecay, withTiming,
 } from 'react-native-reanimated';
 import colors from '../theme/colors';
 import { tentedCityVendors } from '../data/tentedCityVendors';
@@ -32,6 +32,10 @@ const TAB_BAR_HEIGHT = 60;
 const INFO_CARD_GAP = 8;
 const INFO_CARD_BOTTOM = TAB_BAR_HEIGHT + INFO_CARD_GAP;
 const SELECTED_RESERVED_BOTTOM = TAB_BAR_HEIGHT + 108;
+const PARENT_RANGE_FILL = 'rgba(245, 197, 24, 0.45)';
+/** Existing IPM map/user-location blue — exact selected booth focus. */
+const EXACT_BOOTH_FILL = 'rgba(58, 123, 200, 0.78)';
+const EXACT_BOOTH_BORDER = colors.userLocation;
 const WEB_TOUCH_LOCK = { touchAction: 'none', overscrollBehavior: 'none', userSelect: 'none' } as object;
 
 function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, testID, children }: {
@@ -102,7 +106,6 @@ export default function TentedCityMap({
   const startY = useSharedValue(0);
   const startFocalX = useSharedValue(0);
   const startFocalY = useSharedValue(0);
-  const fillOpacity = useSharedValue(0.52);
   const viewW = useSharedValue(1);
   const viewH = useSharedValue(1);
   const mapW = useSharedValue(1);
@@ -558,12 +561,16 @@ export default function TentedCityMap({
   };
   const vendorFootprint = selected?.kind === 'vendor' ? footprintForVendor(selected.vendor) : null;
   const highlight = vendorFootprint ? vendorFootprint.rect : selected?.kind === 'stage' ? placeRect(selected) : null;
-  useEffect(() => {
-    if (!vendorFootprint) return;
-    fillOpacity.value = 0.5;
-    fillOpacity.value = withRepeat(withTiming(0.78, { duration: 700 }), -1, true);
-  }, [vendorFootprint?.lotIds.join('|'), vendorFootprint?.areaId]);
-  const footprintFillStyle = useAnimatedStyle(() => ({ opacity: fillOpacity.value }));
+  const exactSelectedBooth = selectedBoothId
+    ? TENTED_CITY_INDIVIDUAL_BOOTHS.find((booth) => booth.semanticId === selectedBoothId) || null
+    : null;
+  const parentRangeForExact = exactSelectedBooth
+    ? AREA_BY_LABEL.get(exactSelectedBooth.parentRangeLabel) || null
+    : null;
+  const useExactBoothHierarchy = Boolean(exactSelectedBooth && parentRangeForExact);
+  const parentOnlyFootprint = Boolean(
+    vendorFootprint && !useExactBoothHierarchy && (vendorFootprint.class === 'range_or_named' || vendorFootprint.lotIds.length !== 1),
+  );
   const selectedTitle = selected ? placeTitle(selected) : selectedSemanticArea?.label || '';
   const selectedBooth = selected?.kind === 'vendor' ? selected.vendor.locationLabel : selectedBoothId ? TENTED_CITY_INDIVIDUAL_BOOTHS.find((booth) => booth.semanticId === selectedBoothId)?.humanLabel || '' : '';
   const selectedMeta = selected?.kind === 'vendor'
@@ -602,16 +609,32 @@ export default function TentedCityMap({
             ]}
           />
         ))}
+        {useExactBoothHierarchy && parentRangeForExact ? (
+          <View
+            pointerEvents="none"
+            testID="selected-parent-range-fill"
+            style={[
+              styles.parentRangeFill,
+              {
+                left: `${parentRangeForExact.rect.x}%`,
+                top: `${parentRangeForExact.rect.y}%`,
+                width: `${parentRangeForExact.rect.w}%`,
+                height: `${parentRangeForExact.rect.h}%`,
+              },
+            ]}
+          />
+        ) : null}
         {TENTED_CITY_SEMANTIC_AREAS.map((area) => {
           const rect = semanticAreaRect(area);
           const active = selectedSemanticArea?.id === area.id;
+          const showSemanticFill = active && !useExactBoothHierarchy;
           return <TouchableOpacity
             key={area.id}
             activeOpacity={1}
             accessibilityRole="button"
             accessibilityLabel={`Select ${area.label}`}
             onPress={() => selectSemanticArea(area)}
-            style={[styles.semanticHitbox, { left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.w}%`, height: `${rect.h}%` }, active && styles.semanticHitboxActive]}
+            style={[styles.semanticHitbox, { left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.w}%`, height: `${rect.h}%` }, showSemanticFill && styles.semanticHitboxActive]}
           />;
         })}
         {visibleIndividualBooths.map((booth) => {
@@ -621,9 +644,13 @@ export default function TentedCityMap({
             accessibilityLabel={`Select booth ${booth.humanLabel}`}
             onPress={() => selectIndividualBooth(booth)}
             activeOpacity={1}
-            style={[styles.individualBoothHitbox, { left: `${booth.rect.x}%`, top: `${booth.rect.y}%`, width: `${booth.rect.w}%`, height: `${booth.rect.h}%` }, active && styles.individualBoothSelected]}
+            style={[styles.individualBoothHitbox, { left: `${booth.rect.x}%`, top: `${booth.rect.y}%`, width: `${booth.rect.w}%`, height: `${booth.rect.h}%` }]}
           />
-            {active ? <BoothHighlight testID="selected-booth-highlight" rect={booth.rect} layer={layer} border={3} borderColor="#F5C518" style={styles.individualBoothActiveOverlay} /> : null}
+            {active ? (
+              <BoothHighlight testID="selected-booth-highlight" rect={booth.rect} layer={layer} border={2} borderColor={EXACT_BOOTH_BORDER} style={styles.exactBoothFill}>
+                <View style={styles.exactBoothFillInner} />
+              </BoothHighlight>
+            ) : null}
           </React.Fragment>;
         })}
         {filterDots.map((dot) => (
@@ -634,13 +661,34 @@ export default function TentedCityMap({
             <Text style={styles.verifyParentLabel}>{parent.label}</Text>
           </View>
         )) : null}
-        {vendorFootprint ? vendorFootprint.rects.map((rect, i) => (
-          <React.Fragment key={`fp-${i}-${rect.x}-${rect.y}`}>
-            <BoothHighlight testID="vendor-booth-halo" rect={rect} layer={layer} border={1} outset={1} borderColor="rgba(245,197,24,0.55)" style={styles.footprintHalo} />
-            <BoothHighlight testID="vendor-booth-highlight" rect={rect} layer={layer} border={4} borderColor="#F5C518" style={styles.footprint}>
-              <Animated.View style={[styles.footprintFill, footprintFillStyle]} />
-            </BoothHighlight>
-          </React.Fragment>
+        {useExactBoothHierarchy ? null : parentOnlyFootprint && vendorFootprint ? (
+          vendorFootprint.parentRect ? (
+            <View
+              pointerEvents="none"
+              testID="selected-parent-range-fill"
+              style={[
+                styles.parentRangeFill,
+                {
+                  left: `${vendorFootprint.parentRect.x}%`,
+                  top: `${vendorFootprint.parentRect.y}%`,
+                  width: `${vendorFootprint.parentRect.w}%`,
+                  height: `${vendorFootprint.parentRect.h}%`,
+                },
+              ]}
+            />
+          ) : (
+            <>
+              {vendorFootprint.rects.map((rect, i) => (
+                <BoothHighlight testID="vendor-booth-highlight" rect={rect} key={`fp-${i}-${rect.x}-${rect.y}`} layer={layer} border={0} borderColor="transparent" style={styles.footprint}>
+                  <View style={[styles.parentRangeFillInner, { backgroundColor: PARENT_RANGE_FILL }]} />
+                </BoothHighlight>
+              ))}
+            </>
+          )
+        ) : vendorFootprint ? vendorFootprint.rects.map((rect, i) => (
+          <BoothHighlight testID="vendor-booth-highlight" rect={rect} key={`fp-${i}-${rect.x}-${rect.y}`} layer={layer} border={0} borderColor="transparent" style={styles.footprint}>
+            <View style={[styles.parentRangeFillInner, { backgroundColor: PARENT_RANGE_FILL }]} />
+          </BoothHighlight>
         )) : highlight ? (
           <View pointerEvents="none" style={[styles.pulse, { left: `${highlight.x + highlight.w / 2}%`, top: `${highlight.y + highlight.h / 2}%` }]}>
             <View style={styles.pulseRing} /><View style={styles.pin} />
@@ -677,7 +725,7 @@ export default function TentedCityMap({
         </View>
         <View style={styles.searchCard}>
           <Feather name="search" size={18} color="#6B7280" />
-          <TextInput value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) setSelected(null); }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, or stage" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectPlace(results[0]); }} />
+          <TextInput value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) { setSelected(null); setSelectedBoothId(null); setSelectedSemanticArea(null); } }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, or stage" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectPlace(results[0]); }} />
           {query ? <TouchableOpacity onPress={clearSelection} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
         </View>
         <View style={styles.filters}>
@@ -753,10 +801,14 @@ const styles = StyleSheet.create({
   mapImage: { width: '100%', height: '100%' },
   boothDivider: { position: 'absolute', width: StyleSheet.hairlineWidth, marginLeft: -StyleSheet.hairlineWidth / 2, backgroundColor: 'rgba(60, 42, 28, 0.42)', zIndex: 1 },
   semanticHitbox: { position: 'absolute', backgroundColor: 'transparent' },
-  semanticHitboxActive: { borderWidth: 3, borderColor: '#F5C518', backgroundColor: 'rgba(166,38,45,0.22)' },
+  semanticHitboxActive: { borderWidth: 0, backgroundColor: PARENT_RANGE_FILL },
   individualBoothHitbox: { position: 'absolute', backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(245,197,24,0.22)' },
-  individualBoothSelected: { backgroundColor: 'rgba(166,38,45,0.24)' },
-  individualBoothActiveOverlay: { position: 'absolute', backgroundColor: 'rgba(166,38,45,0.14)' },
+  parentRangeFill: { position: 'absolute', backgroundColor: PARENT_RANGE_FILL, zIndex: 2 },
+  parentRangeFillHighlight: { position: 'absolute', overflow: 'hidden', zIndex: 2 },
+  footprint: { position: 'absolute', overflow: 'hidden', zIndex: 2 },
+  parentRangeFillInner: { ...StyleSheet.absoluteFillObject },
+  exactBoothFill: { position: 'absolute', overflow: 'hidden', zIndex: 4 },
+  exactBoothFillInner: { ...StyleSheet.absoluteFillObject, backgroundColor: EXACT_BOOTH_FILL },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
   pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
   pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },
@@ -790,9 +842,6 @@ const styles = StyleSheet.create({
   eventLine: { fontSize: 13, color: '#374151' },
   hint: { alignSelf: 'center', marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   hintText: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
-  footprintHalo: { position: 'absolute', backgroundColor: 'rgba(245,197,24,0.18)' },
-  footprint: { position: 'absolute', overflow: 'hidden' },
-  footprintFill: { ...StyleSheet.absoluteFillObject, backgroundColor: '#A6262D' },
   verifyParent: { position: 'absolute', borderWidth: 2, borderColor: '#22D3EE', backgroundColor: 'transparent' },
   verifyParentLabel: { position: 'absolute', top: -14, left: 0, fontSize: 10, fontWeight: '800', color: '#0E7490', backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 4 },
   verifyLot: { position: 'absolute', borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center' },
