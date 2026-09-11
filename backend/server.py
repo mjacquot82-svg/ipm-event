@@ -1,8 +1,15 @@
-from backend.announcement_images import (
-    AnnouncementImage,
-    AnnouncementImageDeletePayload,
-    AnnouncementImageStorage,
-)
+try:
+    from announcement_images import (
+        AnnouncementImage,
+        AnnouncementImageDeletePayload,
+        AnnouncementImageStorage,
+    )
+except ImportError:
+    from backend.announcement_images import (
+        AnnouncementImage,
+        AnnouncementImageDeletePayload,
+        AnnouncementImageStorage,
+    )
 from fastapi import FastAPI, APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from dotenv import load_dotenv
