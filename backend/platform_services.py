@@ -234,12 +234,21 @@ class WonderPushClient:
         idempotency_key: str | None = None, campaign_id: str | None = None,
         expiration_time: str | None = None, image_url: str | None = None,
     ) -> str:
-        if not installation_ids:
-            raise WonderPushError("No WonderPush test installation IDs are configured")
+        targets = [value.strip() for value in installation_ids]
+        # Controlled test must target exactly one concrete installation — never @ALL or a list.
+        if (
+            len(targets) != 1
+            or not targets[0]
+            or "," in targets[0]
+            or targets[0].upper() == "@ALL"
+        ):
+            raise WonderPushError(
+                "Controlled WonderPush test requires exactly one installation ID"
+            )
         content = self.notification_content(title, message, target_url, image_url=image_url)
         result = await self._send_detailed(
             content=content,
-            target={"targetInstallationIds": ",".join(installation_ids)},
+            target={"targetInstallationIds": targets[0]},
             idempotency_key=idempotency_key,
             campaign_id=campaign_id,
             expiration_time=expiration_time,
