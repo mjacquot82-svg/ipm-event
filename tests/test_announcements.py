@@ -117,6 +117,7 @@ class CrudClient:
             "severity": body.get("severity", "info"), "status": body["status"],
             "created_by": body.get("created_by", "Organizer"), "created_at": now,
             "updated_at": now, "expires_at": body.get("expires_at"),
+            "image": body.get("image"),
         }]
 
 
@@ -247,9 +248,9 @@ class FakeWonderPush:
         self.test_options = None
         self.everyone_options = None
 
-    def notification_content(self, title, message, target_url):
+    def notification_content(self, title, message, target_url, image_url=None):
         return WonderPushClient(access_token="token").notification_content(
-            title, message, target_url
+            title, message, target_url, image_url=image_url
         )
 
     async def send_test(self, *, title, message, target_url, installation_ids, **kwargs):

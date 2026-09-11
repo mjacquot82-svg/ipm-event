@@ -51,6 +51,14 @@ export type BroadcastsResponse = {
 export type AnnouncementPriority = 'Information' | 'Important' | 'Emergency';
 export type AnnouncementStatus = 'draft' | 'published' | 'archived';
 
+export type AnnouncementImage = {
+  url: string;
+  alt: string;
+  width: number;
+  height: number;
+  storage_path: string;
+};
+
 export type Announcement = {
   id: string;
   event_id: string;
@@ -62,6 +70,7 @@ export type Announcement = {
   created_at: string;
   updated_at: string;
   status: AnnouncementStatus;
+  image?: AnnouncementImage | null;
 };
 
 export type AnnouncementsResponse = {
@@ -75,6 +84,7 @@ export type AnnouncementPayload = {
   priority: AnnouncementPriority;
   expires_at?: string | null;
   status: AnnouncementStatus;
+  image?: AnnouncementImage | null;
 };
 
 export type NotificationDelivery = {
@@ -236,13 +246,15 @@ export class AdminRequestError extends Error {
 }
 
 export async function adminRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = new Headers(options.headers || {});
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  if (!isFormData && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...options,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -369,6 +381,23 @@ export function setAnnouncementStatus(id: string, status: AnnouncementStatus) {
 export function deleteAnnouncement(id: string) {
   return adminRequest<void>(`/api/admin/announcements/${encodeURIComponent(id)}`, {
     method: 'DELETE',
+  });
+}
+
+export function uploadAnnouncementImage(file: Blob, alt: string, filename = 'announcement-image.jpg') {
+  const body = new FormData();
+  body.append('file', file, filename);
+  body.append('alt', alt);
+  return adminRequest<AnnouncementImage>('/api/admin/announcements/images', {
+    method: 'POST',
+    body,
+  });
+}
+
+export function deleteAnnouncementImageObject(storagePath: string) {
+  return adminRequest<void>('/api/admin/announcements/images', {
+    method: 'DELETE',
+    body: JSON.stringify({ storage_path: storagePath }),
   });
 }
 
