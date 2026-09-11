@@ -490,11 +490,17 @@ export default function HomeScreen() {
         <View style={sectionStyle}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
-            <TouchableOpacity style={styles.actionCard} onPress={() => quickAction('map', 'internal', () => router.push({ pathname: '/map', params: { source: 'home_quick_action' } }))} activeOpacity={0.8}>
-              <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
-                <Feather name="map" size={22} color="#FFFFFF" />
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => quickAction('emergency_services', 'internal', () => router.push('/emergency-services' as never))}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Emergency Services"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.error }]}>
+                <Feather name="alert-triangle" size={22} color="#FFFFFF" />
               </View>
-              <Text style={styles.actionTitle}>Map</Text>
+              <Text style={styles.actionTitle}>Emergency Services</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionCard} onPress={() => quickAction('schedule', 'internal', () => router.push({ pathname: '/schedule', params: { source: 'home_quick_action' } }))} activeOpacity={0.8}>
