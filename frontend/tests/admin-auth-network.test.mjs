@@ -64,3 +64,10 @@ test('Netlify sends only staging admin routes to the staging backend before the 
   assert.match(deployedRedirects, /^\/api\/admin\/\*  https:\/\/ipm-staging-backend\.onrender\.com\/api\/admin\/:splat  200!/);
   assert.ok(deployedRedirects.indexOf('/api/admin/*') < deployedRedirects.indexOf('/*\t/index.html'));
 });
+
+test('Netlify keeps staging vendors proxied to the live production vendor list', () => {
+  assert.match(netlifyConfig, /from = "\/api\/vendors"\s+to = "https:\/\/ipm-backend-eoiw\.onrender\.com\/api\/vendors"\s+status = 200\s+force = true/);
+  assert.match(deployedRedirects, /^\/api\/vendors  https:\/\/ipm-backend-eoiw\.onrender\.com\/api\/vendors  200!/m);
+  assert.ok(deployedRedirects.indexOf('/api/vendors') < deployedRedirects.indexOf('/*\t/index.html'));
+});
+

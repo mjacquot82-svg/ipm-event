@@ -65,9 +65,10 @@ test('automatic recovery cannot enter legacy replacement or enrollment',()=>{
  assert.match(component,/nextState === 'subscribed'\) await completeSetup\(true\)/);
 });
 
-test('staging build derives API proxies from validated deployment backend',()=>{
+test('staging build rewrites admin proxy from validated deployment backend',()=>{
  const script=readFileSync(new URL('../scripts/build-web.js',import.meta.url),'utf8');
  assert.match(script,/env\.EXPO_PUBLIC_BACKEND_URL\.replace/);
  assert.match(script,/route \+ backend \+ destination/);
+ assert.match(script,/Keep \/api\/vendors on the production vendor list/);
  assert.doesNotMatch(script,/ipm-backend-eoiw/);
 });

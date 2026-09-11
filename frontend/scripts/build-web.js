@@ -19,12 +19,14 @@ for (const [command, args] of [
   if (result.status !== 0) process.exit(result.status || 1);
 }
 
-// Netlify proxy destinations must use the same validated backend as the bundle.
-// In particular, a staging export must not inherit legacy production proxies.
+// Rewrite only /api/admin/* to the validated deployment backend.
+// Keep /api/vendors on the production vendor list from public/_redirects /
+// netlify.toml. Netlify checks published dist/_redirects before netlify.toml,
+// so rewriting vendors onto the thin staging backend empties the Vendors tab.
 const backend = env.EXPO_PUBLIC_BACKEND_URL.replace(/\/$/, '');
 const redirectsPath = './dist/_redirects';
 const redirects = readFileSync(redirectsPath, 'utf8').replace(
-  /^(\/api\/(?:admin\/\*|vendors)\s+)https?:\/\/[^/\s]+(\/api\/\S+)/gm,
+  /^(\/api\/admin\/\*\s+)https?:\/\/[^/\s]+(\/api\/\S+)/gm,
   (_match, route, destination) => route + backend + destination,
 );
 writeFileSync(redirectsPath, redirects);
