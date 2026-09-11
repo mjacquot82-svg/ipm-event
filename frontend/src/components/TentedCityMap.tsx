@@ -16,7 +16,7 @@ import type { Rect, TentedCityPlace } from '../config/tentedCityTypes';
 import { findTentedCityPlace, placeRect, placeTitle, searchTentedCity } from '../config/tentedCitySearch';
 import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tentedCityLayout';
 import { boothHighlightStyle } from '../config/tentedCityHighlight';
-import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, TENTED_CITY_BOOTH_DIVIDER_SEGMENTS, focusRectForFootprint, AREA_BY_LABEL, AREA_BY_ID, isTrustedParentOnlyArea, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
+import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, TENTED_CITY_BOOTH_DIVIDER_SEGMENTS, TENTED_CITY_TRUSTED_PARENT_ONLY_RANGES, focusRectForFootprint, AREA_BY_LABEL, AREA_BY_ID, isTrustedParentOnlyArea, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
 import { footprintForVendor } from '../config/tentedCityVendorMatch';
 import {
   findSemanticAreaForVendor, findSemanticAreaForGeometryArea, findSemanticAreaForLocation, semanticAreaRect, TENTED_CITY_SEMANTIC_AREAS,
@@ -598,6 +598,15 @@ export default function TentedCityMap({
         || vendorFootprint.lotIds.length !== 1
       ),
   );
+  // Semantic tap / schedule alias for Quilt Tent & Rural Expo: same yellow parent fill as vendor parent-only.
+  const parentOnlySemanticGeometry = (!useExactBoothHierarchy && selectedSemanticArea
+    ? TENTED_CITY_TRUSTED_PARENT_ONLY_RANGES.find((area) => findSemanticAreaForGeometryArea(area)?.id === selectedSemanticArea.id)
+    : null) || null;
+  const parentOnlyFillRect = useExactBoothHierarchy
+    ? null
+    : (parentOnlyFootprint && vendorFootprint?.parentRect)
+      || parentOnlySemanticGeometry?.rect
+      || null;
   const selectedTitle = selected ? placeTitle(selected) : selectedSemanticArea?.label || '';
   const selectedBooth = selected?.kind === 'vendor' ? selected.vendor.locationLabel : selectedBoothId ? TENTED_CITY_INDIVIDUAL_BOOTHS.find((booth) => booth.semanticId === selectedBoothId)?.humanLabel || '' : '';
   const selectedMeta = selected?.kind === 'vendor'
@@ -650,11 +659,25 @@ export default function TentedCityMap({
               },
             ]}
           />
+        ) : parentOnlyFillRect ? (
+          <View
+            pointerEvents="none"
+            testID="selected-parent-range-fill"
+            style={[
+              styles.parentRangeFill,
+              {
+                left: `${parentOnlyFillRect.x}%`,
+                top: `${parentOnlyFillRect.y}%`,
+                width: `${parentOnlyFillRect.w}%`,
+                height: `${parentOnlyFillRect.h}%`,
+              },
+            ]}
+          />
         ) : null}
         {TENTED_CITY_SEMANTIC_AREAS.map((area) => {
           const rect = semanticAreaRect(area);
           const active = selectedSemanticArea?.id === area.id;
-          const showSemanticFill = active && !useExactBoothHierarchy;
+          const showSemanticFill = active && !useExactBoothHierarchy && !parentOnlyFillRect;
           return <TouchableOpacity
             key={area.id}
             activeOpacity={1}
@@ -688,30 +711,14 @@ export default function TentedCityMap({
             <Text style={styles.verifyParentLabel}>{parent.label}</Text>
           </View>
         )) : null}
-        {useExactBoothHierarchy ? null : parentOnlyFootprint && vendorFootprint ? (
-          vendorFootprint.parentRect ? (
-            <View
-              pointerEvents="none"
-              testID="selected-parent-range-fill"
-              style={[
-                styles.parentRangeFill,
-                {
-                  left: `${vendorFootprint.parentRect.x}%`,
-                  top: `${vendorFootprint.parentRect.y}%`,
-                  width: `${vendorFootprint.parentRect.w}%`,
-                  height: `${vendorFootprint.parentRect.h}%`,
-                },
-              ]}
-            />
-          ) : (
-            <>
-              {vendorFootprint.rects.map((rect, i) => (
-                <BoothHighlight testID="vendor-booth-highlight" rect={rect} key={`fp-${i}-${rect.x}-${rect.y}`} layer={layer} border={0} borderColor="transparent" style={styles.footprint}>
-                  <View style={[styles.parentRangeFillInner, { backgroundColor: PARENT_RANGE_FILL }]} />
-                </BoothHighlight>
-              ))}
-            </>
-          )
+        {useExactBoothHierarchy || parentOnlyFillRect ? null : parentOnlyFootprint && vendorFootprint ? (
+          <>
+            {vendorFootprint.rects.map((rect, i) => (
+              <BoothHighlight testID="vendor-booth-highlight" rect={rect} key={`fp-${i}-${rect.x}-${rect.y}`} layer={layer} border={0} borderColor="transparent" style={styles.footprint}>
+                <View style={[styles.parentRangeFillInner, { backgroundColor: PARENT_RANGE_FILL }]} />
+              </BoothHighlight>
+            ))}
+          </>
         ) : vendorFootprint ? vendorFootprint.rects.map((rect, i) => (
           <BoothHighlight testID="vendor-booth-highlight" rect={rect} key={`fp-${i}-${rect.x}-${rect.y}`} layer={layer} border={0} borderColor="transparent" style={styles.footprint}>
             <View style={[styles.parentRangeFillInner, { backgroundColor: PARENT_RANGE_FILL }]} />

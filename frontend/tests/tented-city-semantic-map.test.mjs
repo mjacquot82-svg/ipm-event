@@ -39,3 +39,14 @@ test('map wires semantic areas, selection, focus, and official SVG source', () =
   assert.match(component, /findSemanticAreaForLocation\(initialQuery\)/);
   assert.match(component, /selectSemanticArea\(semanticArea\)/);
 });
+
+
+test('parent-only Quilt Tent / Rural Expo resolve; flagged 6B stays unmapped', () => {
+  assert.match(helper, /QUILT TENT/);
+  assert.match(helper, /quilt-tent-3a-39-44-g2/);
+  assert.match(helper, /RURAL EXPO COURTYARD/);
+  assert.match(helper, /rural-expo-courtyard-3b-39-44/);
+  assert.ok(manifest.areas.some((area) => area.id === 'quilt-tent-3a-39-44-g2'));
+  assert.ok(manifest.areas.some((area) => area.id === 'rural-expo-courtyard-3b-39-44'));
+  assert.equal(manifest.areas.some((area) => /6b.?26/i.test(area.id + area.label)), false);
+});

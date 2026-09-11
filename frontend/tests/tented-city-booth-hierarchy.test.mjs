@@ -113,7 +113,7 @@ test('TentedCityMap source encodes yellow parent + blue exact hierarchy markers'
   assert.doesNotMatch(mapSrc, /selected-booth-highlight"[^>]*borderColor="#F5C518"/);
   assert.doesNotMatch(mapSrc, /individualBoothSelected/);
   // No double-stacked exact blue (vendor block skipped when hierarchy is active).
-  assert.match(mapSrc, /useExactBoothHierarchy \? null : parentOnlyFootprint/);
+  assert.match(mapSrc, /useExactBoothHierarchy \|\| parentOnlyFillRect \? null : parentOnlyFootprint/);
   // Official SVG stays overlay-only.
   assert.match(mapSrc, /tented-city-map-app-ready\.svg/);
 });
@@ -183,6 +183,8 @@ test('3A/3B 39-44 trusted parent geometry fills yellow parent-only (no blue)', (
   // Map source: parent-only yellow path, never selected-booth blue for these ranges.
   assert.match(mapSrc, /isTrustedParentOnlyArea/);
   assert.match(mapSrc, /parentOnlyFootprint/);
+  assert.match(mapSrc, /parentOnlyFillRect/);
+  assert.match(mapSrc, /parentOnlySemanticGeometry/);
   assert.match(mapSrc, /selected-parent-range-fill/);
   assert.equal((mapSrc.match(/testID="selected-booth-highlight"/g) || []).length, 1);
 });
