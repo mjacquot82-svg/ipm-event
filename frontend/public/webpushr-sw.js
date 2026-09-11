@@ -30,6 +30,57 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
+// Only real document navigations enter this path. An open app is never reloaded.
+// Validate and cache the startup assets before replacing the usable offline HTML.
+const IPM_LAUNCH_TIMEOUT_MS = 5000;
+
+async function currentLaunch(request) {
+  const cache = await caches.open(IPM_SHELL_CACHE);
+  const controller = new AbortController();
+  let timer;
+  const network = (async () => {
+    const response = await fetch(request, { cache: 'no-store', signal: controller.signal });
+    if (!response.ok || response.redirected || !response.headers.get('content-type')?.includes('text/html')) {
+      throw new Error('Application document unavailable');
+    }
+    const html = await response.clone().text();
+    const startup = [...html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)=["']([^"']+)["'][^>]*>/gi)]
+      .map((match) => new URL(match[1], self.location.origin))
+      .filter((url) => url.origin === self.location.origin
+        && url.pathname.startsWith('/_expo/static/') && /\.(js|css)$/.test(url.pathname));
+    if (!startup.some((url) => /\/entry-[^/]+\.js$/.test(url.pathname))) {
+      throw new Error('Application startup script missing');
+    }
+    await Promise.all(startup.map(async (url) => {
+      if (await cache.match(url.href)) return;
+      const asset = await fetch(url.href, { cache: 'no-store', signal: controller.signal });
+      const type = asset.headers.get('content-type') || '';
+      if (!asset.ok || asset.redirected || !/(?:javascript|text\/css)/i.test(type)) {
+        throw new Error('Application startup asset unavailable');
+      }
+      await cache.put(url.href, asset);
+    }));
+    if (controller.signal.aborted) throw new Error('Application launch timed out');
+    await cache.put('/index.html', response.clone());
+    return response;
+  })();
+  try {
+    return await Promise.race([network, new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error('Application launch timed out'));
+      }, IPM_LAUNCH_TIMEOUT_MS);
+    })]);
+  } catch (error) {
+    controller.abort();
+    const cached = await cache.match('/index.html');
+    if (cached) return cached;
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
@@ -37,16 +88,11 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith((async () => {
-      const cache = await caches.open(IPM_SHELL_CACHE);
-      const cached = await cache.match('/index.html');
-      if (cached) return cached;
-      return fetch(request);
-    })());
+    event.respondWith(currentLaunch(request));
     return;
   }
 
-  if (IPM_SHELL_ASSETS.includes(url.pathname)) {
+  if (IPM_SHELL_ASSETS.includes(url.pathname) || url.pathname.startsWith('/_expo/static/')) {
     event.respondWith(caches.match(request, { ignoreSearch: true })
       .then((cached) => cached || fetch(request)));
   }
