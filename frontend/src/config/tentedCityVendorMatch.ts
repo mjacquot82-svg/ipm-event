@@ -5,7 +5,10 @@ import {
   LOT_BY_ID,
   clusterLotRects,
   formatLotId,
+  isTrustedParentOnlyArea,
+  parseRangeToken,
   unionRects,
+  type GeometryArea,
 } from './tentedCityGeometry';
 
 export type MatchClass = 'confident_lot' | 'range_or_named' | 'ambiguous' | 'unmatched';
@@ -166,10 +169,24 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
   const brucePower: string[] = [];
   const unknown: string[] = [];
 
+  const parentOnlyAreas: GeometryArea[] = [];
+
   for (const tok of tokens) {
     const nid = namedIdFor(tok);
     if (nid) {
       namedIds.push(nid);
+      continue;
+    }
+    const rangeArea = parseRangeToken(tok);
+    if (rangeArea) {
+      if (rangeArea.flagged || (rangeArea.section === '6B' && rangeArea.lot_start === 26 && rangeArea.lot_end === 29)) {
+        flagged6b.push(rangeArea.label);
+      } else if (isTrustedParentOnlyArea(rangeArea)) {
+        parentOnlyAreas.push(rangeArea);
+      } else {
+        // Ordinary numbered range label without expanded booths — keep unmatched rather than inventing a new path.
+        unknown.push(tok);
+      }
       continue;
     }
     const parsed = parseLotToken(tok);
@@ -194,8 +211,20 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
       continue;
     }
     const lot = LOT_BY_ID.get(parsed.id);
-    if (lot) lots.push(lot);
-    else unknown.push(parsed.id);
+    if (!lot) {
+      unknown.push(parsed.id);
+      continue;
+    }
+    const parent = AREA_BY_LABEL.get(lot.parent);
+    if (parent && isTrustedParentOnlyArea(parent)) {
+      parentOnlyAreas.push(parent);
+      continue;
+    }
+    if (parent?.flagged) {
+      flagged6b.push(parsed.id);
+      continue;
+    }
+    lots.push(lot);
   }
 
   if (unknown.length) {
@@ -215,7 +244,8 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
     (missing5a.length ? 1 : 0) +
     (flagged6b.length ? 1 : 0) +
     (mutual.length ? 1 : 0) +
-    (brucePower.length ? 1 : 0);
+    (brucePower.length ? 1 : 0) +
+    (parentOnlyAreas.length ? 1 : 0);
   if (kinds > 1) {
     return emptyMatch({ class: 'ambiguous', reason: 'mixed-token-kinds', rect: null, parentRect: null, lotIds: [], areaId: null });
   }
@@ -225,25 +255,31 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
   }
 
   if (flagged6b.length) {
+    // Flagged/unproven parent geometry (6B 26-29): keep safe unmapped — no yellow, no blue, no camera guess.
     const unique = [...new Set(flagged6b)].sort();
-    const parent = AREA_BY_LABEL.get('6B 26-29');
-    if (unique.join() === '6B-26,6B-27,6B-28,6B-29') {
-      return emptyMatch({
-        class: 'range_or_named',
-        reason: '6B-26-29-whole-parent-only',
-        rect: parent?.rect || null,
-        parentRect: parent?.rect || null,
-        lotIds: unique,
-        areaId: parent?.id || 'range-6B-26-29',
-      });
+    return emptyMatch({
+      class: 'unmatched',
+      reason: '6B-26-29-numbering-unproven',
+      rect: null,
+      parentRect: null,
+      lotIds: unique.filter((id) => id.startsWith('6B-')),
+      areaId: null,
+    });
+  }
+
+  if (parentOnlyAreas.length) {
+    const uniq = [...new Map(parentOnlyAreas.map((area) => [area.id, area])).values()];
+    if (uniq.length !== 1) {
+      return emptyMatch({ class: 'ambiguous', reason: 'multiple-parent-only-ranges', rect: null, parentRect: null, lotIds: [], areaId: null });
     }
+    const area = uniq[0];
     return emptyMatch({
       class: 'range_or_named',
-      reason: '6B-26-29-numbering-unproven-parent-fallback',
-      rect: parent?.rect || null,
-      parentRect: parent?.rect || null,
-      lotIds: unique,
-      areaId: parent?.id || 'range-6B-26-29',
+      reason: 'trusted-parent-only-range',
+      rect: area.rect,
+      parentRect: area.rect,
+      lotIds: [],
+      areaId: area.id,
     });
   }
 

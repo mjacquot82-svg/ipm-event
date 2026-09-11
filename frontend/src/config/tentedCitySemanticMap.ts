@@ -1,6 +1,10 @@
 import manifest from '../data/tented-city-map-manifest.json';
 import type { Rect, TentedCityVendor } from './tentedCityTypes';
-import type { GeometryArea } from './tentedCityGeometry';
+import {
+  AREA_BY_LABEL,
+  parseRangeToken,
+  type GeometryArea,
+} from './tentedCityGeometry';
 
 export const TENTED_CITY_SEMANTIC_VIEWBOX = { width: 774, height: 603 } as const;
 
@@ -22,6 +26,15 @@ const normalize = (value: string) => value.toUpperCase().replace(/[\u2019']/g, '
 // map manifest. Keep this list explicit so an unknown location stays unmapped.
 const LOCATION_ALIASES: Record<string, string> = {
   'EVENT CENTRE 1 WEST 2': 'dancing-tractors-combine-derby-west-2',
+  // Trusted parent-only ranges (no individual stalls).
+  '3A 39 44': 'quilt-tent-3a-39-44-g2',
+  '3A39 44': 'quilt-tent-3a-39-44-g2',
+  'QUILT TENT': 'quilt-tent-3a-39-44-g2',
+  'QUILT TENT 3A 39 44': 'quilt-tent-3a-39-44-g2',
+  '3B 39 44': 'rural-expo-courtyard-3b-39-44',
+  '3B39 44': 'rural-expo-courtyard-3b-39-44',
+  'RURAL EXPO COURTYARD': 'rural-expo-courtyard-3b-39-44',
+  'RURAL EXPO COURTYARD 3B 39 44': 'rural-expo-courtyard-3b-39-44',
 };
 
 /** Convert the supplied PDF-point region into the map's existing percentage coordinate space. */
@@ -44,13 +57,21 @@ export function findSemanticAreaForLocation(query: string): SemanticMapArea | nu
   const direct = findSemanticArea(query);
   if (direct) return direct;
   const aliasId = LOCATION_ALIASES[normalize(query)];
-  return aliasId ? TENTED_CITY_SEMANTIC_AREAS.find((area) => area.id === aliasId) || null : null;
+  if (aliasId) return TENTED_CITY_SEMANTIC_AREAS.find((area) => area.id === aliasId) || null;
+  const range = parseRangeToken(query);
+  // Never force-map flagged/unproven parents (e.g. 6B 26-29).
+  if (range && !range.flagged) return findSemanticAreaForGeometryArea(range);
+  const byLabel = AREA_BY_LABEL.get(query.trim()) || AREA_BY_LABEL.get(query.trim().replace(/-/g, ' '));
+  if (byLabel && !byLabel.flagged) return findSemanticAreaForGeometryArea(byLabel);
+  return null;
 }
 
-/** Exact label matching only; no individual booth position is inferred from a range. */
+/** Prefer exact label match; fall back to audited parent geometry for parent-only ranges. */
 export function findSemanticAreaForVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationLabel'>): SemanticMapArea | null {
   const labels = [...(vendor.booths || []), vendor.locationLabel || ''].map(normalize).filter(Boolean);
-  return TENTED_CITY_SEMANTIC_AREAS.find((area) => labels.includes(normalize(area.label))) || null;
+  const direct = TENTED_CITY_SEMANTIC_AREAS.find((area) => labels.includes(normalize(area.label)));
+  if (direct) return direct;
+  return findSemanticAreaForLocation(vendor.locationLabel || '');
 }
 
 /** Resolve audited geometry ranges using the official SVG manifest labels. */

@@ -16,7 +16,7 @@ import type { Rect, TentedCityPlace } from '../config/tentedCityTypes';
 import { findTentedCityPlace, placeRect, placeTitle, searchTentedCity } from '../config/tentedCitySearch';
 import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tentedCityLayout';
 import { boothHighlightStyle } from '../config/tentedCityHighlight';
-import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, TENTED_CITY_BOOTH_DIVIDER_SEGMENTS, focusRectForFootprint, AREA_BY_LABEL, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
+import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, TENTED_CITY_BOOTH_DIVIDER_SEGMENTS, focusRectForFootprint, AREA_BY_LABEL, AREA_BY_ID, isTrustedParentOnlyArea, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
 import { footprintForVendor } from '../config/tentedCityVendorMatch';
 import {
   findSemanticAreaForVendor, findSemanticAreaForGeometryArea, findSemanticAreaForLocation, semanticAreaRect, TENTED_CITY_SEMANTIC_AREAS,
@@ -167,16 +167,24 @@ export default function TentedCityMap({
       ? TENTED_CITY_INDIVIDUAL_BOOTHS.find((booth) => booth.id === footprint.lotIds[0]) || null
       : null;
     const individualParent = individual ? AREA_BY_LABEL.get(individual.parentRangeLabel) : null;
+    const footprintArea = footprint?.areaId ? AREA_BY_ID.get(footprint.areaId) || null : null;
     const semanticArea = individual && individualParent
       ? findSemanticAreaForGeometryArea(individualParent)
-      : place.kind === 'vendor' ? findSemanticAreaForVendor(place.vendor) : null;
+      : place.kind === 'vendor'
+        ? (findSemanticAreaForVendor(place.vendor)
+          || (footprintArea && !footprintArea.flagged ? findSemanticAreaForGeometryArea(footprintArea) : null))
+        : null;
     setSelectedSemanticArea(semanticArea);
     setSelectedBoothId(individual?.semanticId || null);
     setQuery(fromQuery ?? placeTitle(place));
     setFocused(false);
     Keyboard.dismiss();
-    if (footprint) applyFocus(focusRectForFootprint(footprint.rect, footprint.parentRect), true, SELECTED_RESERVED_BOTTOM);
-    else if (place.kind === 'stage') applyFocus(placeRect(place), false, SELECTED_RESERVED_BOTTOM);
+    if (footprint) {
+      const focusRect = footprint.parentRect && (footprint.class === 'range_or_named' || isTrustedParentOnlyArea(footprintArea))
+        ? footprint.parentRect
+        : footprint.rect;
+      applyFocus(focusRectForFootprint(focusRect, footprint.parentRect), true, SELECTED_RESERVED_BOTTOM);
+    } else if (place.kind === 'stage') applyFocus(placeRect(place), false, SELECTED_RESERVED_BOTTOM);
   };
 
   const selectSemanticArea = (area: SemanticMapArea) => {
@@ -223,7 +231,19 @@ export default function TentedCityMap({
       }
       return;
     }
-    if (exactInitialPlace && (place.kind !== 'vendor' || place.vendor.name !== initialQuery)) return;
+    if (exactInitialPlace && (place.kind !== 'vendor' || place.vendor.name !== initialQuery)) {
+      const semanticArea = findSemanticAreaForLocation(initialQuery);
+      if (semanticArea) {
+        selectSemanticArea(semanticArea);
+        return;
+      }
+      if (place.kind === 'vendor' && place.vendor.locationLabel
+        && place.vendor.locationLabel.replace(/[^A-Za-z0-9]+/g, '').toUpperCase()
+          === initialQuery.replace(/[^A-Za-z0-9]+/g, '').toUpperCase()) {
+        selectPlace(place, placeTitle(place));
+      }
+      return;
+    }
     if (place.kind === 'stage' && !place.venue.rect) {
       setSelected(null);
       setSelectedSemanticArea(null);
@@ -568,8 +588,15 @@ export default function TentedCityMap({
     ? AREA_BY_LABEL.get(exactSelectedBooth.parentRangeLabel) || null
     : null;
   const useExactBoothHierarchy = Boolean(exactSelectedBooth && parentRangeForExact);
+  const footprintGeometryArea = vendorFootprint?.areaId ? AREA_BY_ID.get(vendorFootprint.areaId) || null : null;
   const parentOnlyFootprint = Boolean(
-    vendorFootprint && !useExactBoothHierarchy && (vendorFootprint.class === 'range_or_named' || vendorFootprint.lotIds.length !== 1),
+    vendorFootprint
+      && !useExactBoothHierarchy
+      && (
+        vendorFootprint.class === 'range_or_named'
+        || isTrustedParentOnlyArea(footprintGeometryArea)
+        || vendorFootprint.lotIds.length !== 1
+      ),
   );
   const selectedTitle = selected ? placeTitle(selected) : selectedSemanticArea?.label || '';
   const selectedBooth = selected?.kind === 'vendor' ? selected.vendor.locationLabel : selectedBoothId ? TENTED_CITY_INDIVIDUAL_BOOTHS.find((booth) => booth.semanticId === selectedBoothId)?.humanLabel || '' : '';

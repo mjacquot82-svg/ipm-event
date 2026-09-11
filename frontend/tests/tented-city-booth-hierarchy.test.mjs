@@ -35,8 +35,17 @@ const {
   AREA_BY_LABEL,
   individualBoothsForArea,
   LOT_BY_ID,
+  isTrustedParentOnlyArea,
+  parseRangeToken,
+  TENTED_CITY_TRUSTED_PARENT_ONLY_RANGES,
 } = load(geoUrl);
 const { footprintForVendor, matchVendor } = load(matchUrl);
+const semanticUrl = new URL('../src/config/tentedCitySemanticMap.ts', import.meta.url);
+const {
+  findSemanticAreaForLocation,
+  findSemanticAreaForVendor,
+  findSemanticAreaForGeometryArea,
+} = load(semanticUrl);
 const { default: colors } = load(colorsPath);
 const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
 const mapSrc = fs.readFileSync(mapPath, 'utf8');
@@ -130,4 +139,90 @@ test('reset and vendor switch clear hierarchy selection state', () => {
   // Vendor search feeds selectedBoothId through selectPlace → useExactBoothHierarchy.
   assert.match(mapSrc, /setSelectedBoothId\(individual\?\.semanticId \|\| null\)/);
   assert.match(mapSrc, /selectIndividualBooth/);
+});
+
+test('3A/3B 39-44 trusted parent geometry fills yellow parent-only (no blue)', () => {
+  assert.deepEqual(
+    TENTED_CITY_TRUSTED_PARENT_ONLY_RANGES.map((a) => a.label).sort(),
+    ['3A 39-44', '3B 39-44'],
+  );
+  for (const label of ['3A 39-44', '3B 39-44']) {
+    const area = AREA_BY_LABEL.get(label);
+    assert.ok(area, label);
+    assert.equal(area.flagged, false, label);
+    assert.ok(isTrustedParentOnlyArea(area), label);
+    assert.equal(individualBoothsForArea(area).length, 0, label);
+    assert.ok(parseRangeToken(label), label);
+    assert.ok(parseRangeToken(label.replace(' ', '-')), label);
+    const semantic = findSemanticAreaForGeometryArea(area);
+    assert.ok(semantic, `${label} semantic`);
+    assert.equal(findSemanticAreaForLocation(label)?.id, semantic.id);
+  }
+
+  const quilt = vendorByLocation('3A-39-44');
+  assert.match(quilt.name, /Quilt/i);
+  const quiltMatch = matchVendor(quilt);
+  const quiltFoot = footprintForVendor(quilt);
+  assert.equal(quiltMatch.class, 'range_or_named');
+  assert.equal(quiltMatch.reason, 'trusted-parent-only-range');
+  assert.deepEqual(quiltMatch.lotIds, []);
+  assert.deepEqual(quiltMatch.parentRect, AREA_BY_LABEL.get('3A 39-44').rect);
+  assert.ok(quiltFoot);
+  assert.equal(quiltFoot.class, 'range_or_named');
+  assert.deepEqual(quiltFoot.parentRect, AREA_BY_LABEL.get('3A 39-44').rect);
+  assert.equal(findSemanticAreaForVendor(quilt)?.id, 'quilt-tent-3a-39-44-g2');
+
+  const propane = vendorByLocation('3B-39-44');
+  const propaneMatch = matchVendor(propane);
+  assert.equal(propaneMatch.class, 'range_or_named');
+  assert.equal(propaneMatch.reason, 'trusted-parent-only-range');
+  assert.deepEqual(propaneMatch.lotIds, []);
+  assert.deepEqual(propaneMatch.parentRect, AREA_BY_LABEL.get('3B 39-44').rect);
+  assert.equal(findSemanticAreaForVendor(propane)?.id, 'rural-expo-courtyard-3b-39-44');
+
+  // Map source: parent-only yellow path, never selected-booth blue for these ranges.
+  assert.match(mapSrc, /isTrustedParentOnlyArea/);
+  assert.match(mapSrc, /parentOnlyFootprint/);
+  assert.match(mapSrc, /selected-parent-range-fill/);
+  assert.equal((mapSrc.match(/testID="selected-booth-highlight"/g) || []).length, 1);
+});
+
+test('6B 26-29 stays safe unmapped without yellow or blue', () => {
+  const area = AREA_BY_LABEL.get('6B 26-29');
+  assert.ok(area);
+  assert.equal(area.flagged, true);
+  assert.equal(isTrustedParentOnlyArea(area), false);
+  assert.equal(individualBoothsForArea(area).length, 0);
+  assert.equal(findSemanticAreaForLocation('6B 26-29'), null);
+  assert.equal(findSemanticAreaForLocation('6B-26-29'), null);
+  const fake = matchVendor({ name: '6B probe', locationLabel: '6B-26-29', booths: ['6B-26', '6B-27', '6B-28', '6B-29'] });
+  assert.equal(fake.class, 'unmatched');
+  assert.match(fake.reason, /6B-26-29-numbering-unproven/);
+  assert.equal(fake.rect, null);
+  assert.equal(fake.parentRect, null);
+  assert.equal(footprintForVendor({ name: '6B probe', locationLabel: '6B-26-29', booths: ['6B-26', '6B-27', '6B-28', '6B-29'] }), null);
+  assert.match(mapSrc, /This location isn’t mapped yet\./);
+});
+
+test('regression: trusted exact booths keep yellow parent + blue exact', () => {
+  for (const [location, namePart] of [
+    ['2B-06', 'Kodiak'],
+    ['1A-09', 'ACE'],
+    ['2B-23', 'GGS|Grain'],
+    ['4A-14', 'Hip Town'],
+    ['5A-33', 'Stumped'],
+    ['1B-15', 'Harkness'],
+  ]) {
+    const vendor = vendors.find((row) => row.locationLabel === location && new RegExp(namePart, 'i').test(row.name))
+      || vendorByLocation(location);
+    assert.match(vendor.name, new RegExp(namePart, 'i'), location);
+    const match = matchVendor(vendor);
+    const footprint = footprintForVendor(vendor);
+    assert.equal(match.class, 'confident_lot', location);
+    assert.ok(footprint, location);
+    assert.equal(footprint.lotIds.length, 1, location);
+    const booth = TENTED_CITY_INDIVIDUAL_BOOTHS.find((b) => b.id === location);
+    assert.ok(booth, location);
+    assert.ok(AREA_BY_LABEL.get(booth.parentRangeLabel), booth.parentRangeLabel);
+  }
 });

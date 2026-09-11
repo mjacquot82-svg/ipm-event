@@ -114,6 +114,30 @@ export const TENTED_CITY_SAFE_INDIVIDUAL_RANGES = TENTED_CITY_RANGE_AREAS.filter
     && area.split_axis === 'L_to_R' && area.orientation === 'horizontal',
 );
 
+/** Audited parent rectangles that must never mint individual blue stalls. */
+export function isTrustedParentOnlyArea(area: GeometryArea | null | undefined): boolean {
+  if (!area || !area.n_lots || area.flagged) return false;
+  return !TENTED_CITY_SAFE_INDIVIDUAL_RANGES.some((candidate) => candidate.id === area.id);
+}
+
+export const TENTED_CITY_TRUSTED_PARENT_ONLY_RANGES = TENTED_CITY_RANGE_AREAS.filter(isTrustedParentOnlyArea);
+
+const RANGE_TOKEN_RE = /^(\d+)([A-Za-z])[\s-]*(\d+)\s*[-–]\s*(\d+)$/;
+
+/** Parse labels like 3A 39-44 / 3A-39-44 into an audited geometry range. */
+export function parseRangeToken(token: string): GeometryArea | null {
+  const t = (token || '').trim();
+  if (!t) return null;
+  const m = t.match(RANGE_TOKEN_RE) || t.replace(/\s+/g, ' ').match(RANGE_TOKEN_RE);
+  if (!m) return null;
+  const section = m[1] + m[2].toUpperCase();
+  const start = Number(m[3]);
+  const end = Number(m[4]);
+  return TENTED_CITY_RANGE_AREAS.find(
+    (area) => area.section === section && area.lot_start === start && area.lot_end === end,
+  ) || null;
+}
+
 export function individualBoothsForArea(area: GeometryArea): TentedCityIndividualBooth[] {
   if (!TENTED_CITY_SAFE_INDIVIDUAL_RANGES.some((candidate) => candidate.id === area.id)) return [];
   return lotsForArea(area).map((lot) => ({
