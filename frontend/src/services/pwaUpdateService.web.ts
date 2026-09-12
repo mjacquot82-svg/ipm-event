@@ -1,211 +1,147 @@
-const ACTIVATE_UPDATE_MESSAGE = 'IPM_ACTIVATE_UPDATE';
-const UPDATE_CHECK_INTERVAL_MS = 45_000;
-const MAX_DIAGNOSTICS = 24;
-
-type PwaUpdateDiagnostic = { event: string; at: string };
-
+/** Foreground-only release detection. Refresh is always an attendee decision. */
+export const BACKGROUND_THRESHOLD_MS = 10 * 60 * 1000;
+const GUARD_KEY = 'ipm:resume-update:last-attempt';
+const DEADLINE_MS = 8000;
+type Snapshot = { visible: boolean; refreshing: boolean };
 let registration: ServiceWorkerRegistration | null = null;
-let waitingWorker: ServiceWorker | null = null;
-let installingWorker: ServiceWorker | null = null;
-let installingStateListener: (() => void) | null = null;
-let updateCheck: Promise<void> | null = null;
-let updateTimer: ReturnType<typeof setInterval> | null = null;
+let hiddenAt: number | null = null;
+let safe = false;
+let holds = 0;
+let checking = false;
+let target: string | null = null;
+let dismissed: string | null = null;
+let refreshing = false;
 let activationRequested = false;
-let reloadStarted = false;
-let reloadPending = false;
-let started = false;
-let safeToActivate = false;
-let interactionHolds = 0;
-const diagnostics: PwaUpdateDiagnostic[] = [];
-
-function recordDiagnostic(event: string) {
-  diagnostics.push({ event, at: new Date().toISOString() });
-  if (diagnostics.length > MAX_DIAGNOSTICS) diagnostics.splice(0, diagnostics.length - MAX_DIAGNOSTICS);
+let attempt = 0;
+let reloaded = false;
+let generation = 0;
+let lastAttempt: string | null = null;
+let activationTimer: ReturnType<typeof setTimeout> | undefined;
+const listeners = new Set<(state: Snapshot) => void>();
+const entryPattern = /\/_expo\/static\/js\/web\/entry-[a-zA-Z0-9_-]+\.js$/;
+function currentEntry() {
+  return Array.from(document.scripts).map(script => new URL(script.src, window.location.href).pathname)
+    .find(path => entryPattern.test(path));
 }
-
-export function getPwaUpdateDiagnostics(): readonly PwaUpdateDiagnostic[] {
-  return diagnostics.map((entry) => ({ ...entry }));
+function available() {
+  return !!registration && safe && holds === 0 && document.visibilityState === 'visible' && navigator.onLine !== false;
 }
-
-if (typeof window !== 'undefined') {
-  Object.defineProperty(window, '__IPM_PWA_UPDATE_DIAGNOSTICS__', {
-    configurable: true,
-    value: getPwaUpdateDiagnostics,
-  });
+function emit() {
+  const state = { visible: available() && !!target && target !== dismissed && target !== lastAttempt, refreshing };
+  listeners.forEach(listener => listener(state));
 }
-
-function canRunForegroundHomeChecks() {
-  return started
-    && safeToActivate
-    && interactionHolds === 0
-    && !activationRequested
-    && navigator.onLine !== false
-    && document.visibilityState === 'visible';
-}
-
-function stopUpdateScheduler() {
-  if (!updateTimer) return;
-  clearInterval(updateTimer);
-  updateTimer = null;
-}
-
-function syncUpdateScheduler() {
-  if (!canRunForegroundHomeChecks()) {
-    stopUpdateScheduler();
-    return;
-  }
-  if (!updateTimer) updateTimer = setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
-}
-
-function activateWaitingWorkerIfSafe() {
-  if (!safeToActivate || interactionHolds > 0 || !waitingWorker || activationRequested) return;
-  activationRequested = true;
-  stopUpdateScheduler();
-  recordDiagnostic('activation_requested');
-  waitingWorker.postMessage({ type: ACTIVATE_UPDATE_MESSAGE });
-}
-
-function detectWaitingWorker() {
-  const candidate = registration?.waiting;
-  // A worker installed without an existing controller is the first install,
-  // not an application update that requires a reload.
-  if (!candidate || !navigator.serviceWorker.controller) return;
-  if (candidate === waitingWorker) return;
-  waitingWorker = candidate;
-  recordDiagnostic('worker_waiting');
-  activateWaitingWorkerIfSafe();
-}
-
-function observeInstallingWorker() {
-  const candidate = registration?.installing;
-  if (!candidate || candidate === installingWorker) return;
-  if (installingWorker && installingStateListener) {
-    installingWorker.removeEventListener('statechange', installingStateListener);
-  }
-  installingWorker = candidate;
-  recordDiagnostic('worker_installing');
-  installingStateListener = () => {
-    if (candidate.state === 'installed') detectWaitingWorker();
-  };
-  candidate.addEventListener('statechange', installingStateListener);
-}
-
-function checkForUpdate() {
-  if (!registration
-    || navigator.onLine === false
-    || document.visibilityState !== 'visible'
-    || updateCheck) return;
-  recordDiagnostic('update_check_started');
-  updateCheck = registration.update()
-    .then(() => {
-      observeInstallingWorker();
-      detectWaitingWorker();
-    })
-    .catch(() => undefined)
-    .finally(() => {
-      recordDiagnostic('update_check_completed');
-      updateCheck = null;
+async function releaseEntry(): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DEADLINE_MS);
+  try {
+    const response = await fetch(`/app-release.json?resume=${Date.now()}`, {
+      cache: 'no-store', credentials: 'same-origin', signal: controller.signal,
     });
+    if (!response.ok || response.redirected || !response.headers.get('content-type')?.includes('application/json')) return null;
+    const value = await response.json();
+    return typeof value.entry === 'string' && entryPattern.test(value.entry) ? value.entry : null;
+  } catch { return null; }
+  finally { clearTimeout(timer); }
 }
-
-function resumeUpdateFlow() {
-  activateWaitingWorkerIfSafe();
-  checkForUpdate();
-  syncUpdateScheduler();
+async function check() {
+  if (checking || refreshing || !registration || navigator.onLine === false) return;
+  const epoch = generation;
+  checking = true;
+  try {
+    const entry = await releaseEntry();
+    if (generation !== epoch || document.visibilityState !== 'visible') return;
+    const current = currentEntry();
+    if (entry && current) target = entry !== current && entry !== lastAttempt ? entry : null;
+    emit();
+  } finally { if (epoch === generation) checking = false; }
 }
-
-function handleUpdateFound() {
-  recordDiagnostic('update_found');
-  observeInstallingWorker();
+function visibilityChanged() {
+  if (document.visibilityState === 'hidden') {
+    if (hiddenAt === null) hiddenAt = Date.now();
+    // Never turn a deferred controllerchange into a later surprise reload.
+    cancelActivation();
+  } else if (hiddenAt !== null) {
+    const elapsed = Date.now() - hiddenAt;
+    hiddenAt = null;
+    if (elapsed >= BACKGROUND_THRESHOLD_MS) { dismissed = null; void check(); }
+  }
+  emit();
 }
-
-function handleVisibilityChange() {
-  if (document.visibilityState === 'visible') resumeUpdateFlow();
-  else stopUpdateScheduler();
+function cancelActivation() {
+  clearTimeout(activationTimer);
+  refreshing = false;
+  activationRequested = false;
+  attempt++;
 }
-
-function handleOffline() {
-  stopUpdateScheduler();
-}
-
-function reloadWhenIdle() {
-  if (!reloadPending || reloadStarted || interactionHolds > 0) return;
-  reloadStarted = true;
-  recordDiagnostic('reload_started');
+function reloadOnce() {
+  if (!refreshing || reloaded || !available() || !target) { cancelActivation(); emit(); return; }
+  try {
+    // Persist before navigation, including when currentLaunch falls back offline.
+    sessionStorage.setItem(GUARD_KEY, target);
+  } catch { cancelActivation(); emit(); return; } // Without a durable guard, leave the page alone.
+  lastAttempt = target;
+  reloaded = true;
+  cancelActivation();
   window.location.reload();
 }
-
-function handleControllerChange() {
-  recordDiagnostic('controller_changed');
-  if (!activationRequested || reloadStarted) return;
-  reloadPending = true;
-  reloadWhenIdle();
+function controllerChanged() { if (activationRequested) reloadOnce(); }
+export async function activatePwaUpdate() {
+  if (!available() || !target || refreshing || reloaded || target === lastAttempt) return;
+  const epoch = generation;
+  const requested = target;
+  refreshing = true;
+  const requestAttempt = attempt;
+  emit();
+  // Revalidate on the explicit tap; offline or a superseded deployment is a no-op.
+  const entry = await releaseEntry();
+  if (epoch !== generation || requestAttempt !== attempt || !refreshing) return;
+  if (entry !== requested || !available()) { cancelActivation(); target = null; emit(); return; }
+  try {
+    await Promise.race([
+      registration!.update(),
+      new Promise((_, reject) => { activationTimer = setTimeout(() => reject(new Error('timeout')), DEADLINE_MS); }),
+    ]);
+    clearTimeout(activationTimer);
+    const installing = registration?.installing;
+    if (installing) await new Promise<void>((resolve, reject) => {
+      const done = () => {
+        if (installing.state !== 'installed' && installing.state !== 'redundant') return;
+        clearTimeout(activationTimer); installing.removeEventListener('statechange', done); resolve();
+      };
+      activationTimer = setTimeout(() => { installing.removeEventListener('statechange', done); reject(new Error('timeout')); }, DEADLINE_MS);
+      installing.addEventListener('statechange', done); done();
+    });
+    if (epoch !== generation || requestAttempt !== attempt || !refreshing || !available()) { cancelActivation(); emit(); return; }
+    if (registration?.waiting && navigator.serviceWorker.controller) {
+      activationTimer = setTimeout(() => { cancelActivation(); emit(); }, DEADLINE_MS);
+      activationRequested = true;
+      registration.waiting.postMessage({ type: 'IPM_ACTIVATE_UPDATE' });
+    } else {
+      // Existing currentLaunch fetches/validates the new shell even with the old worker.
+      reloadOnce();
+    }
+  } catch { if (epoch === generation && requestAttempt === attempt) { cancelActivation(); emit(); } }
 }
-
-export function disposePwaUpdateFlow() {
-  stopUpdateScheduler();
-  registration?.removeEventListener('updatefound', handleUpdateFound);
-  navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
-  window.removeEventListener('online', resumeUpdateFlow);
-  window.removeEventListener('offline', handleOffline);
-  window.removeEventListener('focus', resumeUpdateFlow);
-  window.removeEventListener('pageshow', resumeUpdateFlow);
-  document.removeEventListener('visibilitychange', handleVisibilityChange);
-  if (installingWorker && installingStateListener) {
-    installingWorker.removeEventListener('statechange', installingStateListener);
-  }
-  registration = null;
-  waitingWorker = null;
-  installingWorker = null;
-  installingStateListener = null;
-  updateCheck = null;
-  activationRequested = false;
-  reloadStarted = false;
-  reloadPending = false;
-  started = false;
+export function dismissPwaUpdate() { if (!refreshing) { dismissed = target; emit(); } }
+export function subscribePwaUpdate(listener: (state: Snapshot) => void) {
+  listeners.add(listener); emit(); return () => { listeners.delete(listener); };
 }
-
-export function startPwaUpdateFlow(nextRegistration: ServiceWorkerRegistration) {
-  registration = nextRegistration;
-  if (started) {
-    observeInstallingWorker();
-    detectWaitingWorker();
-    return disposePwaUpdateFlow;
-  }
-  started = true;
-
-  nextRegistration.addEventListener('updatefound', handleUpdateFound);
-  navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
-  window.addEventListener('online', resumeUpdateFlow);
-  window.addEventListener('offline', handleOffline);
-  window.addEventListener('focus', resumeUpdateFlow);
-  window.addEventListener('pageshow', resumeUpdateFlow);
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  observeInstallingWorker();
-  detectWaitingWorker();
-  checkForUpdate();
-  syncUpdateScheduler();
-  return disposePwaUpdateFlow;
-}
-
-export function setPwaUpdateSafeState(isSafe: boolean) {
-  safeToActivate = isSafe;
-  activateWaitingWorkerIfSafe();
-  if (isSafe) checkForUpdate();
-  syncUpdateScheduler();
-}
-
-/** Prevent an update reload from interrupting an explicit attendee action. */
+export function setPwaUpdateSafeState(value: boolean) { safe = value; if (!value) cancelActivation(); emit(); }
 export function holdPwaUpdate() {
-  interactionHolds += 1;
-  syncUpdateScheduler();
-  let released = false;
-  return () => {
-    if (released) return;
-    released = true;
-    interactionHolds -= 1;
-    reloadWhenIdle();
-    activateWaitingWorkerIfSafe();
-    syncUpdateScheduler();
-  };
+  holds++; cancelActivation(); emit(); let released = false;
+  return () => { if (!released) { released = true; holds--; emit(); } };
+}
+export function disposePwaUpdateFlow() {
+  generation++; cancelActivation();
+  document.removeEventListener('visibilitychange', visibilityChanged);
+  navigator.serviceWorker.removeEventListener('controllerchange', controllerChanged);
+  registration = null; hiddenAt = null; checking = false; target = null; dismissed = null; reloaded = false;
+}
+export function startPwaUpdateFlow(next: ServiceWorkerRegistration) {
+  disposePwaUpdateFlow(); registration = next;
+  try { lastAttempt = sessionStorage.getItem(GUARD_KEY); } catch { lastAttempt = null; }
+  hiddenAt = document.visibilityState === 'hidden' ? Date.now() : null;
+  document.addEventListener('visibilitychange', visibilityChanged);
+  navigator.serviceWorker.addEventListener('controllerchange', controllerChanged);
+  return disposePwaUpdateFlow;
 }

@@ -1,240 +1,45 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
-
-const source = await readFile(new URL('../src/services/pwaUpdateService.web.ts', import.meta.url), 'utf8');
-const compiled = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-}).outputText;
-
-function eventTarget() {
-  const listeners = new Map();
-  return {
-    addEventListener(type, listener) {
-      const current = listeners.get(type) || [];
-      current.push(listener);
-      listeners.set(type, current);
-    },
-    removeEventListener(type, listener) {
-      listeners.set(type, (listeners.get(type) || []).filter((current) => current !== listener));
-    },
-    dispatch(type) {
-      for (const listener of listeners.get(type) || []) listener();
-    },
-  };
+const source=readFileSync(new URL('../src/services/pwaUpdateService.web.ts',import.meta.url),'utf8');
+const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+const A='/_expo/static/js/web/entry-aaaa.js', B='/_expo/static/js/web/entry-bbbb.js';
+function events(){const map=new Map();return {addEventListener(k,f){map.set(k,[...(map.get(k)||[]),f]);},removeEventListener(k,f){map.set(k,(map.get(k)||[]).filter(x=>x!==f));},dispatch(k){for(const f of map.get(k)||[])f();}};}
+function harness({entry=B,store=new Map(),network=true,waiting=false}={}){
+ let now=0,reloads=0,checks=0,updates=0,messages=0,state={};const timers=new Map();let timer=0;
+ const document={...events(),scripts:[{src:A}],visibilityState:'visible'};
+ const sw={...events(),controller:{}};
+ const registration={waiting:waiting?{postMessage(m){assert.equal(m.type,'IPM_ACTIVATE_UPDATE');messages++;}}:null,installing:null,update:async()=>{updates++;}};
+ const module={exports:{}};
+ const ctx=vm.createContext({module,exports:module.exports,URL,AbortController,Date:{now:()=>now},Promise,
+  document,navigator:{onLine:true,serviceWorker:sw},sessionStorage:{getItem:k=>store.get(k),setItem:(k,v)=>store.set(k,v)},
+  window:{location:{href:'https://test.local/',reload(){reloads++;}}},
+  fetch:async(url,options)=>{checks++;assert.match(url,/^\/app-release.json\?resume=/);assert.equal(options.cache,'no-store');if(!network)throw Error('offline');return {ok:true,redirected:false,headers:{get:()=> 'application/json'},json:async()=>({entry})};},
+  setTimeout(f){timers.set(++timer,f);return timer;},clearTimeout(id){timers.delete(id);}});
+ vm.runInContext(compiled,ctx);const api=module.exports;api.subscribePwaUpdate(s=>state=s);api.setPwaUpdateSafeState(true);api.startPwaUpdateFlow(registration);
+ return {api,ctx,sw,store,registration,stats:()=>({reloads,checks,updates,messages}),state:()=>state,
+ async resume(duration=600000){document.visibilityState='hidden';document.dispatch('visibilitychange');now+=duration;document.visibilityState='visible';document.dispatch('visibilitychange');await new Promise(setImmediate);},
+ timeout(){for(const f of [...timers.values()])f();}};
 }
-
-function createHarness({ controlled = true, waiting = null, online = true, visibility = 'visible', update } = {}) {
-  const serviceWorkerEvents = eventTarget();
-  const windowEvents = eventTarget();
-  const documentEvents = eventTarget();
-  let reloads = 0;
-  let updateCalls = 0;
-  let nextTimerId = 1;
-  const timers = new Map();
-  const registrationEvents = eventTarget();
-  const registration = {
-    waiting,
-    installing: null,
-    ...registrationEvents,
-    update() {
-      updateCalls += 1;
-      return update ? update() : Promise.resolve();
-    },
-  };
-  const module = { exports: {} };
-  const context = vm.createContext({
-    module,
-    exports: module.exports,
-    navigator: {
-      onLine: online,
-      serviceWorker: { controller: controlled ? {} : null, ...serviceWorkerEvents },
-    },
-    window: { location: { reload: () => { reloads += 1; } }, ...windowEvents },
-    document: { visibilityState: visibility, ...documentEvents },
-    setInterval(callback) {
-      const id = nextTimerId++;
-      timers.set(id, callback);
-      return id;
-    },
-    clearInterval(id) { timers.delete(id); },
-    Promise,
-  });
-  vm.runInContext(compiled, context);
-  return {
-    api: module.exports,
-    registration,
-    serviceWorkerEvents,
-    windowEvents,
-    document: context.document,
-    documentEvents,
-    navigator: context.navigator,
-    activeTimers: () => timers.size,
-    tickTimers: () => [...timers.values()].forEach((callback) => callback()),
-    reloads: () => reloads,
-    updateCalls: () => updateCalls,
-  };
-}
-
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
-function waitingWorker() {
-  const messages = [];
-  return { messages, postMessage: (message) => messages.push(message) };
-}
-
-test('a waiting worker activates automatically when Home is safe', () => {
-  const worker = waitingWorker();
-  const harness = createHarness({ waiting: worker });
-  harness.api.setPwaUpdateSafeState(true);
-  harness.api.startPwaUpdateFlow(harness.registration);
-  assert.equal(worker.messages.length, 1);
-  assert.equal(worker.messages[0].type, 'IPM_ACTIVATE_UPDATE');
-  assert.equal(harness.activeTimers(), 0);
-});
-
-test('Home becoming safe checks immediately and schedules a 45-second foreground check', async () => {
-  const harness = createHarness();
-  harness.api.startPwaUpdateFlow(harness.registration);
-  await flushPromises();
-  const beforeHome = harness.updateCalls();
-  harness.api.setPwaUpdateSafeState(true);
-  assert.equal(harness.updateCalls(), beforeHome + 1);
-  assert.equal(harness.activeTimers(), 1);
-  await flushPromises();
-  harness.tickTimers();
-  assert.equal(harness.updateCalls(), beforeHome + 2);
-});
-
-test('foreground scheduler stops off Home, when hidden, when offline, and when disposed', () => {
-  const harness = createHarness();
-  harness.api.setPwaUpdateSafeState(true);
-  const dispose = harness.api.startPwaUpdateFlow(harness.registration);
-  assert.equal(harness.activeTimers(), 1);
-  harness.api.setPwaUpdateSafeState(false);
-  assert.equal(harness.activeTimers(), 0);
-  harness.api.setPwaUpdateSafeState(true);
-  harness.document.visibilityState = 'hidden';
-  harness.documentEvents.dispatch('visibilitychange');
-  assert.equal(harness.activeTimers(), 0);
-  harness.document.visibilityState = 'visible';
-  harness.documentEvents.dispatch('visibilitychange');
-  assert.equal(harness.activeTimers(), 1);
-  harness.navigator.onLine = false;
-  harness.windowEvents.dispatch('offline');
-  assert.equal(harness.activeTimers(), 0);
-  harness.navigator.onLine = true;
-  harness.windowEvents.dispatch('online');
-  assert.equal(harness.activeTimers(), 1);
-  dispose();
-  assert.equal(harness.activeTimers(), 0);
-});
-
-test('pageshow, focus, visible resume, and online retain update checks', async () => {
-  const harness = createHarness();
-  harness.api.startPwaUpdateFlow(harness.registration);
-  await flushPromises();
-  for (const event of ['pageshow', 'focus']) {
-    const before = harness.updateCalls();
-    harness.windowEvents.dispatch(event);
-    assert.equal(harness.updateCalls(), before + 1);
-    await flushPromises();
-  }
-  let before = harness.updateCalls();
-  harness.documentEvents.dispatch('visibilitychange');
-  assert.equal(harness.updateCalls(), before + 1);
-  await flushPromises();
-  before = harness.updateCalls();
-  harness.windowEvents.dispatch('online');
-  assert.equal(harness.updateCalls(), before + 1);
-});
-
-test('update checks never overlap', async () => {
-  let finishUpdate;
-  const pendingUpdate = new Promise((resolve) => { finishUpdate = resolve; });
-  const harness = createHarness({ update: () => pendingUpdate });
-  harness.api.setPwaUpdateSafeState(true);
-  harness.api.startPwaUpdateFlow(harness.registration);
-  harness.windowEvents.dispatch('focus');
-  harness.windowEvents.dispatch('pageshow');
-  harness.tickTimers();
-  assert.equal(harness.updateCalls(), 1);
-  finishUpdate();
-  await flushPromises();
-  harness.windowEvents.dispatch('focus');
-  assert.equal(harness.updateCalls(), 2);
-});
-
-test('a waiting worker stays deferred on sensitive flows and activates after reaching Home', () => {
-  const worker = waitingWorker();
-  const harness = createHarness({ waiting: worker });
-  harness.api.setPwaUpdateSafeState(false);
-  harness.api.startPwaUpdateFlow(harness.registration);
-  assert.equal(worker.messages.length, 0);
-  harness.windowEvents.dispatch('focus');
-  assert.equal(worker.messages.length, 0);
-  harness.api.setPwaUpdateSafeState(true);
-  assert.equal(worker.messages.length, 1);
-});
-
-test('safe resume activates once and controller changes reload exactly once', () => {
-  const worker = waitingWorker();
-  const harness = createHarness({ waiting: worker });
-  harness.api.startPwaUpdateFlow(harness.registration);
-  harness.api.setPwaUpdateSafeState(true);
-  harness.windowEvents.dispatch('focus');
-  harness.document.visibilityState = 'visible';
-  harness.documentEvents.dispatch('visibilitychange');
-  assert.equal(worker.messages.length, 1);
-  harness.serviceWorkerEvents.dispatch('controllerchange');
-  harness.serviceWorkerEvents.dispatch('controllerchange');
-  assert.equal(harness.reloads(), 1);
-});
-
-test('first install and an already-current build do not activate or reload', () => {
-  const firstWorker = waitingWorker();
-  const firstInstall = createHarness({ controlled: false, waiting: firstWorker });
-  firstInstall.api.setPwaUpdateSafeState(true);
-  firstInstall.api.startPwaUpdateFlow(firstInstall.registration);
-  firstInstall.serviceWorkerEvents.dispatch('controllerchange');
-  assert.equal(firstWorker.messages.length, 0);
-  assert.equal(firstInstall.reloads(), 0);
-
-  const current = createHarness();
-  current.api.setPwaUpdateSafeState(true);
-  current.api.startPwaUpdateFlow(current.registration);
-  current.serviceWorkerEvents.dispatch('controllerchange');
-  assert.equal(current.reloads(), 0);
-});
-
-test('offline resume preserves a downloaded update but does not perform a network check', () => {
-  const worker = waitingWorker();
-  const harness = createHarness({ waiting: worker, online: false });
-  harness.api.startPwaUpdateFlow(harness.registration);
-  harness.windowEvents.dispatch('focus');
-  assert.equal(harness.updateCalls(), 0);
-  assert.equal(worker.messages.length, 0);
-  harness.api.setPwaUpdateSafeState(true);
-  assert.equal(worker.messages.length, 1);
-});
-
-test('S update waits for every help/enrollment interaction and release is idempotent', () => {
- const worker = waitingWorker();
- const h = createHarness({waiting:worker});
- const a=h.api.holdPwaUpdate(), b=h.api.holdPwaUpdate();
- h.api.setPwaUpdateSafeState(true);h.api.startPwaUpdateFlow(h.registration);
- h.windowEvents.dispatch('focus');assert.equal(worker.messages.length,0);
- a();a();assert.equal(worker.messages.length,0);
- b();assert.equal(worker.messages.length,1);
- h.serviceWorkerEvents.dispatch('controllerchange');h.serviceWorkerEvents.dispatch('controllerchange');assert.equal(h.reloads(),1);
-});
-
-test('an interaction started after activation still defers the controller-change reload', () => {
- const worker=waitingWorker();const h=createHarness({waiting:worker});
- h.api.setPwaUpdateSafeState(true);h.api.startPwaUpdateFlow(h.registration);
- assert.equal(worker.messages.length,1);const release=h.api.holdPwaUpdate();
- h.serviceWorkerEvents.dispatch('controllerchange');assert.equal(h.reloads(),0);
- release();release();assert.equal(h.reloads(),1);
-});
+test('startup and active foreground never check or reload',()=>{const h=harness();assert.deepEqual(h.stats(),{reloads:0,checks:0,updates:0,messages:0});});
+test('under ten minutes resumes without a request',async()=>{const h=harness();await h.resume(599999);assert.equal(h.stats().checks,0);});
+test('exact threshold and newer release prompts without reload',async()=>{const h=harness();await h.resume();assert.equal(h.state().visible,true);assert.equal(h.stats().reloads,0);});
+test('same release is a no-op',async()=>{const h=harness({entry:A});await h.resume();assert.equal(h.state().visible,false);assert.equal(h.stats().updates,0);});
+test('network failure is non-disruptive',async()=>{const h=harness({network:false});await h.resume();assert.equal(h.state().visible,false);assert.equal(h.stats().reloads,0);});
+test('offline resume makes no request',async()=>{const h=harness();h.ctx.navigator.onLine=false;await h.resume();assert.equal(h.stats().checks,0);});
+test('Later dismisses until another qualifying background',async()=>{const h=harness();await h.resume();h.api.dismissPwaUpdate();assert.equal(h.state().visible,false);await h.resume(50);assert.equal(h.state().visible,false);await h.resume();assert.equal(h.state().visible,true);});
+test('unsafe route defers prompt and prevents activation',async()=>{const h=harness();h.api.setPwaUpdateSafeState(false);await h.resume();await h.api.activatePwaUpdate();assert.equal(h.state().visible,false);assert.equal(h.stats().reloads,0);h.api.setPwaUpdateSafeState(true);assert.equal(h.state().visible,true);});
+test('notification/install holds prevent prompt and refresh',async()=>{const h=harness();const release=h.api.holdPwaUpdate();await h.resume();await h.api.activatePwaUpdate();assert.equal(h.state().visible,false);assert.equal(h.stats().reloads,0);release();assert.equal(h.state().visible,true);release();});
+test('explicit Refresh without waiting worker navigates once through currentLaunch',async()=>{const h=harness();await h.resume();await h.api.activatePwaUpdate();await h.api.activatePwaUpdate();h.sw.dispatch('controllerchange');assert.equal(h.stats().reloads,1);});
+test('waiting worker requires explicit tap then controllerchange',async()=>{const h=harness({waiting:true});await h.resume();assert.equal(h.stats().messages,0);await h.api.activatePwaUpdate();assert.equal(h.stats().messages,1);assert.equal(h.stats().reloads,0);h.sw.dispatch('controllerchange');h.sw.dispatch('controllerchange');assert.equal(h.stats().reloads,1);});
+test('spontaneous controllerchange never reloads',()=>{const h=harness();h.sw.dispatch('controllerchange');assert.equal(h.stats().reloads,0);});
+test('route changes during activation cancel delayed reload',async()=>{const h=harness({waiting:true});await h.resume();await h.api.activatePwaUpdate();h.api.setPwaUpdateSafeState(false);h.sw.dispatch('controllerchange');h.api.setPwaUpdateSafeState(true);assert.equal(h.stats().reloads,0);});
+test('hidden page cancels activation, never replays reload',async()=>{const h=harness({waiting:true});await h.resume();await h.api.activatePwaUpdate();await h.resume(50);h.sw.dispatch('controllerchange');assert.equal(h.stats().reloads,0);});
+test('worker activation timeout is non-disruptive',async()=>{const h=harness({waiting:true});await h.resume();await h.api.activatePwaUpdate();h.timeout();h.sw.dispatch('controllerchange');assert.equal(h.stats().reloads,0);assert.equal(h.state().refreshing,false);});
+test('durable same-target guard survives a fallback reload',async()=>{const h=harness();await h.resume();await h.api.activatePwaUpdate();const next=harness({store:h.store});await next.resume();assert.equal(next.state().visible,false);await next.api.activatePwaUpdate();assert.equal(next.stats().reloads,0);});
+test('unavailable session storage fails closed',async()=>{const h=harness();h.ctx.sessionStorage.setItem=()=>{throw Error('blocked');};await h.resume();await h.api.activatePwaUpdate();assert.equal(h.stats().reloads,0);});
+test('repeated foregrounds do not loop',async()=>{const h=harness();await h.resume();await h.api.activatePwaUpdate();for(let n=0;n<5;n++)await h.resume();assert.equal(h.stats().reloads,1);});
+for(const key of ['itinerary','favourites','announcement-dismissals','notification-permission','wonderpush-installation','install-preferences'])test(`${key} storage survives`,async()=>{const store=new Map([[key,'saved']]);const h=harness({store});await h.resume();await h.api.activatePwaUpdate();assert.equal(store.get(key),'saved');assert.doesNotMatch(source,/localStorage|indexedDB|unsubscribe|unregister|requestPermission|\.clear\(/);});
+test('no polling and no provider or cache mutation',()=>{assert.doesNotMatch(source,/setInterval|caches\.|skipWaiting|clients\.claim|WonderPush/);});

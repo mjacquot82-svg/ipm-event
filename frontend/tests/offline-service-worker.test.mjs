@@ -27,8 +27,17 @@ test('legacy Webpushr bell remains suppressed without loading its SDK', () => {
   assert.doesNotMatch(html, /cdn\.webpushr\.com\/app\.min\.js/);
 });
 
-test('staging root uses the production launch flow without foreground update activation', async () => {
+test('staging root preserves launch flow and attaches the explicit resume updater', async () => {
   const layout = await readFile(new URL('../app/_layout.tsx', import.meta.url), 'utf8');
-  assert.doesNotMatch(layout, /startPwaUpdateFlow|setPwaUpdateSafeState/);
+  assert.match(layout, /startPwaUpdateFlow/);
+  assert.match(layout, /setPwaUpdateSafeState/);
   assert.match(layout, /initializeOfflineShell\(\)/);
+});
+
+test('explicit activation is the only skipWaiting call; release probe is not precached', () => {
+  assert.equal((worker.match(/self\.skipWaiting\(/g) || []).length, 1);
+  assert.match(worker, /if \(event\.data\?\.type === 'IPM_ACTIVATE_UPDATE'\) event\.waitUntil\(self\.skipWaiting\(\)\)/);
+  assert.doesNotMatch(worker.slice(worker.indexOf("self.addEventListener('install'"), worker.indexOf("self.addEventListener('activate'")), /skipWaiting/);
+  assert.doesNotMatch(worker, /app-release\.json/);
+  assert.match(generator, /writeFileSync\(join\(dist, 'app-release.json'\)/);
 });

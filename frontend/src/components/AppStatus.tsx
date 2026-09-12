@@ -1,3 +1,4 @@
+import { PWA_RESUME_TEST_VERSION } from '../config/pwaResumeTestVersion';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
@@ -27,6 +28,7 @@ export default function AppStatus() {
     }
   };
   return <View>
+    {typeof window !== 'undefined' && window.location.hostname === 'staging.theipm.ca' ? <Text>Resume update test: {PWA_RESUME_TEST_VERSION}</Text> : null}
     <TouchableOpacity accessibilityRole="button" onPress={() => { void readStatus(); }} style={styles.button}>
       <Text style={styles.label}>Read app status</Text>
     </TouchableOpacity>

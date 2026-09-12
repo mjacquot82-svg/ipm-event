@@ -128,3 +128,8 @@ self.addEventListener('fetch', (event) => {
       .then((cached) => cached || fetch(request)));
   }
 });
+
+// Activation is requested only after an attendee explicitly chooses Refresh.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'IPM_ACTIVATE_UPDATE') event.waitUntil(self.skipWaiting());
+});
