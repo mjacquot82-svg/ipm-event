@@ -42,6 +42,24 @@ def parse_local(date_text: str, time_text: str) -> str:
     return parsed.replace(tzinfo=ZoneInfo(TZ)).isoformat()
 
 
+def same_instant(stored: Any, desired_iso: str) -> bool:
+    """Compare timestamptz values across UTC vs local ISO forms."""
+    if not stored:
+        return False
+    if stored == desired_iso:
+        return True
+    try:
+        a = datetime.fromisoformat(str(stored).replace("Z", "+00:00"))
+        b = datetime.fromisoformat(desired_iso)
+        if a.tzinfo is None:
+            a = a.replace(tzinfo=ZoneInfo(TZ))
+        if b.tzinfo is None:
+            b = b.replace(tzinfo=ZoneInfo(TZ))
+        return a.astimezone(ZoneInfo("UTC")) == b.astimezone(ZoneInfo("UTC"))
+    except Exception:
+        return False
+
+
 def load_patch() -> dict[str, Any]:
     patch = json.loads(PATCH_PATH.read_text(encoding="utf-8"))
     if not patch.get("staging_only"):
@@ -77,9 +95,9 @@ def classify(rows: list[dict[str, Any]], patch: dict[str, Any]) -> dict[str, Any
     desired_end = parse_local("2026-09-24", "3:30 PM")
     for row in lavender:
         body: dict[str, Any] = {}
-        if row.get("starts_at") != desired_start:
+        if not same_instant(row.get("starts_at"), desired_start):
             body["starts_at"] = desired_start
-        if row.get("ends_at") != desired_end:
+        if not same_instant(row.get("ends_at"), desired_end):
             body["ends_at"] = desired_end
         if body:
             updates.append({"id": row["id"], "patch": body, "why": "essentially_lavender"})
