@@ -47,6 +47,12 @@ test('Grounds branch renders GroundsMap rather than MapComponent', () => {
   assert.doesNotMatch(branch, /<MapComponent/);
 });
 
+
+test('Grounds zones declare polygon footprints', () => {
+  assert.match(zonesSource, /polygon:/);
+  assert.match(zonesSource, /pointInGroundsPolygon/);
+});
+
 test('GroundsMap has the official image, camera worklet, and switch callback', () => {
   assert.ok(fs.existsSync(path.join(root, 'assets/images/grounds-site-map.jpg')));
   assert.match(componentSource, /pinchAroundMovingFocal/);

@@ -277,13 +277,13 @@ export default function VendorsScreen() {
                   if (resolved.status === 'mapped') {
                     router.push({
                       pathname: '/(tabs)/map',
-                      params: { location: resolved.query, showOnly: 'true', source: 'vendors' },
+                      params: { location: resolved.query, showOnly: 'true', source: 'vendors', mapType: 'tented' },
                     });
                     return;
                   }
                   router.push({
                     pathname: '/(tabs)/map',
-                    params: { mapStatus: 'unavailable', source: 'vendors' },
+                    params: { mapStatus: 'unavailable', source: 'vendors', mapType: 'tented' },
                   });
                 }}
               >

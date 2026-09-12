@@ -1,18 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, LayoutChangeEvent, Platform, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Image, Keyboard, LayoutChangeEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, runOnJS, useAnimatedStyle, useSharedValue, withDecay, withTiming } from 'react-native-reanimated';
 import colors from '../theme/colors';
 import { groundsLayerLayout, groundsPaintViewport } from '../config/groundsLayout';
-import { GROUNDS_MAP, GROUNDS_ZONES, GroundsZone, hitTestGroundsZone, resolveGroundsZone } from '../config/groundsZones';
+import { GROUNDS_MAP, GroundsZone, hitTestGroundsZone, resolveGroundsZone } from '../config/groundsZones';
+import { GROUNDS_INITIAL_SCALE, GROUNDS_MAX_SCALE } from '../config/groundsCamera';
+import { searchEventMap, type EventMapHit } from '../config/mapSearch';
+import { tentedCityVendors } from '../data/tentedCityVendors';
 import {
-  clampTranslation, flyToRect, mapPointUnderFocal, pinchAroundMovingFocal,
+  clampTranslation, DOUBLE_TAP_SCALE, flyToRect, mapPointUnderFocal, pinchAroundMovingFocal,
   rubberBandTranslation, translationBounds, zoomAroundFocal,
 } from '../config/tentedCityCamera';
 
 const MAP_SOURCE = require('../../assets/images/grounds-site-map.jpg');
 const INFO_CARD_BOTTOM = 68;
+/** Same language as MNP stage parent-fallback highlight. */
+const SELECTED_FILL = 'rgba(0, 229, 255, 0.45)';
+const SELECTED_OUTER = '#FFD600';
+const SELECTED_INNER = '#FFFFFF';
 const WEB_TOUCH_LOCK = { touchAction: 'none', overscrollBehavior: 'none', userSelect: 'none' } as object;
 type Pt = { x: number; y: number };
 type DomTarget = {
@@ -29,14 +36,74 @@ function resolveDomNode(ref: unknown): DomTarget | null {
   return inner && inner !== ref ? resolveDomNode(inner) : null;
 }
 
+function ZoneHighlight({ zone }: { zone: GroundsZone }) {
+  const poly = zone.polygon;
+  if (Platform.OS === 'web' && poly && poly.length >= 3) {
+    const points = poly.map(([x, y]) => `${x},${y}`).join(' ');
+    // viewBox is percent space (0–100) matching overlay % coords on the artwork.
+    return React.createElement(
+      'svg',
+      {
+        viewBox: '0 0 100 100',
+        preserveAspectRatio: 'none',
+        'data-testid': `grounds-zone-highlight-${zone.id}`,
+        style: {
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          width: '100%',
+          height: '100%',
+          overflow: 'visible',
+          pointerEvents: 'none',
+        },
+      },
+      React.createElement('polygon', {
+        points,
+        fill: SELECTED_FILL,
+        stroke: SELECTED_OUTER,
+        strokeWidth: 0.95,
+        strokeLinejoin: 'round',
+      }),
+      React.createElement('polygon', {
+        points,
+        fill: 'none',
+        stroke: SELECTED_INNER,
+        strokeWidth: 0.28,
+        strokeLinejoin: 'round',
+      }),
+    );
+  }
+  return (
+    <View
+      testID={`grounds-zone-highlight-${zone.id}`}
+      pointerEvents="none"
+      style={[
+        styles.halo,
+        {
+          left: `${zone.rect.x}%`,
+          top: `${zone.rect.y}%`,
+          width: `${zone.rect.w}%`,
+          height: `${zone.rect.h}%`,
+        },
+      ]}
+    >
+      <View style={styles.haloInner} />
+    </View>
+  );
+}
+
 export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
   highlightedLocation?: string | null;
-  onSwitchToTented: () => void;
+  onSwitchToTented: (location?: string) => void;
 }) {
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<GroundsZone | null>(null);
+  const [query, setQuery] = useState('');
+  const [focused, setFocused] = useState(false);
+  const focusedKey = useRef<string | null>(null);
+  const didInitCamera = useRef(false);
   const viewport = groundsPaintViewport(measured, windowSize);
   const layer = useMemo(() => groundsLayerLayout(viewport), [viewport.width, viewport.height]);
   const scale = useSharedValue(1), tx = useSharedValue(0), ty = useSharedValue(0);
@@ -63,12 +130,24 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
     ty.value = withTiming(cam.ty, { duration: 280 });
   }, [viewport.width, viewport.height, layer.width, layer.height, layer.left, layer.top]);
 
-  const chooseZone = useCallback((zone: GroundsZone | null) => {
+  const chooseZone = useCallback((zone: GroundsZone | null, opts?: { switchTented?: boolean }) => {
     if (!zone) return;
     setSelected(zone);
     flyTo(zone);
-    if (zone.action === 'switch-tented') setTimeout(onSwitchToTented, 280);
+    if ((opts?.switchTented ?? true) && zone.action === 'switch-tented') setTimeout(() => onSwitchToTented(), 280);
   }, [flyTo, onSwitchToTented]);
+
+  const selectHit = useCallback((hit: EventMapHit) => {
+    setFocused(false);
+    Keyboard.dismiss();
+    if (hit.mapType === 'tented') {
+      onSwitchToTented(hit.kind === 'semantic' ? hit.query : hit.place.kind === 'vendor' ? hit.place.vendor.name : hit.place.venue.label);
+      return;
+    }
+    setQuery(hit.title);
+    focusedKey.current = `${hit.query}::${hit.zone.id}`;
+    chooseZone(hit.zone, { switchTented: false });
+  }, [chooseZone, onSwitchToTented]);
 
   const hitViewportPoint = useCallback((x: number, y: number) => {
     const point = mapPointUnderFocal({ scale: scale.value, tx: tx.value, ty: ty.value, focalX: x, focalY: y, left: layer.left, top: layer.top });
@@ -79,8 +158,28 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
     const zone = resolveGroundsZone(highlightedLocation);
     if (!zone) return;
     setSelected(zone);
+    const key = `${highlightedLocation || ''}::${zone.id}`;
+    if (focusedKey.current === key) return;
+    focusedKey.current = key;
     flyTo(zone);
-  }, [highlightedLocation, viewport.width]);
+  }, [highlightedLocation, flyTo]);
+
+  useEffect(() => {
+    if (didInitCamera.current) return;
+    if (viewport.width <= 1 || layer.width <= 1) return;
+    if (highlightedLocation && resolveGroundsZone(highlightedLocation)) return;
+    didInitCamera.current = true;
+    const next = zoomAroundFocal({
+      scale: 1, tx: 0, ty: 0, nextScale: GROUNDS_INITIAL_SCALE,
+      focalX: viewport.width / 2, focalY: viewport.height / 2,
+      left: layer.left, top: layer.top, maxScale: GROUNDS_MAX_SCALE,
+    });
+    const cam = clampTranslation(next, {
+      viewportW: viewport.width, viewportH: viewport.height, mapW: layer.width, mapH: layer.height,
+      left: layer.left, top: layer.top,
+    });
+    scale.value = cam.scale; tx.value = cam.tx; ty.value = cam.ty;
+  }, [viewport.width, viewport.height, layer.width, layer.height, layer.left, layer.top, highlightedLocation]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return undefined;
@@ -91,11 +190,39 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
     let mode: 'none' | 'pan' | 'pinch' = 'none';
     let baseScale = 1, baseX = 0, baseY = 0, focalX = 0, focalY = 0, span = 1;
     let origin: Pt = { x: 0, y: 0 };
+    let lastTapAt = 0, lastTapX = 0, lastTapY = 0;
     const layout = () => ({ viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value });
     const local = (x: number, y: number) => { const box = node.getBoundingClientRect(); return { x: x - box.left, y: y - box.top }; };
     const list = () => Array.from(pointers.values());
     const middle = () => { const p = list(); return p.length > 1 ? { x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 } : p[0] || { x: 0, y: 0 }; };
     const distance = () => { const p = list(); return p.length > 1 ? Math.max(Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y), 1) : 1; };
+    const applyDoubleTap = (fx: number, fy: number) => {
+      cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
+      if (scale.value > 1.2) {
+        scale.value = withTiming(1, { duration: 220 }); tx.value = withTiming(0, { duration: 220 }); ty.value = withTiming(0, { duration: 220 });
+      } else {
+        const next = zoomAroundFocal({
+          scale: scale.value, tx: tx.value, ty: ty.value, nextScale: DOUBLE_TAP_SCALE,
+          focalX: fx, focalY: fy, left: originX.value, top: originY.value,
+        });
+        const cam = clampTranslation(next, layout());
+        scale.value = withTiming(cam.scale, { duration: 220 }); tx.value = withTiming(cam.tx, { duration: 220 }); ty.value = withTiming(cam.ty, { duration: 220 });
+      }
+    };
+    // Port of TentedCityMap finishWebGesture: only settle when out of bounds / under-zoomed.
+    const finishWebGesture = () => {
+      const lay = layout();
+      if (scale.value < 1) {
+        scale.value = withTiming(1, { duration: 200 }); tx.value = withTiming(0, { duration: 200 }); ty.value = withTiming(0, { duration: 200 });
+        return;
+      }
+      if (scale.value <= 1) { tx.value = 0; ty.value = 0; return; }
+      const bounds = translationBounds(scale.value, lay);
+      const outside = tx.value < bounds.minTx || tx.value > bounds.maxTx || ty.value < bounds.minTy || ty.value > bounds.maxTy;
+      if (!outside) return;
+      const cam = clampTranslation({ scale: scale.value, tx: tx.value, ty: ty.value }, lay);
+      tx.value = withTiming(cam.tx, { duration: 180 }); ty.value = withTiming(cam.ty, { duration: 180 });
+    };
     const begin = () => {
       cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
       baseScale = scale.value; baseX = tx.value; baseY = ty.value; moved = false;
@@ -108,7 +235,11 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
       const mid = middle();
       if (mode === 'pinch' && pointers.size >= 2) {
         const ratio = distance() / span;
-        const next = pinchAroundMovingFocal({ scale: baseScale, tx: baseX, ty: baseY, nextScale: baseScale * ratio, startFocalX: focalX, startFocalY: focalY, focalX: mid.x, focalY: mid.y, left: originX.value, top: originY.value });
+        const next = pinchAroundMovingFocal({
+          scale: baseScale, tx: baseX, ty: baseY, nextScale: baseScale * ratio,
+          startFocalX: focalX, startFocalY: focalY, focalX: mid.x, focalY: mid.y,
+          left: originX.value, top: originY.value, maxScale: GROUNDS_MAX_SCALE,
+        });
         scale.value = next.scale; tx.value = next.tx; ty.value = next.ty;
         moved ||= Math.abs(ratio - 1) > 0.02 || Math.hypot(mid.x - focalX, mid.y - focalY) > 8;
       } else if (mode === 'pan' && pointers.size === 1) {
@@ -122,14 +253,25 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
       if (pointers.size) { const pinching = mode === 'pinch'; begin(); if (pinching) moved = true; return; }
       const wasTap = mode === 'pan' && !moved;
       const tap = { x: focalX, y: focalY };
-      const cam = scale.value < 1 ? { scale: 1, tx: 0, ty: 0 } : clampTranslation({ scale: scale.value, tx: tx.value, ty: ty.value }, layout());
-      scale.value = withTiming(cam.scale, { duration: 180 }); tx.value = withTiming(cam.tx, { duration: 180 }); ty.value = withTiming(cam.ty, { duration: 180 });
+      finishWebGesture();
       mode = 'none'; fromTouch = false;
-      if (wasTap) hitViewportPoint(tap.x, tap.y);
+      if (wasTap) {
+        const now = Date.now();
+        if (now - lastTapAt < 300 && Math.hypot(tap.x - lastTapX, tap.y - lastTapY) < 28) {
+          lastTapAt = 0;
+          applyDoubleTap(tap.x, tap.y);
+        } else {
+          lastTapAt = now; lastTapX = tap.x; lastTapY = tap.y;
+          hitViewportPoint(tap.x, tap.y);
+        }
+      }
     };
     const wheel = (e: any) => {
       e.preventDefault(); const p = local(e.clientX, e.clientY);
-      const next = zoomAroundFocal({ scale: scale.value, tx: tx.value, ty: ty.value, nextScale: scale.value * Math.exp(-e.deltaY * 0.0018), focalX: p.x, focalY: p.y, left: originX.value, top: originY.value });
+      const next = zoomAroundFocal({
+        scale: scale.value, tx: tx.value, ty: ty.value, nextScale: scale.value * Math.exp(-e.deltaY * 0.0018),
+        focalX: p.x, focalY: p.y, left: originX.value, top: originY.value, maxScale: GROUNDS_MAX_SCALE,
+      });
       const cam = next.scale < 1 ? { scale: 1, tx: 0, ty: 0 } : clampTranslation(next, layout());
       scale.value = cam.scale; tx.value = cam.tx; ty.value = cam.ty;
     };
@@ -153,57 +295,196 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
     cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
     startScale.value = scale.value; startX.value = tx.value; startY.value = ty.value; startFocalX.value = e.focalX; startFocalY.value = e.focalY;
   }).onUpdate((e) => {
-    const next = pinchAroundMovingFocal({ scale: startScale.value, tx: startX.value, ty: startY.value, nextScale: startScale.value * e.scale, startFocalX: startFocalX.value, startFocalY: startFocalY.value, focalX: e.focalX, focalY: e.focalY, left: originX.value, top: originY.value });
+    const next = pinchAroundMovingFocal({
+      scale: startScale.value, tx: startX.value, ty: startY.value, nextScale: startScale.value * e.scale,
+      startFocalX: startFocalX.value, startFocalY: startFocalY.value, focalX: e.focalX, focalY: e.focalY,
+      left: originX.value, top: originY.value, maxScale: GROUNDS_MAX_SCALE,
+    });
     scale.value = next.scale; tx.value = next.tx; ty.value = next.ty;
   }).onEnd(() => {
-    const cam = clampTranslation({ scale: scale.value, tx: tx.value, ty: ty.value }, { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value });
-    scale.value = withTiming(cam.scale); tx.value = withTiming(cam.tx); ty.value = withTiming(cam.ty);
+    const lay = { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value };
+    if (scale.value < 1) {
+      scale.value = withTiming(1); tx.value = withTiming(0); ty.value = withTiming(0);
+      return;
+    }
+    const bounds = translationBounds(scale.value, lay);
+    const outside = tx.value < bounds.minTx || tx.value > bounds.maxTx || ty.value < bounds.minTy || ty.value > bounds.maxTy;
+    if (!outside) return;
+    const cam = clampTranslation({ scale: scale.value, tx: tx.value, ty: ty.value }, lay);
+    tx.value = withTiming(cam.tx); ty.value = withTiming(cam.ty);
   });
-  const pan = Gesture.Pan().maxPointers(1).onBegin(() => { startX.value = tx.value; startY.value = ty.value; }).onUpdate((e) => {
+  const pan = Gesture.Pan().minPointers(1).maxPointers(1).onBegin(() => {
+    startX.value = tx.value; startY.value = ty.value;
+  }).onUpdate((e) => {
     if (scale.value <= 1) return;
-    const soft = rubberBandTranslation({ scale: scale.value, tx: startX.value + e.translationX, ty: startY.value + e.translationY }, { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value });
+    const soft = rubberBandTranslation({
+      scale: scale.value, tx: startX.value + e.translationX, ty: startY.value + e.translationY,
+    }, { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value });
     tx.value = soft.tx; ty.value = soft.ty;
   }).onEnd((e) => {
     if (scale.value <= 1) { tx.value = 0; ty.value = 0; return; }
-    const bounds = translationBounds(scale.value, { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value });
-    tx.value = withDecay({ velocity: e.velocityX, clamp: [bounds.minTx, bounds.maxTx] }); ty.value = withDecay({ velocity: e.velocityY, clamp: [bounds.minTy, bounds.maxTy] });
+    const bounds = translationBounds(scale.value, {
+      viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value,
+    });
+    tx.value = withDecay({ velocity: e.velocityX, clamp: [bounds.minTx, bounds.maxTx], rubberBandEffect: true, rubberBandFactor: 0.55, deceleration: 0.996 });
+    ty.value = withDecay({ velocity: e.velocityY, clamp: [bounds.minTy, bounds.maxTy], rubberBandEffect: true, rubberBandFactor: 0.55, deceleration: 0.996 });
   });
   const tap = Gesture.Tap().maxDuration(250).onEnd((e, ok) => { if (ok) runOnJS(hitViewportPoint)(e.x, e.y); });
+  const doubleTap = Gesture.Tap().numberOfTaps(2).maxDuration(280).onEnd((e, ok) => {
+    if (!ok) return;
+    cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
+    if (scale.value > 1.2) {
+      scale.value = withTiming(1, { duration: 220 }); tx.value = withTiming(0, { duration: 220 }); ty.value = withTiming(0, { duration: 220 });
+      return;
+    }
+    const next = zoomAroundFocal({
+      scale: scale.value, tx: tx.value, ty: ty.value, nextScale: DOUBLE_TAP_SCALE,
+      focalX: e.x, focalY: e.y, left: originX.value, top: originY.value, maxScale: GROUNDS_MAX_SCALE,
+    });
+    const cam = clampTranslation(next, {
+      viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value,
+    });
+    scale.value = withTiming(cam.scale, { duration: 220 }); tx.value = withTiming(cam.tx, { duration: 220 }); ty.value = withTiming(cam.ty, { duration: 220 });
+  });
   pinch.blocksExternalGesture(pan);
-  const composed = Gesture.Simultaneous(pinch, pan, tap);
+  doubleTap.blocksExternalGesture(tap);
+  const composed = Gesture.Simultaneous(pinch, pan, Gesture.Exclusive(doubleTap, tap));
   const cameraStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }] }));
   const webLock = Platform.OS === 'web' ? WEB_TOUCH_LOCK : null;
   const map = (
     <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
         <Image source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />
-        {GROUNDS_ZONES.map((zone) => selected?.id === zone.id ? <View key={zone.id} pointerEvents="none" style={[styles.halo, { left: `${zone.rect.x}%`, top: `${zone.rect.y}%`, width: `${zone.rect.w}%`, height: `${zone.rect.h}%` }]} /> : null)}
+        {selected ? <ZoneHighlight zone={selected} /> : null}
       </Animated.View>
     </Animated.View>
   );
-  const reset = () => { setSelected(null); scale.value = withTiming(1); tx.value = withTiming(0); ty.value = withTiming(0); };
+  const results = useMemo(
+    () => (focused || query.trim() ? searchEventMap(query, tentedCityVendors, 'all') : []),
+    [query, focused],
+  );
+  const reset = () => {
+    setSelected(null);
+    setQuery('');
+    setFocused(false);
+    Keyboard.dismiss();
+    cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
+    scale.value = withTiming(1, { duration: 220 });
+    tx.value = withTiming(0, { duration: 220 });
+    ty.value = withTiming(0, { duration: 220 });
+  };
   const onLayout = (e: LayoutChangeEvent) => { const { width, height } = e.nativeEvent.layout; if (width > 1 && height > 1) setMeasured({ width, height }); };
 
   return <View style={styles.root}>
     <View ref={viewportRef} style={[styles.viewport, webLock]} onLayout={onLayout} collapsable={false}>
       {Platform.OS === 'web' ? map : <GestureDetector gesture={composed}>{map}</GestureDetector>}
     </View>
-    <TouchableOpacity style={styles.reset} onPress={reset} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
-    {selected?.action === 'info' ? <View style={styles.card}>
-      <View style={styles.cardRow}><View style={styles.cardCopy}><Text style={styles.title}>{selected.label}</Text><Text style={styles.fact}>{selected.fact}</Text></View><TouchableOpacity onPress={() => setSelected(null)} accessibilityLabel="Dismiss"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity></View>
-    </View> : <View style={styles.hint} pointerEvents="none"><Text style={styles.hintText}>Drag · pinch · tap a map area</Text></View>}
+    <View style={styles.searchWrap} pointerEvents="box-none">
+      <View style={styles.searchCard}>
+        <Feather name="search" size={18} color="#6B7280" />
+        <TextInput
+          value={query}
+          onChangeText={(text) => { setQuery(text); setFocused(true); }}
+          onFocus={() => setFocused(true)}
+          placeholder="Find a vendor, booth, stage, or place"
+          placeholderTextColor="#9CA3AF"
+          style={styles.searchInput}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          testID="grounds-map-search"
+          onSubmitEditing={() => { if (results[0]) selectHit(results[0]); }}
+        />
+        {query ? <TouchableOpacity onPress={() => { setQuery(''); setFocused(false); }} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
+      </View>
+      {focused && query.trim().length > 0 ? (
+        <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" nestedScrollEnabled testID="grounds-map-results">
+          {results.map((hit) => (
+            <TouchableOpacity key={hit.key} style={styles.resultRow} onPress={() => selectHit(hit)}>
+              <Feather name={hit.mapType === 'grounds' ? 'navigation' : hit.kind === 'stage' ? 'mic' : 'map-pin'} size={16} color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.resultName} numberOfLines={1}>{hit.title}</Text>
+                <Text style={styles.resultMeta}>{hit.subtitle}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+          {results.length === 0 ? <Text style={styles.empty}>No matching mapped places.</Text> : null}
+        </ScrollView>
+      ) : null}
+    </View>
+    <TouchableOpacity style={styles.reset} onPress={reset} accessibilityLabel="Fit map to grounds" testID="grounds-fit-reset">
+      <Feather name="maximize-2" size={18} color={colors.textPrimary} />
+    </TouchableOpacity>
+    {selected?.action === 'info' ? (
+      <View style={styles.card} pointerEvents="box-none" testID="grounds-info-card">
+        <View style={styles.cardInner} pointerEvents="auto">
+          <View style={styles.cardRow}>
+            <View style={styles.cardCopy}>
+              <Text style={styles.title}>{selected.label}</Text>
+              <Text style={styles.fact}>{selected.fact}</Text>
+            </View>
+            <TouchableOpacity onPress={() => setSelected(null)} accessibilityLabel="Dismiss">
+              <Feather name="x" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    ) : (
+      <View style={styles.hint} pointerEvents="none">
+        <Text style={styles.hintText}>Drag · pinch · double-tap · tap a map area</Text>
+      </View>
+    )}
   </View>;
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, width: '100%', height: '100%', position: 'relative', backgroundColor: '#D9D1BE' },
-  viewport: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' }, gestureRoot: { ...StyleSheet.absoluteFillObject },
-  layer: { position: 'absolute', overflow: 'visible' }, image: { width: '100%', height: '100%' },
-  halo: { position: 'absolute', marginLeft: -1, marginTop: -1, borderWidth: 1, borderColor: '#F5C518', backgroundColor: 'rgba(245,197,24,0.12)' },
-  reset: { position: 'absolute', right: 12, bottom: 108, width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', elevation: 4, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 6 },
-  card: { position: 'absolute', left: 12, right: 12, bottom: INFO_CARD_BOTTOM, padding: 14, borderRadius: 16, backgroundColor: '#FFF', elevation: 6, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8 },
-  cardRow: { flexDirection: 'row', alignItems: 'flex-start' }, cardCopy: { flex: 1, paddingRight: 8 },
-  title: { fontSize: 17, fontWeight: '800', color: colors.textPrimary }, fact: { marginTop: 4, fontSize: 14, color: colors.textSecondary },
-  hint: { position: 'absolute', alignSelf: 'center', bottom: 72, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  viewport: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
+  gestureRoot: { ...StyleSheet.absoluteFillObject },
+  layer: { position: 'absolute', overflow: 'visible' },
+  image: { width: '100%', height: '100%' },
+  halo: {
+    position: 'absolute',
+    marginLeft: -2,
+    marginTop: -2,
+    borderWidth: 4,
+    borderColor: SELECTED_OUTER,
+    backgroundColor: SELECTED_FILL,
+    borderRadius: 2,
+  },
+  haloInner: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1,
+    borderColor: SELECTED_INNER,
+  },
+  searchWrap: { position: 'absolute', top: 52, left: 12, right: 12, zIndex: 12 },
+  searchCard: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' },
+  searchInput: { flex: 1, fontSize: 16, color: '#111827', paddingVertical: 10 },
+  results: { marginTop: 6, backgroundColor: '#FFFFFF', borderRadius: 14, overflow: 'hidden', maxHeight: 260 },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E7EB', minHeight: 48 },
+  resultName: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  resultMeta: { fontSize: 12, color: '#6B7280', marginTop: 1 },
+  empty: { padding: 14, color: '#6B7280' },
+  reset: {
+    position: 'absolute', right: 12, bottom: 108, width: 44, height: 44, borderRadius: 22,
+    backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', elevation: 4,
+    shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 6, zIndex: 5,
+  },
+  card: { position: 'absolute', left: 12, right: 12, bottom: INFO_CARD_BOTTOM, zIndex: 6 },
+  cardInner: {
+    padding: 14, borderRadius: 16, backgroundColor: '#FFF', elevation: 6,
+    shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8,
+  },
+  cardRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  cardCopy: { flex: 1, paddingRight: 8 },
+  title: { fontSize: 17, fontWeight: '800', color: colors.textPrimary },
+  fact: { marginTop: 4, fontSize: 14, color: colors.textSecondary },
+  hint: {
+    position: 'absolute', alignSelf: 'center', bottom: 72, backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, zIndex: 4,
+  },
   hintText: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
 });
+
+// Keep map asset dimensions referenced for audits / tree-shaking clarity.
+void GROUNDS_MAP;

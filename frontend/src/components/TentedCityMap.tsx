@@ -13,7 +13,8 @@ import colors from '../theme/colors';
 import { tentedCityVendors } from '../data/tentedCityVendors';
 import { tentedCityVenues } from '../config/tentedCityVenues';
 import type { Rect, TentedCityPlace } from '../config/tentedCityTypes';
-import { findTentedCityPlace, placeRect, placeTitle, searchTentedCity } from '../config/tentedCitySearch';
+import { findTentedCityPlace, placeRect, placeTitle } from '../config/tentedCitySearch';
+import { searchEventMap, type EventMapHit } from '../config/mapSearch';
 import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tentedCityLayout';
 import { boothHighlightStyle } from '../config/tentedCityHighlight';
 import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, TENTED_CITY_BOOTH_DIVIDER_SEGMENTS, TENTED_CITY_TRUSTED_PARENT_ONLY_RANGES, focusRectForFootprint, AREA_BY_LABEL, AREA_BY_ID, isTrustedParentOnlyArea, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
@@ -33,8 +34,16 @@ const INFO_CARD_GAP = 8;
 const INFO_CARD_BOTTOM = TAB_BAR_HEIGHT + INFO_CARD_GAP;
 const SELECTED_RESERVED_BOTTOM = TAB_BAR_HEIGHT + 108;
 const PARENT_RANGE_FILL = 'rgba(245, 197, 24, 0.45)';
-/** Exact selected booth: opaque user-location blue so the full cell stays blue over yellow parent. */
-const EXACT_BOOTH_CELL_FILL = colors.userLocation;
+/** Exact selected booth: bright cyan + white border so the stall dominates the yellow parent on phone. */
+const EXACT_BOOTH_CELL_FILL = '#00E5FF';
+const EXACT_BOOTH_CELL_BORDER = '#FFFFFF';
+const EXACT_BOOTH_CELL_BORDER_WIDTH = 3;
+/** MNP / stage parent-fallback: bright yellow OUTER border around translucent cyan fill. */
+const SELECTED_STAGE_OUTER_BORDER = '#FFD600';
+const SELECTED_STAGE_OUTER_BORDER_WIDTH = 4;
+const SELECTED_STAGE_INNER_BORDER = '#FFFFFF';
+const SELECTED_STAGE_INNER_BORDER_WIDTH = 1;
+const SELECTED_STAGE_FILL = 'rgba(0, 229, 255, 0.45)';
 const WEB_TOUCH_LOCK = { touchAction: 'none', overscrollBehavior: 'none', userSelect: 'none' } as object;
 
 function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, testID, children }: {
@@ -80,7 +89,7 @@ function resolveDomNode(ref: unknown): DomTarget | null {
 export default function TentedCityMap({
   initialQuery = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds,
 }: {
-  initialQuery?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: () => void;
+  initialQuery?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: (location?: string) => void;
 }) {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
@@ -186,6 +195,18 @@ export default function TentedCityMap({
     } else if (place.kind === 'stage') applyFocus(placeRect(place), false, SELECTED_RESERVED_BOTTOM);
   };
 
+  const selectHit = (hit: EventMapHit) => {
+    if (hit.mapType === 'grounds') {
+      onSwitchToGrounds?.(hit.query);
+      return;
+    }
+    if (hit.kind === 'semantic') {
+      selectSemanticArea(hit.area);
+      return;
+    }
+    selectPlace(hit.place);
+  };
+
   const selectSemanticArea = (area: SemanticMapArea) => {
     setUnmappedInitialLocation(false);
     setSelectedSemanticArea(area);
@@ -240,10 +261,17 @@ export default function TentedCityMap({
         && place.vendor.locationLabel.replace(/[^A-Za-z0-9]+/g, '').toUpperCase()
           === initialQuery.replace(/[^A-Za-z0-9]+/g, '').toUpperCase()) {
         selectPlace(place, placeTitle(place));
+        return;
+      }
+      // Vendor-page FoM for Welcome/Britespan aliases the digitized building stage.
+      if (place.kind === 'stage' && placeRect(place)) {
+        selectPlace(place, placeTitle(place));
       }
       return;
     }
-    if (place.kind === 'stage' && !place.venue.rect) {
+    // Stages may have rect:null but a parentVenueId fallback (placeRect).
+    // Only treat as unmapped when no usable rect (own or parent) exists.
+    if (place.kind === 'stage' && !placeRect(place)) {
       setSelected(null);
       setSelectedSemanticArea(null);
       setSelectedBoothId(null);
@@ -482,7 +510,7 @@ export default function TentedCityMap({
   }, [viewport.width, viewport.height]);
 
   const results = useMemo(
-    () => (focused || query.trim() ? searchTentedCity(query, tentedCityVendors, filter) : []),
+    () => (focused || query.trim() ? searchEventMap(query, tentedCityVendors, filter) : []),
     [query, filter, focused],
   );
   const stageEvents = useMemo(() => {
@@ -500,6 +528,9 @@ export default function TentedCityMap({
       });
     }
     if (filter === 'stages') {
+      // Keep only stages with their own rect. Parent-fallback stages (MNP Lifestyles
+      // children) stay omitted so three dots do not stack on the same parent footprint.
+      // Find-on-Map still works via placeRect parent fallback.
       return tentedCityVenues.filter((v) => v.kind === 'stage' && v.rect).map((v) => ({ key: v.id, rect: v.rect!, place: { kind: 'stage' as const, venue: v } }));
     }
     return [];
@@ -733,8 +764,23 @@ export default function TentedCityMap({
             <View style={[styles.parentRangeFillInner, { backgroundColor: PARENT_RANGE_FILL }]} />
           </BoothHighlight>
         )) : highlight ? (
-          <View pointerEvents="none" style={[styles.pulse, { left: `${highlight.x + highlight.w / 2}%`, top: `${highlight.y + highlight.h / 2}%` }]}>
-            <View style={styles.pulseRing} /><View style={styles.pin} />
+          // Stages (incl. MNP parent-fallback): full footprint rectangle.
+          // Hierarchy: bright yellow OUTER border → translucent cyan fill → map underneath.
+          // Optional thin white inner edge; no circular/ring destination marker.
+          <View
+            pointerEvents="none"
+            testID="selected-stage-highlight"
+            style={[
+              styles.selectedStageHighlight,
+              {
+                left: `${highlight.x}%`,
+                top: `${highlight.y}%`,
+                width: `${highlight.w}%`,
+                height: `${highlight.h}%`,
+              },
+            ]}
+          >
+            <View pointerEvents="none" style={styles.selectedStageInnerEdge} />
           </View>
         ) : null}
       </Animated.View>
@@ -756,7 +802,7 @@ export default function TentedCityMap({
       <View style={styles.chrome} pointerEvents="box-none">
       <View style={styles.topOverlay} pointerEvents="box-none">
         <View style={styles.modeRow}>
-          <TouchableOpacity style={styles.modeBtn} onPress={onSwitchToGrounds} accessibilityLabel="Show grounds map"><Text style={styles.modeBtnText}>Grounds</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.modeBtn} onPress={() => onSwitchToGrounds?.()} accessibilityLabel="Show grounds map"><Text style={styles.modeBtnText}>Grounds</Text></TouchableOpacity>
           <TouchableOpacity style={[styles.modeBtn, styles.modeBtnOn]} onPress={() => {
             const now = Date.now();
             if (now - verifyTaps.current.at > 900) verifyTaps.current.count = 0;
@@ -768,7 +814,7 @@ export default function TentedCityMap({
         </View>
         <View style={styles.searchCard}>
           <Feather name="search" size={18} color="#6B7280" />
-          <TextInput value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) { setSelected(null); setSelectedBoothId(null); setSelectedSemanticArea(null); } }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, or stage" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectPlace(results[0]); }} />
+          <TextInput value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) { setSelected(null); setSelectedBoothId(null); setSelectedSemanticArea(null); } }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, stage, or place" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectHit(results[0]); }} />
           {query ? <TouchableOpacity onPress={clearSelection} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
         </View>
         <View style={styles.filters}>
@@ -780,17 +826,13 @@ export default function TentedCityMap({
         {verify1A ? <View style={styles.verifyBanner} pointerEvents="none"><Text style={styles.verifyBannerText}>Tented City geometry overlay on. Five taps on Tented City to hide.</Text></View> : null}
         {focused && query.trim().length > 0 ? (
           <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-            {results.map((hit, i) => {
-              const title = placeTitle(hit);
-              const meta = hit.kind === 'vendor' ? hit.vendor.locationLabel : 'Stage';
-              return (
-                <TouchableOpacity key={`${title}-${i}`} style={styles.resultRow} onPress={() => selectPlace(hit)}>
-                  <Feather name={hit.kind === 'stage' ? 'mic' : 'map-pin'} size={16} color={colors.primary} />
-                  <View style={{ flex: 1 }}><Text style={styles.resultName} numberOfLines={1}>{title}</Text><Text style={styles.resultMeta}>{meta}</Text></View>
+            {results.map((hit) => (
+                <TouchableOpacity key={hit.key} style={styles.resultRow} onPress={() => selectHit(hit)}>
+                  <Feather name={hit.kind === 'stage' ? 'mic' : hit.mapType === 'grounds' ? 'navigation' : 'map-pin'} size={16} color={colors.primary} />
+                  <View style={{ flex: 1 }}><Text style={styles.resultName} numberOfLines={1}>{hit.title}</Text><Text style={styles.resultMeta}>{hit.subtitle}</Text></View>
                 </TouchableOpacity>
-              );
-            })}
-            {results.length === 0 ? <Text style={styles.empty}>No matching places on this map.</Text> : null}
+              ))}
+            {results.length === 0 ? <Text style={styles.empty}>No matching mapped places.</Text> : null}
           </ScrollView>
         ) : null}
       </View>
@@ -850,11 +892,20 @@ const styles = StyleSheet.create({
   parentRangeFillHighlight: { position: 'absolute', overflow: 'hidden', zIndex: 2 },
   footprint: { position: 'absolute', overflow: 'hidden', zIndex: 2 },
   parentRangeFillInner: { ...StyleSheet.absoluteFillObject },
-  exactBoothCellFill: { position: 'absolute', backgroundColor: EXACT_BOOTH_CELL_FILL, zIndex: 4 },
+  exactBoothCellFill: { position: 'absolute', backgroundColor: EXACT_BOOTH_CELL_FILL, borderWidth: EXACT_BOOTH_CELL_BORDER_WIDTH, borderColor: EXACT_BOOTH_CELL_BORDER, zIndex: 4 },
+  selectedStageHighlight: {
+    position: 'absolute',
+    backgroundColor: SELECTED_STAGE_FILL,
+    borderWidth: SELECTED_STAGE_OUTER_BORDER_WIDTH,
+    borderColor: SELECTED_STAGE_OUTER_BORDER,
+    zIndex: 4,
+  },
+  selectedStageInnerEdge: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: SELECTED_STAGE_INNER_BORDER_WIDTH,
+    borderColor: SELECTED_STAGE_INNER_BORDER,
+  },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
-  pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
-  pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },
-  pin: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.primary, borderWidth: 3, borderColor: '#F5C518', marginTop: 6 },
   topOverlay: { position: 'absolute', top: 8, left: 12, right: 12, zIndex: 20 },
   modeRow: { alignSelf: 'center', flexDirection: 'row', backgroundColor: 'rgba(232,228,218,0.95)', borderRadius: 12, padding: 3, marginBottom: 8, gap: 4 },
   modeBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },

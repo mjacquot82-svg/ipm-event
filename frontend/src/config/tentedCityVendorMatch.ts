@@ -2,6 +2,7 @@ import type { Rect, TentedCityVendor } from './tentedCityTypes';
 import {
   AREA_BY_ID,
   AREA_BY_LABEL,
+  BRITESPAN_BUILDING_AREA_ID,
   LOT_BY_ID,
   clusterLotRects,
   formatLotId,
@@ -42,6 +43,9 @@ const NAMED_ALIASES: Record<string, string> = {
   EAST5: 'named-east-5',
   'EAST-5': 'named-east-5',
   'EAST 5': 'named-east-5',
+  EAST05: 'named-east-5',
+  'EAST-05': 'named-east-5',
+  'EAST 05': 'named-east-5',
   WEST1: 'named-equipment-demo-area-west-1',
   'WEST-1': 'named-equipment-demo-area-west-1',
   'WEST 1': 'named-equipment-demo-area-west-1',
@@ -97,6 +101,17 @@ const LOT_RE = /^(\d+)([A-Za-z])[\s-]*(\d+)$/;
 
 function compactKey(s: string) {
   return s.toUpperCase().replace(/[^A-Z0-9]+/g, '');
+}
+
+/** Printed Britespan / Welcome / Main Stage campus — not Mutual Square 3A/3B 25-38 stalls. */
+const BRITESPAN_CAMPUS_VENDOR_NAMES = new Set([
+  'Welcome Centre',
+  'Britespan Building',
+  'Britespan Main Stage Building',
+]);
+
+function isBritespanCampusVendor(name?: string | null) {
+  return Boolean(name && BRITESPAN_CAMPUS_VENDOR_NAMES.has(name));
 }
 
 function emptyMatch(partial: Omit<VendorMatch, 'rects'>): VendorMatch {
@@ -156,6 +171,17 @@ export function vendorTokens(vendor: Pick<TentedCityVendor, 'booths' | 'location
 }
 
 export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationLabel' | 'name'>): VendorMatch {
+  if (isBritespanCampusVendor(vendor.name)) {
+    const area = AREA_BY_ID.get(BRITESPAN_BUILDING_AREA_ID);
+    return emptyMatch({
+      class: 'range_or_named',
+      reason: 'britespan-building-campus',
+      rect: area?.rect || null,
+      parentRect: area?.rect || null,
+      lotIds: [],
+      areaId: BRITESPAN_BUILDING_AREA_ID,
+    });
+  }
   const tokens = vendorTokens(vendor);
   if (!tokens.length) {
     return emptyMatch({ class: 'unmatched', reason: 'no-tokens', rect: null, parentRect: null, lotIds: [], areaId: null });

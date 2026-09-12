@@ -26,6 +26,11 @@ const normalize = (value: string) => value.toUpperCase().replace(/[\u2019']/g, '
 // map manifest. Keep this list explicit so an unknown location stays unmapped.
 const LOCATION_ALIASES: Record<string, string> = {
   'EVENT CENTRE 1 WEST 2': 'dancing-tractors-combine-derby-west-2',
+  'EVENT CENTRE 1': 'dancing-tractors-combine-derby-west-2',
+  'EVENT CENTRE': 'dancing-tractors-combine-derby-west-2',
+  WEST2: 'dancing-tractors-combine-derby-west-2',
+  'WEST 2': 'dancing-tractors-combine-derby-west-2',
+  'ACCESSIBLE PARKING': 'accessible-parking',
   // Trusted parent-only ranges (no individual stalls).
   '3A 39 44': 'quilt-tent-3a-39-44-g2',
   '3A39 44': 'quilt-tent-3a-39-44-g2',

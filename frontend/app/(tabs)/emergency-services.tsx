@@ -244,6 +244,25 @@ export default function EmergencyServicesScreen() {
             <Text style={styles.label}>Site 911 address</Text>
             <Text style={styles.emergencyValue}>95 Durham Road</Text>
             <Text style={styles.emergencyValue}>Entrances 9 &amp; 10</Text>
+            <TouchableOpacity
+              style={styles.mapButton}
+              onPress={() =>
+                router.push({
+                  pathname: '/(tabs)/map',
+                  params: {
+                    location: 'First Aid and Lost Persons',
+                    mapType: 'tented',
+                    source: 'emergency_services',
+                  },
+                })
+              }
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Find First Aid and Lost Persons on the Tented City map"
+            >
+              <Feather name="map-pin" size={20} color="#FFFFFF" />
+              <Text style={styles.mapButtonText}>Find First Aid on Map</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.card}>
@@ -325,6 +344,8 @@ const styles = StyleSheet.create({
   body: { color: colors.textPrimary, fontSize: 16, lineHeight: 24, marginBottom: 10 },
   emergencyValue: { color: colors.textPrimary, fontSize: 19, lineHeight: 26, fontWeight: '700' },
   hint: { color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginTop: 10 },
+  mapButton: { minHeight: 48, alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 16, marginTop: 16 },
+  mapButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
   primaryButton: { minHeight: 52, alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.error, borderRadius: 12, paddingHorizontal: 16, marginTop: 8 },
   primaryButtonDisabled: { opacity: 0.7 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },

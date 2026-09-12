@@ -1,6 +1,7 @@
-import type { TentedCityPlace, TentedCityVendor } from './tentedCityTypes';
+import type { TentedCityPlace, TentedCityVendor, TentedCityVenue } from './tentedCityTypes';
 import { findTentedCityVenue, tentedCityVenues } from './tentedCityVenues';
 import { resolveVendorMapQuery } from './vendorMapCrosswalk';
+import { findSemanticAreaForLocation } from './tentedCitySemanticMap';
 
 export function norm(s: string) {
   return s.toLowerCase().replace(/[’']/g, "'").replace(/[^a-z0-9]+/g, ' ').trim();
@@ -78,10 +79,42 @@ export function findTentedCityPlace(
   return fuzzy ? { kind: 'vendor', vendor: fuzzy } : undefined;
 }
 
+/**
+ * Resolve a usable map rect for a place. Stages with rect:null and a
+ * parentVenueId fall back to the parent venue geometry (e.g. MNP Lifestyles
+ * Tent / EAST-2) so Find-on-Map can highlight without inventing stage footprints.
+ */
+export function venueRect(venue: TentedCityVenue) {
+  if (venue.rect) return venue.rect;
+  if (!venue.parentVenueId) return null;
+  const parent = tentedCityVenues.find((v) => v.id === venue.parentVenueId);
+  return parent?.rect ?? null;
+}
+
 export function placeRect(place: TentedCityPlace) {
-  return place.kind === 'vendor' ? place.vendor.rect : place.venue.rect;
+  return place.kind === 'vendor' ? place.vendor.rect : venueRect(place.venue);
 }
 
 export function placeTitle(place: TentedCityPlace) {
   return place.kind === 'vendor' ? place.vendor.name : place.venue.label;
 }
+
+export type MapTypeParam = 'tented' | 'grounds';
+
+/**
+ * Decide which map surface to open for a schedule/vendor destination.
+ * Tented City place/venue/booth matches force tented; everything else stays grounds.
+ * Callers should pass this as an explicit `mapType` route param so Map mode does not
+ * depend on async remount or stale tab state.
+ */
+export function resolveMapTypeForLocation(
+  query: string | null | undefined,
+  vendors: TentedCityVendor[],
+): MapTypeParam {
+  if (findTentedCityPlace(query, vendors)) return 'tented';
+  // Semantic-only TC destinations (e.g. Event Centre #1 — West 2, Accessible Parking)
+  // have audited geometry but no venue/vendor row — still open Tented City.
+  if (query && findSemanticAreaForLocation(query)) return 'tented';
+  return 'grounds';
+}
+

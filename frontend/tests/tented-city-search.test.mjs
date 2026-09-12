@@ -86,7 +86,6 @@ function isTrailingCityRemainder(exhibitorNorm, liveNorm) {
 
 const VENDOR_MAP_ALIASES = {
   [normalizeVendorKey('Gay Lea Foods Co-operative Ltd.')]: 'Gay Lea Foods Co-operative Ltd',
-  [normalizeVendorKey('Georgian Bay Funeral Services Association (GBFSA)')]: '(GBFSA), Hanover',
   [normalizeVendorKey('Kincardine & Community Health Care Foundation')]: 'Kincardine & Community Health Care',
 };
 
@@ -158,7 +157,7 @@ function findTentedCityPlace(query, vendors) {
 }
 
 const vendors = loadExhibitors();
-assert.equal(vendors.length, 318);
+assert.equal(vendors.length, 326);
 
 test('short queries use word boundaries so ACE does not match Wallaceburg', () => {
   assert.equal(tokensMatch('ACE / JCB, Harriston', 'ACE'), true);
@@ -185,12 +184,12 @@ test('ACE / JCB still resolves to 1A-09', () => {
   assert.equal(place.vendor.locationLabel, '1A-09');
 });
 
-test('live-list alias finds the bundled exhibitor', () => {
+test('live-list finds Georgian Bay Funeral Services by exact name', () => {
   const hits = searchTentedCity('Georgian Bay Funeral Services Association (GBFSA)', vendors);
   assert.equal(hits.length, 1);
-  assert.equal(hits[0].vendor.name, '(GBFSA), Hanover');
+  assert.equal(hits[0].vendor.name, 'Georgian Bay Funeral Services Association (GBFSA)');
   const place = findTentedCityPlace('Georgian Bay Funeral Services Association (GBFSA)', vendors);
-  assert.equal(place.vendor.name, '(GBFSA), Hanover');
+  assert.equal(place.vendor.name, 'Georgian Bay Funeral Services Association (GBFSA)');
 });
 
 test('city-stripped live name finds the exhibitor', () => {
@@ -250,7 +249,7 @@ test('source files restore Find on Map, live-name search, and scrollable results
     path.join(root, 'components/TentedCityMap.tsx'),
   ]), 'utf8');
   assert.match(mapSrc, /ScrollView/);
-  assert.match(mapSrc, /searchTentedCity\(query, tentedCityVendors, filter\)/);
+  assert.match(mapSrc, /searchEventMap\(query, tentedCityVendors, filter\)/);
   assert.match(mapSrc, /maxHeight: 260/);
   assert.doesNotMatch(mapSrc, /searchTentedCity\(query, tentedCityVendors, filter, 8\)/);
 });

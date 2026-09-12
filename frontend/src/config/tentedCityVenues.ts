@@ -1,5 +1,6 @@
 // Staging-only Tented City venues. Names must match live schedule location_name values.
 import type { Rect, TentedCityVenue } from './tentedCityTypes';
+import { BRITESPAN_BUILDING_RECT, CKNX_WEST3_RECT, MNP_LIFESTYLES_EAST2_RECT } from './tentedCityGeometry';
 export type { Rect, TentedCityVenue };
 
 export const tentedCityVenues: TentedCityVenue[] = [
@@ -13,9 +14,12 @@ export const tentedCityVenues: TentedCityVenue[] = [
       'Britespan Building',
       'Britespan Main Stage Building',
       'Main Stage',
+      'Welcome Centre',
+      'Welcome Center',
     ],
     kind: 'stage',
-    rect: { x: 53.243, y: 41.875, w: 5.344, h: 3.854 },
+    // Britespan campus on south TC artwork — not Hydro One Avenue / 3B-28-32.
+    rect: BRITESPAN_BUILDING_RECT,
   },
   {
     id: 'cknx-gfo-lounge',
@@ -29,23 +33,26 @@ export const tentedCityVenues: TentedCityVenue[] = [
       'CKNX Centennial Pavilion (Lounge)',
     ],
     kind: 'stage',
-    rect: { x: 7.8, y: 39.0, w: 11.8, h: 9.2 },
+    rect: CKNX_WEST3_RECT,
   },
   {
     id: 'quality-homes-stage',
     label: 'Quality Homes Stage',
     names: ['Quality Homes - Stage', 'Quality Homes'],
     kind: 'stage',
-    // No audited stage footprint is available. Do not reuse the nearby
-    // Quality Homes exhibitor booth rectangle as a stage location.
+    // No audited individual stage footprint. Do not invent one and never reuse
+    // Quality Homes exhibitor booth 3A-09-12 as a stage location.
     rect: null,
+    parentVenueId: 'mnp-lifestyles',
+    note: 'Find-on-Map uses parent MNP Lifestyles Tent / EAST-2. Do not invent stage footprints; never use Quality Homes booth 3A-09-12.',
   },
   {
     id: 'mnp-lifestyles',
     label: 'MNP Lifestyles Tent',
     names: ['MNP Lifestyles Tent', 'MNP Lifestyle Tent', 'The MNP Lifestyles Tent'],
     kind: 'landmark',
-    rect: { x: 65.2, y: 28.8, w: 12.0, h: 7.2 },
+    // Prefer trusted PDF geometry area named-mnp-lifestyles-tent-east-2 (not Mutual Square / not road-legend strip).
+    rect: MNP_LIFESTYLES_EAST2_RECT,
   },
   {
     id: 'beyond-wireless-stage',
@@ -53,7 +60,8 @@ export const tentedCityVenues: TentedCityVenue[] = [
     names: ['The Beyond Wireless Stage', 'Beyond Wireless Stage', 'Beyond Wireless'],
     kind: 'stage',
     rect: null,
-    note: 'On the live schedule; booth location not printed in the Aug 15 exhibitor map yet.',
+    parentVenueId: 'mnp-lifestyles',
+    note: 'Find-on-Map uses parent MNP Lifestyles Tent / EAST-2. Do not invent stage footprints.',
   },
   {
     id: 'harleys-stage',
@@ -66,7 +74,8 @@ export const tentedCityVenues: TentedCityVenue[] = [
     ],
     kind: 'stage',
     rect: null,
-    note: 'On the live schedule; booth location not printed in the Aug 15 exhibitor map yet.',
+    parentVenueId: 'mnp-lifestyles',
+    note: 'Find-on-Map uses parent MNP Lifestyles Tent / EAST-2. Do not invent stage footprints.',
   },
 ];
 

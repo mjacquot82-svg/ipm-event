@@ -138,8 +138,11 @@ test('map screen keeps Grounds MapComponent and passes verify1A', () => {
   assert.ok(screen.includes('verify1A={verify1A}'));
 });
 
-test('stages without PDF lots can still use the pin path', () => {
+test('stages with placeRect use rectangular cyan highlight, not pin/circle', () => {
   const map = fs.readFileSync(mapPath, 'utf8');
-  assert.ok(map.includes('styles.pin'));
+  assert.ok(map.includes('testID="selected-stage-highlight"'));
+  assert.ok(map.includes('styles.exactBoothCellFill'));
   assert.ok(map.includes('vendorFootprint ?'));
+  assert.ok(!map.includes('styles.pin'));
+  assert.ok(!map.includes('styles.pulseRing'));
 });
