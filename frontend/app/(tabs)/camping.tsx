@@ -73,6 +73,22 @@ export default function CampingScreen() {
           </View>
 
           <TouchableOpacity
+            style={styles.mapButton}
+            onPress={() =>
+              router.push({
+                pathname: '/(tabs)/map',
+                params: { location: 'RV Park', mapType: 'grounds', source: 'camping' },
+              })
+            }
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Find RV Park on the Grounds map"
+          >
+            <Feather name="map-pin" size={20} color="#FFFFFF" />
+            <Text style={styles.mapButtonText}>Find RV Park on Map</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={styles.externalButton}
             onPress={() => void openTrackedLink('camping', 'camping_information')}
             activeOpacity={0.8}
@@ -182,6 +198,8 @@ const styles = StyleSheet.create({
   warning: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FFF8E8', borderLeftWidth: 4, borderLeftColor: colors.accentDark, borderRadius: 10, padding: 14, marginTop: 4 },
   warningText: { flex: 1, color: colors.textPrimary, fontSize: 16, lineHeight: 23, fontWeight: '700' },
   comingSoon: { color: colors.textPrimary, fontSize: 17, lineHeight: 24, fontWeight: '700' },
+  mapButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.primary, borderRadius: 14, paddingHorizontal: 18, marginTop: 4, marginBottom: 10 },
+  mapButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
   externalButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.field, borderRadius: 14, paddingHorizontal: 18, marginTop: 4, marginBottom: 12 },
   externalButtonText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
 });

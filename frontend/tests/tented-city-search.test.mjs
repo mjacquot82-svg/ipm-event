@@ -250,7 +250,7 @@ test('source files restore Find on Map, live-name search, and scrollable results
     path.join(root, 'components/TentedCityMap.tsx'),
   ]), 'utf8');
   assert.match(mapSrc, /ScrollView/);
-  assert.match(mapSrc, /searchTentedCity\(query, tentedCityVendors, filter\)/);
+  assert.match(mapSrc, /searchEventMap\(query, tentedCityVendors, filter\)/);
   assert.match(mapSrc, /maxHeight: 260/);
   assert.doesNotMatch(mapSrc, /searchTentedCity\(query, tentedCityVendors, filter, 8\)/);
 });

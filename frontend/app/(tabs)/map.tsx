@@ -72,11 +72,13 @@ export default function MapScreen() {
   );
 
   const [mode, setMode] = useState<MapMode>(desiredMode);
+  const [overrideLocation, setOverrideLocation] = useState<string | null>(null);
 
   // Tab navigators keep Map mounted — sync mode when schedule/vendors navigate with new params.
   useEffect(() => {
     setMode(desiredMode);
-  }, [desiredMode]);
+    setOverrideLocation(null);
+  }, [desiredMode, location]);
 
   const selector = (
     <View style={styles.selectorHost} pointerEvents="box-none">
@@ -95,11 +97,14 @@ export default function MapScreen() {
         collapsable={false}
       >
         <TentedCityMap
-          initialQuery={unavailable ? '' : typeof location === 'string' ? location : ''}
+          initialQuery={unavailable ? '' : (overrideLocation || (typeof location === 'string' ? location : '') || '')}
           mapUnavailable={unavailable}
-          exactInitialPlace={source === 'vendors'}
+          exactInitialPlace={source === 'vendors' && !overrideLocation}
           verify1A={verify1A}
-          onSwitchToGrounds={() => setMode('grounds')}
+          onSwitchToGrounds={(loc) => {
+            if (loc) setOverrideLocation(loc);
+            setMode('grounds');
+          }}
           hideModeSelector
         />
       </View>
@@ -114,8 +119,11 @@ export default function MapScreen() {
       {mode === 'grounds' ? (
         <View style={styles.grounds}>
           <GroundsMap
-            highlightedLocation={location || null}
-            onSwitchToTented={() => setMode('tented')}
+            highlightedLocation={overrideLocation || location || null}
+            onSwitchToTented={(loc) => {
+              if (loc) setOverrideLocation(loc);
+              setMode('tented');
+            }}
             onSwitchToRv={() => setMode('rv')}
           />
         </View>

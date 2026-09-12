@@ -1,6 +1,7 @@
 import type { TentedCityPlace, TentedCityVendor, TentedCityVenue } from './tentedCityTypes';
 import { findTentedCityVenue, tentedCityVenues } from './tentedCityVenues';
 import { resolveVendorMapQuery } from './vendorMapCrosswalk';
+import { findSemanticAreaForLocation } from './tentedCitySemanticMap';
 
 export function norm(s: string) {
   return s.toLowerCase().replace(/[’']/g, "'").replace(/[^a-z0-9]+/g, ' ').trim();
@@ -110,6 +111,10 @@ export function resolveMapTypeForLocation(
   query: string | null | undefined,
   vendors: TentedCityVendor[],
 ): MapTypeParam {
-  return findTentedCityPlace(query, vendors) ? 'tented' : 'grounds';
+  if (findTentedCityPlace(query, vendors)) return 'tented';
+  // Semantic-only TC destinations (e.g. Event Centre #1 — West 2, Accessible Parking)
+  // have audited geometry but no venue/vendor row — still open Tented City.
+  if (query && findSemanticAreaForLocation(query)) return 'tented';
+  return 'grounds';
 }
 

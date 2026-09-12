@@ -50,6 +50,7 @@ import {
   hasAcknowledgedScheduleOnboarding,
 } from '../../src/services/scheduleOnboardingState';
 import { resolveMapTypeForLocation } from '../../src/config/tentedCitySearch';
+import { resolvePlowingMapLocation } from '../../src/config/groundsZones';
 import { tentedCityVendors } from '../../src/data/tentedCityVendors';
 
 export default function ScheduleScreen() {
@@ -1055,13 +1056,16 @@ export default function ScheduleScreen() {
                       onPress={() => {
                         console.log('Location clicked:', selectedEvent.location_name);
                         dismissEventModalForMap();
+                        const mapLocation =
+                          resolvePlowingMapLocation(selectedEvent.location_name, selectedEvent.title) ||
+                          selectedEvent.location_name;
                         router.replace({
                           pathname: '/(tabs)/map',
                           params: {
-                            location: selectedEvent.location_name,
+                            location: mapLocation,
                             showOnly: 'true',
                             source: 'schedule',
-                            mapType: resolveMapTypeForLocation(selectedEvent.location_name, tentedCityVendors),
+                            mapType: resolveMapTypeForLocation(mapLocation, tentedCityVendors),
                           }
                         });
                       }}
