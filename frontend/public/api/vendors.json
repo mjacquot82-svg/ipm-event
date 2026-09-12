@@ -1,0 +1,2022 @@
+{
+  "vendors": [
+    {
+      "id": "b9f5cf91-c819-4c09-b66d-c7755e0cf06f",
+      "name": "A&M Truck Parts Ltd",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3be605f9-7bf3-43ea-8021-d4e7f8d97226",
+      "name": "Accurate Canada, Burlington",
+      "type": "Outdoor",
+      "location": "5A-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "730c5981-0e96-5ad3-a19e-305171940d35",
+      "name": "ACE / JCB, Harriston",
+      "type": "Outdoor",
+      "location": "1A-09",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a9af14f1-d5ed-53ee-bf1a-496ce6b51218",
+      "name": "Aces Heavy Towing, Mildmay",
+      "type": "Outdoor",
+      "location": "5A-27-28",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f55883bc-5358-4211-a3b6-7b53edaba2e6",
+      "name": "Agilec Employment Services",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3b04e05a-7aff-4552-b267-caf238b690d4",
+      "name": "Agriculture and Agri-Food Canada",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a0d0ef38-08bd-47ed-a65f-4e89c44c44e1",
+      "name": "AmSpec Group",
+      "type": "Indoor",
+      "location": "1B-16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "af16cf06-a3fc-442f-89fb-34b7f7c811aa",
+      "name": "Armtec",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "ee1415e6-f744-4630-bc35-6abe2ba92ba5",
+      "name": "B&L Farm Services Ltd., Chesley",
+      "type": "Outdoor",
+      "location": "2B-13-14",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e0a5d033-8f65-404e-bea0-3d29c912046b",
+      "name": "Bailey Repair Services Ltd., Palmerston",
+      "type": "Outdoor",
+      "location": "2A-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "4f2e7b8c-17aa-5780-b8f9-3139d37341f6",
+      "name": "Bambrook Farm Equipment",
+      "type": "Outdoor",
+      "location": "1A-05",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "544387d1-37b9-5d43-b747-61f890ea005b",
+      "name": "Bear Tracks Inn & Restaurant, Lion’s Head",
+      "type": "Food",
+      "location": "4A-36",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "33c808d3-5f23-5ac4-ac19-39c5f525d78a",
+      "name": "Beef Farmers of Ontario & Bruce County Beef Farmer",
+      "type": "Outdoor",
+      "location": "2B-08",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c3475873-86ab-400c-b963-7b79080cfba0",
+      "name": "Beef Farmers of Ontario & Bruce County Beef Farmers",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e265cd72-ed26-4073-a6f1-54acf6aa4f3f",
+      "name": "Beef Farmers of Ontario & Bruce County Beef Farmers",
+      "type": "Outdoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d29fbe51-a631-5f55-8fc0-f76b35bf07cd",
+      "name": "Bell Cell Tower",
+      "type": "Outdoor",
+      "location": "NORTH",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "00cdb72c-1b0d-4a4f-ba56-94afe97592aa",
+      "name": "Ben Lobb Member of Parliament for Huron Bruce",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "988bfa58-8601-4351-9a9c-56367bdec339",
+      "name": "Bernie McGlynn Lumber / South Bruce Flooring",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "6ce4387f-b079-5bcc-a1e1-83065b50bdfe",
+      "name": "Big Bites, Durham",
+      "type": "Food",
+      "location": "2A-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "958a4bcd-92f5-51b5-b975-2959863c7aa7",
+      "name": "Blacks Creek Innovations, Prescott",
+      "type": "Outdoor",
+      "location": "5A-37-38",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c0b34681-27da-4ffd-bd87-4ef3bbdd3178",
+      "name": "Bluewater District School Board",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "cdabb1e6-a916-5b2c-9648-c7d9e226139a",
+      "name": "Brandt Tractors Ltd., London",
+      "type": "Outdoor",
+      "location": "1B-05-06",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b5263806-99c3-4979-af82-5c08f1d598e7",
+      "name": "Brightshores Health System - Saugeen Shores Hospital Foundation",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "577b1ad6-5ac8-41c4-a163-04c59c103493",
+      "name": "Broeders Farm Equipment, North Augusta",
+      "type": "Outdoor",
+      "location": "1B-08",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "01d61f68-207b-43e3-a1a7-4b31ce36c8bf",
+      "name": "Bruce County Federation of Agriculture",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "016396f4-b39b-5f5f-8e87-bd542b53e7de",
+      "name": "Bruce District Masons",
+      "type": "Outdoor",
+      "location": "3B-04",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f27fb7aa-fafb-49a2-932c-f31e9e4b5f25",
+      "name": "Bruce Grey Catholic District School Board",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "97e57f2d-c4ec-52d9-91c5-d2872c1f677f",
+      "name": "Bruce Power",
+      "type": "Outdoor",
+      "location": "3B-07-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2f34e37e-1880-5e22-b369-9372257143f7",
+      "name": "Can-Am Demo Area, Montreal, QC",
+      "type": "Outdoor",
+      "location": "WEST-02",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "cae86ad1-4826-4a0a-b06c-3112e7a23706",
+      "name": "Canadian Foodgrains Bank",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "fe9ce824-1ba8-4bf7-998d-b236ffefd2aa",
+      "name": "Canadian Snowbird Association",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "963dfdeb-c7e0-51a3-b502-12a9588d1ef7",
+      "name": "Cedarport Window & Door Centre",
+      "type": "Outdoor",
+      "location": "2B-29",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "60d08cd6-3d43-5e1b-a762-6ff00e889720",
+      "name": "Cheesy Monkii Food Truck, Kincardine",
+      "type": "Food",
+      "location": "3A-04",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0d60adb3-a62f-4fd3-a301-5cae288d05fe",
+      "name": "Chris's Barbeque and Country Style Catering",
+      "type": "Food",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "5f2a4b8e-4a5c-45a0-928c-4ae43ead02df",
+      "name": "Christadelphians: ASK",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8263f8cc-47cc-46bb-880e-4fd4e040a055",
+      "name": "Christian Farmers Federation of Ontario",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "7272eea0-f3fd-5f78-87eb-16e7b5b3a94b",
+      "name": "CKNX, The One, Cook 94.5, Wingham",
+      "type": "Outdoor",
+      "location": "3A-01-03",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c52964ff-5574-53fd-ab93-8e80e42760a5",
+      "name": "Clifford Precision Inc., Clifford",
+      "type": "Outdoor",
+      "location": "2A-13-15",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d9e22660-ba30-5f2e-a36d-91888a9f2cc7",
+      "name": "Clinton",
+      "type": "Outdoor",
+      "location": "5A-32",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "92ced957-30d0-44bd-948c-268b1a5b68a2",
+      "name": "CMHA Grey Bruce",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d5be6e41-6954-52c8-957d-1a7fc0eb088b",
+      "name": "Coastal Coffee, Goderich",
+      "type": "Food",
+      "location": "2A-11",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "92a43a21-957e-527e-afb9-e53835ca4cea",
+      "name": "Coops, Crappers & Cabins, Cambridge",
+      "type": "Outdoor",
+      "location": "2A-34-35",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9a268e45-492c-5022-967c-ba050427caee",
+      "name": "Costco Wholesale, Guelph",
+      "type": "Outdoor",
+      "location": "4A-32",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f8e07856-2d6a-4643-8df4-4c0a11806c74",
+      "name": "Cottrill Heavy Equipment, Kincardine",
+      "type": "Outdoor",
+      "location": "2A-05",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "942731e1-eb46-4357-b4c5-1c7d48dfce92",
+      "name": "Crop Aid Nutrition, Saskatoon, SK",
+      "type": "Outdoor",
+      "location": "2A-07",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "4dd3723c-6622-561c-84c7-efb5cbd97b33",
+      "name": "Culligan, Cambridge",
+      "type": "Outdoor",
+      "location": "3B-01-02",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f4c1eece-0a1f-4f0c-9b74-4feb3b12078c",
+      "name": "Cuneo Interiors Limited, Walkerton",
+      "type": "Outdoor",
+      "location": "2A-30",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "515f1b29-b256-57de-aad6-d08ffc94c1ff",
+      "name": "Dairy Farmers of Ontario",
+      "type": "Food",
+      "location": "3A-13-16",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "6c4a5c1a-cabc-4def-b4f3-f0410c02c88d",
+      "name": "Dairy Farmers of Ontario",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8cc1d9e1-08c7-4c22-9aab-62a26964020d",
+      "name": "Dairy Farmers of Ontario",
+      "type": "Outdoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "90fe44dc-91e1-4ccc-a755-728cba56d8c1",
+      "name": "Dairy Farmers of Ontario",
+      "type": "Food",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a212980e-ffe2-5aa2-acdc-0ea2884b2443",
+      "name": "DC Foods, Tillsonburg",
+      "type": "Food",
+      "location": "1B-38,4B-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a513ffe9-7e0e-5ca7-be44-c827de0520b2",
+      "name": "DeDell Seeds Inc., Melbourne",
+      "type": "Outdoor",
+      "location": "2B-19-20",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d85f5e59-a290-5a49-a671-3cfbf99d45ae",
+      "name": "Diamond Roof, Wingham",
+      "type": "Outdoor",
+      "location": "4B-30",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "4e094197-8317-42de-9fab-0fbfb2ec0d53",
+      "name": "DJ's Handcrafted Solid Wood",
+      "type": "Outdoor",
+      "location": "4A-29-30",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "5041c4ee-0da8-5174-b73c-2451f95aa2ac",
+      "name": "DODGE DEALERS",
+      "type": "Outdoor",
+      "location": "5A-01-04",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "75a73bde-0381-53ae-a0b1-ce59d2b2f407",
+      "name": "Drone Spray Canada, Granton, Blenheim",
+      "type": "Outdoor",
+      "location": "1A-06",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "4ca16511-186c-5a9b-b737-49f74ae85cad",
+      "name": "Eastern Silk Road, Kitchener",
+      "type": "Outdoor",
+      "location": "4B-02",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "03ff43f0-ece8-4f67-a3c5-3dfd9a21cf2f",
+      "name": "Egg Farmers of Ontario",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "fac9b1e9-54db-41cb-976f-eb4f6f2f8f16",
+      "name": "Electrical Safety Authority",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f610134f-3c59-4bdf-98a9-39da2f155769",
+      "name": "Equestrian Elite",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2a10f4a1-5e13-5940-8bd6-a057d52621c6",
+      "name": "Equipment Ontario, Mildmay",
+      "type": "Outdoor",
+      "location": "1A-10-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "48108aac-d4c7-49e9-9c85-8a0a33e315b7",
+      "name": "ETFO Bluewater Local",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "26048e22-0c9e-5b19-b789-cdbc0e6f7d75",
+      "name": "Evelyn Piper Exclusive, Ajax",
+      "type": "Outdoor",
+      "location": "4A-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "308fff09-c626-5ed7-bad4-217c5be5eabb",
+      "name": "Farm Sip Supreme Canada, Mount Forest",
+      "type": "Outdoor",
+      "location": "1A-17",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "15691f8e-2ecb-4904-8b4f-3ab4ec8f10c5",
+      "name": "Fellowship of Christian Farmers",
+      "type": "Outdoor",
+      "location": "2A-17-18",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e6d29634-64c4-4255-816b-3f20f1d8f88b",
+      "name": "Ferntree Equipment & Distribution, Guelph",
+      "type": "Outdoor",
+      "location": "5A-34",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e173b0f8-0a76-4bc9-9eef-b610dbbfaad8",
+      "name": "Flora and Fae",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "50bfa217-fb8e-5691-b5e4-a0993415dc21",
+      "name": "Florence Leather",
+      "type": "Outdoor",
+      "location": "4B-15",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "bcc0b099-1270-4436-8222-560ab866fea2",
+      "name": "Fort44 Inc.",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d95b8f18-c931-524f-8209-a6711daf3236",
+      "name": "Foxton Fuels Limited, Wingham",
+      "type": "Outdoor",
+      "location": "2B-10-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9b876531-d38c-4955-af9f-0550c9446f61",
+      "name": "Freiburger Welding",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "dd656a11-03d9-451b-bd7a-c05b12320448",
+      "name": "Galaxy Sweets",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a600c3a6-941e-4588-bd5c-c0ad2d40c058",
+      "name": "Gay Lea Foods Co-operative Ltd",
+      "type": "Outdoor",
+      "location": "2B-03-04",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "88994284-29ae-4366-a784-6e69493b5dab",
+      "name": "Georgian Bay Funeral Services Association (GBFSA)",
+      "type": "Outdoor",
+      "location": "4B-05",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "36040d1d-23a4-51f8-9b32-6c68d325e4b6",
+      "name": "Gerry's Truck Centre",
+      "type": "Outdoor",
+      "location": "4A-04",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "980d4d7b-b391-5382-a3ea-d2d70f692a52",
+      "name": "GGS Structures Inc., Vineland Station",
+      "type": "Outdoor",
+      "location": "2B-23",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "87a6f85f-b903-584b-a8e1-c92458076dc6",
+      "name": "Gilligan's Juice Bar",
+      "type": "Outdoor",
+      "location": "CXD",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0218c51e-8b47-44df-9c1a-a9831da530d2",
+      "name": "Gospel Focus, Kirkfield",
+      "type": "Outdoor",
+      "location": "4A-33-34",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "fb1f11fa-5cbe-5618-a233-594b716eea62",
+      "name": "Great Canadian Lumberjacks",
+      "type": "Outdoor",
+      "location": "1A-35-38",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "5fa56f5a-3345-4710-ac74-a360d65b1c81",
+      "name": "Green Valley Heating Inc., Granton",
+      "type": "Outdoor",
+      "location": "4B-28",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d68df8ab-824a-4993-80b8-3a46d73669d2",
+      "name": "Grey Bruce Public Health",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "72281fef-9af2-40e7-9132-2bcfe55ca87d",
+      "name": "Guelph Solar",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b05a7b54-4daa-4e05-a0c3-3eb88c6f9f3c",
+      "name": "Hallman Motors Ltd., Hanover",
+      "type": "Outdoor",
+      "location": "5A-25-26",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8d584d5b-fc3b-58bb-ad5b-4cf0294e47d0",
+      "name": "Hanover",
+      "type": "Outdoor",
+      "location": "5A-29-31",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "aeb7774d-1e29-4018-8ad1-a6270fafe8c0",
+      "name": "Harkness Equipment, Harriston",
+      "type": "Outdoor",
+      "location": "1B-15",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "db8358ab-6aca-4cc1-9500-c20ae81c4c9c",
+      "name": "HearingLife Canada",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "5c20ae03-5c55-5f07-8a69-7bc68e025a76",
+      "name": "Heatmaster (Highway 511 Heating), Perth",
+      "type": "Outdoor",
+      "location": "2A-25-27",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "98c794d2-c2c6-5537-bd4c-5316f1a9b465",
+      "name": "Heavenly Dreams Ice Cream Inc",
+      "type": "Food",
+      "location": "4A-37",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1a5fd8ed-ba9f-5306-99b7-c566e77b7174",
+      "name": "Heavy Equipment Care Ltd.,Durham",
+      "type": "Outdoor",
+      "location": "1A-32-34",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "38dd8b37-f53d-5a49-b97a-ca04b49f4256",
+      "name": "Highland Outbuildings, Angus",
+      "type": "Outdoor",
+      "location": "4A-28",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "6f2f724d-4858-5066-ad41-41e8398923da",
+      "name": "Hip Town Hype, Trent Lakes",
+      "type": "Outdoor",
+      "location": "4A-14",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "6f0f3ab1-04f9-540d-b72a-2535b2fe59bc",
+      "name": "HLR Hydraulic Line Repair, Orangeville",
+      "type": "Outdoor",
+      "location": "1B-28",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a7971766-a77f-5ce5-9ce4-2f29808a1849",
+      "name": "Hometown Street Eats, Drayton",
+      "type": "Food",
+      "location": "2B-25",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "464f0a56-2cfb-42ba-9d27-59324d17ec16",
+      "name": "Huron County",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "01ed2846-d1d8-5c9e-a365-637c839b3f7d",
+      "name": "Huron Tractor Ltd., Walkerton",
+      "type": "Outdoor",
+      "location": "1A-25-27",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b502c8eb-8115-555e-b00d-830e5606c36c",
+      "name": "Huronia Welding",
+      "type": "Outdoor",
+      "location": "1A-29",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "5ad9b389-f533-5b1f-8458-95c3e18134ed",
+      "name": "Hydro One",
+      "type": "Outdoor",
+      "location": "EAST-05",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2b4480b3-5c43-428a-9e72-fd537d75e31e",
+      "name": "iLGi Canada",
+      "type": "Outdoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "ed5c65db-fabc-5e09-bac2-abe5d715abe4",
+      "name": "J&H Sales and Service, Chesley",
+      "type": "Outdoor",
+      "location": "1A-13-15",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "da60dc40-1348-4a28-bba4-d72f96e9e258",
+      "name": "Jeff’s Catering, Uxbridge",
+      "type": "Food",
+      "location": "4A-38",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b16de7a5-f57f-4789-bf01-735f6831ac80",
+      "name": "Joe Carter - Group Benefits Specialist",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "48df3f37-4bb4-46fc-b218-20722b7e5cb8",
+      "name": "John Ernewein Limited, Walkerton",
+      "type": "Outdoor",
+      "location": "1B-29",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "795f3984-0b5b-4325-9142-e4d3a3901118",
+      "name": "JSC Factory Direct Inc., Barrie",
+      "type": "Outdoor",
+      "location": "4B-13",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "319f7c2d-22e3-4945-8c4d-caa3d9ad7ff4",
+      "name": "JW Custom Fab, Cargill",
+      "type": "Outdoor",
+      "location": "2A-16",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "5e1c39f7-d7c4-4bc7-9353-1b426bbbd4fd",
+      "name": "K and S Boat and Sled",
+      "type": "Outdoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "980273b0-4ce6-4e72-9c33-53d00733a54f",
+      "name": "Kenworth / TRP Hanover, Hanover",
+      "type": "Outdoor",
+      "location": "4A-01-03",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "380ac022-0c50-43fa-8580-e4493f794556",
+      "name": "Kincardine",
+      "type": "Outdoor",
+      "location": "4B-06",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f1af824a-d4c0-5d98-b23f-847446d4f5fd",
+      "name": "Kodiak Boots, Cambridge",
+      "type": "Outdoor",
+      "location": "2B-06",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b42f10a0-24ec-407b-b635-85a292c68f05",
+      "name": "Kreations Candy and Treats, Hanover",
+      "type": "Outdoor",
+      "location": "4B-34",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "231ca38a-08f3-54de-8834-d9b7f44b399b",
+      "name": "Krown Rust Control, Schomberg",
+      "type": "Outdoor",
+      "location": "5A-20",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e71d4eee-3a16-43f7-9dc5-68509adeb7e2",
+      "name": "Lambton Conveyor Ltd., Wallaceburg",
+      "type": "Outdoor",
+      "location": "1B-13-14",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3383bf0f-7040-4292-b672-b8f546e6f90b",
+      "name": "LeafFilter Gutter Protection",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1291cd01-94b3-457e-bf3e-31fe49769688",
+      "name": "Leslie Motors Ford, Walkerton",
+      "type": "Outdoor",
+      "location": "5A-13-14",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d01d595a-1d1f-57fd-a56a-b6fb81b06f7b",
+      "name": "Lez Eats, Creemore",
+      "type": "Food",
+      "location": "1B-37",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b0d60a72-d427-4896-9936-1f15c79ca9a8",
+      "name": "Liesemers Home Hardware, Mildmay",
+      "type": "Outdoor",
+      "location": "4A-25",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8cec8e17-dd34-54e9-84b2-0a91b529ec24",
+      "name": "Lil’ Country Woodshop Ltd., Alma",
+      "type": "Outdoor",
+      "location": "4B-25",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3eb56cf2-6c4c-4a36-bdd4-271177d1b783",
+      "name": "Listowel Hearing Centre, Listowel",
+      "type": "Outdoor",
+      "location": "4B-07",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "20f1eef1-1c99-454b-8a5c-698afcb1985c",
+      "name": "Lucan Biddulph Recreation Committee, Lucan",
+      "type": "Outdoor",
+      "location": "4B-23",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "7c620123-0386-52db-a897-4a48292e4f22",
+      "name": "Maitland Valley Conservation",
+      "type": "Outdoor",
+      "location": "5B-10-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f86f55a1-a099-5abe-9562-39b0b7450405",
+      "name": "Maple Lane Farm Service, Mount Forest",
+      "type": "Outdoor",
+      "location": "1A-18-20",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2fc6c262-4b4d-5d22-9163-67d01affc897",
+      "name": "Marcc Apparel, Mount Forest",
+      "type": "Outdoor",
+      "location": "3A-19",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2f803208-3db9-461e-8e00-d95ade31be75",
+      "name": "Marcrest Manufacturing Inc., Listowel",
+      "type": "Outdoor",
+      "location": "1A-22-24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "001b990b-7d8c-59a6-9628-91ed7b659501",
+      "name": "Marquardt Farm Drainage, Palmerston",
+      "type": "Outdoor",
+      "location": "2B-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "ac62d592-18e5-42b8-94cf-094a5a7fb3cd",
+      "name": "Martin’s Land Management, Blyth",
+      "type": "Outdoor",
+      "location": "5A-36",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "276ea1c4-7834-4d9c-bb1d-b090494cea2d",
+      "name": "McCullough Tirecraft, Paisley",
+      "type": "Outdoor",
+      "location": "2B-24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "bdfa0c9c-0c6e-4108-b898-3f41f2f74807",
+      "name": "McDougall Energy Inc.",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "40957c12-afd1-5bb1-8481-26c9bfe54235",
+      "name": "Med-E-Ox Mobility, Goderich",
+      "type": "Outdoor",
+      "location": "1A-28",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9d2341cd-270e-5669-8d74-990ef1838766",
+      "name": "Metalf Food & Beverage",
+      "type": "Food",
+      "location": "3B-13-14",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "38b60d6f-d97d-512e-9510-444f60646405",
+      "name": "Midwest Co-op, Teeswater",
+      "type": "Outdoor",
+      "location": "1B-25-27",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b1efb2e2-a52d-485a-93b7-f0e53f0486d7",
+      "name": "Mike's Wood",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "ab55fe3b-1f16-45db-a994-75e140ebc6e5",
+      "name": "Millroad Manufacturing & Sales",
+      "type": "Outdoor",
+      "location": "1B-23-24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b1280c80-ed82-5b61-a875-4ae2b558a0e0",
+      "name": "Mitchell Cycle Inc., Mitchell",
+      "type": "Outdoor",
+      "location": "2A-19-20",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d7d546d4-2d97-4e22-936c-b7276e2926ee",
+      "name": "MPAC - Municipal Property Assessment Corporation",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d4ce21fd-2eb8-5fd8-ab81-8f0776f95886",
+      "name": "Mr. Kettle Corn, Campbellville",
+      "type": "Food",
+      "location": "5A-11",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "cd66378b-d4bc-57f6-bdaa-bd3806d1e226",
+      "name": "Multi Shelter Solutions, Palmerston",
+      "type": "Outdoor",
+      "location": "2A-01-02",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "557385b5-4aac-424e-a00b-660800f0c543",
+      "name": "Nana's Sewing Basket",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f2f40011-8138-4f50-bb92-48e0ce605ed3",
+      "name": "Natural Stitch Designs",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e3b3d8ca-c12b-485e-bf42-bc3ee2f605be",
+      "name": "Northern Flyer Design (Ken Thornburn)",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "451f9696-65a0-5333-81c8-8a96528056b6",
+      "name": "Northern Leisure Products Ltd., Wroxeter",
+      "type": "Outdoor",
+      "location": "4A-26-27",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "65e03aa7-8bec-4465-a7a7-83ce3c22abc2",
+      "name": "Norwex",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "19c4141d-9ce0-4a98-bc7c-2ae658ba2b20",
+      "name": "Oasis Therapy",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f9b89b9b-6c4f-40ef-a246-bb26e1dae66a",
+      "name": "OK Tire Kincardine, Kincardine",
+      "type": "Outdoor",
+      "location": "2A-06",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "601fbb68-e23d-5bb4-baa9-c6ad4a060efe",
+      "name": "Old Country Leather, Chesley",
+      "type": "Outdoor",
+      "location": "4B-24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a289e824-af93-5280-9920-4a0f368254ac",
+      "name": "Ontario Cattle Feeders Association",
+      "type": "Outdoor",
+      "location": "2B-07",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "07ae58c3-8333-5bd3-a44e-94e2fb9dd0cf",
+      "name": "Ontario Flag and Pole, Sutton West",
+      "type": "Outdoor",
+      "location": "3A-07",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c965a55b-6079-4aad-83ef-25e8029a4275",
+      "name": "Ontario Fur Managers Federation",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "ea600d40-10e9-4dfb-b232-a0a65fdcf9dc",
+      "name": "Ontario Government",
+      "type": "Outdoor",
+      "location": "3B-19-24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "78872f2a-d229-44cf-ae91-32a902b88389",
+      "name": "Ontario Landowners Association, Elmwood",
+      "type": "Outdoor",
+      "location": "2B-18",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "4e21f0a7-a849-4836-a018-b4e6377df6dc",
+      "name": "Ontario Mutual Insurance Association",
+      "type": "Outdoor",
+      "location": "3A-20-24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "36cd75e0-d95a-4cc2-99e1-5c460cc0a2cf",
+      "name": "Ontario PC Caucus",
+      "type": "Outdoor",
+      "location": "3B-18",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "72e344c1-223b-4f4e-9544-40456b21a939",
+      "name": "Ontario Phragmites Action",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "041cfecf-c2d8-5ffe-b19c-792667708f43",
+      "name": "Ontario Provincial Police - South Bruce",
+      "type": "Outdoor",
+      "location": "5A-15-16",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9f7fd4cf-fe95-4d75-88ff-13a899280283",
+      "name": "Ontario Youth Apprenticeship Program (OYAP)",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "421f2f71-ea28-43c1-a7d2-e316b9e45842",
+      "name": "Paisley Drive Designs",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0b03a71a-bb5e-461b-8af9-b303298f8b61",
+      "name": "Parrish & Heimbecker, Ltd",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "7eee91bc-4487-5006-b808-4ffb836d263c",
+      "name": "Paul Grewall Novelties Ltd., Brampton",
+      "type": "Outdoor",
+      "location": "4A-11",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c2f887e0-c182-4fe3-a124-c5ea39f0c56c",
+      "name": "PIKA PIKA",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f4fa6a81-0991-4f33-9c19-bb049c6cbb97",
+      "name": "Playtime Casino Hanover",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3f4f5e08-19e2-4be2-84f4-5bde645d5dc8",
+      "name": "Postech Screw Piles, Markdale",
+      "type": "Outdoor",
+      "location": "2A-29",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "ab05b77c-425e-5c91-88b9-6e935972b015",
+      "name": "Premier Tech Water & Environment",
+      "type": "Outdoor",
+      "location": "2A-28",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b1648352-eebe-452b-a022-ffd1e8cd4659",
+      "name": "Primerica, Hanover",
+      "type": "Outdoor",
+      "location": "4B-27",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d43060eb-1136-597f-b4ec-c44de517ba14",
+      "name": "Pro Cart",
+      "type": "Outdoor",
+      "location": "5A-19",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0df6baad-ed21-5262-b0a8-5771faf56bce",
+      "name": "Quality Homes, Kenilworth",
+      "type": "Outdoor",
+      "location": "3A-09-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "6e77cda5-7713-5ed5-83f5-e2a8b85d69a7",
+      "name": "Real Time Fun and Rentals",
+      "type": "Food",
+      "location": "4B-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3e324cae-84da-45f6-9f2c-b9201d65e86e",
+      "name": "Reformed Evangelistic Outreach, Ancaster",
+      "type": "Outdoor",
+      "location": "4B-14",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "fa3d7bc2-5810-466d-b041-edf8cffaaf3a",
+      "name": "Rintoul’s Pools & Hot Tubs, Owen Sound",
+      "type": "Outdoor",
+      "location": "2B-30-31",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "33761caa-c08b-43fe-80ed-c853cb948963",
+      "name": "RMP Metal Works, Mount Forest",
+      "type": "Outdoor",
+      "location": "4B-26",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c6f51443-af42-5f5b-a721-56003fffc888",
+      "name": "Robert’s Equipment, Chesley",
+      "type": "Outdoor",
+      "location": "1A-01-04",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e5a48235-3331-5d0f-bff3-044fe48ae753",
+      "name": "Rogers Cell Tower",
+      "type": "Outdoor",
+      "location": "NORTH",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2c76a419-cfec-4413-9d8c-e1944dda6add",
+      "name": "RONA Doidge Kincardine, Kincardine",
+      "type": "Outdoor",
+      "location": "2A-36-38",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2be13b1c-4a62-4a39-9050-c9795a00d9f3",
+      "name": "Royal Homes, Wingham",
+      "type": "Outdoor",
+      "location": "2A-31-32",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f5b057d7-2036-467d-b45e-6008fcc3bcc1",
+      "name": "Rural Home Care",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "42aaed65-6d65-47c5-b938-74315db706a6",
+      "name": "Saugeen Economic Development Corporation",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8bc0e5f3-250b-53e2-914f-9e772ff4449c",
+      "name": "Scatterbrain Creations by Paige & Mom",
+      "type": "Outdoor",
+      "location": "4A-13",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "843e1734-6422-4cab-9107-d9632a28698e",
+      "name": "Schmidt's Farm Drainage",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "4d5f1aa5-31ea-558c-916a-62eaf36895a3",
+      "name": "Shiva Fashion Inc, Scarborough",
+      "type": "Outdoor",
+      "location": "4A-24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f311640d-efb0-45b7-a173-4830632528fe",
+      "name": "Shouldice Stone, Shallow Lake",
+      "type": "Outdoor",
+      "location": "2A-33",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "686e6288-b6b6-5e68-a433-6004f26533f5",
+      "name": "SMG Champion Sawmills, Oxford Mills",
+      "type": "Outdoor",
+      "location": "5A-35",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "38d294e6-c677-42c2-9ce0-50ea5f2e0e37",
+      "name": "Smyth Welding & Machine Shop Ltd., Auburn",
+      "type": "Outdoor",
+      "location": "1A-30-31",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "df690400-2416-50e3-9e47-6f6211305a35",
+      "name": "Speedway Trailers, Cambridge",
+      "type": "Outdoor",
+      "location": "1B-09-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "771c706e-07d4-4670-b3be-ec73e84a19a0",
+      "name": "Sprucedale Agromart Ltd., Hanover",
+      "type": "Outdoor",
+      "location": "2B-01-02",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b301ff51-3cfb-4551-ae4f-68d89d262650",
+      "name": "Starbright Industry Inc., Listowel",
+      "type": "Outdoor",
+      "location": "1A-08",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "cb4a17b1-8ea6-4995-b585-d8b44e8ed861",
+      "name": "StumpedIt, Clinton",
+      "type": "Outdoor",
+      "location": "5A-33",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "685b1dc4-b17c-52c2-beac-3a7e0efcae40",
+      "name": "Style Catering, Stratford",
+      "type": "Food",
+      "location": "5A-23-24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c75c2127-8422-53d6-9c8b-e2746eca0e77",
+      "name": "Surf & Turf Instant Shelters Inc, Smithville",
+      "type": "Outdoor",
+      "location": "2B-28",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "12b95efc-6dc2-4794-92a2-0fb3ac1d8c3c",
+      "name": "Susan Seitz",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b574de87-5059-488d-841b-2728fb5227d4",
+      "name": "SV Law",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b81fa732-3f9b-55a6-b997-2f91d050f1ad",
+      "name": "Teeswater Agro Parts Ltd",
+      "type": "Outdoor",
+      "location": "1A-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0c95c985-d68e-47eb-bce4-68c5ebabebaf",
+      "name": "Teeswater Concrete Ltd, Teeswater",
+      "type": "Outdoor",
+      "location": "1B-32-34",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2349eab4-0602-421f-b0f6-b07949c227eb",
+      "name": "Teeswater Laser",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "34e10e60-9e05-4461-9350-d85fb6babb70",
+      "name": "The Insurance Market",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "79c70f83-6ff1-41b1-9b88-81ec1a52e64b",
+      "name": "The Miller Group",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "125044e1-87e9-403a-ba52-73a3826f0de7",
+      "name": "The Quilt Jeannie",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "215cc6ac-a0ef-4157-b2c3-2300a4727d2b",
+      "name": "The WOMB Bruce County",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3760419b-7bb3-41b8-becd-c2e028b4ca27",
+      "name": "Thede Acres Alpacas",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b33c0148-7c81-5869-840d-0bfd15c2020e",
+      "name": "Toromont Cat, Concord",
+      "type": "Outdoor",
+      "location": "1B-30-31",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "ceee2669-10f5-4f4e-9fc6-b83af3cb945e",
+      "name": "Township of North Huron, Wingham",
+      "type": "Outdoor",
+      "location": "4B-01",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d5749364-7845-5656-96c9-5d5f34f078f7",
+      "name": "Transit Trailer Ltd",
+      "type": "Outdoor",
+      "location": "2A-03-04",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "73abc49e-5b32-49a9-ba05-dfa04bdb577c",
+      "name": "TreeGirl Henna",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9efea015-7697-44b4-a27f-5c1b605b81d6",
+      "name": "Treemendous Tree Sales & Transplanting",
+      "type": "Outdoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8a575b7b-f478-5422-9eef-efe2e5a71c5d",
+      "name": "United Rentals, Walkerton",
+      "type": "Outdoor",
+      "location": "2B-16-17",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0dccef26-1036-5abd-aac2-640f424033fa",
+      "name": "University of Guelph, Guelph",
+      "type": "Outdoor",
+      "location": "3B-16-17",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0bd5ea4a-dae9-59b1-acf0-3547467cf4d0",
+      "name": "Valard Construction, Vaughan",
+      "type": "Outdoor",
+      "location": "EAST-06",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "cbf78721-1b06-580e-a061-d8da29137eee",
+      "name": "Walker",
+      "type": "Outdoor",
+      "location": "3A-05",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "ad9e85a4-2eca-5484-a676-a0bd77ce37de",
+      "name": "Walkerton",
+      "type": "Outdoor",
+      "location": "3B-06",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e1965785-7bae-466f-a0ec-153577c3bd52",
+      "name": "Walkerton Clean Water Centre",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e44c33ae-9215-4f2c-9c57-60fa45ecc648",
+      "name": "Walkerton Toyota, Walkerton",
+      "type": "Outdoor",
+      "location": "5A-17-18",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "cab591f1-b93a-533d-9291-68a0c075027c",
+      "name": "Wallenstein Equipment Inc., Wallenstein",
+      "type": "Outdoor",
+      "location": "1B-01-04",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8fe67fa6-e0ca-496d-95c9-9069ed38169a",
+      "name": "Wash Bay Products Inc, Mildmay",
+      "type": "Outdoor",
+      "location": "2A-08",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e32ebc10-ce2b-5bac-8bb4-c21650a2effb",
+      "name": "WASTE MANAGEMNT",
+      "type": "Outdoor",
+      "location": "4B-29",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8139913d-6b7a-4eba-bcfa-e2f21ca2f5e8",
+      "name": "Water and Wellness, Walkerton",
+      "type": "Outdoor",
+      "location": "4B-36-38",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d3b7ad4d-cff8-5a57-939d-a44a316001ea",
+      "name": "We Cater Food on Wheels, York",
+      "type": "Food",
+      "location": "4B-11",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "096575d8-9155-4f08-a307-44d60a3e2596",
+      "name": "Wecover Structures",
+      "type": "Outdoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3e66a69a-8ef2-48d8-b1ec-69a4f25a0b9b",
+      "name": "Weppler Farm Machinery Ltd., Ayton",
+      "type": "Outdoor",
+      "location": "1A-16",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "63fb0f49-256e-511e-8102-bbf03765ca1f",
+      "name": "What's Cookin' Food Trailer",
+      "type": "Food",
+      "location": "2A-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "7dda3a67-39ed-56a8-b965-5196fa4a65a8",
+      "name": "Wild Willies Food Truck, Bayfield",
+      "type": "Food",
+      "location": "2B-26",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "cda2170e-a9ca-4c58-b8ba-75884ec3579e",
+      "name": "Wildflower Designs",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3c2093d3-f87d-44e9-9062-3e029f932769",
+      "name": "Wilson Developments",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "342201a1-273f-4928-ae3d-b9c967edf69d",
+      "name": "Wonderfull Inc., Innisfil",
+      "type": "Outdoor",
+      "location": "2B-05",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "bb547ee3-95c7-5a03-8bb9-4ef1af6c1f23",
+      "name": "Work N Wear, Markham",
+      "type": "Outdoor",
+      "location": "2A-22-24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c89afdd0-3381-5d75-b677-1f45ecd8f8c9",
+      "name": "Xplore Inc., Markham",
+      "type": "Outdoor",
+      "location": "3B-03",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "23bb582a-b74a-4013-adb9-312803cac3bc",
+      "name": "YMCA Owen Sound Grey Bruce - Employment Services",
+      "type": "Indoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "079016da-3510-5e2d-a127-c2eb0b5f9810",
+      "name": "Your Ultimate Structures Inc., Beachville",
+      "type": "Outdoor",
+      "location": "2B-09",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    }
+  ],
+  "last_updated": "2026-09-12T14:28:36.762Z",
+  "total_count": 224
+}
