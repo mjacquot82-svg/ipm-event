@@ -35,7 +35,9 @@ const { findTentedCityPlace, placeRect, venueRect } = load(new URL('../src/confi
 const { tentedCityVenues, findTentedCityVenue } = load(new URL('../src/config/tentedCityVenues.ts', import.meta.url));
 const vendors = loadExhibitors();
 
-const MNP_PARENT = { x: 65.2, y: 28.8, w: 12.0, h: 7.2 };
+const MNP_PARENT = { x: 57.864, y: 38.189, w: 6.176, h: 6.882 }; // named-mnp-lifestyles-tent-east-2
+const MUTUAL_SQUARE = { x: 45.376, y: 47.253, w: 9.693, h: 9.272 };
+const OLD_ROAD_LEGEND = { x: 65.2, y: 28.8, w: 12.0, h: 7.2 };
 const QH_BOOTH = { x: 30.146, y: 37.495, w: 4.973, h: 3.854 };
 
 const SCHEDULE_LOCATION_NAMES = [
@@ -50,6 +52,16 @@ test('MNP parent landmark has the audited EAST-2 geometry', () => {
   const parent = tentedCityVenues.find((v) => v.id === 'mnp-lifestyles');
   assert.ok(parent);
   assert.deepEqual(parent.rect, MNP_PARENT);
+  assert.notDeepEqual(parent.rect, MUTUAL_SQUARE);
+  assert.notDeepEqual(parent.rect, OLD_ROAD_LEGEND);
+});
+
+test('static MNP Lifestyles Tent vendor EAST-2 rect matches PDF geometry area', () => {
+  const vendor = vendors.find((v) => v.name === 'MNP Lifestyles Tent' && v.locationLabel === 'EAST-2');
+  assert.ok(vendor);
+  assert.deepEqual(vendor.rect, MNP_PARENT);
+  assert.notDeepEqual(vendor.rect, MUTUAL_SQUARE);
+  assert.notDeepEqual(vendor.rect, OLD_ROAD_LEGEND);
 });
 
 test('three MNP stages keep rect:null and link parentVenueId mnp-lifestyles', () => {
