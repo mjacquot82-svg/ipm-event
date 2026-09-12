@@ -1,6 +1,7 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -9,7 +10,6 @@ const CACHE_KEY_PREFIX = 'ipm_supabase_cache:ipm-2026-production';
 const EXISTING_SHARED_CACHE_KEY_PREFIX = 'ipm_supabase_cache:v1';
 const LEGACY_CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
 const DEFAULT_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
-const LIVE_VENDORS_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
 
 export type CachedApiSource = 'network' | 'cache';
 
@@ -116,16 +116,12 @@ function getApiBaseUrl() {
   return process.env.EXPO_PUBLIC_BACKEND_URL || DEFAULT_API_BASE_URL;
 }
 
-/** Live vendor directory. On staging.theipm.ca use same-origin so Netlify can proxy past CORS. */
-function getVendorsApiBaseUrl() {
-  if (typeof window !== 'undefined' && window.location.hostname === 'staging.theipm.ca') {
-    return window.location.origin;
-  }
-  return LIVE_VENDORS_API_BASE_URL;
-}
-
 function getCacheKey(cacheKey: string) {
-  const prefix = cacheKey === 'schedule' || cacheKey === 'vendors' || cacheKey === 'vendors-live'
+  // Do not reuse the old backend vendor feed for the canonical web catalog.
+  if (cacheKey === 'vendors' && Platform.OS === 'web') {
+    return `${CACHE_KEY_PREFIX}:vendors:canonical-v1`;
+  }
+  const prefix = cacheKey === 'schedule' || cacheKey === 'vendors'
     ? CACHE_KEY_PREFIX
     : EXISTING_SHARED_CACHE_KEY_PREFIX;
 
@@ -311,13 +307,25 @@ export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> 
   });
 }
 
-export function getVendorsData(options: SupabaseFetchOptions<VendorsResponse> = {}) {
-  return fetchCachedApiData<VendorsResponse>({
-    cacheKey: 'vendors-live',
-    url: `${getVendorsApiBaseUrl()}/api/vendors`,
-    isCacheableResponse: isSupabaseVendorsResponse,
-    ...options,
-  });
+export async function getVendorsData(options: SupabaseFetchOptions<VendorsResponse> = {}) {
+  const isWeb = Platform.OS === 'web';
+  try {
+    return await fetchCachedApiData<VendorsResponse>({
+      cacheKey: 'vendors',
+      url: isWeb ? '/api/vendors' : `${getApiBaseUrl()}/api/vendors`,
+      isCacheableResponse: isSupabaseVendorsResponse,
+      ...options,
+      // Complete the canonical request before declaring the search results ready.
+      preferCache: isWeb ? false : options.preferCache,
+    });
+  } catch (error) {
+    // Preserve offline access, but only to a previously fetched canonical catalog.
+    if (isWeb) {
+      const cached = await readCache<VendorsResponse>('vendors');
+      if (cached && isSupabaseVendorsResponse(cached.data)) return cached;
+    }
+    throw error;
+  }
 }
 
 export function getAnnouncementsData(options: SupabaseFetchOptions<AnnouncementsResponse> = {}) {

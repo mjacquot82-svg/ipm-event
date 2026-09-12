@@ -50,9 +50,7 @@ export default function VendorsScreen() {
       throw new Error('Invalid vendors response');
     }
     setVendors(result.data.vendors);
-    if (result.source === 'network') {
-      setDataSource('network');
-    }
+    setDataSource(result.source);
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
   }, []);
 
@@ -121,7 +119,7 @@ export default function VendorsScreen() {
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#8B1538" />
           <Text style={styles.helperText}>
-            {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
+            Loading vendors…
           </Text>
         </View>
         <AttendeeAttribution source="vendors_attribution" />
