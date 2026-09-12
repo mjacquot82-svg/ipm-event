@@ -7,6 +7,7 @@ import {
   clusterLotRects,
   formatLotId,
   isTrustedParentOnlyArea,
+  parseInclusiveLotSpan,
   parseRangeToken,
   unionRects,
   type GeometryArea,
@@ -197,6 +198,41 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
 
   const parentOnlyAreas: GeometryArea[] = [];
 
+  const pushLotNumber = (section: string, n: number) => {
+    const id = formatLotId(section, n);
+    if (is5AMissing(section, n)) {
+      missing5a.push(id);
+      return;
+    }
+    if (isBrucePowerSlot(section, n)) {
+      brucePower.push(id);
+      return;
+    }
+    if (is6BLot(section, n)) {
+      flagged6b.push(id);
+      return;
+    }
+    if (isMutualPhantom(section, n)) {
+      mutual.push(id);
+      return;
+    }
+    const lot = LOT_BY_ID.get(id);
+    if (!lot) {
+      unknown.push(id);
+      return;
+    }
+    const parent = AREA_BY_LABEL.get(lot.parent);
+    if (parent && isTrustedParentOnlyArea(parent)) {
+      parentOnlyAreas.push(parent);
+      return;
+    }
+    if (parent?.flagged) {
+      flagged6b.push(id);
+      return;
+    }
+    lots.push(lot);
+  };
+
   for (const tok of tokens) {
     const nid = namedIdFor(tok);
     if (nid) {
@@ -209,9 +245,24 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
         flagged6b.push(rangeArea.label);
       } else if (isTrustedParentOnlyArea(rangeArea)) {
         parentOnlyAreas.push(rangeArea);
+      } else if (
+        rangeArea.section
+        && rangeArea.lot_start != null
+        && rangeArea.lot_end != null
+      ) {
+        // Full parent label with safe individuals — expand every child cell in the audited range.
+        for (let n = rangeArea.lot_start; n <= rangeArea.lot_end; n += 1) {
+          pushLotNumber(rangeArea.section, n);
+        }
       } else {
-        // Ordinary numbered range label without expanded booths — keep unmatched rather than inventing a new path.
         unknown.push(tok);
+      }
+      continue;
+    }
+    const span = parseInclusiveLotSpan(tok);
+    if (span) {
+      for (let n = span.start; n <= span.end; n += 1) {
+        pushLotNumber(span.section, n);
       }
       continue;
     }
@@ -220,37 +271,7 @@ export function matchVendor(vendor: Pick<TentedCityVendor, 'booths' | 'locationL
       unknown.push(tok);
       continue;
     }
-    if (is5AMissing(parsed.section, parsed.n)) {
-      missing5a.push(parsed.id);
-      continue;
-    }
-    if (isBrucePowerSlot(parsed.section, parsed.n)) {
-      brucePower.push(parsed.id);
-      continue;
-    }
-    if (is6BLot(parsed.section, parsed.n)) {
-      flagged6b.push(parsed.id);
-      continue;
-    }
-    if (isMutualPhantom(parsed.section, parsed.n)) {
-      mutual.push(parsed.id);
-      continue;
-    }
-    const lot = LOT_BY_ID.get(parsed.id);
-    if (!lot) {
-      unknown.push(parsed.id);
-      continue;
-    }
-    const parent = AREA_BY_LABEL.get(lot.parent);
-    if (parent && isTrustedParentOnlyArea(parent)) {
-      parentOnlyAreas.push(parent);
-      continue;
-    }
-    if (parent?.flagged) {
-      flagged6b.push(parsed.id);
-      continue;
-    }
-    lots.push(lot);
+    pushLotNumber(parsed.section, parsed.n);
   }
 
   if (unknown.length) {

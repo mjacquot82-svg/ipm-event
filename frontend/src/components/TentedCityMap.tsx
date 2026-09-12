@@ -319,14 +319,21 @@ export default function TentedCityMap({
     : null;
   const useExactBoothHierarchy = Boolean(exactSelectedBooth && parentRangeForExact);
   const footprintGeometryArea = vendorFootprint?.areaId ? AREA_BY_ID.get(vendorFootprint.areaId) || null : null;
+  // Exact multi-booth confident_lot (e.g. Ontario Government 3B-19-24) must paint the
+  // child-cell union — never force parent-only just because lotIds.length > 1.
   const parentOnlyFootprint = Boolean(
     vendorFootprint
       && !useExactBoothHierarchy
       && (
         vendorFootprint.class === 'range_or_named'
         || isTrustedParentOnlyArea(footprintGeometryArea)
-        || vendorFootprint.lotIds.length !== 1
       ),
+  );
+  const exactVendorFootprint = Boolean(
+    vendorFootprint
+      && !useExactBoothHierarchy
+      && !parentOnlyFootprint
+      && vendorFootprint.class === 'confident_lot',
   );
   // Semantic tap / schedule alias for Quilt Tent & Rural Expo: same yellow parent fill as vendor parent-only.
   const parentOnlySemanticGeometry = (!useExactBoothHierarchy && selectedSemanticArea
@@ -459,7 +466,25 @@ export default function TentedCityMap({
               </BoothHighlight>
             ))}
           </>
-        ) : vendorFootprint ? vendorFootprint.rects.map((rect, i) => (
+        ) : exactVendorFootprint && vendorFootprint ? vendorFootprint.rects.map((rect, i) => (
+          // Exact single/multi booth FoM: cyan fill + yellow outer outline (same language as stages).
+          <View
+            key={`fp-${i}-${rect.x}-${rect.y}`}
+            pointerEvents="none"
+            testID="vendor-booth-highlight"
+            style={[
+              styles.selectedStageHighlight,
+              {
+                left: `${rect.x}%`,
+                top: `${rect.y}%`,
+                width: `${rect.w}%`,
+                height: `${rect.h}%`,
+              },
+            ]}
+          >
+            <View style={styles.selectedStageInnerEdge} />
+          </View>
+        )) : vendorFootprint ? vendorFootprint.rects.map((rect, i) => (
           <BoothHighlight testID="vendor-booth-highlight" rect={rect} key={`fp-${i}-${rect.x}-${rect.y}`} layer={layer} border={0} borderColor="transparent" style={styles.footprint}>
             <View style={[styles.parentRangeFillInner, { backgroundColor: PARENT_RANGE_FILL }]} />
           </BoothHighlight>

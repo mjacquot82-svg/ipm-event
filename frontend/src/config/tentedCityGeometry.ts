@@ -138,6 +138,22 @@ export function parseRangeToken(token: string): GeometryArea | null {
   ) || null;
 }
 
+/** Inclusive booth span from a label like 3B-19-24 / 3B 19-24 (not necessarily a full parent area). */
+export function parseInclusiveLotSpan(token: string): { section: string; start: number; end: number } | null {
+  const t = (token || '').trim();
+  if (!t) return null;
+  const m = t.match(RANGE_TOKEN_RE) || t.replace(/\s+/g, ' ').match(RANGE_TOKEN_RE);
+  if (!m) return null;
+  const section = m[1] + m[2].toUpperCase();
+  const a = Number(m[3]);
+  const b = Number(m[4]);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  const start = Math.min(a, b);
+  const end = Math.max(a, b);
+  if (start === end) return null; // single booth — use parseLotToken
+  return { section, start, end };
+}
+
 export function individualBoothsForArea(area: GeometryArea): TentedCityIndividualBooth[] {
   if (!TENTED_CITY_SAFE_INDIVIDUAL_RANGES.some((candidate) => candidate.id === area.id)) return [];
   return lotsForArea(area).map((lot) => ({
@@ -278,7 +294,8 @@ export function clusterLotRects(lots: ClusterableLot[]): Rect[] {
     byParent.set(lot.parent, list);
   }
   const clusters: Rect[] = [];
-  for (const rects of byParent.values()) {
+  // Array.from so downlevel/test harnesses never iterate Map.values() as a fake array.
+  for (const rects of Array.from(byParent.values())) {
     for (const comp of connectedComponents(rects)) {
       const u = unionRects(comp);
       if (u) clusters.push(u);
