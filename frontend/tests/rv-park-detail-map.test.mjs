@@ -183,7 +183,7 @@ test('Grounds / Tented City / unified search unaffected by campsite flood', () =
   assert.match(zonesSrc, /'rv park': 'rv-park'/);
   assert.doesNotMatch(zonesSrc, /'m27'/);
   // Tented search module unchanged in role
-  assert.match(tentedSrc, /searchTentedCity/);
+  assert.match(tentedSrc, /searchEventMap/);
   assert.match(screenSrc, /findTentedCityPlace/);
   // Searching RV module does not invent global export into mapLocations
   assert.equal(searchRvParkPlaces('M27')[0].SITE_ID, 'M27');
@@ -226,7 +226,8 @@ test('Grounds and Tented City selectors still wired', () => {
   assert.match(screenSrc, /mode !== 'tented'/);
   assert.match(screenSrc, /<GroundsMap/);
   assert.match(screenSrc, /<TentedCityMap/);
-  assert.match(screenSrc, /onSwitchToTented=\{\(\) => setMode\('tented'\)\}/);
+  assert.match(screenSrc, /onSwitchToTented=\{\(loc\) =>/);
+  assert.match(screenSrc, /setMode\('tented'\)/);
   assert.match(screenSrc, /onSwitchToRv=\{\(\) => setMode\('rv'\)\}/);
 });
 

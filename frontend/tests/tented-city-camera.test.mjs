@@ -306,7 +306,7 @@ test('TentedCityMap uses the camera helpers, viewport gestures, and inertia', ()
   assert.match(map, /footprintForVendor/);
   assert.match(map, /onSwitchToGrounds/);
   assert.match(map, /verify1A/);
-  assert.match(map, /searchTentedCity\(query, tentedCityVendors, filter\)/);
+  assert.match(map, /searchEventMap\(query, tentedCityVendors, filter\)/);
   assert.match(map, /Platform\.OS === 'web' \? mapGestures/);
   assert.doesNotMatch(map, /averageTouches\(true\)/);
   assert.doesNotMatch(map, /scale\.value <= 1\.02/);

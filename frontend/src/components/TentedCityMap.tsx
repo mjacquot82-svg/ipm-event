@@ -13,7 +13,8 @@ import colors from '../theme/colors';
 import { tentedCityVendors } from '../data/tentedCityVendors';
 import { tentedCityVenues } from '../config/tentedCityVenues';
 import type { Rect, TentedCityPlace } from '../config/tentedCityTypes';
-import { findTentedCityPlace, placeRect, placeTitle, searchTentedCity } from '../config/tentedCitySearch';
+import { findTentedCityPlace, placeRect, placeTitle } from '../config/tentedCitySearch';
+import { searchEventMap, type EventMapHit } from '../config/mapSearch';
 import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tentedCityLayout';
 import { boothHighlightStyle } from '../config/tentedCityHighlight';
 import { TENTED_CITY_VERIFY_PARENTS, TENTED_CITY_INDIVIDUAL_BOOTHS, TENTED_CITY_BOOTH_DIVIDER_SEGMENTS, TENTED_CITY_TRUSTED_PARENT_ONLY_RANGES, focusRectForFootprint, AREA_BY_LABEL, AREA_BY_ID, isTrustedParentOnlyArea, type TentedCityIndividualBooth } from '../config/tentedCityGeometry';
@@ -73,7 +74,7 @@ const FILTERS: { id: FilterId; label: string }[] = [
 export default function TentedCityMap({
   initialQuery = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds, hideModeSelector = false,
 }: {
-  initialQuery?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: () => void; hideModeSelector?: boolean;
+  initialQuery?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: (location?: string) => void; hideModeSelector?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
@@ -181,6 +182,18 @@ export default function TentedCityMap({
     } else if (place.kind === 'stage') applyFocus(placeRect(place), false, SELECTED_RESERVED_BOTTOM);
   };
 
+  const selectHit = (hit: EventMapHit) => {
+    if (hit.mapType === 'grounds') {
+      onSwitchToGrounds?.(hit.query);
+      return;
+    }
+    if (hit.kind === 'semantic') {
+      selectSemanticArea(hit.area);
+      return;
+    }
+    selectPlace(hit.place);
+  };
+
   const selectSemanticArea = (area: SemanticMapArea) => {
     setUnmappedInitialLocation(false);
     setSelectedSemanticArea(area);
@@ -260,7 +273,7 @@ export default function TentedCityMap({
   }, [viewport.width, viewport.height, cam]);
 
   const results = useMemo(
-    () => (focused || query.trim() ? searchTentedCity(query, tentedCityVendors, filter) : []),
+    () => (focused || query.trim() ? searchEventMap(query, tentedCityVendors, filter) : []),
     [query, filter, focused],
   );
   const stageEvents = useMemo(() => {
@@ -501,7 +514,7 @@ export default function TentedCityMap({
           />
         ) : (
         <View style={styles.modeRow}>
-          <TouchableOpacity style={styles.modeBtn} onPress={onSwitchToGrounds} accessibilityLabel="Show grounds map"><Text style={styles.modeBtnText}>Grounds</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.modeBtn} onPress={() => onSwitchToGrounds?.()} accessibilityLabel="Show grounds map"><Text style={styles.modeBtnText}>Grounds</Text></TouchableOpacity>
           <TouchableOpacity style={[styles.modeBtn, styles.modeBtnOn]} onPress={() => {
             const now = Date.now();
             if (now - verifyTaps.current.at > 900) verifyTaps.current.count = 0;
@@ -514,7 +527,7 @@ export default function TentedCityMap({
         )}
         <View style={styles.searchCard}>
           <Feather name="search" size={18} color="#6B7280" />
-          <TextInput value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) { setSelected(null); setSelectedBoothId(null); setSelectedSemanticArea(null); } }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, or stage" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectPlace(results[0]); }} />
+          <TextInput value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) { setSelected(null); setSelectedBoothId(null); setSelectedSemanticArea(null); } }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, stage, or place" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectHit(results[0]); }} />
           {query ? <TouchableOpacity onPress={clearSelection} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
         </View>
         <View style={styles.filters}>
@@ -526,17 +539,13 @@ export default function TentedCityMap({
         {verify1A ? <View style={styles.verifyBanner} pointerEvents="none"><Text style={styles.verifyBannerText}>Tented City geometry overlay on. Five taps on Tented City to hide.</Text></View> : null}
         {focused && query.trim().length > 0 ? (
           <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-            {results.map((hit, i) => {
-              const title = placeTitle(hit);
-              const meta = hit.kind === 'vendor' ? hit.vendor.locationLabel : 'Stage';
-              return (
-                <TouchableOpacity key={`${title}-${i}`} style={styles.resultRow} onPress={() => selectPlace(hit)}>
-                  <Feather name={hit.kind === 'stage' ? 'mic' : 'map-pin'} size={16} color={colors.primary} />
-                  <View style={{ flex: 1 }}><Text style={styles.resultName} numberOfLines={1}>{title}</Text><Text style={styles.resultMeta}>{meta}</Text></View>
+            {results.map((hit) => (
+                <TouchableOpacity key={hit.key} style={styles.resultRow} onPress={() => selectHit(hit)}>
+                  <Feather name={hit.kind === 'stage' ? 'mic' : hit.mapType === 'grounds' ? 'navigation' : 'map-pin'} size={16} color={colors.primary} />
+                  <View style={{ flex: 1 }}><Text style={styles.resultName} numberOfLines={1}>{hit.title}</Text><Text style={styles.resultMeta}>{hit.subtitle}</Text></View>
                 </TouchableOpacity>
-              );
-            })}
-            {results.length === 0 ? <Text style={styles.empty}>No matching places on this map.</Text> : null}
+              ))}
+            {results.length === 0 ? <Text style={styles.empty}>No matching mapped places.</Text> : null}
           </ScrollView>
         ) : null}
       </View>

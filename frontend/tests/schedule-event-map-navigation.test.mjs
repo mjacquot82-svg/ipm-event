@@ -56,7 +56,8 @@ test('Find on the Map dismisses the modal without replaying modal history', () =
   assert.match(locationSection, /pathname:\s*['"]\/\(tabs\)\/map['"]/);
   assert.match(locationSection, /showOnly:\s*['"]true['"]/);
   assert.match(locationSection, /source:\s*['"]schedule['"]/);
-  assert.match(locationSection, /mapType:\s*resolveMapTypeForLocation\(selectedEvent\.location_name,\s*tentedCityVendors\)/);
+  assert.match(locationSection, /resolvePlowingMapLocation\(selectedEvent\.location_name,\s*selectedEvent\.title\)/);
+  assert.match(locationSection, /mapType:\s*resolveMapTypeForLocation\(mapLocation,\s*tentedCityVendors\)/);
   assert.doesNotMatch(locationSection, /closeEventModal\(\)/);
   assert.doesNotMatch(locationSection, /window\.history\.(back|go|forward)/);
 });
@@ -79,13 +80,14 @@ test('Beyond/Harley/Quality Homes Tap to View Map resolve mapType tented', () =>
 test('schedule navigation wires mapType from resolveMapTypeForLocation', () => {
   assert.match(scheduleSource, /import \{ resolveMapTypeForLocation \} from/);
   assert.match(scheduleSource, /import \{ tentedCityVendors \} from/);
-  assert.match(scheduleSource, /mapType:\s*resolveMapTypeForLocation\(selectedEvent\.location_name,\s*tentedCityVendors\)/);
+  assert.match(scheduleSource, /import \{ resolvePlowingMapLocation \} from/);
+  assert.match(scheduleSource, /mapType:\s*resolveMapTypeForLocation\(mapLocation,\s*tentedCityVendors\)/);
 });
 
 test('map screen prefers explicit mapType and syncs mode when params change', () => {
   assert.match(mapSource, /mapType/);
   assert.match(mapSource, /resolveMapTypeForLocation/);
-  assert.match(mapSource, /useEffect\(\(\) => \{\s*setMode\(desiredMode\);\s*\}, \[desiredMode\]\)/s);
+  assert.match(mapSource, /useEffect\(\(\) => \{\s*setMode\(desiredMode\);\s*setOverrideLocation\(null\);\s*\}, \[desiredMode, location\]\)/s);
   assert.match(mapSource, /if \(mapType === 'tented' \|\| mapType === 'grounds'(?: \|\| mapType === 'rv')?\) return mapType/);
   // Must not blindly force every schedule source onto tented (grounds destinations stay grounds).
   assert.doesNotMatch(mapSource, /source === 'schedule'/);
@@ -102,6 +104,7 @@ test('MNP EAST-2 selection location survives navigation params (location preserv
   const locationStart = scheduleSource.indexOf('{/* Location */}');
   const categoryStart = scheduleSource.indexOf('{/* Category */}', locationStart);
   const locationSection = scheduleSource.slice(locationStart, categoryStart);
-  assert.match(locationSection, /location:\s*selectedEvent\.location_name/);
+  assert.match(locationSection, /location:\s*mapLocation/);
+  assert.match(locationSection, /resolvePlowingMapLocation\(selectedEvent\.location_name,\s*selectedEvent\.title\)\s*\|\|\s*selectedEvent\.location_name/);
   assert.match(locationSection, /showOnly:\s*['"]true['"]/);
 });
