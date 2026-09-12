@@ -18,6 +18,11 @@ const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
 // versions. Activation must not delete a concurrent navigation's cached result.
 const IPM_SHELL_CACHE = `${IPM_CACHE_PREFIX}current-v1`;
 
+// Explicit page-owned activation only. Never skipWaiting on install.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'IPM_ACTIVATE_UPDATE') self.skipWaiting();
+});
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(IPM_SHELL_CACHE);
