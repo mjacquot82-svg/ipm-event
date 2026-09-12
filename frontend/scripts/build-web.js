@@ -20,9 +20,9 @@ for (const [command, args] of [
 }
 
 // Rewrite only /api/admin/* to the validated deployment backend.
-// Keep /api/vendors on the production vendor list from public/_redirects /
-// netlify.toml. Netlify checks published dist/_redirects before netlify.toml,
-// so rewriting vendors onto the thin staging backend empties the Vendors tab.
+// Keep /api/vendors on the baked static catalog from public/_redirects /
+// netlify.toml (/api/vendors.json). Netlify checks published dist/_redirects
+// before netlify.toml — do not rewrite vendors onto the thin staging backend.
 const backend = env.EXPO_PUBLIC_BACKEND_URL.replace(/\/$/, '');
 const redirectsPath = './dist/_redirects';
 const redirects = readFileSync(redirectsPath, 'utf8').replace(

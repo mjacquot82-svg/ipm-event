@@ -30,7 +30,7 @@ import {
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
-import { resolveVendorMapQuery } from '../../src/config/vendorMapCrosswalk';
+import { resolveVendorMapQuery, vendorMatchesSearch } from '../../src/config/vendorMapCrosswalk';
 
 export default function VendorsScreen() {
   usePageAnalytics('vendors', 'home_quick_action', 'vendor_directory_opened');
@@ -90,26 +90,11 @@ export default function VendorsScreen() {
   }, [vendors]);
 
   const filteredVendors = useMemo(() => {
-    const normalizedSearch = searchQuery.trim().toLowerCase();
     return vendors.filter((vendor) => {
       if (selectedType && vendor.type !== selectedType) {
         return false;
       }
-
-      if (!normalizedSearch) {
-        return true;
-      }
-
-      return [
-        vendor.name,
-        vendor.type,
-        vendor.location,
-        vendor.hours_of_operation,
-        vendor.days_of_operation,
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedSearch);
+      return vendorMatchesSearch(vendor, searchQuery);
     });
   }, [searchQuery, selectedType, vendors]);
 

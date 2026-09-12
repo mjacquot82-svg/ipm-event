@@ -128,3 +128,60 @@ export default {
   VENDOR_MAP_ALIASES,
   resolveVendorMapQuery,
 };
+
+/**
+ * Attendee Vendors-tab search: plain field match plus crosswalk aliases
+ * (CAN-AM → Can-Am Demo Area, Valard LP → Valard Construction, etc.).
+ */
+export function vendorMatchesSearch(
+  vendor: { name: string; type?: string; location?: string; hours_of_operation?: string; days_of_operation?: string },
+  rawQuery: string,
+): boolean {
+  const normalizedSearch = (rawQuery || '').trim().toLowerCase();
+  if (!normalizedSearch) return true;
+
+  const haystack = [
+    vendor.name,
+    vendor.type || '',
+    vendor.location || '',
+    vendor.hours_of_operation || '',
+    vendor.days_of_operation || '',
+  ]
+    .join(' ')
+    .toLowerCase();
+  if (haystack.includes(normalizedSearch)) return true;
+
+  const key = normalizeVendorKey(rawQuery);
+  const aliasTarget = VENDOR_MAP_ALIASES[key];
+  if (aliasTarget) {
+    if (normalizeVendorKey(vendor.name) === normalizeVendorKey(aliasTarget)) return true;
+    if (normalizeVendorKey(exhibitorBusinessName(vendor.name)) === normalizeVendorKey(aliasTarget)) return true;
+    if (vendor.name.toLowerCase().includes(normalizedSearch)) return true;
+  }
+
+  // Alias keys that contain the typed query (e.g. "valard" vs "valard construction lp")
+  for (const [aliasKey, targetName] of Object.entries(VENDOR_MAP_ALIASES)) {
+    if (!aliasKey.includes(normalizedSearch) && !normalizedSearch.includes(aliasKey)) continue;
+    if (normalizeVendorKey(vendor.name) === normalizeVendorKey(targetName)) return true;
+    if (
+      normalizeVendorKey(exhibitorBusinessName(vendor.name)) ===
+      normalizeVendorKey(exhibitorBusinessName(targetName))
+    ) {
+      return true;
+    }
+  }
+
+  const resolved = resolveVendorMapQuery(rawQuery);
+  if (resolved.status === 'mapped') {
+    if (normalizeVendorKey(vendor.name) === normalizeVendorKey(resolved.query)) return true;
+    if (
+      normalizeVendorKey(exhibitorBusinessName(vendor.name)) ===
+      normalizeVendorKey(exhibitorBusinessName(resolved.query))
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+

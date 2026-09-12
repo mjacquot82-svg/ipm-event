@@ -3,10 +3,11 @@
   publish = "dist"
   command = "npm install && npm run build:web"
 
-# Vendors tab on staging.theipm.ca should show the live vendor list.
-# The browser cannot call production Render from this origin (CORS), so
-# same-origin /api/vendors is proxied to production. Other /api routes stay
-# on the staging backend (schedule, announcements, what3words).
+# Vendors tab on staging.theipm.ca serves the baked Sept8 unique-exhibitor
+# catalog from /api/vendors.json (status 200). Do NOT proxy /api/vendors to
+# production Render — that list is 127 blank-location Google Sheets rows and
+# disagrees with the restored Tented City map dataset.
+# Other /api routes (admin, schedule via backend URL, etc.) stay on staging.
 [[redirects]]
   from = "/api/admin/*"
   to = "https://ipm-staging-backend.onrender.com/api/admin/:splat"
@@ -15,7 +16,7 @@
 
 [[redirects]]
   from = "/api/vendors"
-  to = "https://ipm-backend-eoiw.onrender.com/api/vendors"
+  to = "/api/vendors.json"
   status = 200
   force = true
 
