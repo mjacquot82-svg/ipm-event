@@ -99,10 +99,13 @@
 | Item | Value |
 |---|---|
 | Branch | `fix/staging-sept8-exhibitor-locations-20260911` |
-| Commit | *(filled after commit)* |
-| Push | *(filled after push)* |
-| Staging deploy | *(filled after deploy)* |
-| Deploy URL | https://staging.theipm.ca (target site `ipm-web-staging` / `0932cc5d-9cb8-4cd3-8418-7e486df75bf1`) |
+| Commit | `c89066f002f6235632712bcc3604adc9f3dffdb6` |
+| Push | pushed to `origin/fix/staging-sept8-exhibitor-locations-20260911` |
+| Staging deploy | Netlify deploy `6aa49e5f3e51c857e96a69c1` live on staging site only |
+| Deploy URL | https://staging.theipm.ca |
+| Unique deploy URL | https://6aa49e5f3e51c857e96a69c1--ipm-web-staging.netlify.app |
+| Deploy ID | `6aa49e5f3e51c857e96a69c1` |
+| Netlify site | `ipm-web-staging` / `0932cc5d-9cb8-4cd3-8418-7e486df75bf1` |
 | Production deploy | **NOT performed** |
 
 ## Staging API note
