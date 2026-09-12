@@ -1,11 +1,12 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useState } from 'react';
-import { View, StyleSheet, StatusBar, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, StatusBar } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import GroundsMap from '../../src/components/GroundsMap';
 import TentedCityMap from '../../src/components/TentedCityMap';
 import RvParkDetailMap from '../../src/components/RvParkDetailMap';
+import MapModeSelector, { MapMode } from '../../src/components/MapModeSelector';
 import colors from '../../src/theme/colors';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { mapLocations } from '../../src/config/mapLocations';
@@ -29,12 +30,18 @@ export default function MapScreen() {
   const tentedMatch = !unavailable && findTentedCityPlace(location, tentedCityVendors);
   const groundsZone = resolveGroundsZone(typeof location === 'string' ? location : null);
   const openRv = groundsZone?.id === 'rv-park' && source === 'rv-detail';
-  const [mode, setMode] = useState<'grounds' | 'tented' | 'rv'>(
+  const [mode, setMode] = useState<MapMode>(
     openRv
       ? 'rv'
       : tentedMatch || source === 'schedule' || source === 'vendors' || unavailable || verify1A
         ? 'tented'
         : 'grounds',
+  );
+
+  const selector = (
+    <View style={styles.selectorHost} pointerEvents="box-none">
+      <MapModeSelector mode={mode} onChange={setMode} />
+    </View>
   );
 
   return (
@@ -53,11 +60,15 @@ export default function MapScreen() {
           exactInitialPlace={source === 'vendors'}
           verify1A={verify1A}
           onSwitchToGrounds={() => setMode('grounds')}
+          hideModeSelector
         />
       </View>
       {mode === 'rv' ? (
         <View style={styles.rvHost}>
-          <RvParkDetailMap onSwitchToGrounds={() => setMode('grounds')} />
+          <RvParkDetailMap
+            onSwitchToGrounds={() => setMode('grounds')}
+            hideModeSelector
+          />
         </View>
       ) : null}
       {mode === 'grounds' ? (
@@ -67,12 +78,9 @@ export default function MapScreen() {
             onSwitchToTented={() => setMode('tented')}
             onSwitchToRv={() => setMode('rv')}
           />
-          <View style={styles.toggle} pointerEvents="box-none">
-            <View style={[styles.toggleBtn, styles.toggleBtnOn]}><Text style={[styles.toggleText, styles.toggleTextOn]}>Grounds</Text></View>
-            <TouchableOpacity style={styles.toggleBtn} onPress={() => setMode('tented')}><Text style={styles.toggleText}>Tented City</Text></TouchableOpacity>
-          </View>
         </View>
       ) : null}
+      {selector}
     </View>
   );
 }
@@ -83,9 +91,12 @@ const styles = StyleSheet.create({
   tentedHostHidden: { opacity: 0, zIndex: 0 },
   grounds: { ...StyleSheet.absoluteFillObject, zIndex: 2, backgroundColor: colors.background },
   rvHost: { ...StyleSheet.absoluteFillObject, zIndex: 3, backgroundColor: colors.background },
-  toggle: { position: 'absolute', top: 8, alignSelf: 'center', zIndex: 20, flexDirection: 'row', backgroundColor: 'rgba(232,228,218,0.95)', borderRadius: 12, padding: 3, gap: 4 },
-  toggleBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
-  toggleBtnOn: { backgroundColor: '#FFFFFF' },
-  toggleText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
-  toggleTextOn: { color: '#A6262D' },
+  selectorHost: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 8,
+    zIndex: 40,
+    alignItems: 'center',
+  },
 });

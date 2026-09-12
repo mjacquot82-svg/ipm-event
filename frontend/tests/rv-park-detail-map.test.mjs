@@ -163,3 +163,53 @@ test('offline assets + geometry bundled', () => {
   assert.ok(fs.existsSync(geoPath));
   assert.ok(fs.existsSync(path.join(root, 'assets/maps/IPM-RV-Map-no-road-names.pdf')));
 });
+
+const selectorSrc = fs.readFileSync(path.join(root, 'src/components/MapModeSelector.tsx'), 'utf8');
+
+test('Maps shows Grounds, Tented City, and Camping Map selectors', () => {
+  assert.match(screenSrc, /MapModeSelector/);
+  assert.match(selectorSrc, /label: 'Grounds'/);
+  assert.match(selectorSrc, /label: 'Tented City'/);
+  assert.match(selectorSrc, /label: 'Camping Map'/);
+  assert.doesNotMatch(selectorSrc, /label: 'RV Detail'/);
+  assert.doesNotMatch(selectorSrc, /label: 'RV Park'/);
+  assert.match(selectorSrc, /testID = 'map-mode-selector'/);
+  assert.match(selectorSrc, /testID=\{testID\}/);
+  assert.match(selectorSrc, /map-mode-\$\{option\.id\}/);
+  assert.match(selectorSrc, /id: 'grounds'/);
+  assert.match(selectorSrc, /id: 'tented'/);
+  assert.match(selectorSrc, /id: 'rv'/);
+});
+
+test('Camping Map selector opens RV detail directly via shared RvParkDetailMap', () => {
+  assert.match(screenSrc, /MapModeSelector mode=\{mode\} onChange=\{setMode\}/);
+  assert.match(screenSrc, /mode === 'rv'/);
+  assert.match(screenSrc, /<RvParkDetailMap/);
+  assert.equal((screenSrc.match(/import RvParkDetailMap from/g) || []).length, 1);
+  assert.match(screenSrc, /hideModeSelector/);
+});
+
+test('Grounds and Tented City selectors still wired', () => {
+  assert.match(screenSrc, /mode === 'grounds'/);
+  assert.match(screenSrc, /mode !== 'tented'/);
+  assert.match(screenSrc, /<GroundsMap/);
+  assert.match(screenSrc, /<TentedCityMap/);
+  assert.match(screenSrc, /onSwitchToTented=\{\(\) => setMode\('tented'\)\}/);
+  assert.match(screenSrc, /onSwitchToRv=\{\(\) => setMode\('rv'\)\}/);
+});
+
+test('Grounds → RV Park → View RV Site Map secondary entry preserved', () => {
+  assert.match(zonesSrc, /action: 'switch-rv'/);
+  assert.match(groundsSrc, /View RV Site Map/);
+  assert.match(groundsSrc, /onSwitchToRv/);
+  assert.match(screenSrc, /onSwitchToRv=\{\(\) => setMode\('rv'\)\}/);
+});
+
+test('mobile selector scrolls horizontally and keeps Camping Map label full', () => {
+  assert.match(selectorSrc, /ScrollView/);
+  assert.match(selectorSrc, /horizontal/);
+  assert.match(selectorSrc, /Camping Map/);
+  assert.match(selectorSrc, /numberOfLines=\{1\}/);
+  assert.match(selectorSrc, /minWidth: 300/);
+  assert.doesNotMatch(selectorSrc, /Camping…|Camp\b|RV Detail/);
+});
