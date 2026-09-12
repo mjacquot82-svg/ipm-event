@@ -92,13 +92,19 @@ Production builds set `EXPO_PUBLIC_IPM_APP_LABEL=production` → patch function 
 | Item | Value |
 |---|---|
 | Branch | `fix/staging-show-guide-schedule-20260911` |
-| Push | (see commit after push) |
-| Staging deploy | Netlify `ipm-web-staging` — **YES** (frontend override visible on staging.theipm.ca) |
+| Commit | `d71c9135403265d7e5fd2231423befaff7cbc50a` |
+| Push | pushed to `origin/fix/staging-show-guide-schedule-20260911` |
+| Staging deploy | Netlify `ipm-web-staging` — **YES** (frontend override visible) |
+| Deploy URL | https://staging.theipm.ca |
+| Unique deploy URL | https://6aa4a843875c3a03dbf75ed9--ipm-web-staging.netlify.app |
+| Deploy ID | `6aa4a843875c3a03dbf75ed9` (prior rebuild `6aa4a808e0cb0e466df06a56`) |
+| Netlify site | `ipm-web-staging` / `0932cc5d-9cb8-4cd3-8418-7e486df75bf1` |
+| Live bundle guard | `shouldApplyShowGuideSchedulePatch=function(){return!0}` verified on staging.theipm.ca |
 | Production deploy | **NOT performed** |
 | Staging Supabase DB apply | **NOT performed** (no service_role on box). Live `/api/schedule` on staging backend still returns blank Lumberjack until `backend/apply_show_guide_schedule_patch.py --apply` is run with staging keys. **Staging UI still shows corrected locations** via client patch. |
 
 ### CAVEAT
-`STAGING DEPLOYED` with caveat: schedule **API** rows on `ipm-staging-backend` are unchanged; **attendee staging PWA** applies the committed patch after fetch when `EXPO_PUBLIC_IPM_APP_LABEL=staging`. Production PWA does not apply the patch. Production Supabase untouched.
+**STAGING DEPLOYED** with caveat: schedule **API** rows on `ipm-staging-backend` are unchanged; **attendee staging PWA** applies the committed patch after fetch (`EXPO_PUBLIC_IPM_APP_LABEL=staging` → guard inlined true). Production PWA does not apply the patch. Production Supabase untouched.
 
 ### FILES
 - `frontend/src/data/showGuideSchedulePatch.json`
