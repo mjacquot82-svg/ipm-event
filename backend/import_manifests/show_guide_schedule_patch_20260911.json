@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "id": "show-guide-schedule-20260911",
+  "timezone": "America/Toronto",
+  "staging_only": true,
+  "notes": "High-confidence Show Guide corrections for staging frontend override + staging DB apply script. Does not mutate production.",
+  "decisions": {
+    "lumberjack_location": {
+      "action": "SET_LOCATION",
+      "title": "Great Canadian Lumberjack Show",
+      "location_name": "1A-35-38",
+      "expected_count": 15,
+      "confidence": "HIGH",
+      "evidence": "Show Guide exhibitor footprint + Marc-requested exact string 1A-35-38; staging location_name blank x15"
+    },
+    "southampton_olive_oil": {
+      "action": "ADD_IF_ABSENT",
+      "match_titles": [
+        "Southampton Olive Oil",
+        "Southampton"
+      ],
+      "event": {
+        "id": "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+        "title": "Southampton Olive Oil",
+        "description": "",
+        "start_date": "2026-09-24",
+        "start_time": "2:45 PM",
+        "end_time": "3:15 PM",
+        "category": "MNP Lifestyles Tent Events",
+        "latitude": null,
+        "longitude": null,
+        "days_active": "Thursday",
+        "location_name": "The Beyond Wireless Stage"
+      },
+      "confidence": "HIGH",
+      "evidence": "Show Guide discrete title Thu 2:45-3:15; no live title/name-variant; Lavender absorbed slot"
+    },
+    "essentially_lavender_beyond_wireless": {
+      "action": "SET_TIMES",
+      "title": "Essentially Lavender",
+      "start_date": "2026-09-24",
+      "location_name": "The Beyond Wireless Stage",
+      "start_time": "3:15 PM",
+      "end_time": "3:30 PM",
+      "confidence": "HIGH",
+      "evidence": "Show Guide 3:15-3:30; MNP import manifest foodland-h27 same; live staging wrongly 2:45-3:30"
+    },
+    "opening_ceremonies": {
+      "action": "PRESERVE",
+      "reason": "Newer source: ipm_entertainment_2026.json from Aug 18, 2026_REVISED (2).pdf — 11:30 AM–1:00 PM"
+    },
+    "susan_briggs": {
+      "action": "PRESERVE",
+      "reason": "Newer source: ipm_entertainment_2026.json from Aug 18 revised PDF — 3:30 PM–5:00 PM"
+    },
+    "sat_doors_open_afternoon": {
+      "action": "PRESERVE",
+      "reason": "Newer MNP workbook revision: approved description Doors open 12:30 PM (foodland-o18); staging Doors Open — Gina Livy (Afternoon) 12:30–1:30"
+    },
+    "bruce_rv_nightly_six": {
+      "action": "PRESERVE",
+      "reason": "Newer source: commit 03b0fe57 finalize IPM schedule venue details intentionally set location_name to CKNX Centennial Pavilion (GFO Stage) Lounge while keeping Bruce RV category"
+    },
+    "tbc_hold": {
+      "action": "DO_NOT_ADD",
+      "titles": [
+        "Gregglea Clydesdales (Tue TBC)",
+        "Lawn Mower Races (to be confirmed)"
+      ],
+      "reason": "Marc HOLD — TBC items"
+    },
+    "staging_only_deletes": {
+      "action": "DELETE_NONE",
+      "reason": "Do not delete any of the 56 staging-only events"
+    }
+  }
+}
