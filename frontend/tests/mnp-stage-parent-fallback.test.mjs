@@ -115,3 +115,22 @@ test('TentedCityMap uses placeRect for stage unmapped gate; filter dots omit par
   assert.match(map, /filter\(\(v\) => v\.kind === 'stage' && v\.rect\)/);
   assert.match(map, /Parent-fallback stages/);
 });
+
+test('TentedCityMap paints MNP parent-fallback stages as cyan rectangle, not circle/ring', () => {
+  const map = fs.readFileSync(new URL('../src/components/TentedCityMap.tsx', import.meta.url), 'utf8');
+  // Full placeRect footprint (percentage box), same cyan+white treatment as exact booth.
+  assert.match(map, /testID="selected-stage-highlight"/);
+  assert.match(map, /styles\.exactBoothCellFill/);
+  assert.match(map, /EXACT_BOOTH_CELL_FILL = '#00E5FF'/);
+  assert.match(map, /EXACT_BOOTH_CELL_BORDER = '#FFFFFF'/);
+  assert.match(map, /backgroundColor: 'rgba\(0, 229, 255, 0\.45\)'/);
+  assert.match(map, /left: `\$\{highlight\.x\}%`/);
+  assert.match(map, /width: `\$\{highlight\.w\}%`/);
+  assert.match(map, /height: `\$\{highlight\.h\}%`/);
+  // Circular/ring destination marker must not drive stage parent-fallback highlight.
+  assert.doesNotMatch(map, /styles\.pulseRing/);
+  assert.doesNotMatch(map, /styles\.pin/);
+  assert.doesNotMatch(map, /highlight\.x \+ highlight\.w \/ 2/);
+  // Stage highlight still comes from placeRect(selected) (parent fallback for MNP stages).
+  assert.match(map, /selected\?\.kind === 'stage' \? placeRect\(selected\)/);
+});
