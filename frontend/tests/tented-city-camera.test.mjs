@@ -289,39 +289,51 @@ test('fit-scale pan bounds stay locked at 0', () => {
 
 test('TentedCityMap uses the camera helpers, viewport gestures, and inertia', () => {
   const map = fs.readFileSync(mapPath, 'utf8');
+  const interactionPath = firstExisting([
+    path.join(here, '../src/config/mapInteraction.ts'),
+    path.join(here, '../config/mapInteraction.ts'),
+  ]);
+  const interaction = fs.readFileSync(interactionPath, 'utf8');
   assert.match(map, /from ['"]\.\.\/config\/tentedCityCamera['"]/);
-  assert.match(map, /zoomAroundFocal/);
-  assert.match(map, /clampTranslation/);
-  assert.match(map, /withDecay/);
-  assert.match(map, /maxPointers\(1\)/);
-  assert.match(map, /DOUBLE_TAP_SCALE/);
+  assert.match(map, /from ['"]\.\.\/config\/mapInteraction['"]/);
   assert.match(map, /flyToRect/);
   assert.match(map, /SELECTED_RESERVED_BOTTOM/);
   assert.match(map, /duration: 280/);
-  assert.match(map, /touchAction: 'none'/);
-  assert.match(map, /Gesture\.Simultaneous\(pinch, pan, doubleTap\)/);
-  assert.match(map, /blocksExternalGesture\(pan\)/);
-  assert.doesNotMatch(map, /scale\.value <= 1\.02/);
-  assert.match(map, /if \(scale\.value < 1\)/);
-  assert.doesNotMatch(map, /averageTouches\(true\)/);
+  assert.match(map, /attachWebMapGestures/);
+  assert.match(map, /createMapNativeGestures/);
+  assert.match(map, /WEB_TOUCH_LOCK/);
   assert.match(map, /styles\.gestureRoot/);
   assert.match(map, /footprintForVendor/);
   assert.match(map, /onSwitchToGrounds/);
   assert.match(map, /verify1A/);
   assert.match(map, /searchTentedCity\(query, tentedCityVendors, filter\)/);
-
-  assert.match(map, /pinchAroundMovingFocal/);
-  assert.match(map, /startFocalX/);
-  assert.match(map, /addEventListener\('pointerdown'/);
-  assert.match(map, /addEventListener\('touchmove'/);
-  assert.match(map, /passive: false/);
-  assert.match(map, /overscrollBehavior: 'none'/);
   assert.match(map, /Platform\.OS === 'web' \? mapGestures/);
-  const pinchBlock = map.slice(map.indexOf('const pinch'), map.indexOf('const pan'));
+  assert.doesNotMatch(map, /averageTouches\(true\)/);
+  assert.doesNotMatch(map, /scale\.value <= 1\.02/);
+
+  // Gesture lifecycle lives in shared mapInteraction (TC reference extraction).
+  assert.match(interaction, /zoomAroundFocal/);
+  assert.match(interaction, /clampTranslation/);
+  assert.match(interaction, /withDecay/);
+  assert.match(interaction, /maxPointers\(1\)/);
+  assert.match(interaction, /minPointers\(1\)/);
+  assert.match(interaction, /DOUBLE_TAP_SCALE/);
+  assert.match(interaction, /blocksExternalGesture\(pan\)/);
+  assert.match(interaction, /Gesture\.Simultaneous\(pinch, pan, doubleTap\)/);
+  assert.match(interaction, /pinchAroundMovingFocal/);
+  assert.match(interaction, /startFocalX/);
+  assert.match(interaction, /addEventListener\('pointerdown'/);
+  assert.match(interaction, /addEventListener\('touchmove'/);
+  assert.match(interaction, /passive: false/);
+  assert.match(interaction, /overscrollBehavior: 'none'/);
+  assert.match(interaction, /touchAction: 'none'/);
+  assert.match(interaction, /if \(cam\.scale\.value < 1\)/);
+  assert.match(interaction, /rubberBandEffect: true/);
+  const pinchBlock = interaction.slice(interaction.indexOf('const pinch'), interaction.indexOf('const pan'));
   assert.match(pinchBlock, /pinchAroundMovingFocal/);
   assert.doesNotMatch(pinchBlock, /rubberBandTranslation/);
-  const panBlock = map.slice(map.indexOf('const pan'), map.indexOf('const doubleTap'));
-  assert.match(panBlock, /scale\.value <= 1/);
+  const panBlock = interaction.slice(interaction.indexOf('const pan'), interaction.indexOf('const doubleTap'));
+  assert.match(panBlock, /cam\.scale\.value <= 1/);
   assert.match(panBlock, /rubberBandTranslation/);
   assert.match(panBlock, /withDecay/);
 });

@@ -131,17 +131,49 @@ test('nav: Grounds → RV via View RV Site Map; map.tsx mode rv', () => {
 test('Fit/reset control present', () => {
   assert.match(mapSrc, /testID="rv-map-fit-reset"/);
   assert.match(mapSrc, /maximize-2/);
-  assert.match(mapSrc, /withTiming\(1/);
+  assert.match(mapSrc, /resetMapCamera/);
 });
 
-test('shared camera engine: RV + Grounds + Tented City use tentedCityCamera', () => {
+test('shared camera engine: Camping flyTo uses tentedCityCamera; gestures via mapInteraction', () => {
   assert.match(mapSrc, /from '\.\.\/config\/tentedCityCamera'/);
-  assert.match(mapSrc, /pinchAroundMovingFocal/);
   assert.match(mapSrc, /flyToRect/);
-  assert.match(groundsSrc, /from '\.\.\/config\/tentedCityCamera'/);
-  assert.match(groundsSrc, /pinchAroundMovingFocal/);
+  assert.match(mapSrc, /from '\.\.\/config\/mapInteraction'/);
+  assert.match(mapSrc, /attachWebMapGestures/);
+  assert.match(mapSrc, /createMapNativeGestures/);
+  assert.match(mapSrc, /resetMapCamera/);
+  assert.match(mapSrc, /WEB_TOUCH_LOCK/);
+  assert.match(tentedSrc, /from '\.\.\/config\/mapInteraction'/);
+  assert.match(tentedSrc, /attachWebMapGestures/);
+  assert.match(tentedSrc, /createMapNativeGestures/);
   assert.match(tentedSrc, /from '\.\.\/config\/tentedCityCamera'/);
-  assert.match(tentedSrc, /pinchAroundMovingFocal/);
+  assert.match(tentedSrc, /flyToRect/);
+  // Grounds still imports tentedCityCamera directly on this branch (not required to migrate).
+  assert.match(groundsSrc, /from '\.\.\/config\/tentedCityCamera'/);
+});
+
+test('Camping shares TC gesture markers via mapInteraction (no local gesture engine)', () => {
+  const interaction = fs.readFileSync(path.join(root, 'src/config/mapInteraction.ts'), 'utf8');
+  assert.match(interaction, /export function finishWebGesture/);
+  assert.match(interaction, /rubberBandEffect: true/);
+  assert.match(interaction, /DOUBLE_TAP_SCALE/);
+  assert.match(interaction, /blocksExternalGesture/);
+  assert.match(interaction, /minPointers\(1\)/);
+  assert.match(interaction, /deceleration: 0\.996/);
+  assert.match(interaction, /setPointerCapture/);
+  assert.doesNotMatch(mapSrc, /function resolveDomNode/);
+  assert.doesNotMatch(mapSrc, /Gesture\.Pinch\(/);
+  assert.doesNotMatch(mapSrc, /const finishWebGesture/);
+  assert.doesNotMatch(tentedSrc, /Gesture\.Pinch\(/);
+  assert.doesNotMatch(tentedSrc, /function resolveDomNode/);
+});
+
+test('Camping search flyTo is one-shot via focusedKey (no recenter loop)', () => {
+  assert.match(mapSrc, /focusedKey/);
+  assert.match(mapSrc, /if \(!opts\?\.forceFly && focusedKey\.current === key\) return/);
+  assert.match(mapSrc, /focusedKey\.current = key/);
+  assert.match(mapSrc, /resetMapCamera\(cam\)/);
+  assert.doesNotMatch(mapSrc, /setInterval/);
+  assert.doesNotMatch(mapSrc, /requestAnimationFrame/);
 });
 
 test('Grounds / Tented City / unified search unaffected by campsite flood', () => {

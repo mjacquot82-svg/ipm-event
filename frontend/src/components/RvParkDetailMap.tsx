@@ -4,17 +4,22 @@ import {
   TouchableOpacity, useWindowDimensions, View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withDecay, withTiming } from 'react-native-reanimated';
+import { GestureDetector } from 'react-native-gesture-handler';
+import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import colors from '../theme/colors';
 import { rvParkLayerLayout, rvParkPaintViewport } from '../config/rvParkLayout';
 import { rvParkSiteRect, type RvParkSite } from '../config/rvParkGeometry';
 import { findRvParkPlace, normalizeRvSiteQuery, rvParkPlaceTitle, searchRvParkPlaces } from '../config/rvParkSearch';
 import { boothHighlightStyle } from '../config/tentedCityHighlight';
+import { flyToRect } from '../config/tentedCityCamera';
 import {
-  clampTranslation, flyToRect, pinchAroundMovingFocal,
-  rubberBandTranslation, translationBounds, zoomAroundFocal,
-} from '../config/tentedCityCamera';
+  WEB_TOUCH_LOCK,
+  attachWebMapGestures,
+  createMapNativeGestures,
+  resetMapCamera,
+  resolveDomNode,
+  type MapCameraShared,
+} from '../config/mapInteraction';
 
 const MAP_SOURCE = require('../../assets/images/rv-park-detail-map.png');
 const TAB_BAR_HEIGHT = 60;
@@ -25,22 +30,6 @@ const SELECTED_RESERVED_BOTTOM = TAB_BAR_HEIGHT + 108;
 const SITE_CELL_FILL = 'rgba(103, 232, 249, 0.55)';
 /** Yellow outer border (boothHighlightStyle pattern). */
 const SITE_CELL_BORDER = '#F5C518';
-const WEB_TOUCH_LOCK = { touchAction: 'none', overscrollBehavior: 'none', userSelect: 'none' } as object;
-
-type Pt = { x: number; y: number };
-type DomTarget = {
-  addEventListener: (type: string, listener: (event: any) => void, options?: any) => void;
-  removeEventListener: (type: string, listener: (event: any) => void, options?: any) => void;
-  getBoundingClientRect: () => { left: number; top: number };
-};
-
-function resolveDomNode(ref: unknown): DomTarget | null {
-  if (!ref || typeof ref !== 'object') return null;
-  const node = ref as any;
-  if (typeof node.addEventListener === 'function' && typeof node.removeEventListener === 'function' && typeof node.getBoundingClientRect === 'function') return node;
-  const inner = node._nativeNode ?? (typeof node.getNode === 'function' ? node.getNode() : null);
-  return inner && inner !== ref ? resolveDomNode(inner) : null;
-}
 
 function SiteHighlight({ site, layer }: { site: RvParkSite; layer: { width: number; height: number } }) {
   const rect = rvParkSiteRect(site);
@@ -67,6 +56,7 @@ export default function RvParkDetailMap({
   hideModeSelector?: boolean;
 }) {
   const viewportRef = useRef<View>(null);
+  const focusedKey = useRef<string | null>(null);
   const windowSize = useWindowDimensions();
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
   const [query, setQuery] = useState('');
@@ -82,6 +72,11 @@ export default function RvParkDetailMap({
   const viewW = useSharedValue(1), viewH = useSharedValue(1), mapW = useSharedValue(1), mapH = useSharedValue(1);
   const originX = useSharedValue(0), originY = useSharedValue(0);
 
+  const cam = useMemo<MapCameraShared>(() => ({
+    scale, tx, ty, startScale, startX, startY, startFocalX, startFocalY,
+    viewW, viewH, mapW, mapH, originX, originY,
+  }), []);
+
   useEffect(() => {
     viewW.value = viewport.width; viewH.value = viewport.height;
     mapW.value = layer.width; mapH.value = layer.height;
@@ -90,23 +85,26 @@ export default function RvParkDetailMap({
 
   const flyTo = useCallback((site: RvParkSite) => {
     const rect = rvParkSiteRect(site);
-    const cam = flyToRect({
+    const next = flyToRect({
       rectX: rect.x, rectY: rect.y, rectW: rect.w, rectH: rect.h,
       viewportW: viewport.width, viewportH: viewport.height, mapW: layer.width, mapH: layer.height,
       left: layer.left, top: layer.top, reservedBottom: SELECTED_RESERVED_BOTTOM, mild: true,
     });
     cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
-    scale.value = withTiming(cam.scale, { duration: 280 });
-    tx.value = withTiming(cam.tx, { duration: 280 });
-    ty.value = withTiming(cam.ty, { duration: 280 });
+    scale.value = withTiming(next.scale, { duration: 280 });
+    tx.value = withTiming(next.tx, { duration: 280 });
+    ty.value = withTiming(next.ty, { duration: 280 });
   }, [viewport.width, viewport.height, layer.width, layer.height, layer.left, layer.top]);
 
-  const selectSite = useCallback((site: RvParkSite) => {
+  const selectSite = useCallback((site: RvParkSite, opts?: { forceFly?: boolean }) => {
     setSelected(site);
     setNotFound(false);
     setTitle(rvParkPlaceTitle(site));
     setFocused(false);
     Keyboard.dismiss();
+    const key = site.SITE_ID;
+    if (!opts?.forceFly && focusedKey.current === key) return;
+    focusedKey.current = key;
     flyTo(site);
   }, [flyTo]);
 
@@ -130,8 +128,9 @@ export default function RvParkDetailMap({
 
   useEffect(() => {
     if (!initialQuery || !initialQuery.trim()) return;
+    if (!viewport.width || viewport.width <= 1) return;
     applyQuery(initialQuery);
-  }, [initialQuery, viewport.width]);
+  }, [initialQuery, viewport.width, applyQuery]);
 
   const results = useMemo(
     () => (focused || query.trim() ? searchRvParkPlaces(query, 12) : []),
@@ -144,99 +143,26 @@ export default function RvParkDetailMap({
     setTitle(null);
     setQuery('');
     setFocused(false);
-    cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
-    scale.value = withTiming(1, { duration: 220 });
-    tx.value = withTiming(0, { duration: 220 });
-    ty.value = withTiming(0, { duration: 220 });
+    focusedKey.current = null;
+    resetMapCamera(cam);
   };
 
   useEffect(() => {
     if (Platform.OS !== 'web') return undefined;
     const node = resolveDomNode(viewportRef.current);
     if (!node) return undefined;
-    const pointers = new Map<string, Pt>();
-    let fromTouch = false, moved = false;
-    let mode: 'none' | 'pan' | 'pinch' = 'none';
-    let baseScale = 1, baseX = 0, baseY = 0, focalX = 0, focalY = 0, span = 1;
-    let origin: Pt = { x: 0, y: 0 };
-    const layout = () => ({ viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value });
-    const local = (x: number, y: number) => { const box = node.getBoundingClientRect(); return { x: x - box.left, y: y - box.top }; };
-    const list = () => Array.from(pointers.values());
-    const middle = () => { const p = list(); return p.length > 1 ? { x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 } : p[0] || { x: 0, y: 0 }; };
-    const distance = () => { const p = list(); return p.length > 1 ? Math.max(Math.hypot(p[1].x - p[0].x, p[1].y - p[0].y), 1) : 1; };
-    const begin = () => {
-      cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
-      baseScale = scale.value; baseX = tx.value; baseY = ty.value; moved = false;
-      const mid = middle(); focalX = mid.x; focalY = mid.y; origin = mid;
-      if (pointers.size >= 2) { mode = 'pinch'; span = distance(); }
-      else if (pointers.size === 1) { mode = 'pan'; if (baseScale <= 1) { baseX = 0; baseY = 0; tx.value = 0; ty.value = 0; } }
-      else mode = 'none';
-    };
-    const move = () => {
-      const mid = middle();
-      if (mode === 'pinch' && pointers.size >= 2) {
-        const ratio = distance() / span;
-        const next = pinchAroundMovingFocal({ scale: baseScale, tx: baseX, ty: baseY, nextScale: baseScale * ratio, startFocalX: focalX, startFocalY: focalY, focalX: mid.x, focalY: mid.y, left: originX.value, top: originY.value });
-        scale.value = next.scale; tx.value = next.tx; ty.value = next.ty;
-        moved ||= Math.abs(ratio - 1) > 0.02 || Math.hypot(mid.x - focalX, mid.y - focalY) > 8;
-      } else if (mode === 'pan' && pointers.size === 1) {
-        moved ||= Math.hypot(mid.x - origin.x, mid.y - origin.y) > 8;
-        if (baseScale <= 1) return;
-        const soft = rubberBandTranslation({ scale: baseScale, tx: baseX + mid.x - focalX, ty: baseY + mid.y - focalY }, layout());
-        tx.value = soft.tx; ty.value = soft.ty;
-      }
-    };
-    const lift = () => {
-      if (pointers.size) { const pinching = mode === 'pinch'; begin(); if (pinching) moved = true; return; }
-      const cam = scale.value < 1 ? { scale: 1, tx: 0, ty: 0 } : clampTranslation({ scale: scale.value, tx: tx.value, ty: ty.value }, layout());
-      scale.value = withTiming(cam.scale, { duration: 180 }); tx.value = withTiming(cam.tx, { duration: 180 }); ty.value = withTiming(cam.ty, { duration: 180 });
-      mode = 'none'; fromTouch = false;
-    };
-    const wheel = (e: any) => {
-      e.preventDefault(); const p = local(e.clientX, e.clientY);
-      const next = zoomAroundFocal({ scale: scale.value, tx: tx.value, ty: ty.value, nextScale: scale.value * Math.exp(-e.deltaY * 0.0018), focalX: p.x, focalY: p.y, left: originX.value, top: originY.value });
-      const cam = next.scale < 1 ? { scale: 1, tx: 0, ty: 0 } : clampTranslation(next, layout());
-      scale.value = cam.scale; tx.value = cam.tx; ty.value = cam.ty;
-    };
-    const touchStart = (e: any) => { fromTouch = true; for (const t of e.changedTouches) pointers.set('t' + t.identifier, local(t.clientX, t.clientY)); begin(); };
-    const touchMove = (e: any) => { e.preventDefault(); fromTouch = true; for (const t of e.changedTouches) pointers.set('t' + t.identifier, local(t.clientX, t.clientY)); move(); };
-    const touchEnd = (e: any) => { for (const t of e.changedTouches) pointers.delete('t' + t.identifier); lift(); };
-    const pointerDown = (e: any) => { if (fromTouch) return; pointers.set('p' + e.pointerId, local(e.clientX, e.clientY)); begin(); };
-    const pointerMove = (e: any) => { if (fromTouch || !pointers.has('p' + e.pointerId)) return; pointers.set('p' + e.pointerId, local(e.clientX, e.clientY)); move(); };
-    const pointerUp = (e: any) => { if (fromTouch) return; pointers.delete('p' + e.pointerId); lift(); };
-    const capture = { passive: false, capture: true };
-    node.addEventListener('wheel', wheel, { passive: false });
-    node.addEventListener('pointerdown', pointerDown, capture); node.addEventListener('pointermove', pointerMove, capture); node.addEventListener('pointerup', pointerUp, capture); node.addEventListener('pointercancel', pointerUp, capture);
-    node.addEventListener('touchstart', touchStart, capture); node.addEventListener('touchmove', touchMove, capture); node.addEventListener('touchend', touchEnd, capture); node.addEventListener('touchcancel', touchEnd, capture);
-    return () => {
-      node.removeEventListener('wheel', wheel); node.removeEventListener('pointerdown', pointerDown, capture); node.removeEventListener('pointermove', pointerMove, capture); node.removeEventListener('pointerup', pointerUp, capture); node.removeEventListener('pointercancel', pointerUp, capture);
-      node.removeEventListener('touchstart', touchStart, capture); node.removeEventListener('touchmove', touchMove, capture); node.removeEventListener('touchend', touchEnd, capture); node.removeEventListener('touchcancel', touchEnd, capture);
-    };
-  }, [viewport.width, viewport.height]);
+    return attachWebMapGestures(node, cam);
+  }, [viewport.width, viewport.height, cam]);
 
-  const pinch = Gesture.Pinch().onBegin((e) => {
-    cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
-    startScale.value = scale.value; startX.value = tx.value; startY.value = ty.value; startFocalX.value = e.focalX; startFocalY.value = e.focalY;
-  }).onUpdate((e) => {
-    const next = pinchAroundMovingFocal({ scale: startScale.value, tx: startX.value, ty: startY.value, nextScale: startScale.value * e.scale, startFocalX: startFocalX.value, startFocalY: startFocalY.value, focalX: e.focalX, focalY: e.focalY, left: originX.value, top: originY.value });
-    scale.value = next.scale; tx.value = next.tx; ty.value = next.ty;
-  }).onEnd(() => {
-    const cam = clampTranslation({ scale: scale.value, tx: tx.value, ty: ty.value }, { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value });
-    scale.value = withTiming(cam.scale); tx.value = withTiming(cam.tx); ty.value = withTiming(cam.ty);
-  });
-  const pan = Gesture.Pan().maxPointers(1).onBegin(() => { startX.value = tx.value; startY.value = ty.value; }).onUpdate((e) => {
-    if (scale.value <= 1) return;
-    const soft = rubberBandTranslation({ scale: scale.value, tx: startX.value + e.translationX, ty: startY.value + e.translationY }, { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value });
-    tx.value = soft.tx; ty.value = soft.ty;
-  }).onEnd((e) => {
-    if (scale.value <= 1) { tx.value = 0; ty.value = 0; return; }
-    const bounds = translationBounds(scale.value, { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value });
-    tx.value = withDecay({ velocity: e.velocityX, clamp: [bounds.minTx, bounds.maxTx] }); ty.value = withDecay({ velocity: e.velocityY, clamp: [bounds.minTy, bounds.maxTy] });
-  });
-  const composed = Gesture.Simultaneous(pinch, pan);
+  const composed = useMemo(() => createMapNativeGestures(cam), [cam]);
   const cameraStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }] }));
   const webLock = Platform.OS === 'web' ? WEB_TOUCH_LOCK : null;
-  const onLayout = (e: LayoutChangeEvent) => { const { width, height } = e.nativeEvent.layout; if (width > 1 && height > 1) setMeasured({ width, height }); };
+  const onLayout = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (width > 1 && height > 1 && (!measured || width !== measured.width || height !== measured.height)) {
+      setMeasured({ width, height });
+    }
+  };
 
   const map = (
     <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
@@ -273,7 +199,7 @@ export default function RvParkDetailMap({
                 setQuery(text);
                 setFocused(true);
                 setNotFound(false);
-                if (!text.trim()) { setSelected(null); setTitle(null); }
+                if (!text.trim()) { setSelected(null); setTitle(null); focusedKey.current = null; }
               }}
               onFocus={() => setFocused(true)}
               placeholder="Find site (e.g. M27)"
@@ -297,7 +223,10 @@ export default function RvParkDetailMap({
                 <TouchableOpacity
                   key={site.SITE_ID}
                   style={styles.resultRow}
-                  onPress={() => { setQuery(site.KIND === 'campsite' ? site.SITE_ID : rvParkPlaceTitle(site)); selectSite(site); }}
+                  onPress={() => {
+                    setQuery(site.KIND === 'campsite' ? site.SITE_ID : rvParkPlaceTitle(site));
+                    selectSite(site, { forceFly: true });
+                  }}
                 >
                   <Text style={styles.resultName}>{rvParkPlaceTitle(site)}</Text>
                   <Text style={styles.resultMeta}>{site.SITE_ID}</Text>
