@@ -49,8 +49,6 @@ function isTrailingCityRemainder(exhibitorNorm: string, liveNorm: string): boole
  */
 export const VENDOR_MAP_ALIASES: Record<string, string> = {
   [normalizeVendorKey('Gay Lea Foods Co-operative Ltd.')]: 'Gay Lea Foods Co-operative Ltd',
-  [normalizeVendorKey('Georgian Bay Funeral Services Association (GBFSA)')]:
-    '(GBFSA), Hanover',
   [normalizeVendorKey('Kincardine & Community Health Care Foundation')]:
     'Kincardine & Community Health Care',
 };
