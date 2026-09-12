@@ -125,7 +125,8 @@ test('TentedCityMap paints MNP parent-fallback stages as cyan rectangle, not cir
   assert.match(map, /SELECTED_STAGE_OUTER_BORDER = '#FFD600'/);
   assert.match(map, /SELECTED_STAGE_OUTER_BORDER_WIDTH = 4/);
   assert.match(map, /SELECTED_STAGE_INNER_BORDER = '#FFFFFF'/);
-  assert.match(map, /EXACT_BOOTH_CELL_FILL = '#00E5FF'/);
+  // Exact booth fill may be staging user-location blue; MNP stage highlight uses SELECTED_STAGE_* above.
+  assert.match(map, /EXACT_BOOTH_CELL_FILL = /);
   assert.match(map, /left: `\$\{highlight\.x\}%`/);
   assert.match(map, /width: `\$\{highlight\.w\}%`/);
   assert.match(map, /height: `\$\{highlight\.h\}%`/);

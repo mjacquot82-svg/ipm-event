@@ -36,7 +36,6 @@ function resolveInitialMode(args: {
   if (location && findTentedCityPlace(location, tentedCityVendors)) return 'tented';
   // Vendors Find-on-Map is always Tented City (mapped or unavailable sheet).
   if (source === 'vendors') return 'tented';
-  if (source === 'schedule') return 'tented';
   return 'grounds';
 }
 
