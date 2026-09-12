@@ -36,3 +36,8 @@ worker = worker.replace("const IPM_OFFLINE_VERSION = 'development';", `const IPM
     `const IPM_SHELL_ASSETS = ${JSON.stringify(assets, null, 2)};`);
 writeFileSync(workerPath, worker);
 console.log(`Generated ${relative(root, workerPath)} with ${assets.length} shell assets (${version}).`);
+
+// Tiny network-only release probe; never add this file to the offline shell.
+const entry = assets.find(asset => /^\/_expo\/static\/js\/web\/entry-[^/]+\.js$/.test(asset));
+if (!entry) throw new Error('Missing release entry');
+writeFileSync(join(dist, 'app-release.json'), JSON.stringify({ entry }));

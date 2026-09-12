@@ -17,6 +17,7 @@ import {
   NotificationRegistrationStage,
 } from '../services/notificationRegistration';
 import { recordNotificationWorkflowDiagnostic } from '../services/wonderPushRuntimeDiagnostic';
+import { holdPwaUpdate } from '../services/pwaUpdateService';
 import { colors } from '../theme/colors';
 import { detectInstallEnvironment } from '../utils/installEnvironment';
 import { notificationHelp } from '../utils/notificationHelp';
@@ -43,6 +44,9 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
   const actionInFlightRef = useRef(false);
   const hasFocusedRef = useRef(false);
   const statusCheckInFlightRef = useRef(false);
+  useEffect(() => {
+    if (expanded || working || setupState === 'pending') return holdPwaUpdate();
+  }, [expanded, working, setupState]);
   const closeHelp = () => { setExpanded(false); triggerRef.current?.focus?.(); };
 
   useEffect(() => watchReconciliation((result) => {
@@ -147,6 +151,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
 
   const updateSubscription = useCallback(async () => {
     if (actionInFlightRef.current || navigator.onLine === false || state === 'denied' || state === 'unsupported') return;
+    const releaseUpdate = holdPwaUpdate();
     actionInFlightRef.current = true;
     setWorking(true);
     try {
@@ -161,6 +166,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
       }
     } finally {
       actionInFlightRef.current = false;
+      releaseUpdate();
       setWorking(false);
     }
   }, [completeSetup, state]);

@@ -28,9 +28,11 @@ test('legacy Webpushr bell remains suppressed without loading its SDK', () => {
   assert.doesNotMatch(html, /cdn\.webpushr\.com\/app\.min\.js/);
 });
 
-test('production launch freshness omits foreground update activation', async () => {
+test('production launch freshness retains explicit resume activation', async () => {
   const layout = await readFile(new URL('../app/_layout.tsx', import.meta.url), 'utf8');
-  assert.doesNotMatch(layout, /startPwaUpdateFlow|setPwaUpdateSafeState/);
+  assert.match(layout, /startPwaUpdateFlow/);
+  assert.match(layout, /setPwaUpdateSafeState/);
   assert.match(layout, /initializeOfflineShell\(\)/);
-  assert.doesNotMatch(worker, /self\.skipWaiting|addEventListener\(['"]message/);
+  assert.equal((worker.match(/self\.skipWaiting\(/g) || []).length, 1);
+  assert.match(worker, /if \(event\.data\?\.type === 'IPM_ACTIVATE_UPDATE'\) event\.waitUntil\(self\.skipWaiting\(\)\)/);
 });

@@ -5,6 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { holdPwaUpdate } from '../services/pwaUpdateService';
 import colors from '../theme/colors';
 import { detectInstallEnvironment, getInstallGuidance, InstallEnvironment, InstallStepCue } from '../utils/installEnvironment';
 
@@ -75,6 +76,7 @@ export default function PWAInstallPrompt({ onDismiss }: { onDismiss?: () => void
   useEffect(() => {
     if (!visible) { triggerRef.current?.focus?.(); return; }
     headingRef.current?.focus?.();
+    return holdPwaUpdate();
   }, [visible]);
 
   const dismiss = useCallback(async () => {
