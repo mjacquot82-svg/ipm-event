@@ -31,6 +31,7 @@ import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
 import { resolveVendorMapQuery, vendorMatchesSearch } from '../../src/config/vendorMapCrosswalk';
+import { EXACT_MAP_UNAVAILABLE, vendorHasTrustedMapGeometry } from '../../src/config/mapAvailability';
 
 export default function VendorsScreen() {
   usePageAnalytics('vendors', 'home_quick_action', 'vendor_directory_opened');
@@ -253,7 +254,9 @@ export default function VendorsScreen() {
               {item.days_of_operation ? (
                 <Text style={styles.meta}>Days: {item.days_of_operation}</Text>
               ) : null}
-              <TouchableOpacity
+              {item.location?.trim() && !vendorHasTrustedMapGeometry(item.name) ? (
+                <Text style={styles.meta}>{EXACT_MAP_UNAVAILABLE}</Text>
+              ) : <TouchableOpacity
                 style={styles.mapLink}
                 onPress={() => {
                   const resolved = resolveVendorMapQuery(item.name, item.location);
@@ -272,7 +275,7 @@ export default function VendorsScreen() {
               >
                 <Feather name="map-pin" size={16} color="#8B1538" />
                 <Text style={styles.mapLinkText}>Find on Map</Text>
-              </TouchableOpacity>
+              </TouchableOpacity>}
             </View>
           </View>
         )}

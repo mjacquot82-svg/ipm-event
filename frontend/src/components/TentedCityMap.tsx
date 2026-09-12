@@ -1,3 +1,4 @@
+import { EXACT_MAP_UNAVAILABLE, hasTrustedMapGeometry } from '../config/mapAvailability';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, Image, StyleSheet, TextInput, TouchableOpacity, Keyboard,
@@ -169,7 +170,7 @@ export default function TentedCityMap({
         ? (findSemanticAreaForVendor(place.vendor)
           || (footprintArea && !footprintArea.flagged ? findSemanticAreaForGeometryArea(footprintArea) : null))
         : null;
-    setSelectedSemanticArea(semanticArea);
+    setSelectedSemanticArea(hasTrustedMapGeometry(place) ? semanticArea : null);
     setSelectedBoothId(individual?.semanticId || null);
     setQuery(fromQuery ?? placeTitle(place));
     setFocused(false);
@@ -254,11 +255,8 @@ export default function TentedCityMap({
     // Stages may have rect:null but a parentVenueId fallback (placeRect).
     // Only treat as unmapped when no usable rect (own or parent) exists.
     if (place.kind === 'stage' && !placeRect(place)) {
-      setSelected(null);
-      setSelectedSemanticArea(null);
-      setSelectedBoothId(null);
-      setQuery(initialQuery);
-      setUnmappedInitialLocation(true);
+      // Keep the venue identity visible, with the generic unavailable message.
+      selectPlace(place, placeTitle(place));
       return;
     }
     selectPlace(place, placeTitle(place));
@@ -344,6 +342,7 @@ export default function TentedCityMap({
     : (parentOnlyFootprint && vendorFootprint?.parentRect)
       || parentOnlySemanticGeometry?.rect
       || null;
+  const selectedWithoutGeometry = selected && !hasTrustedMapGeometry(selected);
   const selectedTitle = selected ? placeTitle(selected) : selectedSemanticArea?.label || '';
   const selectedBooth = selected?.kind === 'vendor' ? selected.vendor.locationLabel : selectedBoothId ? TENTED_CITY_INDIVIDUAL_BOOTHS.find((booth) => booth.semanticId === selectedBoothId)?.humanLabel || '' : '';
   const selectedMeta = selected?.kind === 'vendor'
@@ -592,7 +591,8 @@ export default function TentedCityMap({
           <View style={styles.infoHeader}>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <Text style={styles.infoTitle} numberOfLines={2}>{selectedTitle}</Text>
-              {selectedBooth ? <Text style={styles.infoBooth} numberOfLines={1}>{selectedBooth}</Text> : null}
+              {selectedBooth ? <Text style={styles.infoBooth} numberOfLines={1}>{selectedWithoutGeometry ? `Location: ${selectedBooth}` : selectedBooth}</Text> : null}
+              {selectedWithoutGeometry ? <Text style={styles.infoMeta}>{EXACT_MAP_UNAVAILABLE}</Text> : null}
               {selectedSemanticArea && !selected ? <Text style={styles.infoBooth} numberOfLines={2}>{selectedSemanticArea.category}</Text> : null}
               {selectedMeta ? <Text style={styles.infoMeta} numberOfLines={1}>{selectedMeta}</Text> : null}
             </View>
