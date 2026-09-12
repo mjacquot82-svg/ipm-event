@@ -1,5 +1,6 @@
 // Staging-only Tented City venues. Names must match live schedule location_name values.
 import type { Rect, TentedCityVenue } from './tentedCityTypes';
+import { MNP_LIFESTYLES_EAST2_RECT } from './tentedCityGeometry';
 export type { Rect, TentedCityVenue };
 
 export const tentedCityVenues: TentedCityVenue[] = [
@@ -47,7 +48,8 @@ export const tentedCityVenues: TentedCityVenue[] = [
     label: 'MNP Lifestyles Tent',
     names: ['MNP Lifestyles Tent', 'MNP Lifestyle Tent', 'The MNP Lifestyles Tent'],
     kind: 'landmark',
-    rect: { x: 65.2, y: 28.8, w: 12.0, h: 7.2 },
+    // Prefer trusted PDF geometry area named-mnp-lifestyles-tent-east-2 (not Mutual Square / not road-legend strip).
+    rect: MNP_LIFESTYLES_EAST2_RECT,
   },
   {
     id: 'beyond-wireless-stage',
