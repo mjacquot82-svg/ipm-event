@@ -43,6 +43,12 @@ const SELECTED_RESERVED_BOTTOM = TAB_BAR_HEIGHT + 108;
 const PARENT_RANGE_FILL = 'rgba(245, 197, 24, 0.45)';
 /** Exact selected booth: opaque user-location blue so the full cell stays blue over yellow parent. */
 const EXACT_BOOTH_CELL_FILL = colors.userLocation;
+/** MNP / stage parent-fallback: bright yellow OUTER border around translucent cyan fill. */
+const SELECTED_STAGE_OUTER_BORDER = '#FFD600';
+const SELECTED_STAGE_OUTER_BORDER_WIDTH = 4;
+const SELECTED_STAGE_INNER_BORDER = '#FFFFFF';
+const SELECTED_STAGE_INNER_BORDER_WIDTH = 1;
+const SELECTED_STAGE_FILL = 'rgba(0, 229, 255, 0.45)';
 function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, testID, children }: {
   rect: Rect; layer: { width: number; height: number }; border: number; borderColor: string;
   outset?: number; style: StyleProp<ViewStyle>; testID: string; children?: React.ReactNode;
@@ -232,7 +238,9 @@ export default function TentedCityMap({
       }
       return;
     }
-    if (place.kind === 'stage' && !place.venue.rect) {
+    // Stages may have rect:null but a parentVenueId fallback (placeRect).
+    // Only treat as unmapped when no usable rect (own or parent) exists.
+    if (place.kind === 'stage' && !placeRect(place)) {
       setSelected(null);
       setSelectedSemanticArea(null);
       setSelectedBoothId(null);
@@ -270,6 +278,9 @@ export default function TentedCityMap({
       });
     }
     if (filter === 'stages') {
+      // Keep only stages with their own rect. Parent-fallback stages (MNP Lifestyles
+      // children) stay omitted so three dots do not stack on the same parent footprint.
+      // Find-on-Map still works via placeRect parent fallback.
       return tentedCityVenues.filter((v) => v.kind === 'stage' && v.rect).map((v) => ({ key: v.id, rect: v.rect!, place: { kind: 'stage' as const, venue: v } }));
     }
     return [];
@@ -440,8 +451,23 @@ export default function TentedCityMap({
             <View style={[styles.parentRangeFillInner, { backgroundColor: PARENT_RANGE_FILL }]} />
           </BoothHighlight>
         )) : highlight ? (
-          <View pointerEvents="none" style={[styles.pulse, { left: `${highlight.x + highlight.w / 2}%`, top: `${highlight.y + highlight.h / 2}%` }]}>
-            <View style={styles.pulseRing} /><View style={styles.pin} />
+          // Stages (incl. MNP parent-fallback): full footprint rectangle.
+          // Hierarchy: bright yellow OUTER border → translucent cyan fill → map underneath.
+          // Optional thin white inner edge; no circular/ring destination marker.
+          <View
+            pointerEvents="none"
+            testID="selected-stage-highlight"
+            style={[
+              styles.selectedStageHighlight,
+              {
+                left: `${highlight.x}%`,
+                top: `${highlight.y}%`,
+                width: `${highlight.w}%`,
+                height: `${highlight.h}%`,
+              },
+            ]}
+          >
+            <View pointerEvents="none" style={styles.selectedStageInnerEdge} />
           </View>
         ) : null}
       </Animated.View>
@@ -571,10 +597,19 @@ const styles = StyleSheet.create({
   footprint: { position: 'absolute', overflow: 'hidden', zIndex: 2 },
   parentRangeFillInner: { ...StyleSheet.absoluteFillObject },
   exactBoothCellFill: { position: 'absolute', backgroundColor: EXACT_BOOTH_CELL_FILL, zIndex: 4 },
+  selectedStageHighlight: {
+    position: 'absolute',
+    backgroundColor: SELECTED_STAGE_FILL,
+    borderWidth: SELECTED_STAGE_OUTER_BORDER_WIDTH,
+    borderColor: SELECTED_STAGE_OUTER_BORDER,
+    zIndex: 4,
+  },
+  selectedStageInnerEdge: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: SELECTED_STAGE_INNER_BORDER_WIDTH,
+    borderColor: SELECTED_STAGE_INNER_BORDER,
+  },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
-  pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
-  pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },
-  pin: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.primary, borderWidth: 3, borderColor: '#F5C518', marginTop: 6 },
   topOverlayWithParentSelector: { paddingTop: 52 },
   verifyTapTarget: { height: 44, alignSelf: 'stretch' },
   topOverlay: { position: 'absolute', top: 8, left: 12, right: 12, zIndex: 20 },

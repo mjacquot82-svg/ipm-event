@@ -167,6 +167,14 @@ export function findIndividualBooth(value: string) {
 
 export const LOT_BY_ID = new Map(TENTED_CITY_LOTS.map((lot) => [lot.id, lot]));
 export const AREA_BY_ID = new Map(TENTED_CITY_AREAS.map((area) => [area.id, area]));
+
+// PDF-audited MNP Lifestyles Tent / EAST-2 footprint (page 17 geometry areas).
+export const MNP_LIFESTYLES_EAST2_AREA_ID = 'named-mnp-lifestyles-tent-east-2';
+export const MNP_LIFESTYLES_EAST2_RECT: Rect = (() => {
+  const area = AREA_BY_ID.get(MNP_LIFESTYLES_EAST2_AREA_ID);
+  if (!area) throw new Error(`Missing geometry area ${MNP_LIFESTYLES_EAST2_AREA_ID}`);
+  return area.rect;
+})();
 export const AREA_BY_LABEL = new Map(TENTED_CITY_AREAS.map((area) => [area.label, area]));
 
 export function getLot(id: string) {
