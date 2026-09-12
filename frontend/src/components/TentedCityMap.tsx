@@ -37,6 +37,12 @@ const PARENT_RANGE_FILL = 'rgba(245, 197, 24, 0.45)';
 const EXACT_BOOTH_CELL_FILL = '#00E5FF';
 const EXACT_BOOTH_CELL_BORDER = '#FFFFFF';
 const EXACT_BOOTH_CELL_BORDER_WIDTH = 3;
+/** MNP / stage parent-fallback: bright yellow OUTER border around translucent cyan fill. */
+const SELECTED_STAGE_OUTER_BORDER = '#FFD600';
+const SELECTED_STAGE_OUTER_BORDER_WIDTH = 4;
+const SELECTED_STAGE_INNER_BORDER = '#FFFFFF';
+const SELECTED_STAGE_INNER_BORDER_WIDTH = 1;
+const SELECTED_STAGE_FILL = 'rgba(0, 229, 255, 0.45)';
 const WEB_TOUCH_LOCK = { touchAction: 'none', overscrollBehavior: 'none', userSelect: 'none' } as object;
 
 function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, testID, children }: {
@@ -740,23 +746,24 @@ export default function TentedCityMap({
             <View style={[styles.parentRangeFillInner, { backgroundColor: PARENT_RANGE_FILL }]} />
           </BoothHighlight>
         )) : highlight ? (
-          // Stages (incl. MNP parent-fallback): full footprint rectangle like exact-booth selection.
-          // No circular/ring destination marker — cyan fill + strong white border over placeRect.
+          // Stages (incl. MNP parent-fallback): full footprint rectangle.
+          // Hierarchy: bright yellow OUTER border → translucent cyan fill → map underneath.
+          // Optional thin white inner edge; no circular/ring destination marker.
           <View
             pointerEvents="none"
             testID="selected-stage-highlight"
             style={[
-              styles.exactBoothCellFill,
+              styles.selectedStageHighlight,
               {
                 left: `${highlight.x}%`,
                 top: `${highlight.y}%`,
                 width: `${highlight.w}%`,
                 height: `${highlight.h}%`,
-                // Keep cyan identity (#00E5FF) but translucent so printed tent text stays readable.
-                backgroundColor: 'rgba(0, 229, 255, 0.45)',
               },
             ]}
-          />
+          >
+            <View pointerEvents="none" style={styles.selectedStageInnerEdge} />
+          </View>
         ) : null}
       </Animated.View>
     </Animated.View>
@@ -872,6 +879,18 @@ const styles = StyleSheet.create({
   footprint: { position: 'absolute', overflow: 'hidden', zIndex: 2 },
   parentRangeFillInner: { ...StyleSheet.absoluteFillObject },
   exactBoothCellFill: { position: 'absolute', backgroundColor: EXACT_BOOTH_CELL_FILL, borderWidth: EXACT_BOOTH_CELL_BORDER_WIDTH, borderColor: EXACT_BOOTH_CELL_BORDER, zIndex: 4 },
+  selectedStageHighlight: {
+    position: 'absolute',
+    backgroundColor: SELECTED_STAGE_FILL,
+    borderWidth: SELECTED_STAGE_OUTER_BORDER_WIDTH,
+    borderColor: SELECTED_STAGE_OUTER_BORDER,
+    zIndex: 4,
+  },
+  selectedStageInnerEdge: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: SELECTED_STAGE_INNER_BORDER_WIDTH,
+    borderColor: SELECTED_STAGE_INNER_BORDER,
+  },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
   topOverlay: { position: 'absolute', top: 8, left: 12, right: 12, zIndex: 20 },
   modeRow: { alignSelf: 'center', flexDirection: 'row', backgroundColor: 'rgba(232,228,218,0.95)', borderRadius: 12, padding: 3, marginBottom: 8, gap: 4 },

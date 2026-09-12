@@ -97,3 +97,19 @@ export function placeRect(place: TentedCityPlace) {
 export function placeTitle(place: TentedCityPlace) {
   return place.kind === 'vendor' ? place.vendor.name : place.venue.label;
 }
+
+export type MapTypeParam = 'tented' | 'grounds';
+
+/**
+ * Decide which map surface to open for a schedule/vendor destination.
+ * Tented City place/venue/booth matches force tented; everything else stays grounds.
+ * Callers should pass this as an explicit `mapType` route param so Map mode does not
+ * depend on async remount or stale tab state.
+ */
+export function resolveMapTypeForLocation(
+  query: string | null | undefined,
+  vendors: TentedCityVendor[],
+): MapTypeParam {
+  return findTentedCityPlace(query, vendors) ? 'tented' : 'grounds';
+}
+
