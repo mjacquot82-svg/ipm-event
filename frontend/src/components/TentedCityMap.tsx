@@ -445,9 +445,25 @@ export default function TentedCityMap({
             <View style={[styles.parentRangeFillInner, { backgroundColor: PARENT_RANGE_FILL }]} />
           </BoothHighlight>
         )) : highlight ? (
-          <View pointerEvents="none" style={[styles.pulse, { left: `${highlight.x + highlight.w / 2}%`, top: `${highlight.y + highlight.h / 2}%` }]}>
-            <View style={styles.pulseRing} /><View style={styles.pin} />
-          </View>
+          // Stages (incl. MNP parent-fallback): full footprint rectangle like exact-booth selection.
+          // No circular/ring destination marker — cyan fill + strong white border over placeRect.
+          <View
+            pointerEvents="none"
+            testID="selected-stage-highlight"
+            style={[
+              styles.exactBoothCellFill,
+              {
+                left: `${highlight.x}%`,
+                top: `${highlight.y}%`,
+                width: `${highlight.w}%`,
+                height: `${highlight.h}%`,
+                // Keep cyan identity (#00E5FF) but translucent so printed tent text stays readable.
+                backgroundColor: 'rgba(0, 229, 255, 0.45)',
+                borderWidth: 3,
+                borderColor: '#FFFFFF',
+              },
+            ]}
+          />
         ) : null}
       </Animated.View>
     </Animated.View>
@@ -577,9 +593,6 @@ const styles = StyleSheet.create({
   parentRangeFillInner: { ...StyleSheet.absoluteFillObject },
   exactBoothCellFill: { position: 'absolute', backgroundColor: EXACT_BOOTH_CELL_FILL, zIndex: 4 },
   filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
-  pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
-  pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },
-  pin: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.primary, borderWidth: 3, borderColor: '#F5C518', marginTop: 6 },
   topOverlayWithParentSelector: { paddingTop: 52 },
   verifyTapTarget: { height: 44, alignSelf: 'stretch' },
   topOverlay: { position: 'absolute', top: 8, left: 12, right: 12, zIndex: 20 },
