@@ -49,6 +49,8 @@ import {
   acknowledgeScheduleOnboarding,
   hasAcknowledgedScheduleOnboarding,
 } from '../../src/services/scheduleOnboardingState';
+import { resolveMapTypeForLocation } from '../../src/config/tentedCitySearch';
+import { tentedCityVendors } from '../../src/data/tentedCityVendors';
 
 export default function ScheduleScreen() {
   const { frameStyle, sectionStyle } = useAttendeeLayout();
@@ -1055,7 +1057,12 @@ export default function ScheduleScreen() {
                         dismissEventModalForMap();
                         router.replace({
                           pathname: '/(tabs)/map',
-                          params: { location: selectedEvent.location_name, showOnly: 'true', source: 'schedule' }
+                          params: {
+                            location: selectedEvent.location_name,
+                            showOnly: 'true',
+                            source: 'schedule',
+                            mapType: resolveMapTypeForLocation(selectedEvent.location_name, tentedCityVendors),
+                          }
                         });
                       }}
                       activeOpacity={0.7}

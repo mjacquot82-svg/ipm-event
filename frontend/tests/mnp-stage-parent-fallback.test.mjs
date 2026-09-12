@@ -118,12 +118,14 @@ test('TentedCityMap uses placeRect for stage unmapped gate; filter dots omit par
 
 test('TentedCityMap paints MNP parent-fallback stages as cyan rectangle, not circle/ring', () => {
   const map = fs.readFileSync(new URL('../src/components/TentedCityMap.tsx', import.meta.url), 'utf8');
-  // Full placeRect footprint (percentage box), same cyan+white treatment as exact booth.
+  // Full placeRect footprint (percentage box): yellow OUTER → cyan fill → optional white inner.
   assert.match(map, /testID="selected-stage-highlight"/);
-  assert.match(map, /styles\.exactBoothCellFill/);
+  assert.match(map, /styles\.selectedStageHighlight/);
+  assert.match(map, /SELECTED_STAGE_FILL = 'rgba\(0, 229, 255, 0\.45\)'/);
+  assert.match(map, /SELECTED_STAGE_OUTER_BORDER = '#FFD600'/);
+  assert.match(map, /SELECTED_STAGE_OUTER_BORDER_WIDTH = 4/);
+  assert.match(map, /SELECTED_STAGE_INNER_BORDER = '#FFFFFF'/);
   assert.match(map, /EXACT_BOOTH_CELL_FILL = '#00E5FF'/);
-  assert.match(map, /EXACT_BOOTH_CELL_BORDER = '#FFFFFF'/);
-  assert.match(map, /backgroundColor: 'rgba\(0, 229, 255, 0\.45\)'/);
   assert.match(map, /left: `\$\{highlight\.x\}%`/);
   assert.match(map, /width: `\$\{highlight\.w\}%`/);
   assert.match(map, /height: `\$\{highlight\.h\}%`/);
