@@ -11,10 +11,10 @@ try {
 
 // Generated after the Expo export. WonderPush remains the sole root-scope
 // service worker; these handlers only add application-shell offline behavior.
-const IPM_OFFLINE_VERSION = '5d7214969162fa0c';
+const IPM_OFFLINE_VERSION = 'ef4438450af8fa7e';
 const IPM_SHELL_ASSETS = [
   "/",
-  "/_expo/static/js/web/entry-5661bee3f3291344ce063099c034961e.js",
+  "/_expo/static/js/web/entry-b7b4970857d883ed74e45f3a4c6e52cd.js",
   "/assets/assets/images/event-map.94b882b9f1d40ea20cf0ebe5c54e825a.png",
   "/assets/assets/images/field.154a1ca0924b6977588741956792d1cb.png",
   "/assets/assets/images/gemini4.ef396f07f7d3372a80f044580e02ba94.png",

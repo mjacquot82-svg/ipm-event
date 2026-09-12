@@ -51,6 +51,15 @@ export const VENDOR_MAP_ALIASES: Record<string, string> = {
   [normalizeVendorKey('Gay Lea Foods Co-operative Ltd.')]: 'Gay Lea Foods Co-operative Ltd',
   [normalizeVendorKey('Kincardine & Community Health Care Foundation')]:
     'Kincardine & Community Health Care',
+  // Welcome Centre was previously mislabeled "Centre" (geometry preserved at 3B-25-27).
+  [normalizeVendorKey('Centre')]: 'Welcome Centre',
+  [normalizeVendorKey('Welcome Centre')]: 'Welcome Centre',
+  // First Aid vendor name cleanup + Emergency Services page destination.
+  [normalizeVendorKey('First Aid and Lost Persons)')]: 'First Aid and Lost Persons',
+  [normalizeVendorKey('First Aid')]: 'First Aid and Lost Persons',
+  [normalizeVendorKey('Emergency Services')]: 'First Aid and Lost Persons',
+  [normalizeVendorKey('Emergency')]: 'First Aid and Lost Persons',
+  [normalizeVendorKey('Lost Persons')]: 'First Aid and Lost Persons',
 };
 
 export type VendorMapResolution =
