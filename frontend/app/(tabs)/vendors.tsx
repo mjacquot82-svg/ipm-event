@@ -11,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
@@ -29,9 +30,11 @@ import {
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
+import { resolveVendorMapQuery, vendorMatchesSearch } from '../../src/config/vendorMapCrosswalk';
 
 export default function VendorsScreen() {
   usePageAnalytics('vendors', 'home_quick_action', 'vendor_directory_opened');
+  const router = useRouter();
   const { frameStyle, sectionStyle } = useAttendeeLayout();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,9 +50,7 @@ export default function VendorsScreen() {
       throw new Error('Invalid vendors response');
     }
     setVendors(result.data.vendors);
-    if (result.source === 'network') {
-      setDataSource('network');
-    }
+    setDataSource(result.source);
     setLastSuccessfulUpdate(result.lastSuccessfulUpdate);
   }, []);
 
@@ -87,26 +88,11 @@ export default function VendorsScreen() {
   }, [vendors]);
 
   const filteredVendors = useMemo(() => {
-    const normalizedSearch = searchQuery.trim().toLowerCase();
     return vendors.filter((vendor) => {
       if (selectedType && vendor.type !== selectedType) {
         return false;
       }
-
-      if (!normalizedSearch) {
-        return true;
-      }
-
-      return [
-        vendor.name,
-        vendor.type,
-        vendor.location,
-        vendor.hours_of_operation,
-        vendor.days_of_operation,
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedSearch);
+      return vendorMatchesSearch(vendor, searchQuery);
     });
   }, [searchQuery, selectedType, vendors]);
 
@@ -133,7 +119,7 @@ export default function VendorsScreen() {
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#8B1538" />
           <Text style={styles.helperText}>
-            {'Preparing your event experience...\n\nLoading the latest IPM information.\nThis may take a few moments the first time you open the app.'}
+            Loading vendors…
           </Text>
         </View>
         <AttendeeAttribution source="vendors_attribution" />
@@ -267,6 +253,26 @@ export default function VendorsScreen() {
               {item.days_of_operation ? (
                 <Text style={styles.meta}>Days: {item.days_of_operation}</Text>
               ) : null}
+              <TouchableOpacity
+                style={styles.mapLink}
+                onPress={() => {
+                  const resolved = resolveVendorMapQuery(item.name, item.location);
+                  if (resolved.status === 'mapped') {
+                    router.push({
+                      pathname: '/(tabs)/map',
+                      params: { location: resolved.query, showOnly: 'true', source: 'vendors', mapType: 'tented' },
+                    });
+                    return;
+                  }
+                  router.push({
+                    pathname: '/(tabs)/map',
+                    params: { mapStatus: 'unavailable', source: 'vendors', mapType: 'tented' },
+                  });
+                }}
+              >
+                <Feather name="map-pin" size={16} color="#8B1538" />
+                <Text style={styles.mapLinkText}>Find on Map</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -415,6 +421,18 @@ const styles = StyleSheet.create({
     borderRadius: ATTENDEE_CARD_RADIUS,
     padding: 16,
     marginBottom: 12,
+  },
+  mapLink: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  mapLinkText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#8B1538',
   },
   name: {
     fontSize: 18,
