@@ -1,0 +1,5962 @@
+[
+  {
+    "name": "(GBFSA), Hanover",
+    "locationIds": [
+      "4B-05"
+    ],
+    "booths": [
+      "4B-05"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-05",
+    "rect": {
+      "x": 25.173,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "GGS Structures Inc., Vineland Station",
+    "locationIds": [
+      "2B-23"
+    ],
+    "booths": [
+      "2B-23"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-23",
+    "rect": {
+      "x": 47.55,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Gospel Focus, Kirkfield",
+    "locationIds": [
+      "4A-33-34"
+    ],
+    "booths": [
+      "4A-33",
+      "4A-34"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-33-34",
+    "rect": {
+      "x": 58.587,
+      "y": 46.255,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Grain Farmers of Ontario VIP Tent",
+    "locationIds": [
+      "3B-33-38"
+    ],
+    "booths": [
+      "3B-33",
+      "3B-34",
+      "3B-35",
+      "3B-36",
+      "3B-37",
+      "3B-38"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 41.875,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Great Canadian Lumberjacks",
+    "locationIds": [
+      "1A-35-38"
+    ],
+    "booths": [
+      "1A-35",
+      "1A-36",
+      "1A-37",
+      "1A-38"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-35-38",
+    "rect": {
+      "x": 60.725,
+      "y": 19.975,
+      "w": 4.275,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Green Valley Heating Inc., Granton",
+    "locationIds": [
+      "4B-28"
+    ],
+    "booths": [
+      "4B-28"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-28",
+    "rect": {
+      "x": 53.243,
+      "y": 50.635,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Hallman Motors Ltd., Hanover",
+    "locationIds": [
+      "5A-25-26"
+    ],
+    "booths": [
+      "5A-25",
+      "5A-26"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-25-26",
+    "rect": {
+      "x": 50.037,
+      "y": 55.015,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Hanover",
+    "locationIds": [
+      "5A-01-04"
+    ],
+    "booths": [
+      "5A-01",
+      "5A-02",
+      "5A-03",
+      "5A-04"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-01-04",
+    "rect": {
+      "x": 20.2,
+      "y": 55.015,
+      "w": 4.973,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Hanover",
+    "locationIds": [
+      "5A-29-31"
+    ],
+    "booths": [
+      "5A-29",
+      "5A-30",
+      "5A-31"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-29-31",
+    "rect": {
+      "x": 54.312,
+      "y": 55.015,
+      "w": 3.206,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Harkness Equipment, Harriston",
+    "locationIds": [
+      "1B-15"
+    ],
+    "booths": [
+      "1B-15"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-15",
+    "rect": {
+      "x": 37.605,
+      "y": 24.355,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Heatmaster (Highway 511 Heating), Perth",
+    "locationIds": [
+      "2A-25-27"
+    ],
+    "booths": [
+      "2A-25",
+      "2A-26",
+      "2A-27"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-25-27",
+    "rect": {
+      "x": 50.037,
+      "y": 28.735,
+      "w": 3.206,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Heavy Equipment Care Ltd.,Durham",
+    "locationIds": [
+      "1A-32-34"
+    ],
+    "booths": [
+      "1A-32",
+      "1A-33",
+      "1A-34"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-32-34",
+    "rect": {
+      "x": 57.518,
+      "y": 19.975,
+      "w": 3.206,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Highland Outbuildings, Angus",
+    "locationIds": [
+      "4A-28"
+    ],
+    "booths": [
+      "4A-28"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-28",
+    "rect": {
+      "x": 53.243,
+      "y": 46.255,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Hip Town Hype, Trent Lakes",
+    "locationIds": [
+      "4A-14"
+    ],
+    "booths": [
+      "4A-14"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-14",
+    "rect": {
+      "x": 36.362,
+      "y": 46.255,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "HLR Hydraulic Line Repair, Orangeville",
+    "locationIds": [
+      "1B-28"
+    ],
+    "booths": [
+      "1B-28"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-28",
+    "rect": {
+      "x": 53.243,
+      "y": 24.355,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Huron Tractor Ltd., Walkerton",
+    "locationIds": [
+      "1A-25-27"
+    ],
+    "booths": [
+      "1A-25",
+      "1A-26",
+      "1A-27"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-25-27",
+    "rect": {
+      "x": 50.037,
+      "y": 19.975,
+      "w": 3.206,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Huronia Welding",
+    "locationIds": [
+      "1A-29"
+    ],
+    "booths": [
+      "1A-29"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-29",
+    "rect": {
+      "x": 54.312,
+      "y": 19.975,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Hydro One",
+    "locationIds": [
+      "EAST-5"
+    ],
+    "booths": [
+      "EAST-5"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "EAST-5",
+    "rect": {
+      "x": 65.2,
+      "y": 46.8,
+      "w": 12.0,
+      "h": 7.2
+    }
+  },
+  {
+    "name": "Hydro One Education Centre South 4 iLGi Canada, St. Agatha",
+    "locationIds": [
+      "1A-05"
+    ],
+    "booths": [
+      "1A-05"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-05",
+    "rect": {
+      "x": 25.173,
+      "y": 19.975,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "J&H Sales and Service, Chesley",
+    "locationIds": [
+      "1A-13-15"
+    ],
+    "booths": [
+      "1A-13",
+      "1A-14",
+      "1A-15"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-13-15",
+    "rect": {
+      "x": 35.118,
+      "y": 19.975,
+      "w": 3.73,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "John Ernewein Limited, Walkerton",
+    "locationIds": [
+      "1B-29"
+    ],
+    "booths": [
+      "1B-29"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-29",
+    "rect": {
+      "x": 54.312,
+      "y": 24.355,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "JSC Factory Direct Inc., Barrie",
+    "locationIds": [
+      "4B-13"
+    ],
+    "booths": [
+      "4B-13"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-13",
+    "rect": {
+      "x": 35.118,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "JW Custom Fab, Cargill",
+    "locationIds": [
+      "2A-16"
+    ],
+    "booths": [
+      "2A-16"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-16",
+    "rect": {
+      "x": 38.848,
+      "y": 28.735,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "K and S Boat and Sled, Hanover",
+    "locationIds": [
+      "4B-34"
+    ],
+    "booths": [
+      "4B-34"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-34",
+    "rect": {
+      "x": 59.656,
+      "y": 50.635,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Kenworth / TRP Hanover, Hanover",
+    "locationIds": [
+      "4A-01-03"
+    ],
+    "booths": [
+      "4A-01",
+      "4A-02",
+      "4A-03"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-01-03",
+    "rect": {
+      "x": 20.2,
+      "y": 46.255,
+      "w": 3.73,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Kodiak Boots, Cambridge",
+    "locationIds": [
+      "2B-06"
+    ],
+    "booths": [
+      "2B-06"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-06",
+    "rect": {
+      "x": 26.416,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Kreations Candy and Treats, Hanover",
+    "locationIds": [
+      "4B-34"
+    ],
+    "booths": [
+      "4B-34"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-34",
+    "rect": {
+      "x": 59.656,
+      "y": 50.635,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Krown Rust Control, Schomberg",
+    "locationIds": [
+      "5A-20"
+    ],
+    "booths": [
+      "5A-20"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-20",
+    "rect": {
+      "x": 43.821,
+      "y": 55.015,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Lambton Conveyor Ltd., Wallaceburg",
+    "locationIds": [
+      "1B-13-14"
+    ],
+    "booths": [
+      "1B-13",
+      "1B-14"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-13-14",
+    "rect": {
+      "x": 35.118,
+      "y": 24.355,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Leslie Motors Ford, Walkerton",
+    "locationIds": [
+      "5A-13-14"
+    ],
+    "booths": [
+      "5A-13",
+      "5A-14"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-13-14",
+    "rect": {
+      "x": 35.118,
+      "y": 55.015,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Liesemers Home Hardware, Mildmay",
+    "locationIds": [
+      "4A-25"
+    ],
+    "booths": [
+      "4A-25"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-25",
+    "rect": {
+      "x": 50.037,
+      "y": 46.255,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Lil\u2019 Country Woodshop Ltd., Alma",
+    "locationIds": [
+      "4B-25"
+    ],
+    "booths": [
+      "4B-25"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-25",
+    "rect": {
+      "x": 50.037,
+      "y": 50.635,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Listowel Hearing Centre, Listowel",
+    "locationIds": [
+      "4B-07"
+    ],
+    "booths": [
+      "4B-07"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-07",
+    "rect": {
+      "x": 27.659,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Lucan Biddulph Recreation Committee, Lucan",
+    "locationIds": [
+      "4B-23"
+    ],
+    "booths": [
+      "4B-23"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-23",
+    "rect": {
+      "x": 47.55,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Wroxeter",
+    "locationIds": [
+      "5B-10-12"
+    ],
+    "booths": [
+      "5B-10",
+      "5B-11",
+      "5B-12"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5B-10-12",
+    "rect": {
+      "x": 33.0,
+      "y": 63.8,
+      "w": 8.8,
+      "h": 2.8
+    }
+  },
+  {
+    "name": "Maple Lane Farm Service, Mount Forest",
+    "locationIds": [
+      "1A-18-20"
+    ],
+    "booths": [
+      "1A-18",
+      "1A-19",
+      "1A-20"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-18-20",
+    "rect": {
+      "x": 41.334,
+      "y": 19.975,
+      "w": 3.73,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Marcc Apparel, Mount Forest",
+    "locationIds": [
+      "3A-19"
+    ],
+    "booths": [
+      "3A-19"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-19",
+    "rect": {
+      "x": 42.578,
+      "y": 37.495,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Marcrest Manufacturing Inc., Listowel",
+    "locationIds": [
+      "1A-22-24"
+    ],
+    "booths": [
+      "1A-22",
+      "1A-23",
+      "1A-24"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-22-24",
+    "rect": {
+      "x": 46.307,
+      "y": 19.975,
+      "w": 3.73,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Marquardt Farm Drainage, Palmerston",
+    "locationIds": [
+      "2B-21"
+    ],
+    "booths": [
+      "2B-21"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-21",
+    "rect": {
+      "x": 45.064,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Martin\u2019s Land Management, Blyth",
+    "locationIds": [
+      "5A-36"
+    ],
+    "booths": [
+      "5A-36"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-36",
+    "rect": {
+      "x": 61.794,
+      "y": 55.015,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "McCullough Tirecraft, Paisley",
+    "locationIds": [
+      "2B-24"
+    ],
+    "booths": [
+      "2B-24"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-24",
+    "rect": {
+      "x": 48.794,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Med-E-Ox Mobility, Goderich",
+    "locationIds": [
+      "1A-28"
+    ],
+    "booths": [
+      "1A-28"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-28",
+    "rect": {
+      "x": 53.243,
+      "y": 19.975,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Media Trailer",
+    "locationIds": [
+      "1A-07"
+    ],
+    "booths": [
+      "1A-07"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-07",
+    "rect": {
+      "x": 27.659,
+      "y": 19.975,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Midwest Co-op, Teeswater",
+    "locationIds": [
+      "1B-25-27"
+    ],
+    "booths": [
+      "1B-25",
+      "1B-26",
+      "1B-27"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-25-27",
+    "rect": {
+      "x": 50.037,
+      "y": 24.355,
+      "w": 3.206,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Brucefield",
+    "locationIds": [
+      "1B-23-24"
+    ],
+    "booths": [
+      "1B-23",
+      "1B-24"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-23-24",
+    "rect": {
+      "x": 47.55,
+      "y": 24.355,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Mitchell Cycle Inc., Mitchell",
+    "locationIds": [
+      "2A-19-20"
+    ],
+    "booths": [
+      "2A-19",
+      "2A-20"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-19-20",
+    "rect": {
+      "x": 42.578,
+      "y": 28.735,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "MNP Lifestyles Tent",
+    "locationIds": [
+      "EAST-2"
+    ],
+    "booths": [
+      "EAST-2"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "EAST-2",
+    "rect": {
+      "x": 65.2,
+      "y": 28.8,
+      "w": 12.0,
+      "h": 7.2
+    }
+  },
+  {
+    "name": "Multi Shelter Solutions, Palmerston",
+    "locationIds": [
+      "2A-01-02"
+    ],
+    "booths": [
+      "2A-01",
+      "2A-02"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-01-02",
+    "rect": {
+      "x": 20.2,
+      "y": 28.735,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Northern Fabrication, Durham",
+    "locationIds": [
+      "4A-14"
+    ],
+    "booths": [
+      "4A-14"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-14",
+    "rect": {
+      "x": 36.362,
+      "y": 46.255,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Northern Leisure Products Ltd., Wroxeter",
+    "locationIds": [
+      "4A-26-27"
+    ],
+    "booths": [
+      "4A-26",
+      "4A-27"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-26-27",
+    "rect": {
+      "x": 51.106,
+      "y": 46.255,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "OK Tire Kincardine, Kincardine",
+    "locationIds": [
+      "2A-06"
+    ],
+    "booths": [
+      "2A-06"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-06",
+    "rect": {
+      "x": 26.416,
+      "y": 28.735,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Old Country Leather, Chesley",
+    "locationIds": [
+      "4B-24"
+    ],
+    "booths": [
+      "4B-24"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-24",
+    "rect": {
+      "x": 48.794,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Corn Fed Beef, London",
+    "locationIds": [
+      "2B-07"
+    ],
+    "booths": [
+      "2B-07"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-07",
+    "rect": {
+      "x": 27.659,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Ontario Flag and Pole, Sutton West",
+    "locationIds": [
+      "3A-07"
+    ],
+    "booths": [
+      "3A-07"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-07",
+    "rect": {
+      "x": 27.659,
+      "y": 37.495,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Ontario Government",
+    "locationIds": [
+      "3B-20-24"
+    ],
+    "booths": [
+      "3B-20",
+      "3B-21",
+      "3B-22",
+      "3B-23",
+      "3B-24"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-20-24",
+    "rect": {
+      "x": 43.821,
+      "y": 41.875,
+      "w": 6.216,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Ontario Landowners Association, Elmwood",
+    "locationIds": [
+      "2B-18"
+    ],
+    "booths": [
+      "2B-18"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-18",
+    "rect": {
+      "x": 41.334,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Accurate Canada, Burlington",
+    "locationIds": [
+      "5A-12"
+    ],
+    "booths": [
+      "5A-12"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-12",
+    "rect": {
+      "x": 33.875,
+      "y": 55.015,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "ACE / JCB, Harriston",
+    "locationIds": [
+      "1A-09"
+    ],
+    "booths": [
+      "1A-09"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-09",
+    "rect": {
+      "x": 30.146,
+      "y": 19.975,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Aces Heavy Towing, Mildmay",
+    "locationIds": [
+      "5A-27-28"
+    ],
+    "booths": [
+      "5A-27",
+      "5A-28"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-27-28",
+    "rect": {
+      "x": 52.174,
+      "y": 55.015,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Artisan Vendors Tent",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "B&L Farm Services Ltd., Chesley",
+    "locationIds": [
+      "2B-13-14"
+    ],
+    "booths": [
+      "2B-13",
+      "2B-14"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-13-14",
+    "rect": {
+      "x": 35.118,
+      "y": 33.115,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Bailey Repair Services Ltd., Palmerston",
+    "locationIds": [
+      "2A-21"
+    ],
+    "booths": [
+      "2A-21"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-21",
+    "rect": {
+      "x": 45.064,
+      "y": 28.735,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Beef Farmers of Ontario & Bruce County Beef Farmer",
+    "locationIds": [
+      "2B-08"
+    ],
+    "booths": [
+      "2B-08"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-08",
+    "rect": {
+      "x": 28.902,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Bell Mobility (Cell Tower)",
+    "locationIds": [
+      "NORTH"
+    ],
+    "booths": [
+      "NORTH"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "NORTH",
+    "rect": {
+      "x": 40.0,
+      "y": 11.8,
+      "w": 10.0,
+      "h": 3.5
+    }
+  },
+  {
+    "name": "Blacks Creek Innovations, Prescott",
+    "locationIds": [
+      "5A-37-38"
+    ],
+    "booths": [
+      "5A-37",
+      "5A-38"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-37-38",
+    "rect": {
+      "x": 62.862,
+      "y": 55.015,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Brandt Tractors Ltd., London",
+    "locationIds": [
+      "1B-05-06"
+    ],
+    "booths": [
+      "1B-05",
+      "1B-06"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-05-06",
+    "rect": {
+      "x": 25.173,
+      "y": 24.355,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Britespan Main Stage Building",
+    "locationIds": [
+      "3B-28-32"
+    ],
+    "booths": [
+      "3B-28",
+      "3B-29",
+      "3B-30",
+      "3B-31",
+      "3B-32"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-28-32",
+    "rect": {
+      "x": 53.243,
+      "y": 41.875,
+      "w": 5.344,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Broeders Farm Equipment, North Augusta",
+    "locationIds": [
+      "1B-08"
+    ],
+    "booths": [
+      "1B-08"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-08",
+    "rect": {
+      "x": 28.902,
+      "y": 24.355,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Bruce County",
+    "locationIds": [
+      "EAST-1"
+    ],
+    "booths": [
+      "EAST-1"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "EAST-1",
+    "rect": {
+      "x": 65.2,
+      "y": 20.0,
+      "w": 12.0,
+      "h": 8.2
+    }
+  },
+  {
+    "name": "Bruce District Masons",
+    "locationIds": [
+      "3B-04"
+    ],
+    "booths": [
+      "3B-04"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-04",
+    "rect": {
+      "x": 23.93,
+      "y": 41.875,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Bruce Power",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Bruce Power and Nuclear Energy Group Tent",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Canadian Cowgirls",
+    "locationIds": [
+      "5A-05-10"
+    ],
+    "booths": [
+      "5A-05",
+      "5A-06",
+      "5A-07",
+      "5A-08",
+      "5A-09",
+      "5A-10"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 55.015,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Can-Am Demo Area, Montreal, QC",
+    "locationIds": [
+      "WEST-4"
+    ],
+    "booths": [
+      "WEST-4"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "WEST-4",
+    "rect": {
+      "x": 7.8,
+      "y": 49.2,
+      "w": 11.8,
+      "h": 8.2
+    }
+  },
+  {
+    "name": "First Aid and Lost Persons)",
+    "locationIds": [
+      "3A-25-28"
+    ],
+    "booths": [
+      "3A-25",
+      "3A-26",
+      "3A-27",
+      "3A-28"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-25-28",
+    "rect": {
+      "x": 50.037,
+      "y": 37.495,
+      "w": 4.275,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Thornbury",
+    "locationIds": [
+      "2B-29"
+    ],
+    "booths": [
+      "2B-29"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-29",
+    "rect": {
+      "x": 54.312,
+      "y": 33.115,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Grain Farmers of Ontario Stage",
+    "locationIds": [
+      "WEST-3"
+    ],
+    "booths": [
+      "WEST-3"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "WEST-3",
+    "rect": {
+      "x": 7.8,
+      "y": 39.0,
+      "w": 11.8,
+      "h": 9.2
+    }
+  },
+  {
+    "name": "CKNX, The One, Cook 94.5, Wingham",
+    "locationIds": [
+      "3A-01-03"
+    ],
+    "booths": [
+      "3A-01",
+      "3A-02",
+      "3A-03"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-01-03",
+    "rect": {
+      "x": 20.2,
+      "y": 37.495,
+      "w": 3.73,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Clifford Precision Inc., Clifford",
+    "locationIds": [
+      "2A-13-15"
+    ],
+    "booths": [
+      "2A-13",
+      "2A-14",
+      "2A-15"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-13-15",
+    "rect": {
+      "x": 35.118,
+      "y": 28.735,
+      "w": 3.73,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Commercial Market Tent (Exhbitors & Vendors)",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Coops, Crappers & Cabins, Cambridge",
+    "locationIds": [
+      "2A-34-35"
+    ],
+    "booths": [
+      "2A-34",
+      "2A-35"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-34-35",
+    "rect": {
+      "x": 59.656,
+      "y": 28.735,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Costco Wholesale, Guelph",
+    "locationIds": [
+      "4A-32"
+    ],
+    "booths": [
+      "4A-32"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-32",
+    "rect": {
+      "x": 57.518,
+      "y": 46.255,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Cottrill Heavy Equipment, Kincardine",
+    "locationIds": [
+      "2A-04"
+    ],
+    "booths": [
+      "2A-04"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-04",
+    "rect": {
+      "x": 23.93,
+      "y": 28.735,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Crop Aid Nutrition, Saskatoon, SK",
+    "locationIds": [
+      "2A-07"
+    ],
+    "booths": [
+      "2A-07"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-07",
+    "rect": {
+      "x": 27.659,
+      "y": 28.735,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Culligan, Cambridge",
+    "locationIds": [
+      "3B-01-02"
+    ],
+    "booths": [
+      "3B-01",
+      "3B-02"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-01-02",
+    "rect": {
+      "x": 20.2,
+      "y": 41.875,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Cuneo Interiors Limited, Walkerton",
+    "locationIds": [
+      "2A-30"
+    ],
+    "booths": [
+      "2A-30"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-30",
+    "rect": {
+      "x": 55.381,
+      "y": 28.735,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Dairy Farmers of Ontario",
+    "locationIds": [
+      "3A-14-16"
+    ],
+    "booths": [
+      "3A-14",
+      "3A-15",
+      "3A-16"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-14-16",
+    "rect": {
+      "x": 36.362,
+      "y": 37.495,
+      "w": 3.73,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Dancing Tractors / Combine Derby",
+    "locationIds": [
+      "WEST-2"
+    ],
+    "booths": [
+      "WEST-2"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "WEST-2",
+    "rect": {
+      "x": 7.8,
+      "y": 30.0,
+      "w": 11.8,
+      "h": 8.2
+    }
+  },
+  {
+    "name": "De Dell Seeds Inc., Melbourne",
+    "locationIds": [
+      "2B-15"
+    ],
+    "booths": [
+      "2B-15"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-15",
+    "rect": {
+      "x": 37.605,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Diamond Roof, Wingham",
+    "locationIds": [
+      "4B-30"
+    ],
+    "booths": [
+      "4B-30"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-30",
+    "rect": {
+      "x": 55.381,
+      "y": 50.635,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Wroxeter",
+    "locationIds": [
+      "4A-29-30"
+    ],
+    "booths": [
+      "4A-29",
+      "4A-30"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-29-30",
+    "rect": {
+      "x": 54.312,
+      "y": 46.255,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Dodge RAM",
+    "locationIds": [
+      "5A-01-04"
+    ],
+    "booths": [
+      "5A-01",
+      "5A-02",
+      "5A-03",
+      "5A-04"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-01-04",
+    "rect": {
+      "x": 20.2,
+      "y": 55.015,
+      "w": 4.973,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Drone Spray Canada, Granton, Blenheim",
+    "locationIds": [
+      "1A-06"
+    ],
+    "booths": [
+      "1A-06"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-06",
+    "rect": {
+      "x": 26.416,
+      "y": 19.975,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Eastern Silk Road, Kitchener",
+    "locationIds": [
+      "4B-02"
+    ],
+    "booths": [
+      "4B-02"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-02",
+    "rect": {
+      "x": 21.443,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Riviere-de-Loup, QC",
+    "locationIds": [
+      "2A-28"
+    ],
+    "booths": [
+      "2A-28"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-28",
+    "rect": {
+      "x": 53.243,
+      "y": 28.735,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Equipment Demo Area",
+    "locationIds": [
+      "WEST-1"
+    ],
+    "booths": [
+      "WEST-1"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "WEST-1",
+    "rect": {
+      "x": 7.8,
+      "y": 20.0,
+      "w": 11.8,
+      "h": 9.2
+    }
+  },
+  {
+    "name": "Equipment Ontario, Mildmay",
+    "locationIds": [
+      "1A-10-12"
+    ],
+    "booths": [
+      "1A-10",
+      "1A-11",
+      "1A-12"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-10-12",
+    "rect": {
+      "x": 31.389,
+      "y": 19.975,
+      "w": 3.73,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Evelyn Piper Exclusive, Ajax",
+    "locationIds": [
+      "4A-12"
+    ],
+    "booths": [
+      "4A-12"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-12",
+    "rect": {
+      "x": 33.875,
+      "y": 46.255,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Farm Sip Supreme Canada, Mount Forest",
+    "locationIds": [
+      "1A-17"
+    ],
+    "booths": [
+      "1A-17"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-17",
+    "rect": {
+      "x": 40.091,
+      "y": 19.975,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Alexandria",
+    "locationIds": [
+      "2A-17-18"
+    ],
+    "booths": [
+      "2A-17",
+      "2A-18"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-17-18",
+    "rect": {
+      "x": 40.091,
+      "y": 28.735,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Ferntree Equipment & Distribution, Guelph",
+    "locationIds": [
+      "5A-34"
+    ],
+    "booths": [
+      "5A-34"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-34",
+    "rect": {
+      "x": 59.656,
+      "y": 55.015,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Foxton Fuels Limited, Wingham",
+    "locationIds": [
+      "2B-10-12"
+    ],
+    "booths": [
+      "2B-10",
+      "2B-11",
+      "2B-12"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-10-12",
+    "rect": {
+      "x": 31.389,
+      "y": 33.115,
+      "w": 3.73,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Fruitage of the Field, Chelsey",
+    "locationIds": [
+      "4B-24"
+    ],
+    "booths": [
+      "4B-24"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-24",
+    "rect": {
+      "x": 48.794,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Gay Lea Foods Co-operative Ltd",
+    "locationIds": [
+      "2B-03-04"
+    ],
+    "booths": [
+      "2B-03",
+      "2B-04"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-03-04",
+    "rect": {
+      "x": 22.686,
+      "y": 33.115,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "4B 17-22)",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Agilec Employment Services, Wingham",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Alair Homes Huron, Southampton",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Ben Lobb Member of Parliament for Huron Bruce, Goderich",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Bernie McGlynn Lumber / South",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Bruce Flooring, Mildmay",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Bruce/Grey Owen Sound Constituency",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Association, Green Party of Ontario",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Buddsteel Architectural Products, Teeswater",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Canadian Snowbird Association, Toronto",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "CarePartners - Exploring Healthcare",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Careers in Rural Ontario, Waterloo",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Christadelphians: ASK, Brantford",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "CMHA Grey Bruce, Owen Sound",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Croskill Overhead Doors, Listowel",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Electrical Safety Authority, Sudbury",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "ENJO Canada, Tiverton",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Freiburger Welding, Walkerton",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Grey Bruce Public Health, Owen Sound",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Harry Buurma - free bibles, Watford",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "HDTV & Electronics, Walkerton",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Huron County",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Kincardine & Community Health Care",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Ontario Mutual Insurance Association",
+    "locationIds": [
+      "3A-20-24"
+    ],
+    "booths": [
+      "3A-20",
+      "3A-21",
+      "3A-22",
+      "3A-23",
+      "3A-24"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-20-24",
+    "rect": {
+      "x": 43.821,
+      "y": 37.495,
+      "w": 6.216,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Britespan Building",
+    "locationIds": [
+      "3B-28-32"
+    ],
+    "booths": [
+      "3B-28",
+      "3B-29",
+      "3B-30",
+      "3B-31",
+      "3B-32"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-28-32",
+    "rect": {
+      "x": 53.243,
+      "y": 41.875,
+      "w": 5.344,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Ontario PC Caucus",
+    "locationIds": [
+      "3B-19"
+    ],
+    "booths": [
+      "3B-19"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-19",
+    "rect": {
+      "x": 42.578,
+      "y": 41.875,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Centre",
+    "locationIds": [
+      "3B-25-27"
+    ],
+    "booths": [
+      "3B-25",
+      "3B-26",
+      "3B-27"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-25-27",
+    "rect": {
+      "x": 50.037,
+      "y": 41.875,
+      "w": 3.206,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Ontario Provincial Police - South Bruce",
+    "locationIds": [
+      "5A-15-16"
+    ],
+    "booths": [
+      "5A-15",
+      "5A-16"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-15-16",
+    "rect": {
+      "x": 37.605,
+      "y": 55.015,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Partnership Park",
+    "locationIds": [
+      "3A-29-35"
+    ],
+    "booths": [
+      "3A-29",
+      "3A-30",
+      "3A-31",
+      "3A-32",
+      "3A-33",
+      "3A-34",
+      "3A-35"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-29-35",
+    "rect": {
+      "x": 54.312,
+      "y": 37.495,
+      "w": 7.482,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Paul Grewall Novelties Ltd., Brampton",
+    "locationIds": [
+      "4A-11"
+    ],
+    "booths": [
+      "4A-11"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-11",
+    "rect": {
+      "x": 32.632,
+      "y": 46.255,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Postech Screw Piles, Markdale",
+    "locationIds": [
+      "2A-29"
+    ],
+    "booths": [
+      "2A-29"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-29",
+    "rect": {
+      "x": 54.312,
+      "y": 28.735,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Primerica, Hanover",
+    "locationIds": [
+      "4B-27"
+    ],
+    "booths": [
+      "4B-27"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-27",
+    "rect": {
+      "x": 52.174,
+      "y": 50.635,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Quality Homes, Kenilworth",
+    "locationIds": [
+      "3A-09-12"
+    ],
+    "booths": [
+      "3A-09",
+      "3A-10",
+      "3A-11",
+      "3A-12"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-09-12",
+    "rect": {
+      "x": 30.146,
+      "y": 37.495,
+      "w": 4.973,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Quilt Tent",
+    "locationIds": [
+      "3A-39-44"
+    ],
+    "booths": [
+      "3A-39",
+      "3A-40",
+      "3A-41",
+      "3A-42",
+      "3A-43",
+      "3A-44"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 36.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "RAM Truck Corral",
+    "locationIds": [
+      "SOUTH-1"
+    ],
+    "booths": [
+      "SOUTH-1"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "SOUTH-1",
+    "rect": {
+      "x": 19.8,
+      "y": 63.5,
+      "w": 12.8,
+      "h": 10.0
+    }
+  },
+  {
+    "name": "Reformed Evangelistic Outreach, Ancaster",
+    "locationIds": [
+      "4B-14"
+    ],
+    "booths": [
+      "4B-14"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-14",
+    "rect": {
+      "x": 36.362,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Rintoul\u2019s Pools & Hot Tubs, Owen Sound",
+    "locationIds": [
+      "2B-30-31"
+    ],
+    "booths": [
+      "2B-30",
+      "2B-31"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-30-31",
+    "rect": {
+      "x": 55.381,
+      "y": 33.115,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "RMP Metal Works, Mount Forest",
+    "locationIds": [
+      "4B-26"
+    ],
+    "booths": [
+      "4B-26"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-26",
+    "rect": {
+      "x": 51.106,
+      "y": 50.635,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Robert\u2019s Equipment, Chesley",
+    "locationIds": [
+      "1A-01-04"
+    ],
+    "booths": [
+      "1A-01",
+      "1A-02",
+      "1A-03",
+      "1A-04"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-01-04",
+    "rect": {
+      "x": 20.2,
+      "y": 19.975,
+      "w": 4.973,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Rogers Communications (Cell Tower)",
+    "locationIds": [
+      "NORTH"
+    ],
+    "booths": [
+      "NORTH"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "NORTH",
+    "rect": {
+      "x": 40.0,
+      "y": 11.8,
+      "w": 10.0,
+      "h": 3.5
+    }
+  },
+  {
+    "name": "RONA Doidge Kincardine, Kincardine",
+    "locationIds": [
+      "2A-36-38"
+    ],
+    "booths": [
+      "2A-36",
+      "2A-37",
+      "2A-38"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-36-38",
+    "rect": {
+      "x": 61.794,
+      "y": 28.735,
+      "w": 3.206,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Royal Homes, Wingham",
+    "locationIds": [
+      "2A-31-32"
+    ],
+    "booths": [
+      "2A-31",
+      "2A-32"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-31-32",
+    "rect": {
+      "x": 56.45,
+      "y": 28.735,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Canadian Propane Association",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Scatterbrain Creations by Paige & Mom",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Orillia",
+    "locationIds": [
+      "4A-13"
+    ],
+    "booths": [
+      "4A-13"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-13",
+    "rect": {
+      "x": 35.118,
+      "y": 46.255,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Shiva Fashion Inc, Scarborough",
+    "locationIds": [
+      "4A-24"
+    ],
+    "booths": [
+      "4A-24"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4A-24",
+    "rect": {
+      "x": 48.794,
+      "y": 46.255,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Shouldice Stone, Shallow Lake",
+    "locationIds": [
+      "2A-33"
+    ],
+    "booths": [
+      "2A-33"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-33",
+    "rect": {
+      "x": 58.587,
+      "y": 28.735,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "SMG Champion Sawmills, Oxford Mills",
+    "locationIds": [
+      "5A-35"
+    ],
+    "booths": [
+      "5A-35"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-35",
+    "rect": {
+      "x": 60.725,
+      "y": 55.015,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Smyth Welding & Machine Shop Ltd., Auburn",
+    "locationIds": [
+      "1A-30-31"
+    ],
+    "booths": [
+      "1A-30",
+      "1A-31"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-30-31",
+    "rect": {
+      "x": 55.381,
+      "y": 19.975,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Souvenir Tent - IPM 2026",
+    "locationIds": [
+      "3A-36-38"
+    ],
+    "booths": [
+      "3A-36",
+      "3A-37",
+      "3A-38"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-36-38",
+    "rect": {
+      "x": 61.794,
+      "y": 37.495,
+      "w": 3.206,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Speedway Trailers, Cambridge",
+    "locationIds": [
+      "1B-09-12"
+    ],
+    "booths": [
+      "1B-09",
+      "1B-10",
+      "1B-11",
+      "1B-12"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-09-12",
+    "rect": {
+      "x": 30.146,
+      "y": 24.355,
+      "w": 4.973,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Sprucedale Agromart Ltd., Hanover",
+    "locationIds": [
+      "2B-01-02"
+    ],
+    "booths": [
+      "2B-01",
+      "2B-02"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-01-02",
+    "rect": {
+      "x": 20.2,
+      "y": 33.115,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Starbright Industry Inc., Listowel",
+    "locationIds": [
+      "1A-08"
+    ],
+    "booths": [
+      "1A-08"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-08",
+    "rect": {
+      "x": 28.902,
+      "y": 19.975,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "StumpedIt, Clinton",
+    "locationIds": [
+      "5A-33"
+    ],
+    "booths": [
+      "5A-33"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-33",
+    "rect": {
+      "x": 58.587,
+      "y": 55.015,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Surf & Turf Instant Shelters Inc, Smithville",
+    "locationIds": [
+      "2B-28"
+    ],
+    "booths": [
+      "2B-28"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-28",
+    "rect": {
+      "x": 53.243,
+      "y": 33.115,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Teeswater Concrete Farming for the Future",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Tent",
+    "locationIds": [
+      "1B-16-22"
+    ],
+    "booths": [
+      "1B-16",
+      "1B-17",
+      "1B-18",
+      "1B-19",
+      "1B-20",
+      "1B-21",
+      "1B-22"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-16-22",
+    "rect": {
+      "x": 38.848,
+      "y": 24.355,
+      "w": 8.702,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Teeswater Concrete Ltd, Teeswater",
+    "locationIds": [
+      "1B-32-34"
+    ],
+    "booths": [
+      "1B-32",
+      "1B-33",
+      "1B-34"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-32-34",
+    "rect": {
+      "x": 57.518,
+      "y": 24.355,
+      "w": 3.206,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Toromont Cat, Concord",
+    "locationIds": [
+      "1B-30-31"
+    ],
+    "booths": [
+      "1B-30",
+      "1B-31"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-30-31",
+    "rect": {
+      "x": 55.381,
+      "y": 24.355,
+      "w": 2.138,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Township of North Huron, Wingham",
+    "locationIds": [
+      "4B-01"
+    ],
+    "booths": [
+      "4B-01"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-01",
+    "rect": {
+      "x": 20.2,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Treemendous Tree Sales & Transplanting",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Clinton",
+    "locationIds": [
+      "5A-32"
+    ],
+    "booths": [
+      "5A-32"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-32",
+    "rect": {
+      "x": 57.518,
+      "y": 55.015,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "United Rentals, Walkerton",
+    "locationIds": [
+      "2B-16-17"
+    ],
+    "booths": [
+      "2B-16",
+      "2B-17"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-16-17",
+    "rect": {
+      "x": 38.848,
+      "y": 33.115,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "University of Guelph, Guelph",
+    "locationIds": [
+      "3B-17-18"
+    ],
+    "booths": [
+      "3B-17",
+      "3B-18"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-17-18",
+    "rect": {
+      "x": 40.091,
+      "y": 41.875,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Valard Construction, Vaughan",
+    "locationIds": [
+      "5A-39-42"
+    ],
+    "booths": [
+      "5A-39",
+      "5A-40",
+      "5A-41",
+      "5A-42"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-39-42",
+    "rect": {
+      "x": 65.2,
+      "y": 54.8,
+      "w": 8.0,
+      "h": 4.0
+    }
+  },
+  {
+    "name": "Walker",
+    "locationIds": [
+      "3A-05"
+    ],
+    "booths": [
+      "3A-05"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3A-05",
+    "rect": {
+      "x": 25.173,
+      "y": 37.495,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Walkerton & District Hospital Foundation",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Walkerton",
+    "locationIds": [
+      "3B-06"
+    ],
+    "booths": [
+      "3B-06"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-06",
+    "rect": {
+      "x": 26.416,
+      "y": 41.875,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Walkerton Toyota, Walkerton",
+    "locationIds": [
+      "5A-17-18"
+    ],
+    "booths": [
+      "5A-17",
+      "5A-18"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "5A-17-18",
+    "rect": {
+      "x": 40.091,
+      "y": 55.015,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Wallenstein Equipment Inc., Wallenstein",
+    "locationIds": [
+      "1B-01-04"
+    ],
+    "booths": [
+      "1B-01",
+      "1B-02",
+      "1B-03",
+      "1B-04"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1B-01-04",
+    "rect": {
+      "x": 20.2,
+      "y": 24.355,
+      "w": 4.973,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Wash Bay Products Inc, Mildmay",
+    "locationIds": [
+      "2A-08"
+    ],
+    "booths": [
+      "2A-08"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-08",
+    "rect": {
+      "x": 28.902,
+      "y": 28.735,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Water and Wellness, Walkerton",
+    "locationIds": [
+      "4B-36-38"
+    ],
+    "booths": [
+      "4B-36",
+      "4B-37",
+      "4B-38"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-36-38",
+    "rect": {
+      "x": 61.794,
+      "y": 50.635,
+      "w": 3.206,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Weldesign Hardware Inc., Burgessville",
+    "locationIds": [
+      "2B-20"
+    ],
+    "booths": [
+      "2B-20"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-20",
+    "rect": {
+      "x": 43.821,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Weppler Farm Machinery Ltd., Ayton",
+    "locationIds": [
+      "1A-16"
+    ],
+    "booths": [
+      "1A-16"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "1A-16",
+    "rect": {
+      "x": 38.848,
+      "y": 19.975,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Women\u2019s House Serving Bruce and Grey",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "Kincardine",
+    "locationIds": [
+      "4B-06"
+    ],
+    "booths": [
+      "4B-06"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "4B-06",
+    "rect": {
+      "x": 26.416,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Wonderfull Inc., Innisfil",
+    "locationIds": [
+      "2B-05"
+    ],
+    "booths": [
+      "2B-05"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-05",
+    "rect": {
+      "x": 25.173,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Work N Wear, Markham",
+    "locationIds": [
+      "2A-22-24"
+    ],
+    "booths": [
+      "2A-22",
+      "2A-23",
+      "2A-24"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2A-22-24",
+    "rect": {
+      "x": 46.307,
+      "y": 28.735,
+      "w": 3.73,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Xplore Inc., Markham",
+    "locationIds": [
+      "3B-03"
+    ],
+    "booths": [
+      "3B-03"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "3B-03",
+    "rect": {
+      "x": 22.686,
+      "y": 41.875,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Your Ultimate Structures Inc., Beachville",
+    "locationIds": [
+      "2B-09"
+    ],
+    "booths": [
+      "2B-09"
+    ],
+    "category": "outdoor",
+    "tent": null,
+    "locationLabel": "2B-09",
+    "rect": {
+      "x": 30.146,
+      "y": 33.115,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "28 50 YEARS STRONG 50 YEARS STRONG",
+    "locationIds": [
+      "4A-16-21",
+      "4B-17-22"
+    ],
+    "booths": [
+      "4A-16",
+      "4A-17",
+      "4A-18",
+      "4A-19",
+      "4A-20",
+      "4A-21",
+      "4B-17",
+      "4B-18",
+      "4B-19",
+      "4B-20",
+      "4B-21",
+      "4B-22"
+    ],
+    "category": "indoor",
+    "tent": "rural-living",
+    "locationLabel": "4A-16-21, 4B-17-22",
+    "rect": {
+      "x": 38.848,
+      "y": 46.255,
+      "w": 8.702,
+      "h": 8.234
+    }
+  },
+  {
+    "name": "BY THE CANADIAN PROPANE",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "ASSOCIATION (3B 39-44)",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Avenir Energy, Flesherton",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Canadian Propane Association, Ottawa",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "CarePartners - Rural Health Care",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Yours to Explore, Waterloo",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Chalmers Fuels, Palmerston",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Core Fuels Ltd. / Red Cap",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Propane Ltd., Stratford",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Eastern Ontario Wardens\u2019 Caucus",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Goderich Port Management",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Corporation, Goderich",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Grey Bruce Ontario Health Team, Owen Sound",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Hear Canada",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "McDougall Energy Inc., Sault Ste. Marie",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Meat & Poultry Ontario, Guelph",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Ontario Agri-Food Discovery Centre, Listowel",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Rural Ontario Institute/AALP",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Skills Ontario, Waterloo",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Western Ontario Wardens\u2019 Caucus",
+    "locationIds": [
+      "3B-39-44"
+    ],
+    "booths": [
+      "3B-39",
+      "3B-40",
+      "3B-41",
+      "3B-42",
+      "3B-43",
+      "3B-44"
+    ],
+    "category": "indoor",
+    "tent": "rural-expo",
+    "locationLabel": "3B-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 41.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Aecon",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Bruce Power, Tiverton",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Canadian Union of Skilled",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Workers, Teeswater",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Candu Energy Inc, an AtkinsR\u00e9alis company, Port Elgin",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Kinectrics Inc., Toronto",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "LIUNA Local 1059, London",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Ontario Power Generation (OPG), Tiverton",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Power Workers\u2019 Union",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Society of United Professionals, Toronto",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "UBC Local 2222, Kincardine",
+    "locationIds": [
+      "3B-07-12"
+    ],
+    "booths": [
+      "3B-07",
+      "3B-08",
+      "3B-09",
+      "3B-10",
+      "3B-11",
+      "3B-12"
+    ],
+    "category": "indoor",
+    "tent": "bruce-power-tent",
+    "locationLabel": "3B-07-12",
+    "rect": {
+      "x": 27.659,
+      "y": 41.875,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Amabel Books, Allenford",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Equestrian Elite, Durham",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Flora and Fae, Tara",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Mike\u2019s Wood, Elmwood",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Nana\u2019s Sewing Basket, Walkerton",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Natural Stitch Designs, Amaranth",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Northern Flyer Design (Ken Thornburn), Tara",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Paisley Drive Designs, Chesley",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Rachel Joy Jewellery, Kincardine",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Susan Seitz, Walkerton",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Wildflower Designs, Shallow Lake",
+    "locationIds": [
+      "2B-33-38"
+    ],
+    "booths": [
+      "2B-33",
+      "2B-34",
+      "2B-35",
+      "2B-36",
+      "2B-37",
+      "2B-38"
+    ],
+    "category": "indoor",
+    "tent": "artisan",
+    "locationLabel": "2B-33-38",
+    "rect": {
+      "x": 58.587,
+      "y": 33.115,
+      "w": 6.413,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "The Quilt Jeannie, Harriston",
+    "locationIds": [
+      "3A-39-44"
+    ],
+    "booths": [
+      "3A-39",
+      "3A-40",
+      "3A-41",
+      "3A-42",
+      "3A-43",
+      "3A-44"
+    ],
+    "category": "indoor",
+    "tent": "quilt",
+    "locationLabel": "3A-39-44",
+    "rect": {
+      "x": 65.2,
+      "y": 36.8,
+      "w": 12.0,
+      "h": 4.2
+    }
+  },
+  {
+    "name": "Bear Tracks Inn & Restaurant, Lion\u2019s Head",
+    "locationIds": [
+      "4A-36"
+    ],
+    "booths": [
+      "4A-36"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "4A-36",
+    "rect": {
+      "x": 61.794,
+      "y": 46.255,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Big Bites, Durham",
+    "locationIds": [
+      "2A-10"
+    ],
+    "booths": [
+      "2A-10"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "2A-10",
+    "rect": {
+      "x": 31.389,
+      "y": 28.735,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Cheesy Monkii Food Truck, Kincardine",
+    "locationIds": [
+      "3A-04"
+    ],
+    "booths": [
+      "3A-04"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "3A-04",
+    "rect": {
+      "x": 23.93,
+      "y": 37.495,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Style Catering, Stratford",
+    "locationIds": [
+      "5A-23-24"
+    ],
+    "booths": [
+      "5A-23",
+      "5A-24"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "5A-23-24",
+    "rect": {
+      "x": 47.55,
+      "y": 55.015,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Coastal Coffee, Goderich",
+    "locationIds": [
+      "2A-11"
+    ],
+    "booths": [
+      "2A-11"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "2A-11",
+    "rect": {
+      "x": 32.632,
+      "y": 28.735,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Dairy Farmers of Ontario",
+    "locationIds": [
+      "3A-13"
+    ],
+    "booths": [
+      "3A-13"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "3A-13",
+    "rect": {
+      "x": 35.118,
+      "y": 37.495,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "DC Foods, Tillsonburg",
+    "locationIds": [
+      "1B-38",
+      "4B-12"
+    ],
+    "booths": [
+      "1B-38",
+      "4B-12"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "1B-38, 4B-12",
+    "rect": {
+      "x": 33.875,
+      "y": 24.355,
+      "w": 31.125,
+      "h": 30.134
+    }
+  },
+  {
+    "name": "Cream Inc. Etobicoke",
+    "locationIds": [
+      "4A-37"
+    ],
+    "booths": [
+      "4A-37"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "4A-37",
+    "rect": {
+      "x": 62.862,
+      "y": 46.255,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Hometown Street Eats, Drayton",
+    "locationIds": [
+      "2B-25"
+    ],
+    "booths": [
+      "2B-25"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "2B-25",
+    "rect": {
+      "x": 50.037,
+      "y": 33.115,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Jeff\u2019s Catering, Uxbridge",
+    "locationIds": [
+      "4A-38"
+    ],
+    "booths": [
+      "4A-38"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "4A-38",
+    "rect": {
+      "x": 63.931,
+      "y": 46.255,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Lez Eats, Creemore",
+    "locationIds": [
+      "1B-37"
+    ],
+    "booths": [
+      "1B-37"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "1B-37",
+    "rect": {
+      "x": 62.862,
+      "y": 24.355,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Mannheim",
+    "locationIds": [
+      "3B-13-14"
+    ],
+    "booths": [
+      "3B-13",
+      "3B-14"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "3B-13-14",
+    "rect": {
+      "x": 35.118,
+      "y": 41.875,
+      "w": 2.486,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Mr. Kettle Corn, Campbellville",
+    "locationIds": [
+      "5A-11"
+    ],
+    "booths": [
+      "5A-11"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "5A-11",
+    "rect": {
+      "x": 32.632,
+      "y": 55.015,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "We Cater Food on Wheels, York",
+    "locationIds": [
+      "4B-11"
+    ],
+    "booths": [
+      "4B-11"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "4B-11",
+    "rect": {
+      "x": 32.632,
+      "y": 50.635,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "West Montrose",
+    "locationIds": [
+      "2A-12"
+    ],
+    "booths": [
+      "2A-12"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "2A-12",
+    "rect": {
+      "x": 33.875,
+      "y": 28.735,
+      "w": 1.243,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Wild Willies Food Truck, Bayfield",
+    "locationIds": [
+      "2B-26"
+    ],
+    "booths": [
+      "2B-26"
+    ],
+    "category": "food",
+    "tent": null,
+    "locationLabel": "2B-26",
+    "rect": {
+      "x": 51.106,
+      "y": 33.115,
+      "w": 1.069,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "2 Farmers & a Cow Ice Cream Co., Guelph",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Action First Aid, Barrie",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "All Star Metals Inc., Newton",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "CIBC, Walkerton",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Dill Doughs, Kincardine",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Eastlink, Sudbury",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Express Heat Therapy, Scarborough",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Galaxy Sweets, Hanover",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "HearingLife Canada, North York",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "It\u2019s About You by Christine Lennips, Hanover",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Joe Carter - Group Benefits Specialist",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Wingham",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Norwex, Wyoming",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Oasis Therapy, Moffat",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Playtime Casino Hanover, Hanover",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Royal Bank of Canada (\u201cRBC\u201d)",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "SV Law, Guelph",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Titanium Gourmet Inc., Scarborough",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "TreeGirl Henna, Teeswater",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "Uber Canada, Toronto",
+    "locationIds": [
+      "4A-05-10"
+    ],
+    "booths": [
+      "4A-05",
+      "4A-06",
+      "4A-07",
+      "4A-08",
+      "4A-09",
+      "4A-10"
+    ],
+    "category": "indoor",
+    "tent": "commercial",
+    "locationLabel": "4A-05-10",
+    "rect": {
+      "x": 25.173,
+      "y": 46.255,
+      "w": 7.459,
+      "h": 3.854
+    }
+  },
+  {
+    "name": "AgScape, Milton",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Beef Farmers of Ontario & Bruce County Beef Farmers",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Bluewater District School Board, Chesley",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Bruce County Federation of Agriculture",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Bruce Grey Catholic District",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "School Board, Hanover",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Dairy Farmers of Ontario",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "DGFO - Dairy Goat Farmers of Ontario",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Egg Farmers of Ontario",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "ETFO Bluewater Local, Owen Sound",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "FIRST Robotics Canada, Pickering",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "GFO - Good in Every Grain",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Gregglea Clydesdales, Cargill",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Grey Bruce Pork Producers, Chesley",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Ontario Association of Agriculture Societies, Stirling",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Ontario Fur Managers Federation",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Ontario Sheep Farmers",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Ontario Youth Apprenticeship",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Program (OYAP), Chesley",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "Canadian Agricultural Safety Association",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  },
+  {
+    "name": "(CASA), Winnipeg",
+    "locationIds": [
+      "SOUTH-4"
+    ],
+    "booths": [
+      "SOUTH-4"
+    ],
+    "category": "indoor",
+    "tent": "hydro-edu",
+    "locationLabel": "SOUTH-4",
+    "rect": {
+      "x": 56.8,
+      "y": 63.5,
+      "w": 18.5,
+      "h": 11.8
+    }
+  }
+]
