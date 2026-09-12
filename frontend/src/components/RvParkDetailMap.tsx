@@ -60,9 +60,11 @@ function SiteHighlight({ site, layer }: { site: RvParkSite; layer: { width: numb
 export default function RvParkDetailMap({
   initialQuery = '',
   onSwitchToGrounds,
+  hideModeSelector = false,
 }: {
   initialQuery?: string | null;
   onSwitchToGrounds: () => void;
+  hideModeSelector?: boolean;
 }) {
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
@@ -252,15 +254,17 @@ export default function RvParkDetailMap({
       </View>
 
       <View style={styles.chrome} pointerEvents="box-none">
-        <View style={styles.topOverlay} pointerEvents="box-none">
+        <View style={[styles.topOverlay, hideModeSelector && styles.topOverlayWithParentSelector]} pointerEvents="box-none">
+          {hideModeSelector ? null : (
           <View style={styles.modeRow}>
             <TouchableOpacity style={styles.modeBtn} onPress={onSwitchToGrounds} accessibilityLabel="Show grounds map">
               <Text style={styles.modeBtnText}>Grounds</Text>
             </TouchableOpacity>
             <View style={[styles.modeBtn, styles.modeBtnOn]}>
-              <Text style={[styles.modeBtnText, styles.modeBtnTextOn]}>RV Detail</Text>
+              <Text style={[styles.modeBtnText, styles.modeBtnTextOn]}>Camping Map</Text>
             </View>
           </View>
+          )}
           <View style={styles.searchCard}>
             <Feather name="search" size={18} color="#6B7280" />
             <TextInput
@@ -349,6 +353,7 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: '100%' },
   highlight: { position: 'absolute', overflow: 'hidden', zIndex: 4 },
   chrome: { ...StyleSheet.absoluteFillObject, paddingBottom: TAB_BAR_HEIGHT, justifyContent: 'flex-end' },
+  topOverlayWithParentSelector: { paddingTop: 52 },
   topOverlay: { position: 'absolute', top: 8, left: 12, right: 12, zIndex: 20 },
   modeRow: { alignSelf: 'center', flexDirection: 'row', backgroundColor: 'rgba(232,228,218,0.95)', borderRadius: 12, padding: 3, marginBottom: 8, gap: 4 },
   modeBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },

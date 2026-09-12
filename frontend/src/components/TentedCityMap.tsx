@@ -78,9 +78,9 @@ function resolveDomNode(ref: unknown): DomTarget | null {
 }
 
 export default function TentedCityMap({
-  initialQuery = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds,
+  initialQuery = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds, hideModeSelector = false,
 }: {
-  initialQuery?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: () => void;
+  initialQuery?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: () => void; hideModeSelector?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
@@ -754,7 +754,19 @@ export default function TentedCityMap({
         )}
       </View>
       <View style={styles.chrome} pointerEvents="box-none">
-      <View style={styles.topOverlay} pointerEvents="box-none">
+      <View style={[styles.topOverlay, hideModeSelector && styles.topOverlayWithParentSelector]} pointerEvents="box-none">
+        {hideModeSelector ? (
+          <TouchableOpacity
+            style={styles.verifyTapTarget}
+            onPress={() => {
+              const now = Date.now();
+              if (now - verifyTaps.current.at > 900) verifyTaps.current.count = 0;
+              verifyTaps.current.at = now; verifyTaps.current.count += 1;
+              if (verifyTaps.current.count >= 5) { verifyTaps.current.count = 0; setVerify1A((on) => !on); }
+            }}
+            accessibilityLabel="Tented City map"
+          />
+        ) : (
         <View style={styles.modeRow}>
           <TouchableOpacity style={styles.modeBtn} onPress={onSwitchToGrounds} accessibilityLabel="Show grounds map"><Text style={styles.modeBtnText}>Grounds</Text></TouchableOpacity>
           <TouchableOpacity style={[styles.modeBtn, styles.modeBtnOn]} onPress={() => {
@@ -766,6 +778,7 @@ export default function TentedCityMap({
             <Text style={[styles.modeBtnText, styles.modeBtnTextOn]}>Tented City</Text>
           </TouchableOpacity>
         </View>
+        )}
         <View style={styles.searchCard}>
           <Feather name="search" size={18} color="#6B7280" />
           <TextInput value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) { setSelected(null); setSelectedBoothId(null); setSelectedSemanticArea(null); } }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, or stage" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectPlace(results[0]); }} />
@@ -855,6 +868,8 @@ const styles = StyleSheet.create({
   pulse: { position: 'absolute', width: 28, height: 28, marginLeft: -14, marginTop: -22, alignItems: 'center' },
   pulseRing: { position: 'absolute', top: 2, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(166,38,45,0.28)' },
   pin: { width: 18, height: 18, borderRadius: 9, backgroundColor: colors.primary, borderWidth: 3, borderColor: '#F5C518', marginTop: 6 },
+  topOverlayWithParentSelector: { paddingTop: 52 },
+  verifyTapTarget: { height: 44, alignSelf: 'stretch' },
   topOverlay: { position: 'absolute', top: 8, left: 12, right: 12, zIndex: 20 },
   modeRow: { alignSelf: 'center', flexDirection: 'row', backgroundColor: 'rgba(232,228,218,0.95)', borderRadius: 12, padding: 3, marginBottom: 8, gap: 4 },
   modeBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
