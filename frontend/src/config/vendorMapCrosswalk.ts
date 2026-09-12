@@ -60,6 +60,12 @@ export const VENDOR_MAP_ALIASES: Record<string, string> = {
   [normalizeVendorKey('Emergency Services')]: 'First Aid and Lost Persons',
   [normalizeVendorKey('Emergency')]: 'First Aid and Lost Persons',
   [normalizeVendorKey('Lost Persons')]: 'First Aid and Lost Persons',
+  // Sept 8 search aliases
+  [normalizeVendorKey('CAN-AM')]: 'Can-Am Demo Area, Montreal, QC',
+  [normalizeVendorKey('Can Am')]: 'Can-Am Demo Area, Montreal, QC',
+  [normalizeVendorKey('CanAm')]: 'Can-Am Demo Area, Montreal, QC',
+  [normalizeVendorKey('Valard Construction LP')]: 'Valard Construction, Vaughan',
+  [normalizeVendorKey('Valard')]: 'Valard Construction, Vaughan',
 };
 
 export type VendorMapResolution =
