@@ -1,0 +1,902 @@
+{
+  "source_pdf": "IPM-2026-Tented-City-Map - Final.pdf",
+  "svg_file": "ipm-tented-city-app-ready.svg",
+  "coordinate_system": {
+    "viewBox": "0 0 774 603",
+    "units": "PDF points"
+  },
+  "interaction_model": "Transparent hitboxes overlay the unchanged official vector artwork. Attach click/tap handlers by element id or .map-hitbox.",
+  "areas": [
+    {
+      "id": "3a-25-38-mutual-square-3b-25-38-see-in-set",
+      "label": "3A 25-38 MUTUAL SQUARE 3B 25-38 (SEE IN SET)",
+      "category": "special-zone",
+      "x": 351.21,
+      "y": 284.94,
+      "width": 75.03,
+      "height": 55.91
+    },
+    {
+      "id": "accessible-parking",
+      "label": "ACCESSIBLE PARKING",
+      "category": "accessible-parking",
+      "x": 346.66,
+      "y": 121.72,
+      "width": 145.71,
+      "height": 16.86
+    },
+    {
+      "id": "pp",
+      "label": "PP",
+      "category": "partnership-park",
+      "x": 611.62,
+      "y": 480.68,
+      "width": 28.65,
+      "height": 11.74
+    },
+    {
+      "id": "vip",
+      "label": "VIP",
+      "category": "vip",
+      "x": 611.62,
+      "y": 519.83,
+      "width": 28.65,
+      "height": 11.74
+    },
+    {
+      "id": "equipment-demo-area-west-1-w",
+      "label": "EQUIPMENT DEMO AREA WEST 1 W",
+      "category": "exhibitor-zone",
+      "x": 64.72,
+      "y": 159.15,
+      "width": 67.95,
+      "height": 48.04
+    },
+    {
+      "id": "1b-1-12",
+      "label": "1B 1-12",
+      "category": "exhibitor-zone",
+      "x": 161.55,
+      "y": 194.27,
+      "width": 70.4,
+      "height": 23.8
+    },
+    {
+      "id": "1b-13-24",
+      "label": "1B 13-24",
+      "category": "exhibitor-zone",
+      "x": 257.02,
+      "y": 194.27,
+      "width": 70.4,
+      "height": 23.8
+    },
+    {
+      "id": "1b-25-38-w",
+      "label": "1B 25-38 W",
+      "category": "exhibitor-zone",
+      "x": 351.21,
+      "y": 194.27,
+      "width": 75.03,
+      "height": 23.8
+    },
+    {
+      "id": "1a-1-12",
+      "label": "1A 1-12",
+      "category": "exhibitor-zone",
+      "x": 161.55,
+      "y": 158.4,
+      "width": 70.4,
+      "height": 23.8
+    },
+    {
+      "id": "1a-13-24",
+      "label": "1A 13-24",
+      "category": "exhibitor-zone",
+      "x": 257.02,
+      "y": 158.4,
+      "width": 70.4,
+      "height": 23.8
+    },
+    {
+      "id": "1a-25-38",
+      "label": "1A 25-38",
+      "category": "exhibitor-zone",
+      "x": 351.21,
+      "y": 158.4,
+      "width": 75.03,
+      "height": 23.8
+    },
+    {
+      "id": "east-1",
+      "label": "EAST 1",
+      "category": "exhibitor-zone",
+      "x": 447.87,
+      "y": 158.4,
+      "width": 47.8,
+      "height": 56.28
+    },
+    {
+      "id": "mnp-lifestyles-tent-east-2",
+      "label": "MNP LIFESTYLES TENT EAST 2",
+      "category": "exhibitor-zone",
+      "x": 447.87,
+      "y": 230.28,
+      "width": 47.8,
+      "height": 41.5
+    },
+    {
+      "id": "quilt-tent-3a-39-44-g2",
+      "label": "QUILT TENT 3A 39-44 ? G2",
+      "category": "exhibitor-zone",
+      "x": 447.87,
+      "y": 283.79,
+      "width": 47.8,
+      "height": 25.62
+    },
+    {
+      "id": "rural-expo-courtyard-3b-39-44",
+      "label": "RURAL EXPO COURTYARD 3B 39-44",
+      "category": "exhibitor-zone",
+      "x": 447.87,
+      "y": 317.18,
+      "width": 47.8,
+      "height": 25.07
+    },
+    {
+      "id": "east-5",
+      "label": "EAST 5",
+      "category": "exhibitor-zone",
+      "x": 447.87,
+      "y": 353.51,
+      "width": 47.8,
+      "height": 38.85
+    },
+    {
+      "id": "5a-39-44",
+      "label": "5A 39-44",
+      "category": "exhibitor-zone",
+      "x": 447.87,
+      "y": 405.12,
+      "width": 47.8,
+      "height": 21.56
+    },
+    {
+      "id": "3a-1-12",
+      "label": "3A 1-12",
+      "category": "exhibitor-zone",
+      "x": 161.18,
+      "y": 283.88,
+      "width": 70.4,
+      "height": 23.8
+    },
+    {
+      "id": "3a-13-24",
+      "label": "3A 13-24",
+      "category": "exhibitor-zone",
+      "x": 256.64,
+      "y": 283.88,
+      "width": 70.4,
+      "height": 23.8
+    },
+    {
+      "id": "3b-1-6",
+      "label": "3B 1-6",
+      "category": "exhibitor-zone",
+      "x": 161.55,
+      "y": 318.05,
+      "width": 24.98,
+      "height": 23.8
+    },
+    {
+      "id": "5a-13-24",
+      "label": "5A 13-24",
+      "category": "exhibitor-zone",
+      "x": 257.02,
+      "y": 404.75,
+      "width": 70.02,
+      "height": 22.93
+    },
+    {
+      "id": "5a-25-38",
+      "label": "5A 25-38",
+      "category": "exhibitor-zone",
+      "x": 351.21,
+      "y": 404.75,
+      "width": 74.63,
+      "height": 22.93
+    },
+    {
+      "id": "bruce-power-and-nuclear-energy-group",
+      "label": "BRUCE POWER & NUCLEAR ENERGY GROUP",
+      "category": "exhibitor-zone",
+      "x": 188.57,
+      "y": 318.05,
+      "width": 43.38,
+      "height": 23.8
+    },
+    {
+      "id": "3b-13-24",
+      "label": "3B 13-24",
+      "category": "exhibitor-zone",
+      "x": 257.02,
+      "y": 318.05,
+      "width": 70.4,
+      "height": 23.8
+    },
+    {
+      "id": "2a-1-12",
+      "label": "2A 1-12",
+      "category": "exhibitor-zone",
+      "x": 161.55,
+      "y": 230.47,
+      "width": 70.4,
+      "height": 15.13
+    },
+    {
+      "id": "2a-13-24",
+      "label": "2A 13-24",
+      "category": "exhibitor-zone",
+      "x": 257.02,
+      "y": 230.47,
+      "width": 70.4,
+      "height": 15.13
+    },
+    {
+      "id": "2a-25-38",
+      "label": "2A 25-38",
+      "category": "exhibitor-zone",
+      "x": 351.21,
+      "y": 230.34,
+      "width": 75.03,
+      "height": 15.13
+    },
+    {
+      "id": "2b-1-12",
+      "label": "2B 1-12",
+      "category": "exhibitor-zone",
+      "x": 161.55,
+      "y": 257.34,
+      "width": 70.4,
+      "height": 15.13
+    },
+    {
+      "id": "2b-13-24",
+      "label": "2B 13-24",
+      "category": "exhibitor-zone",
+      "x": 257.02,
+      "y": 257.34,
+      "width": 70.4,
+      "height": 15.13
+    },
+    {
+      "id": "2b-25-38",
+      "label": "2B 25-38",
+      "category": "exhibitor-zone",
+      "x": 351.21,
+      "y": 257.14,
+      "width": 75.03,
+      "height": 15.13
+    },
+    {
+      "id": "4a-1-12",
+      "label": "4A 1-12",
+      "category": "exhibitor-zone",
+      "x": 161.55,
+      "y": 352.44,
+      "width": 70.4,
+      "height": 15.13
+    },
+    {
+      "id": "4a-13-24",
+      "label": "4A 13-24",
+      "category": "exhibitor-zone",
+      "x": 257.02,
+      "y": 352.44,
+      "width": 70.4,
+      "height": 15.13
+    },
+    {
+      "id": "4a-25-38",
+      "label": "4A 25-38",
+      "category": "exhibitor-zone",
+      "x": 351.21,
+      "y": 352.44,
+      "width": 75.03,
+      "height": 15.13
+    },
+    {
+      "id": "4b-13-24",
+      "label": "4B 13-24",
+      "category": "exhibitor-zone",
+      "x": 257.02,
+      "y": 378.16,
+      "width": 70.4,
+      "height": 15.13
+    },
+    {
+      "id": "4b-25-38",
+      "label": "4B 25-38",
+      "category": "exhibitor-zone",
+      "x": 351.21,
+      "y": 378.16,
+      "width": 75.03,
+      "height": 14.76
+    },
+    {
+      "id": "dancing-tractors-combine-derby-west-2",
+      "label": "DANCING TRACTORS/ COMBINE DERBY WEST 2",
+      "category": "exhibitor-zone",
+      "x": 74.84,
+      "y": 208.2,
+      "width": 57.82,
+      "height": 38.98
+    },
+    {
+      "id": "cknx-centennial-pavilion-lounge-west-3",
+      "label": "CKNX CENTENNIAL PAVILION (LOUNGE) WEST 3",
+      "category": "exhibitor-zone",
+      "x": 64.72,
+      "y": 248.18,
+      "width": 67.95,
+      "height": 48.04
+    },
+    {
+      "id": "can-am-demo-area-west-4",
+      "label": "CAN-AM DEMO AREA WEST 4",
+      "category": "exhibitor-zone",
+      "x": 79.62,
+      "y": 297.22,
+      "width": 53.04,
+      "height": 38.98
+    },
+    {
+      "id": "w-ram-truck-corral-south-1",
+      "label": "W RAM TRUCK CORRAL SOUTH 1",
+      "category": "exhibitor-zone",
+      "x": 131.68,
+      "y": 439.46,
+      "width": 89.0,
+      "height": 42.44
+    },
+    {
+      "id": "antiques-and-historical-area-south-2-and-3-w",
+      "label": "ANTIQUES & HISTORICAL AREA SOUTH 2 & 3 W",
+      "category": "exhibitor-zone",
+      "x": 235.05,
+      "y": 439.46,
+      "width": 184.4,
+      "height": 42.44
+    },
+    {
+      "id": "w-hydro-one-education-centre-and-corn-maze-south-4",
+      "label": "W HYDRO ONE EDUCATION CENTRE & CORN MAZE SOUTH 4",
+      "category": "exhibitor-zone",
+      "x": 421.19,
+      "y": 439.46,
+      "width": 74.48,
+      "height": 83.52
+    },
+    {
+      "id": "pp-s-w",
+      "label": "PP S W",
+      "category": "special-zone",
+      "x": 222.42,
+      "y": 500.0,
+      "width": 122.16,
+      "height": 25.82
+    },
+    {
+      "id": "ontario-mutuals-main-stage-welcome-britespan-building-vip-centre",
+      "label": "ONTARIO MUTUALS MAIN STAGE WELCOME (BRITESPAN BUILDING) VIP CENTRE",
+      "category": "special-zone",
+      "x": 222.42,
+      "y": 539.68,
+      "width": 122.16,
+      "height": 27.02
+    },
+    {
+      "id": "4b-1-12",
+      "label": "4B 1-12",
+      "category": "exhibitor-zone",
+      "x": 161.55,
+      "y": 378.16,
+      "width": 70.4,
+      "height": 15.13
+    },
+    {
+      "id": "5a-5-12",
+      "label": "5A 5-12",
+      "category": "exhibitor-zone",
+      "x": 188.57,
+      "y": 404.75,
+      "width": 43.38,
+      "height": 22.93
+    },
+    {
+      "id": "pp-w",
+      "label": "PP W",
+      "category": "partnership-park",
+      "x": 253.57,
+      "y": 505.59,
+      "width": 61.38,
+      "height": 12.53
+    },
+    {
+      "id": "vip-2",
+      "label": "VIP",
+      "category": "vip",
+      "x": 321.04,
+      "y": 555.57,
+      "width": 19.11,
+      "height": 9.58
+    },
+    {
+      "id": "first-street",
+      "label": "FIRST STREET",
+      "category": "road-or-street",
+      "x": 264.75,
+      "y": 178.9,
+      "width": 54.93,
+      "height": 18.13
+    },
+    {
+      "id": "second-street",
+      "label": "SECOND STREET",
+      "category": "road-or-street",
+      "x": 258.88,
+      "y": 241.9,
+      "width": 65.01,
+      "height": 18.13
+    },
+    {
+      "id": "third-street-1",
+      "label": "THIRD STREET",
+      "category": "road-or-street",
+      "x": 262.92,
+      "y": 303.32,
+      "width": 56.93,
+      "height": 18.13
+    },
+    {
+      "id": "third-street-2",
+      "label": "THIRD STREET",
+      "category": "road-or-street",
+      "x": 255.03,
+      "y": 523.85,
+      "width": 56.93,
+      "height": 18.13
+    },
+    {
+      "id": "fourth-street",
+      "label": "FOURTH STREET",
+      "category": "road-or-street",
+      "x": 259.14,
+      "y": 363.17,
+      "width": 64.5,
+      "height": 18.13
+    },
+    {
+      "id": "fifth-street",
+      "label": "FIFTH STREET",
+      "category": "road-or-street",
+      "x": 263.69,
+      "y": 423.77,
+      "width": 55.4,
+      "height": 18.13
+    },
+    {
+      "id": "service-road-1",
+      "label": "SERVICE ROAD 1",
+      "category": "road-or-street",
+      "x": 261.83,
+      "y": 214.97,
+      "width": 64.02,
+      "height": 18.13
+    },
+    {
+      "id": "service-road-2",
+      "label": "SERVICE ROAD 2",
+      "category": "road-or-street",
+      "x": 261.16,
+      "y": 268.76,
+      "width": 65.34,
+      "height": 18.13
+    },
+    {
+      "id": "service-road-3",
+      "label": "SERVICE ROAD 3",
+      "category": "road-or-street",
+      "x": 261.21,
+      "y": 337.69,
+      "width": 65.25,
+      "height": 18.13
+    },
+    {
+      "id": "service-road-4",
+      "label": "SERVICE ROAD 4",
+      "category": "road-or-street",
+      "x": 261.18,
+      "y": 389.01,
+      "width": 65.32,
+      "height": 18.13
+    },
+    {
+      "id": "durham-road",
+      "label": "DURHAM ROAD",
+      "category": "road-or-street",
+      "x": 262.39,
+      "y": 92.75,
+      "width": 68.73,
+      "height": 19.58
+    },
+    {
+      "id": "bruce-road-3",
+      "label": "BRUCE ROAD 3",
+      "category": "road-or-street",
+      "x": 539.61,
+      "y": 286.94,
+      "width": 19.58,
+      "height": 67.19
+    },
+    {
+      "id": "bruce-county-north-1",
+      "label": "BRUCE COUNTY NORTH",
+      "category": "road-or-street",
+      "x": 167.5,
+      "y": 139.56,
+      "width": 90.12,
+      "height": 18.13
+    },
+    {
+      "id": "bruce-county-north-2",
+      "label": "BRUCE COUNTY NORTH",
+      "category": "road-or-street",
+      "x": 384.45,
+      "y": 140.57,
+      "width": 90.12,
+      "height": 18.13
+    },
+    {
+      "id": "bruce-county-south",
+      "label": "BRUCE COUNTY SOUTH",
+      "category": "road-or-street",
+      "x": 215.46,
+      "y": 479.8,
+      "width": 89.89,
+      "height": 18.13
+    },
+    {
+      "id": "bruce-power-avenue",
+      "label": "BRUCE POWER AVENUE",
+      "category": "road-or-street",
+      "x": 236.12,
+      "y": 234.8,
+      "width": 19.58,
+      "height": 100.9
+    },
+    {
+      "id": "dodge-avenue",
+      "label": "DODGE AVENUE",
+      "category": "road-or-street",
+      "x": 136.88,
+      "y": 251.84,
+      "width": 19.58,
+      "height": 71.39
+    },
+    {
+      "id": "grain-farmers-avenue-1",
+      "label": "GRAIN FARMERS AVENUE",
+      "category": "road-or-street",
+      "x": 329.35,
+      "y": 230.88,
+      "width": 19.58,
+      "height": 107.38
+    },
+    {
+      "id": "grain-farmers-avenue-2",
+      "label": "GRAIN FARMERS AVENUE",
+      "category": "road-or-street",
+      "x": 207.09,
+      "y": 496.75,
+      "width": 15.24,
+      "height": 70.11
+    },
+    {
+      "id": "hydro-one-avenue-1",
+      "label": "HYDRO ONE AVENUE",
+      "category": "road-or-street",
+      "x": 343.66,
+      "y": 501.97,
+      "width": 15.23,
+      "height": 59.67
+    },
+    {
+      "id": "hydro-one-avenue-2",
+      "label": "HYDRO ONE AVENUE",
+      "category": "road-or-street",
+      "x": 427.58,
+      "y": 230.31,
+      "width": 19.58,
+      "height": 90.68
+    },
+    {
+      "id": "cknx-west",
+      "label": "CKNX WEST",
+      "category": "road-or-street",
+      "x": 45.15,
+      "y": 228.47,
+      "width": 18.13,
+      "height": 48.68
+    },
+    {
+      "id": "cknx-east",
+      "label": "CKNX EAST",
+      "category": "road-or-street",
+      "x": 494.85,
+      "y": 326.86,
+      "width": 18.13,
+      "height": 47.0
+    },
+    {
+      "id": "g1",
+      "label": "G1",
+      "category": "poi-marker",
+      "x": 313.96,
+      "y": 131.99,
+      "width": 29.65,
+      "height": 25.57
+    },
+    {
+      "id": "g2",
+      "label": "G2",
+      "category": "poi-marker",
+      "x": 476.81,
+      "y": 296.47,
+      "width": 29.65,
+      "height": 25.57
+    },
+    {
+      "id": "g3",
+      "label": "G3",
+      "category": "poi-marker",
+      "x": 476.81,
+      "y": 419.18,
+      "width": 29.65,
+      "height": 25.57
+    },
+    {
+      "id": "g4",
+      "label": "G4",
+      "category": "poi-marker",
+      "x": 115.69,
+      "y": 351.34,
+      "width": 29.66,
+      "height": 25.57
+    },
+    {
+      "id": "g5",
+      "label": "G5",
+      "category": "poi-marker",
+      "x": 131.0,
+      "y": 102.34,
+      "width": 29.65,
+      "height": 25.56
+    },
+    {
+      "id": "rv",
+      "label": "RV",
+      "category": "poi-marker",
+      "x": 265.39,
+      "y": 211.97,
+      "width": 27.36,
+      "height": 24.13
+    },
+    {
+      "id": "rv-5",
+      "label": "RV",
+      "category": "poi-marker",
+      "x": 264.72,
+      "y": 265.76,
+      "width": 27.36,
+      "height": 24.13
+    },
+    {
+      "id": "rv-6",
+      "label": "RV",
+      "category": "poi-marker",
+      "x": 264.77,
+      "y": 334.69,
+      "width": 27.36,
+      "height": 24.13
+    },
+    {
+      "id": "rv-7",
+      "label": "RV",
+      "category": "poi-marker",
+      "x": 264.74,
+      "y": 386.01,
+      "width": 27.36,
+      "height": 24.13
+    },
+    {
+      "id": "rv-8",
+      "label": "RV",
+      "category": "poi-marker",
+      "x": 115.43,
+      "y": 333.29,
+      "width": 29.52,
+      "height": 25.57
+    },
+    {
+      "id": "vip-3",
+      "label": "VIP",
+      "category": "poi-marker",
+      "x": 315.19,
+      "y": 548.57,
+      "width": 30.65,
+      "height": 24.28
+    },
+    {
+      "id": "pp-2",
+      "label": "PP",
+      "category": "poi-marker",
+      "x": 279.68,
+      "y": 498.77,
+      "width": 29.25,
+      "height": 25.56
+    },
+    {
+      "id": "accessible-parking-gate",
+      "label": "Accessibility parking / Gate",
+      "category": "poi-marker",
+      "x": 492,
+      "y": 104,
+      "width": 25,
+      "height": 25
+    },
+    {
+      "id": "washroom-north",
+      "label": "Washrooms",
+      "category": "poi-marker",
+      "x": 428,
+      "y": 132,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "id": "washroom-west",
+      "label": "Washrooms",
+      "category": "poi-marker",
+      "x": 117,
+      "y": 191,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "id": "washroom-east-1",
+      "label": "Washrooms",
+      "category": "poi-marker",
+      "x": 413,
+      "y": 192,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "id": "washroom-south-center",
+      "label": "Washrooms",
+      "category": "poi-marker",
+      "x": 408,
+      "y": 430,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "id": "washroom-south-west",
+      "label": "Washrooms",
+      "category": "poi-marker",
+      "x": 198,
+      "y": 431,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "id": "washroom-partnership",
+      "label": "Washrooms",
+      "category": "poi-marker",
+      "x": 257,
+      "y": 492,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "id": "information-north",
+      "label": "Information Booths",
+      "category": "poi-marker",
+      "x": 319,
+      "y": 131,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "id": "information-west",
+      "label": "Information Booths",
+      "category": "poi-marker",
+      "x": 127,
+      "y": 337,
+      "width": 24,
+      "height": 24
+    },
+    {
+      "id": "gate-g1",
+      "label": "Gate G1",
+      "category": "poi-marker",
+      "x": 315,
+      "y": 118,
+      "width": 25,
+      "height": 25
+    },
+    {
+      "id": "gate-g2",
+      "label": "Gate G2",
+      "category": "poi-marker",
+      "x": 474,
+      "y": 286,
+      "width": 25,
+      "height": 25
+    },
+    {
+      "id": "gate-g3",
+      "label": "Gate G3",
+      "category": "poi-marker",
+      "x": 485,
+      "y": 417,
+      "width": 25,
+      "height": 25
+    },
+    {
+      "id": "gate-g4",
+      "label": "Gate G4",
+      "category": "poi-marker",
+      "x": 116,
+      "y": 333,
+      "width": 25,
+      "height": 25
+    },
+    {
+      "id": "gate-g5",
+      "label": "Gate G5",
+      "category": "poi-marker",
+      "x": 132,
+      "y": 98,
+      "width": 25,
+      "height": 25
+    },
+    {
+      "id": "education-gate",
+      "label": "Education Gate",
+      "category": "poi-marker",
+      "x": 497,
+      "y": 430,
+      "width": 25,
+      "height": 25
+    },
+    {
+      "id": "souvenir-tent-south",
+      "label": "IPM 2026 Souvenir Tent",
+      "category": "poi-marker",
+      "x": 321,
+      "y": 493,
+      "width": 25,
+      "height": 25
+    },
+    {
+      "id": "rv-park-entrance",
+      "label": "RV Park Entrance",
+      "category": "poi-marker",
+      "x": 112,
+      "y": 319,
+      "width": 25,
+      "height": 25
+    }
+  ]
+}

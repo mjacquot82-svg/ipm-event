@@ -13,6 +13,7 @@ import {
   Modal,
   TextInput,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -41,6 +42,9 @@ import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
 import { resolveScheduleCategory } from '../../src/utils/scheduleCategoryDeepLink';
+import { resolveMapTypeForLocation } from '../../src/config/tentedCitySearch';
+import { resolvePlowingMapLocation } from '../../src/config/groundsZones';
+import { tentedCityVendors } from '../../src/data/tentedCityVendors';
 
 export default function ScheduleScreen() {
   const { frameStyle, sectionStyle } = useAttendeeLayout();
@@ -48,6 +52,7 @@ export default function ScheduleScreen() {
   const isDesktop = viewportWidth >= ATTENDEE_DESKTOP_BREAKPOINT;
   const router = useRouter();
   const { source, category } = useLocalSearchParams<{ source?: string; category?: string | string[] }>();
+  const { eventId, returnTo } = useLocalSearchParams<{ eventId?: string; returnTo?: string }>();
   usePageAnalytics('schedule', source || 'other', 'schedule_viewed');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,9 +73,70 @@ export default function ScheduleScreen() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
+  const eventModalHistoryRef = useRef(false);
+  const openedEventParamRef = useRef<string | null>(null);
+  const returnToItineraryRef = useRef(returnTo === 'itinerary');
   const isFetchingScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
   const appliedCategoryQueryRef = useRef<string | string[] | undefined>(undefined);
+
+  // RN Web's Modal is a portal and does not participate in browser history.
+  // Give an open event detail one history entry so Back closes the modal before
+  // the schedule route is popped. Native Back still uses Modal.onRequestClose.
+  const closeEventModal = useCallback(() => {
+    const hadHistoryEntry = eventModalHistoryRef.current;
+    eventModalHistoryRef.current = false;
+    setShowEventModal(false);
+    setSelectedEvent(null);
+    if (Platform.OS === 'web' && hadHistoryEntry) {
+      // The marker is one entry and the Schedule route is a second entry when
+      // opened from Itinerary. One go() avoids racing two history.back() calls.
+      window.history.go(returnToItineraryRef.current ? -2 : -1);
+    } else if (returnToItineraryRef.current) {
+      router.back();
+    }
+  }, [router]);
+
+  // Map navigation replaces the modal marker instead of consuming browser
+  // history. This keeps the event detail dismissal separate from normal Back.
+  const dismissEventModalForMap = useCallback(() => {
+    eventModalHistoryRef.current = false;
+    setShowEventModal(false);
+    setSelectedEvent(null);
+  }, []);
+
+  useEffect(() => {
+    returnToItineraryRef.current = returnTo === 'itinerary';
+  }, [returnTo]);
+
+  useEffect(() => {
+    if (!eventId || typeof eventId !== 'string' || events.length === 0 || openedEventParamRef.current === eventId) return;
+    openedEventParamRef.current = eventId;
+    const event = events.find((candidate) => candidate.id === eventId);
+    if (!event) return;
+    setSelectedEvent(event);
+    setShowEventModal(true);
+    void queueAnalyticsEvent('schedule_event_opened', {
+      schedule_item_id: event.id,
+      category: event.category || 'uncategorized',
+      source: returnTo === 'itinerary' ? 'itinerary' : 'deep_link',
+    });
+  }, [eventId, events, returnTo]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !showEventModal || eventModalHistoryRef.current) return undefined;
+    window.history.pushState({ ...(window.history.state || {}), __ipmEventModal: true }, '', window.location.href);
+    eventModalHistoryRef.current = true;
+    const handlePopState = () => {
+      if (!eventModalHistoryRef.current) return;
+      eventModalHistoryRef.current = false;
+      setShowEventModal(false);
+      setSelectedEvent(null);
+      if (returnToItineraryRef.current) window.history.back();
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showEventModal]);
 
   const selectedCategoryStyle = getScheduleCategoryStyle(selectedCategory);
   const selectedEventCategoryStyle = getScheduleCategoryStyle(selectedEvent?.category);
@@ -825,7 +891,7 @@ export default function ScheduleScreen() {
         visible={showEventModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowEventModal(false)}
+        onRequestClose={closeEventModal}
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { borderTopColor: selectedEventCategoryStyle.primary }]}>
@@ -858,7 +924,7 @@ export default function ScheduleScreen() {
                     </TouchableOpacity>
                   </View>
                   <TouchableOpacity
-                    onPress={() => setShowEventModal(false)}
+                    onPress={closeEventModal}
                     style={styles.modalCloseButton}
                   >
                     <Feather name="x" size={24} color={colors.textMuted} />
@@ -905,10 +971,18 @@ export default function ScheduleScreen() {
                       style={[styles.detailSection, styles.locationClickable, { borderColor: selectedEventCategoryStyle.primary }]}
                       onPress={() => {
                         console.log('Location clicked:', selectedEvent.location_name);
-                        setShowEventModal(false);
-                        router.push({
+                        dismissEventModalForMap();
+                        const mapLocation =
+                          resolvePlowingMapLocation(selectedEvent.location_name, selectedEvent.title) ||
+                          selectedEvent.location_name;
+                        router.replace({
                           pathname: '/(tabs)/map',
-                          params: { location: selectedEvent.location_name, showOnly: 'true', source: 'schedule' }
+                          params: {
+                            location: mapLocation,
+                            showOnly: 'true',
+                            source: 'schedule',
+                            mapType: resolveMapTypeForLocation(mapLocation, tentedCityVendors),
+                          }
                         });
                       }}
                       activeOpacity={0.7}

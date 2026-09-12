@@ -1,0 +1,199 @@
+name,locationLabel,boothCount,class,reason,lotCount,exactVsParent,status
+"Gospel Focus, Kirkfield","4A-33-34",2,confident_lot,"lots",2,"child_w=1.384/parent_w=9.693",exact
+"Grain Farmers of Ontario VIP Tent","3B-33-38",6,range_or_named,"3A/3B-25-38-mutual-square",6,"",parent_only
+"Great Canadian Lumberjacks","1A-35-38",4,confident_lot,"lots",4,"child_w=2.769/parent_w=9.693",exact
+"Hallman Motors Ltd., Hanover","5A-25-26",2,confident_lot,"lots",2,"child_w=1.378/parent_w=9.642",exact
+"Hanover","5A-01-04",4,ambiguous,"5A-01-04-do-not-exist",0,"",unavailable
+"Hanover","5A-29-31",3,confident_lot,"lots",3,"child_w=2.066/parent_w=9.642",exact
+"Heatmaster (Highway 511 Heating), Perth","2A-25-27",3,confident_lot,"lots",3,"child_w=2.077/parent_w=9.693",exact
+"Heavy Equipment Care Ltd.,Durham","1A-32-34",3,confident_lot,"lots",3,"child_w=2.076/parent_w=9.693",exact
+"Huron Tractor Ltd., Walkerton","1A-25-27",3,confident_lot,"lots",3,"child_w=2.077/parent_w=9.693",exact
+"J&H Sales and Service, Chesley","1A-13-15",3,confident_lot,"lots",3,"child_w=2.274/parent_w=9.095",exact
+"Kenworth / TRP Hanover, Hanover","4A-01-03",3,confident_lot,"lots",3,"child_w=2.274/parent_w=9.095",exact
+"Lambton Conveyor Ltd., Wallaceburg","1B-13-14",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"Leslie Motors Ford, Walkerton","5A-13-14",2,confident_lot,"lots",2,"child_w=1.508/parent_w=9.047",exact
+"Maple Lane Farm Service, Mount Forest","1A-18-20",3,confident_lot,"lots",3,"child_w=2.274/parent_w=9.095",exact
+"Marcrest Manufacturing Inc., Listowel","1A-22-24",3,confident_lot,"lots",3,"child_w=2.274/parent_w=9.095",exact
+"Midwest Co-op, Teeswater","1B-25-27",3,confident_lot,"lots",3,"child_w=2.077/parent_w=9.693",exact
+"Millroad Manufacturing & Sales","1B-23-24",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"Mitchell Cycle Inc., Mitchell","2A-19-20",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"Multi Shelter Solutions, Palmerston","2A-01-02",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"Northern Leisure Products Ltd., Wroxeter","4A-26-27",2,confident_lot,"lots",2,"child_w=1.385/parent_w=9.693",exact
+"Ontario Government","3B-19-24",6,confident_lot,"lots",6,"child_w=4.548/parent_w=9.095",exact
+"Aces Heavy Towing, Mildmay","5A-27-28",2,confident_lot,"lots",2,"child_w=1.377/parent_w=9.642",exact
+"Artisan Vendors Tent","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"B&L Farm Services Ltd., Chesley","2B-13-14",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"Blacks Creek Innovations, Prescott","5A-37-38",2,confident_lot,"lots",2,"child_w=1.377/parent_w=9.642",exact
+"Brandt Tractors Ltd., London","1B-05-06",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"Britespan Main Stage Building","3B-28-32",5,range_or_named,"britespan-building-campus",0,"",parent_only
+"Bruce Power","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Bruce Power and Nuclear Energy Group Tent","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Canadian Cowgirls","5A-05-10",6,confident_lot,"lots",6,"child_w=4.203/parent_w=5.604",exact
+"First Aid and Lost Persons","3A-25-28",4,range_or_named,"3A/3B-25-38-mutual-square",4,"",parent_only
+"CKNX, The One, Cook 94.5, Wingham","3A-01-03",3,confident_lot,"lots",3,"child_w=2.274/parent_w=9.095",exact
+"Clifford Precision Inc., Clifford","2A-13-15",3,confident_lot,"lots",3,"child_w=2.274/parent_w=9.095",exact
+"Commercial Market Tent (Exhbitors & Vendors)","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Coops, Crappers & Cabins, Cambridge","2A-34-35",2,confident_lot,"lots",2,"child_w=1.385/parent_w=9.693",exact
+"Culligan, Cambridge","3B-01-02",2,confident_lot,"lots",2,"child_w=1.076/parent_w=3.227",exact
+"Dairy Farmers of Ontario","3A-14-16",3,confident_lot,"lots",3,"child_w=2.274/parent_w=9.095",exact
+"DeDell Seeds Inc., Melbourne","2B-19-20",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"DJ's Handcrafted Solid Wood","4A-29-30",2,confident_lot,"lots",2,"child_w=1.384/parent_w=9.693",exact
+"Dodge RAM","5A-01-04",4,ambiguous,"5A-01-04-do-not-exist",0,"",unavailable
+"Equipment Ontario, Mildmay","1A-10-12",3,confident_lot,"lots",3,"child_w=2.274/parent_w=9.095",exact
+"Fellowship of Christian Farmers","2A-17-18",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"Foxton Fuels Limited, Wingham","2B-10-12",3,confident_lot,"lots",3,"child_w=2.274/parent_w=9.095",exact
+"Gay Lea Foods Co-operative Ltd","2B-03-04",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"4B 17-22)","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Agilec Employment Services, Wingham","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Alair Homes Huron, Southampton","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Ben Lobb Member of Parliament for Huron Bruce, Goderich","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Bernie McGlynn Lumber / South","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Bruce Flooring, Mildmay","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Bruce/Grey Owen Sound Constituency","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Association, Green Party of Ontario","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Buddsteel Architectural Products, Teeswater","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Canadian Snowbird Association, Toronto","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"CarePartners - Exploring Healthcare","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Careers in Rural Ontario, Waterloo","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Christadelphians: ASK, Brantford","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"CMHA Grey Bruce, Owen Sound","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Croskill Overhead Doors, Listowel","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Electrical Safety Authority, Sudbury","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"ENJO Canada, Tiverton","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Freiburger Welding, Walkerton","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Grey Bruce Public Health, Owen Sound","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Harry Buurma - free bibles, Watford","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"HDTV & Electronics, Walkerton","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Huron County","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Kincardine & Community Health Care","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Ontario Mutual Insurance Association","3A-20-24",5,confident_lot,"lots",5,"child_w=3.789/parent_w=9.095",exact
+"Britespan Building","3B-28-32",5,range_or_named,"britespan-building-campus",0,"",parent_only
+"Welcome Centre","3B-25-27",3,range_or_named,"britespan-building-campus",0,"",parent_only
+"Ontario Provincial Police - South Bruce","5A-15-16",2,confident_lot,"lots",2,"child_w=1.508/parent_w=9.047",exact
+"Partnership Park","3A-29-35",7,range_or_named,"3A/3B-25-38-mutual-square",7,"",parent_only
+"Quality Homes, Kenilworth","3A-09-12",4,confident_lot,"lots",4,"child_w=3.032/parent_w=9.095",exact
+"Quilt Tent","3A-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Rintoul’s Pools & Hot Tubs, Owen Sound","2B-30-31",2,confident_lot,"lots",2,"child_w=1.384/parent_w=9.693",exact
+"Robert’s Equipment, Chesley","1A-01-04",4,confident_lot,"lots",4,"child_w=3.032/parent_w=9.095",exact
+"RONA Doidge Kincardine, Kincardine","2A-36-38",3,confident_lot,"lots",3,"child_w=2.077/parent_w=9.693",exact
+"Royal Homes, Wingham","2A-31-32",2,confident_lot,"lots",2,"child_w=1.385/parent_w=9.693",exact
+"Canadian Propane Association","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Smyth Welding & Machine Shop Ltd., Auburn","1A-30-31",2,confident_lot,"lots",2,"child_w=1.384/parent_w=9.693",exact
+"Souvenir Tent - IPM 2026","3A-36-38",3,range_or_named,"3A/3B-25-38-mutual-square",3,"",parent_only
+"Speedway Trailers, Cambridge","1B-09-12",4,confident_lot,"lots",4,"child_w=3.032/parent_w=9.095",exact
+"Sprucedale Agromart Ltd., Hanover","2B-01-02",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"Teeswater Concrete Farming for the Future Tent","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"A&M Truck Parts Ltd, London","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Agriculture and Agri-Food Canada","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"AmSpec Group, Hamilton","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Armtec, Cambridge","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Better Farming | Small Farm Canada","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Canada Clean Fuels, Toronto","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Canadian Cattle Identification Agency, Calgary, AB","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Canadian Foodgrains Bank, Winnipeg","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"CarePartners - Exploring Care Excellence In Rural Ontario, Waterloo","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Christian Farmers Federation of Ontario, Ingersoll","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Elite Sprouting Systems Inc., Cameron","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Enviro Farm","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Farmers Choice Real Estate, Mount Forest","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Fort44 Inc., Teeswater","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Grey Ag Services, Markdale","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Grey County, Owen Sound","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Guelph Solar, Guelph","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"J.A. Porter Holdings (Lucknow) Ltd., Lucknow","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"LeafFilter Gutter Protection, Hudson, OH","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Libro Credit Union, London","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Mineva Water, Cambridge","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Ontario Bean Growers","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Ontario Dairy Goat Co-operative","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Ontario Phragmites Action, Sault Ste Marie","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Parrish & Heimbecker, Ltd., Winnipeg","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"ProResp Inc., London","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Quality Seeds Ltd., Vaughan","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Saugeen Economic Development Corporation, Neustadt","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Schmidt's Farm Drainage, Harriston","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Snobelen Farms Ltd., Lucknow","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Soleno Inc., Saint-Jean-sur-Richelieu, QC","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Solera Solar Lighting, Cary, Illinois","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"The Miller Group, Markham","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"WeCover Structures, Thamesville","1B-16-22",7,confident_lot,"lots",7,"child_w=5.306/parent_w=9.095",exact
+"Teeswater Concrete Ltd, Teeswater","1B-32-34",3,confident_lot,"lots",3,"child_w=2.076/parent_w=9.693",exact
+"Toromont Cat, Concord","1B-30-31",2,confident_lot,"lots",2,"child_w=1.384/parent_w=9.693",exact
+"Treemendous Tree Sales & Transplanting","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"United Rentals, Walkerton","2B-16-17",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"University of Guelph, Guelph","3B-16-17",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"Walkerton & District Hospital Foundation","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Walkerton Toyota, Walkerton","5A-17-18",2,confident_lot,"lots",2,"child_w=1.508/parent_w=9.047",exact
+"Wallenstein Equipment Inc., Wallenstein","1B-01-04",4,confident_lot,"lots",4,"child_w=3.032/parent_w=9.095",exact
+"Water and Wellness, Walkerton","4B-36-38",3,confident_lot,"lots",3,"child_w=2.077/parent_w=9.693",exact
+"Women’s House Serving Bruce and Grey","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"Work N Wear, Markham","2A-22-24",3,confident_lot,"lots",3,"child_w=2.274/parent_w=9.095",exact
+"28 50 YEARS STRONG 50 YEARS STRONG","4A-16-21, 4B-17-22",12,confident_lot,"lots",12,"child_w=5.306/parent_w=5.306",exact
+"BY THE CANADIAN PROPANE","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"ASSOCIATION (3B 39-44)","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Avenir Energy, Flesherton","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Canadian Propane Association, Ottawa","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"CarePartners - Rural Health Care","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Yours to Explore, Waterloo","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Chalmers Fuels, Palmerston","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Core Fuels Ltd. / Red Cap","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Propane Ltd., Stratford","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Eastern Ontario Wardens’ Caucus","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Goderich Port Management","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Corporation, Goderich","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Grey Bruce Ontario Health Team, Owen Sound","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Hear Canada","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"McDougall Energy Inc., Sault Ste. Marie","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Meat & Poultry Ontario, Guelph","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Ontario Agri-Food Discovery Centre, Listowel","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Rural Ontario Institute/AALP","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Skills Ontario, Waterloo","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Western Ontario Wardens’ Caucus","3B-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Aecon","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Bruce Power, Tiverton","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Canadian Union of Skilled","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Workers, Teeswater","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Candu Energy Inc, an AtkinsRéalis company, Port Elgin","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Kinectrics Inc., Toronto","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"LIUNA Local 1059, London","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Ontario Power Generation (OPG), Tiverton","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Power Workers’ Union","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Society of United Professionals, Toronto","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"UBC Local 2222, Kincardine","3B-07-12",6,range_or_named,"3B-07-12-bruce-power-named-tent",6,"",parent_only
+"Amabel Books, Allenford","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"Equestrian Elite, Durham","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"Flora and Fae, Tara","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"Mike’s Wood, Elmwood","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"Nana’s Sewing Basket, Walkerton","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"Natural Stitch Designs, Amaranth","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"Northern Flyer Design (Ken Thornburn), Tara","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"Paisley Drive Designs, Chesley","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"Rachel Joy Jewellery, Kincardine","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"Susan Seitz, Walkerton","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"Wildflower Designs, Shallow Lake","2B-33-38",6,confident_lot,"lots",6,"child_w=4.154/parent_w=9.693",exact
+"The Quilt Jeannie, Harriston","3A-39-44",6,range_or_named,"trusted-parent-only-range",0,"",parent_only
+"Style Catering, Stratford","5A-23-24",2,confident_lot,"lots",2,"child_w=1.507/parent_w=9.047",exact
+"DC Foods, Tillsonburg","1B-38, 4B-12",2,confident_lot,"lots",2,"child_w=25.86/parent_w=25.86",exact
+"Metalf Food & Beverage","3B-13-14",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact
+"2 Farmers & a Cow Ice Cream Co., Guelph","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Action First Aid, Barrie","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"All Star Metals Inc., Newton","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"CIBC, Walkerton","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Dill Doughs, Kincardine","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Eastlink, Sudbury","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Express Heat Therapy, Scarborough","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Galaxy Sweets, Hanover","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"HearingLife Canada, North York","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"It’s About You by Christine Lennips, Hanover","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Joe Carter - Group Benefits Specialist","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Wingham","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Norwex, Wyoming","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Oasis Therapy, Moffat","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Playtime Casino Hanover, Hanover","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Royal Bank of Canada (“RBC”)","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"SV Law, Guelph","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Titanium Gourmet Inc., Scarborough","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"TreeGirl Henna, Teeswater","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Uber Canada, Toronto","4A-05-10",6,confident_lot,"lots",6,"child_w=4.547/parent_w=9.095",exact
+"Maitland Valley Conservation","5B-10-12",3,unmatched,"unknown-token:5B-10,5B-11,5B-12",0,"",unavailable
+"Transit Trailer Ltd","2A-03-04",2,confident_lot,"lots",2,"child_w=1.516/parent_w=9.095",exact

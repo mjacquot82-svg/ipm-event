@@ -1,0 +1,60 @@
+DO NOT include these map files/hunks in the proposed production promotion.
+Shared vendors.tsx: exclude Find on Map / map crosswalk/navigation hunks.
+No map file changed in this consolidation.
+
+FILES
+frontend/app/(tabs)/map.tsx
+frontend/app/(tabs)/vendors.tsx
+frontend/assets/images/tented-city-map.png
+frontend/src/components/TentedCityMap.tsx
+frontend/src/config/tentedCity1A.ts
+frontend/src/config/tentedCityCamera.ts
+frontend/src/config/tentedCityGeometry.ts
+frontend/src/config/tentedCityLayout.ts
+frontend/src/config/tentedCitySearch.ts
+frontend/src/config/tentedCityTypes.ts
+frontend/src/config/tentedCityVendorMatch.ts
+frontend/src/config/tentedCityVenues.ts
+frontend/src/config/vendorMapCrosswalk.ts
+frontend/src/data/tented-city-geometry-areas.json
+frontend/src/data/tented-city-vendor-match-report.json
+frontend/src/data/tentedCityVendors.ts
+frontend/src/data/tentedCityVendorsPart1.ts
+frontend/src/data/tentedCityVendorsPart2.ts
+frontend/src/data/tentedCityVendorsPart3.ts
+frontend/tests/tented-city-1a.test.mjs
+frontend/tests/tented-city-camera.test.mjs
+frontend/tests/tented-city-geometry.test.mjs
+frontend/tests/tented-city-map.test.mjs
+frontend/tests/tented-city-search.test.mjs
+
+REACHABLE MAP HISTORY (not a cherry-pick list; some commits contain unrelated changes)
+7ce663eb Replace Grounds map with official IPM 2026 site map
+4603ff1e Map Farming for the Future indoor exhibitors (including Armtec) to tent 1B-16-22
+52ed7d40 Map Farming for the Future indoor exhibitors (including Armtec) to tent 1B-16-22
+d4fe4455 Make Tented City follow fingers 1:1 (staging)
+f866ddda Make Tented City follow fingers 1:1 (staging)
+9c9c72af Make Tented City follow fingers 1:1 (staging)
+37852f55 Make Tented City follow fingers 1:1 (staging)
+88b78d81 Make Tented City follow fingers 1:1 (staging)
+d1ce34a3 Tighten Tented City highlights and stop pinch zoom snap-back (staging)
+b622bfce Make Tented City pan/zoom feel like a real map (staging)
+a3331c5a Make Tented City pan/zoom feel like a real map (staging)
+60f95e37 Make Tented City pan/zoom feel like a real map (staging)
+21a62447 Make Tented City pan/zoom feel like a real map (staging)
+2dc2a199 Restore vendor Find on Map and search live names on Tented City (staging)
+2b286849 Restore vendor Find on Map and search live names on Tented City (staging)
+97a02c78 Restore vendor Find on Map and search live names on Tented City (staging)
+9f108a8a Restore vendor Find on Map and search live names on Tented City (staging)
+9316bcda Restore Tented City map PNG on staging
+880f8609 Restore Tented City map component on staging
+e739b624 Restore Tented City vendor data part 3 on staging
+5adb53c3 Restore Tented City vendor data part 2 on staging
+bc0f6b8b Restore Tented City map UI and geometry on staging
+eae23346 Restore Tented City map UI and geometry on staging
+2cdda6d0 Restore Tented City map UI and geometry on staging
+2de2b8eb Restore Tented City map UI and geometry on staging
+4ed11368 Restore Tented City map UI and geometry on staging
+75021643 Restore Tented City map UI and geometry on staging
+6f859a83 Restore Tented City map UI and geometry on staging
+e6092add Map 3B-07-12 vendors to the named Bruce Power tent on staging
