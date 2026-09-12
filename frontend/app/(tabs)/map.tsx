@@ -1,6 +1,6 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, StatusBar, TouchableOpacity, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import GroundsMap from '../../src/components/GroundsMap';
@@ -8,26 +8,69 @@ import TentedCityMap from '../../src/components/TentedCityMap';
 import colors from '../../src/theme/colors';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { mapLocations } from '../../src/config/mapLocations';
-import { findTentedCityPlace } from '../../src/config/tentedCitySearch';
+import { resolveMapTypeForLocation } from '../../src/config/tentedCitySearch';
 import { tentedCityVendors } from '../../src/data/tentedCityVendors';
 
+function paramStr(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+function resolveInitialMode(args: {
+  mapType?: string;
+  location?: string;
+  source?: string;
+  unavailable: boolean;
+  verify1A: boolean;
+}): 'grounds' | 'tented' {
+  const { mapType, location, source, unavailable, verify1A } = args;
+  // Explicit route param wins — schedule/vendors set this so mode does not depend on remount.
+  if (mapType === 'tented' || mapType === 'grounds') return mapType;
+  if (unavailable || verify1A) return 'tented';
+  if (location && resolveMapTypeForLocation(location, tentedCityVendors) === 'tented') return 'tented';
+  // Vendors Find-on-Map is always Tented City (mapped or unavailable sheet).
+  if (source === 'vendors') return 'tented';
+  return 'grounds';
+}
+
 export default function MapScreen() {
-  const { location, source, mapStatus, verify1a } = useLocalSearchParams<{
-    location?: string;
-    showOnly?: string;
-    source?: string;
-    mapStatus?: string;
-    verify1a?: string;
+  const params = useLocalSearchParams<{
+    location?: string | string[];
+    showOnly?: string | string[];
+    source?: string | string[];
+    mapStatus?: string | string[];
+    verify1a?: string | string[];
+    mapType?: string | string[];
   }>();
+  const location = paramStr(params.location);
+  const source = paramStr(params.source);
+  const mapStatus = paramStr(params.mapStatus);
+  const verify1a = paramStr(params.verify1a);
+  const mapType = paramStr(params.mapType);
+
   const locationId = mapLocations.find((item) => item.name === location)?.id;
   usePageAnalytics('map', source || 'other', 'map_opened', locationId ? { location_id: locationId } : {});
 
   const unavailable = mapStatus === 'unavailable';
   const verify1A = verify1a === '1' || verify1a === 'true';
-  const tentedMatch = !unavailable && findTentedCityPlace(location, tentedCityVendors);
-  const [mode, setMode] = useState<'grounds' | 'tented'>(
-    tentedMatch || source === 'schedule' || source === 'vendors' || unavailable || verify1A ? 'tented' : 'grounds',
+  const desiredMode = useMemo(
+    () =>
+      resolveInitialMode({
+        mapType,
+        location,
+        source,
+        unavailable,
+        verify1A,
+      }),
+    [mapType, location, source, unavailable, verify1A],
   );
+
+  const [mode, setMode] = useState<'grounds' | 'tented'>(desiredMode);
+
+  // Tab navigators keep Map mounted — sync mode when schedule/vendors navigate with new params.
+  useEffect(() => {
+    setMode(desiredMode);
+  }, [desiredMode]);
 
   return (
     <View style={styles.container}>

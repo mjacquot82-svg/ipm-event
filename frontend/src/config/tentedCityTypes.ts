@@ -15,6 +15,8 @@ export type TentedCityVenue = {
   names: string[];
   kind: 'stage' | 'landmark';
   rect: Rect | null;
+  /** When rect is null, Find-on-Map may fall back to this parent venue's rect. */
+  parentVenueId?: string;
   note?: string;
 };
 
