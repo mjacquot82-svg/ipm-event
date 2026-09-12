@@ -29,9 +29,10 @@ function resolveDomNode(ref: unknown): DomTarget | null {
   return inner && inner !== ref ? resolveDomNode(inner) : null;
 }
 
-export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
+export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSwitchToRv }: {
   highlightedLocation?: string | null;
   onSwitchToTented: () => void;
+  onSwitchToRv?: () => void;
 }) {
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
@@ -69,6 +70,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
     flyTo(zone);
     if (zone.action === 'switch-tented') setTimeout(onSwitchToTented, 280);
   }, [flyTo, onSwitchToTented]);
+
 
   const hitViewportPoint = useCallback((x: number, y: number) => {
     const point = mapPointUnderFocal({ scale: scale.value, tx: tx.value, ty: ty.value, focalX: x, focalY: y, left: layer.left, top: layer.top });
@@ -189,8 +191,9 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
       {Platform.OS === 'web' ? map : <GestureDetector gesture={composed}>{map}</GestureDetector>}
     </View>
     <TouchableOpacity style={styles.reset} onPress={reset} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
-    {selected?.action === 'info' ? <View style={styles.card}>
+    {selected?.action === 'info' || selected?.action === 'switch-rv' ? <View style={styles.card}>
       <View style={styles.cardRow}><View style={styles.cardCopy}><Text style={styles.title}>{selected.label}</Text><Text style={styles.fact}>{selected.fact}</Text></View><TouchableOpacity onPress={() => setSelected(null)} accessibilityLabel="Dismiss"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity></View>
+      {selected.action === 'switch-rv' && onSwitchToRv ? <TouchableOpacity style={styles.rvCta} onPress={onSwitchToRv} accessibilityLabel="View RV Site Map" testID="view-rv-site-map"><Text style={styles.rvCtaText}>View RV Site Map</Text></TouchableOpacity> : null}
     </View> : <View style={styles.hint} pointerEvents="none"><Text style={styles.hintText}>Drag · pinch · tap a map area</Text></View>}
   </View>;
 }
@@ -206,4 +209,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 17, fontWeight: '800', color: colors.textPrimary }, fact: { marginTop: 4, fontSize: 14, color: colors.textSecondary },
   hint: { position: 'absolute', alignSelf: 'center', bottom: 72, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   hintText: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  rvCta: { marginTop: 12, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  rvCtaText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
 });

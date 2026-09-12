@@ -14,7 +14,7 @@ export type GroundsZone = {
   label: string;
   rect: GroundsRect;
   fact: string;
-  action: 'switch-tented' | 'info';
+  action: 'switch-tented' | 'switch-rv' | 'info';
   color: string;
 };
 
@@ -68,8 +68,8 @@ export const GROUNDS_ZONES: GroundsZone[] = [
     id: 'rv-park',
     label: 'RV Park',
     rect: { x: 35.969, y: 50.675, w: 13.488, h: 7.269 },
-    fact: 'RV Park.',
-    action: 'info',
+    fact: 'Open the searchable RV site map for campsite numbers.',
+    action: 'switch-rv',
     color: '#7B4EA3',
   },
   {

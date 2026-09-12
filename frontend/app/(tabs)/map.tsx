@@ -5,11 +5,13 @@ import { View, StyleSheet, StatusBar, TouchableOpacity, Text } from 'react-nativ
 import { useLocalSearchParams } from 'expo-router';
 import GroundsMap from '../../src/components/GroundsMap';
 import TentedCityMap from '../../src/components/TentedCityMap';
+import RvParkDetailMap from '../../src/components/RvParkDetailMap';
 import colors from '../../src/theme/colors';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { mapLocations } from '../../src/config/mapLocations';
 import { findTentedCityPlace } from '../../src/config/tentedCitySearch';
 import { tentedCityVendors } from '../../src/data/tentedCityVendors';
+import { resolveGroundsZone } from '../../src/config/groundsZones';
 
 export default function MapScreen() {
   const { location, source, mapStatus, verify1a } = useLocalSearchParams<{
@@ -25,8 +27,14 @@ export default function MapScreen() {
   const unavailable = mapStatus === 'unavailable';
   const verify1A = verify1a === '1' || verify1a === 'true';
   const tentedMatch = !unavailable && findTentedCityPlace(location, tentedCityVendors);
-  const [mode, setMode] = useState<'grounds' | 'tented'>(
-    tentedMatch || source === 'schedule' || source === 'vendors' || unavailable || verify1A ? 'tented' : 'grounds',
+  const groundsZone = resolveGroundsZone(typeof location === 'string' ? location : null);
+  const openRv = groundsZone?.id === 'rv-park' && source === 'rv-detail';
+  const [mode, setMode] = useState<'grounds' | 'tented' | 'rv'>(
+    openRv
+      ? 'rv'
+      : tentedMatch || source === 'schedule' || source === 'vendors' || unavailable || verify1A
+        ? 'tented'
+        : 'grounds',
   );
 
   return (
@@ -47,9 +55,18 @@ export default function MapScreen() {
           onSwitchToGrounds={() => setMode('grounds')}
         />
       </View>
+      {mode === 'rv' ? (
+        <View style={styles.rvHost}>
+          <RvParkDetailMap onSwitchToGrounds={() => setMode('grounds')} />
+        </View>
+      ) : null}
       {mode === 'grounds' ? (
         <View style={styles.grounds}>
-          <GroundsMap highlightedLocation={location || null} onSwitchToTented={() => setMode('tented')} />
+          <GroundsMap
+            highlightedLocation={location || null}
+            onSwitchToTented={() => setMode('tented')}
+            onSwitchToRv={() => setMode('rv')}
+          />
           <View style={styles.toggle} pointerEvents="box-none">
             <View style={[styles.toggleBtn, styles.toggleBtnOn]}><Text style={[styles.toggleText, styles.toggleTextOn]}>Grounds</Text></View>
             <TouchableOpacity style={styles.toggleBtn} onPress={() => setMode('tented')}><Text style={styles.toggleText}>Tented City</Text></TouchableOpacity>
@@ -65,6 +82,7 @@ const styles = StyleSheet.create({
   tentedHost: { ...StyleSheet.absoluteFillObject },
   tentedHostHidden: { opacity: 0, zIndex: 0 },
   grounds: { ...StyleSheet.absoluteFillObject, zIndex: 2, backgroundColor: colors.background },
+  rvHost: { ...StyleSheet.absoluteFillObject, zIndex: 3, backgroundColor: colors.background },
   toggle: { position: 'absolute', top: 8, alignSelf: 'center', zIndex: 20, flexDirection: 'row', backgroundColor: 'rgba(232,228,218,0.95)', borderRadius: 12, padding: 3, gap: 4 },
   toggleBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
   toggleBtnOn: { backgroundColor: '#FFFFFF' },
