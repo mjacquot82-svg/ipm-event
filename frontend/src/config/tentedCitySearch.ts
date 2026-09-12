@@ -1,4 +1,4 @@
-import type { TentedCityPlace, TentedCityVendor } from './tentedCityTypes';
+import type { TentedCityPlace, TentedCityVendor, TentedCityVenue } from './tentedCityTypes';
 import { findTentedCityVenue, tentedCityVenues } from './tentedCityVenues';
 import { resolveVendorMapQuery } from './vendorMapCrosswalk';
 
@@ -78,8 +78,20 @@ export function findTentedCityPlace(
   return fuzzy ? { kind: 'vendor', vendor: fuzzy } : undefined;
 }
 
+/**
+ * Resolve a usable map rect for a place. Stages with rect:null and a
+ * parentVenueId fall back to the parent venue geometry (e.g. MNP Lifestyles
+ * Tent / EAST-2) so Find-on-Map can highlight without inventing stage footprints.
+ */
+export function venueRect(venue: TentedCityVenue) {
+  if (venue.rect) return venue.rect;
+  if (!venue.parentVenueId) return null;
+  const parent = tentedCityVenues.find((v) => v.id === venue.parentVenueId);
+  return parent?.rect ?? null;
+}
+
 export function placeRect(place: TentedCityPlace) {
-  return place.kind === 'vendor' ? place.vendor.rect : place.venue.rect;
+  return place.kind === 'vendor' ? place.vendor.rect : venueRect(place.venue);
 }
 
 export function placeTitle(place: TentedCityPlace) {

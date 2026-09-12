@@ -245,7 +245,9 @@ export default function TentedCityMap({
       }
       return;
     }
-    if (place.kind === 'stage' && !place.venue.rect) {
+    // Stages may have rect:null but a parentVenueId fallback (placeRect).
+    // Only treat as unmapped when no usable rect (own or parent) exists.
+    if (place.kind === 'stage' && !placeRect(place)) {
       setSelected(null);
       setSelectedSemanticArea(null);
       setSelectedBoothId(null);
@@ -502,6 +504,9 @@ export default function TentedCityMap({
       });
     }
     if (filter === 'stages') {
+      // Keep only stages with their own rect. Parent-fallback stages (MNP Lifestyles
+      // children) stay omitted so three dots do not stack on the same parent footprint.
+      // Find-on-Map still works via placeRect parent fallback.
       return tentedCityVenues.filter((v) => v.kind === 'stage' && v.rect).map((v) => ({ key: v.id, rect: v.rect!, place: { kind: 'stage' as const, venue: v } }));
     }
     return [];

@@ -28,5 +28,6 @@ test('unmapped initial locations show a safe attendee message without a highligh
   assert.match(map, /This location isn’t mapped yet\./);
   assert.match(map, /accessibilityRole="alert"/);
   assert.match(map, /unmappedInitialLocation \? \(/);
-  assert.match(map, /place\.kind === 'stage' && !place\.venue\.rect/);
+  // Null own-rect stages with parentVenueId use placeRect fallback; unmapped only when placeRect is null.
+  assert.match(map, /place\.kind === 'stage' && !placeRect\(place\)/);
 });

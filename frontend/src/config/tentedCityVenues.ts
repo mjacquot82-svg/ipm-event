@@ -36,9 +36,11 @@ export const tentedCityVenues: TentedCityVenue[] = [
     label: 'Quality Homes Stage',
     names: ['Quality Homes - Stage', 'Quality Homes'],
     kind: 'stage',
-    // No audited stage footprint is available. Do not reuse the nearby
-    // Quality Homes exhibitor booth rectangle as a stage location.
+    // No audited individual stage footprint. Do not invent one and never reuse
+    // Quality Homes exhibitor booth 3A-09-12 as a stage location.
     rect: null,
+    parentVenueId: 'mnp-lifestyles',
+    note: 'Find-on-Map uses parent MNP Lifestyles Tent / EAST-2. Do not invent stage footprints; never use Quality Homes booth 3A-09-12.',
   },
   {
     id: 'mnp-lifestyles',
@@ -53,7 +55,8 @@ export const tentedCityVenues: TentedCityVenue[] = [
     names: ['The Beyond Wireless Stage', 'Beyond Wireless Stage', 'Beyond Wireless'],
     kind: 'stage',
     rect: null,
-    note: 'On the live schedule; booth location not printed in the Aug 15 exhibitor map yet.',
+    parentVenueId: 'mnp-lifestyles',
+    note: 'Find-on-Map uses parent MNP Lifestyles Tent / EAST-2. Do not invent stage footprints.',
   },
   {
     id: 'harleys-stage',
@@ -66,7 +69,8 @@ export const tentedCityVenues: TentedCityVenue[] = [
     ],
     kind: 'stage',
     rect: null,
-    note: 'On the live schedule; booth location not printed in the Aug 15 exhibitor map yet.',
+    parentVenueId: 'mnp-lifestyles',
+    note: 'Find-on-Map uses parent MNP Lifestyles Tent / EAST-2. Do not invent stage footprints.',
   },
 ];
 
