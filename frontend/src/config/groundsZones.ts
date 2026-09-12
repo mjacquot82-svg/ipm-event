@@ -105,14 +105,49 @@ const GROUNDS_ZONE_ALIASES: Record<string, GroundsZoneId> = {
   'tented city': 'tented-city',
   'rv park': 'rv-park',
   rv: 'rv-park',
+  camping: 'rv-park',
+  'rv camping': 'rv-park',
+  'rv park camping': 'rv-park',
   'horse plowing': 'horse-plowing',
   'tractor plowing': 'tractor-plowing',
+  // Schedule parent name (~13 events). Prefer larger tractor field when Horse/Tractor is not distinguished.
+  'plowing fields': 'tractor-plowing',
+  'plowing field': 'tractor-plowing',
   'west parking lot': 'west-parking',
   'west parking': 'west-parking',
   'north parking lot': 'north-parking',
   'north parking': 'north-parking',
   'bus stop': 'bus-stop',
+  // Shuttle pickup/dropoff POI only — never Bus Parking #1194 (no geometry; distinct destination).
+  shuttle: 'bus-stop',
+  'shuttle stop': 'bus-stop',
+  'shuttle stops': 'bus-stop',
+  'shuttle pickup': 'bus-stop',
+  'shuttle dropoff': 'bus-stop',
+  pickup: 'bus-stop',
+  dropoff: 'bus-stop',
+  'drop off': 'bus-stop',
 };
+
+/**
+ * When schedule location_name is the generic Plowing Fields parent, prefer Horse/Tractor
+ * zone if the event title clearly distinguishes them; otherwise keep Plowing Fields
+ * (alias → tractor-plowing).
+ */
+export function resolvePlowingMapLocation(
+  locationName: string | null | undefined,
+  title?: string | null,
+): string | null | undefined {
+  if (!locationName) return locationName;
+  const key = normalizeZoneQuery(locationName);
+  if (key !== 'plowing fields' && key !== 'plowing field') return locationName;
+  const t = (title || '').toLowerCase();
+  const hasHorse = /\bhorse\b/.test(t);
+  const hasTractor = /\btractor\b/.test(t);
+  if (hasHorse && !hasTractor) return 'Horse Plowing';
+  if (hasTractor && !hasHorse) return 'Tractor Plowing';
+  return locationName;
+}
 
 export function resolveGroundsZone(name: string | null | undefined): GroundsZone | null {
   if (!name) return null;

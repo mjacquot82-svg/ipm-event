@@ -1,6 +1,7 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { applyShowGuideSchedulePatch, shouldApplyShowGuideSchedulePatch } from '../data/applyShowGuideSchedulePatch';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -302,13 +303,31 @@ function isAnnouncementsResponse(data: unknown): data is AnnouncementsResponse {
   return !!data && typeof data === 'object' && Array.isArray((data as AnnouncementsResponse).announcements);
 }
 
-export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> = {}) {
-  return fetchCachedApiData<ScheduleResponse>({
+function maybeApplyShowGuideSchedulePatch(
+  result: CachedApiResult<ScheduleResponse>
+): CachedApiResult<ScheduleResponse> {
+  if (!shouldApplyShowGuideSchedulePatch()) {
+    return result;
+  }
+  return {
+    ...result,
+    data: applyShowGuideSchedulePatch(result.data),
+  };
+}
+
+export async function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> = {}) {
+  const { onBackgroundRefresh, onBackgroundRefreshError, ...rest } = options;
+  const result = await fetchCachedApiData<ScheduleResponse>({
     cacheKey: 'schedule',
     url: `${getApiBaseUrl()}/api/schedule`,
     isCacheableResponse: isSupabaseScheduleResponse,
-    ...options,
+    ...rest,
+    onBackgroundRefresh: onBackgroundRefresh
+      ? (refreshResult) => onBackgroundRefresh(maybeApplyShowGuideSchedulePatch(refreshResult))
+      : undefined,
+    onBackgroundRefreshError,
   });
+  return maybeApplyShowGuideSchedulePatch(result);
 }
 
 export function getVendorsData(options: SupabaseFetchOptions<VendorsResponse> = {}) {

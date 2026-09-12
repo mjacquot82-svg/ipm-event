@@ -105,7 +105,9 @@ test('selected-booth highlight paints the full individual booth.rect cell', () =
   // Full-cell percentage fill (same geometry as the booth hitbox), not BoothHighlight border edges.
   assert.match(mapSrc, /testID="selected-booth-highlight"/);
   assert.match(mapSrc, /exactBoothCellFill/);
-  assert.match(mapSrc, /EXACT_BOOTH_CELL_FILL = colors\.userLocation/);
+  assert.match(mapSrc, /EXACT_BOOTH_CELL_FILL = '#00E5FF'/);
+  assert.match(mapSrc, /EXACT_BOOTH_CELL_BORDER = '#FFFFFF'/);
+  assert.match(mapSrc, /borderWidth: EXACT_BOOTH_CELL_BORDER_WIDTH/);
   assert.match(mapSrc, /left: `\$\{booth\.rect\.x\}%`/);
   assert.match(mapSrc, /width: `\$\{booth\.rect\.w\}%`/);
   assert.match(mapSrc, /height: `\$\{booth\.rect\.h\}%`/);

@@ -106,11 +106,13 @@ try {
     await page.getByPlaceholder('Find a vendor, booth, or stage').waitFor(); await page.waitForTimeout(500);
     assert.equal(new URL(page.url()).pathname, '/map');
     assert.equal(new URL(page.url()).searchParams.get('location'), 'CKNX Centennial Pavilion (GFO Stage)');
-    for (const location of ['Quality Homes - Stage', 'Unmapped test location']) {
-      await page.goto(`${base}/map?source=schedule&location=${encodeURIComponent(location)}`);
-      await page.getByText('This location isn’t mapped yet.', { exact: false }).waitFor();
-      assert.equal(await page.getByTestId('vendor-booth-highlight').count(), 0);
-    }
+    // Quality Homes - Stage now falls back to MNP Lifestyles Tent parent rect.
+    await page.goto(`${base}/map?source=schedule&location=${encodeURIComponent('Quality Homes - Stage')}`);
+    await page.getByPlaceholder('Find a vendor, booth, or stage').waitFor(); await page.waitForTimeout(500);
+    assert.equal(await page.getByText('This location isn’t mapped yet.', { exact: false }).count(), 0);
+    await page.goto(`${base}/map?source=schedule&location=${encodeURIComponent('Unmapped test location')}`);
+    await page.getByText('This location isn’t mapped yet.', { exact: false }).waitFor();
+    assert.equal(await page.getByTestId('vendor-booth-highlight').count(), 0);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     assert.deepEqual(errors, []);
     console.log(`PASS ${width}: 12 booths, four camera states, reset, event navigation, unmapped locations, 218 events`);
