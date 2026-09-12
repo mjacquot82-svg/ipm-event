@@ -14,6 +14,8 @@ import {
 import { AdProvider } from '../src/context/AdContext';
 import ErrorBoundary from '../src/components/ErrorBoundary';
 import { startInstallPromptCapture } from '../src/components/PWAInstallPrompt';
+import PWAUpdatePrompt from '../src/components/PWAUpdatePrompt';
+import { startPwaUpdateFlow } from '../src/services/pwaUpdateService';
 import SplashScreen from '../src/components/SplashScreen';
 import { AnnouncementReadProvider } from '../src/context/AnnouncementReadContext';
 import { setAnalyticsRoute } from '../src/analytics/analyticsClient';
@@ -39,9 +41,13 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'web') {
-      void initializeOfflineShell().catch((error) => {
-        console.warn('Offline shell service worker unavailable:', error);
-      });
+      void initializeOfflineShell()
+        .then((registration) => {
+          if (registration) startPwaUpdateFlow(registration);
+        })
+        .catch((error) => {
+          console.warn('Offline shell service worker unavailable:', error);
+        });
       void initializeWonderPush().catch((error) => {
         console.warn('WonderPush initialization unavailable:', error);
       });
@@ -93,6 +99,7 @@ export default function RootLayout() {
                 <Stack.Screen name="coming-soon" options={{ headerShown: false }} />
               </Stack>
             )}
+            <PWAUpdatePrompt />
             </ErrorBoundary>
           </AnnouncementReadProvider>
         </AdProvider>

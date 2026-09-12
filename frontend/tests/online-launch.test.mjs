@@ -58,8 +58,11 @@ test('cached startup assets from newer HTML are served by the incumbent worker',
   h.handlers.fetch({request:{url:'https://staging.theipm.ca/_expo/static/js/web/entry-B.js',method:'GET',mode:'cors'},respondWith:p=>{result=p;}});
   assert.equal(await (await result).text(),'B');
 });
-test('no reload/activation messages and no interception of APIs, POST or external requests',()=>{
-  assert.doesNotMatch(source,/location\.reload|client\.navigate|self\.skipWaiting|addEventListener\(['"]message/);
+test('explicit activate message may skipWaiting; no reload loops or foreign fetch interception',()=>{
+  assert.doesNotMatch(source,/location\.reload|client\.navigate/);
+  assert.match(source,/event\.data\?\.type === 'IPM_ACTIVATE_UPDATE'/);
+  assert.equal((source.match(/self\.skipWaiting\(\)/g)||[]).length,1);
+  assert.doesNotMatch(source,/addEventListener\(['"]install['"][\s\S]*skipWaiting/);
   const h=harness(()=>{throw Error('unexpected network');});
   for(const request of [{url:'https://staging.theipm.ca/api/schedule',method:'GET'},{url:'https://staging.theipm.ca/x',method:'POST'},{url:'https://external.example/x',method:'GET'}])h.handlers.fetch({request,respondWith:()=>assert.fail('intercepted')});
 });
