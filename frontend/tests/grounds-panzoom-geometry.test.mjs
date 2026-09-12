@@ -94,12 +94,18 @@ test('GroundsMap uses polygon SVG highlight + MNP cyan/yellow language', () => {
 });
 
 test('GroundsMap ports TC pan/pinch finish + double-tap + fit reset', () => {
-  assert.match(componentSource, /finishWebGesture/);
-  assert.match(componentSource, /DOUBLE_TAP_SCALE/);
-  assert.match(componentSource, /rubberBandEffect:\s*true/);
+  const interaction = fs.readFileSync(path.join(root, 'src/config/mapInteraction.ts'), 'utf8');
+  assert.match(componentSource, /from ['"]\.\.\/config\/mapInteraction['"]/);
+  assert.match(componentSource, /attachWebMapGestures/);
+  assert.match(componentSource, /createMapNativeGestures/);
+  assert.match(componentSource, /resetMapCamera/);
   assert.match(componentSource, /grounds-fit-reset/);
   assert.match(componentSource, /Fit map to grounds/);
-  assert.match(componentSource, /minPointers\(1\)\.maxPointers\(1\)/);
+  assert.match(interaction, /finishWebGesture/);
+  assert.match(interaction, /DOUBLE_TAP_SCALE/);
+  assert.match(interaction, /rubberBandEffect:\s*true/);
+  assert.match(interaction, /\.minPointers\(1\)/);
+  assert.match(interaction, /\.maxPointers\(1\)/);
   // Selected highlight persists via selected state + ZoneHighlight
   assert.match(componentSource, /selected \? <ZoneHighlight/);
 });

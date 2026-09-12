@@ -1,5 +1,12 @@
-/** Grounds-only camera constants. Tented City keeps tentedCityCamera defaults. */
-export const GROUNDS_MIN_SCALE = 1;
-export const GROUNDS_INITIAL_SCALE = 1.22;
-export const GROUNDS_MAX_SCALE = 6.5;
-export const GROUNDS_DOUBLE_TAP_SCALE = 2.6;
+/**
+ * Grounds camera constants — intentionally mirror Tented City.
+ * Do not retune Grounds in isolation; share tentedCityCamera / mapInteraction.
+ */
+export {
+  MIN_SCALE as GROUNDS_MIN_SCALE,
+  MAX_SCALE as GROUNDS_MAX_SCALE,
+  DOUBLE_TAP_SCALE as GROUNDS_DOUBLE_TAP_SCALE,
+} from './tentedCityCamera';
+
+/** Same as TC fit (scale 1). No Grounds-only initial zoom. */
+export const GROUNDS_INITIAL_SCALE = 1;

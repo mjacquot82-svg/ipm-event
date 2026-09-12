@@ -5,9 +5,9 @@ import {
   type StyleProp, type ViewStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  cancelAnimation, useAnimatedStyle, useSharedValue, withDecay, withTiming,
+  cancelAnimation, useAnimatedStyle, useSharedValue, withTiming,
 } from 'react-native-reanimated';
 import colors from '../theme/colors';
 import { tentedCityVendors } from '../data/tentedCityVendors';
@@ -25,8 +25,16 @@ import {
 } from '../config/tentedCitySemanticMap';
 import { getScheduleData, ScheduleEvent } from '../services/spreadsheetDataService';
 import {
-  clampTranslation, BOOTH_DIVIDER_VISIBLE_SCALE, DOUBLE_TAP_SCALE, flyToRect, pinchAroundMovingFocal, rubberBandTranslation, translationBounds, zoomAroundFocal,
+  BOOTH_DIVIDER_VISIBLE_SCALE, flyToRect,
 } from '../config/tentedCityCamera';
+import {
+  WEB_TOUCH_LOCK,
+  attachWebMapGestures,
+  createMapNativeGestures,
+  resetMapCamera,
+  resolveDomNode,
+  type MapCameraShared,
+} from '../config/mapInteraction';
 
 const MAP_SOURCE = require('../../assets/images/tented-city-map-app-ready.svg');
 const TAB_BAR_HEIGHT = 60;
@@ -44,8 +52,6 @@ const SELECTED_STAGE_OUTER_BORDER_WIDTH = 4;
 const SELECTED_STAGE_INNER_BORDER = '#FFFFFF';
 const SELECTED_STAGE_INNER_BORDER_WIDTH = 1;
 const SELECTED_STAGE_FILL = 'rgba(0, 229, 255, 0.45)';
-const WEB_TOUCH_LOCK = { touchAction: 'none', overscrollBehavior: 'none', userSelect: 'none' } as object;
-
 function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, testID, children }: {
   rect: Rect; layer: { width: number; height: number }; border: number; borderColor: string;
   outset?: number; style: StyleProp<ViewStyle>; testID: string; children?: React.ReactNode;
@@ -66,25 +72,6 @@ type FilterId = 'all' | 'food' | 'stages' | 'vendors';
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: 'all', label: 'All' }, { id: 'vendors', label: 'Vendors' }, { id: 'food', label: 'Food' }, { id: 'stages', label: 'Stages' },
 ];
-
-type WheelLike = { preventDefault: () => void; deltaY: number; clientX: number; clientY: number };
-type DomListener = (event: any) => void;
-type DomListenOpts = { passive?: boolean; capture?: boolean };
-type DomTarget = {
-  addEventListener: (type: string, listener: DomListener, options?: DomListenOpts) => void;
-  removeEventListener: (type: string, listener: DomListener, options?: DomListenOpts) => void;
-  getBoundingClientRect: () => { left: number; top: number };
-};
-
-function resolveDomNode(ref: unknown): DomTarget | null {
-  if (!ref || typeof ref !== 'object') return null;
-  const node = ref as { addEventListener?: unknown; removeEventListener?: unknown; getBoundingClientRect?: unknown; _nativeNode?: unknown; getNode?: () => unknown };
-  if (typeof node.addEventListener === 'function' && typeof node.removeEventListener === 'function' && typeof node.getBoundingClientRect === 'function') {
-    return node as DomTarget;
-  }
-  const inner = node._nativeNode ?? (typeof node.getNode === 'function' ? node.getNode() : null);
-  return inner && inner !== ref ? resolveDomNode(inner) : null;
-}
 
 export default function TentedCityMap({
   initialQuery = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds,
@@ -122,6 +109,10 @@ export default function TentedCityMap({
   const originY = useSharedValue(0);
   const layer = useMemo(() => tentedCityLayerLayout(viewport), [viewport]);
   const mapSize = layer.mapSize;
+  const cam = useMemo<MapCameraShared>(() => ({
+    scale, tx, ty, startScale, startX, startY, startFocalX, startFocalY,
+    viewW, viewH, mapW, mapH, originX, originY,
+  }), []);
 
   useEffect(() => {
     viewW.value = viewport.width; viewH.value = viewport.height;
@@ -149,10 +140,7 @@ export default function TentedCityMap({
   };
 
   const resetView = () => {
-    cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
-    scale.value = withTiming(1, { duration: 220 });
-    tx.value = withTiming(0, { duration: 220 });
-    ty.value = withTiming(0, { duration: 220 });
+    resetMapCamera(cam);
   };
 
   const resetMap = () => {
@@ -287,227 +275,8 @@ export default function TentedCityMap({
     if (Platform.OS !== 'web') return undefined;
     const node = resolveDomNode(viewportRef.current);
     if (!node) return undefined;
-    type Pt = { x: number; y: number };
-    const pointers = new Map<string, Pt>();
-    let fromTouch = false;
-    let mode: 'none' | 'pan' | 'pinch' = 'none';
-    let startCamScale = 1;
-    let startCamX = 0;
-    let startCamY = 0;
-    let beginFocalX = 0;
-    let beginFocalY = 0;
-    let beginSpan = 1;
-    let originPt: Pt = { x: 0, y: 0 };
-    let moved = false;
-    let lastTapAt = 0;
-    let lastTapX = 0;
-    let lastTapY = 0;
-    let suppressClick = false;
-
-    const currentLayout = () => ({
-      viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value,
-    });
-    const toLocal = (clientX: number, clientY: number): Pt => {
-      const box = node.getBoundingClientRect();
-      return { x: clientX - box.left, y: clientY - box.top };
-    };
-    const listed = () => Array.from(pointers.values());
-    const midpoint = (): Pt => {
-      const pts = listed();
-      if (pts.length >= 2) return { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
-      if (pts.length === 1) return pts[0];
-      return { x: 0, y: 0 };
-    };
-    const spanOf = () => {
-      const pts = listed();
-      if (pts.length < 2) return 1;
-      return Math.max(Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y), 1);
-    };
-    const applyDoubleTap = (focalX: number, focalY: number) => {
-      cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
-      if (scale.value > 1.2) {
-        scale.value = withTiming(1, { duration: 220 }); tx.value = withTiming(0, { duration: 220 }); ty.value = withTiming(0, { duration: 220 });
-      } else {
-        const next = zoomAroundFocal({
-          scale: scale.value, tx: tx.value, ty: ty.value, nextScale: DOUBLE_TAP_SCALE,
-          focalX, focalY, left: originX.value, top: originY.value,
-        });
-        const cam = clampTranslation(next, currentLayout());
-        scale.value = withTiming(cam.scale, { duration: 220 }); tx.value = withTiming(cam.tx, { duration: 220 }); ty.value = withTiming(cam.ty, { duration: 220 });
-      }
-    };
-    const finishWebGesture = () => {
-      const layout = currentLayout();
-      if (scale.value < 1) {
-        scale.value = withTiming(1, { duration: 200 }); tx.value = withTiming(0, { duration: 200 }); ty.value = withTiming(0, { duration: 200 });
-        return;
-      }
-      if (scale.value <= 1) { tx.value = 0; ty.value = 0; return; }
-      const bounds = translationBounds(scale.value, layout);
-      const outside = tx.value < bounds.minTx || tx.value > bounds.maxTx || ty.value < bounds.minTy || ty.value > bounds.maxTy;
-      if (!outside) return;
-      const cam = clampTranslation({ scale: scale.value, tx: tx.value, ty: ty.value }, layout);
-      tx.value = withTiming(cam.tx, { duration: 180 }); ty.value = withTiming(cam.ty, { duration: 180 });
-    };
-    const beginFromPointers = () => {
-      cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
-      startCamScale = scale.value;
-      startCamX = tx.value;
-      startCamY = ty.value;
-      moved = false;
-      if (pointers.size >= 2) {
-        mode = 'pinch';
-        const m = midpoint();
-        beginFocalX = m.x; beginFocalY = m.y; beginSpan = spanOf();
-      } else if (pointers.size === 1) {
-        mode = 'pan';
-        const m = midpoint();
-        beginFocalX = m.x; beginFocalY = m.y; originPt = m;
-        if (startCamScale <= 1) { tx.value = 0; ty.value = 0; startCamX = 0; startCamY = 0; }
-      } else {
-        mode = 'none';
-      }
-    };
-    const applyWebGesture = () => {
-      if (mode === 'pinch' && pointers.size >= 2) {
-        const m = midpoint();
-        const next = pinchAroundMovingFocal({
-          scale: startCamScale, tx: startCamX, ty: startCamY,
-          nextScale: startCamScale * (spanOf() / beginSpan),
-          startFocalX: beginFocalX, startFocalY: beginFocalY,
-          focalX: m.x, focalY: m.y, left: originX.value, top: originY.value,
-        });
-        scale.value = next.scale; tx.value = next.tx; ty.value = next.ty;
-        if (Math.hypot(m.x - beginFocalX, m.y - beginFocalY) > 8 || Math.abs(spanOf() / beginSpan - 1) > 0.02) moved = true;
-      } else if (mode === 'pan' && pointers.size === 1) {
-        const m = midpoint();
-        if (Math.hypot(m.x - originPt.x, m.y - originPt.y) > 8) moved = true;
-        if (startCamScale <= 1) { tx.value = 0; ty.value = 0; return; }
-        const soft = rubberBandTranslation({
-          scale: startCamScale, tx: startCamX + (m.x - beginFocalX), ty: startCamY + (m.y - beginFocalY),
-        }, currentLayout());
-        tx.value = soft.tx; ty.value = soft.ty;
-      }
-    };
-    const onLift = () => {
-      if (pointers.size === 0) {
-        const wasMode = mode;
-        const wasMoved = moved;
-        const tapX = beginFocalX;
-        const tapY = beginFocalY;
-        finishWebGesture();
-        mode = 'none';
-        fromTouch = false;
-        if (!wasMoved && wasMode === 'pan') {
-          const now = Date.now();
-          if (now - lastTapAt < 300 && Math.hypot(tapX - lastTapX, tapY - lastTapY) < 28) {
-            lastTapAt = 0;
-            applyDoubleTap(tapX, tapY);
-          } else {
-            lastTapAt = now; lastTapX = tapX; lastTapY = tapY;
-          }
-        }
-      } else {
-        const wasPinch = mode === 'pinch';
-        beginFromPointers();
-        if (wasPinch) moved = true;
-      }
-    };
-
-    const onWheel = (event: WheelLike) => {
-      event.preventDefault();
-      const box = node.getBoundingClientRect();
-      const next = zoomAroundFocal({
-        scale: scale.value, tx: tx.value, ty: ty.value,
-        nextScale: scale.value * Math.exp(-event.deltaY * 0.0018),
-        focalX: event.clientX - box.left, focalY: event.clientY - box.top,
-        left: originX.value, top: originY.value,
-      });
-      const layout = currentLayout();
-      if (next.scale < 1) { scale.value = 1; tx.value = 0; ty.value = 0; return; }
-      const bounds = translationBounds(next.scale, layout);
-      const outside = next.tx < bounds.minTx || next.tx > bounds.maxTx || next.ty < bounds.minTy || next.ty > bounds.maxTy;
-      const cam = outside ? clampTranslation(next, layout) : next;
-      scale.value = cam.scale; tx.value = cam.tx; ty.value = cam.ty;
-    };
-    const onTouchStart = (event: any) => {
-      fromTouch = true;
-      for (const key of Array.from(pointers.keys())) {
-        if (String(key).startsWith('p')) pointers.delete(key);
-      }
-      for (const t of event.changedTouches) pointers.set('t' + t.identifier, toLocal(t.clientX, t.clientY));
-      beginFromPointers();
-    };
-    const onTouchMove = (event: any) => {
-      event.preventDefault();
-      fromTouch = true;
-      for (const t of event.changedTouches) pointers.set('t' + t.identifier, toLocal(t.clientX, t.clientY));
-      applyWebGesture();
-    };
-    const onTouchEnd = (event: any) => {
-      if (moved) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      for (const t of event.changedTouches) pointers.delete('t' + t.identifier);
-      onLift();
-    };
-    const onPointerDown = (event: any) => {
-      if (fromTouch) return;
-      if (event.target && typeof event.target.setPointerCapture === 'function') {
-        try { event.target.setPointerCapture(event.pointerId); } catch { /* Safari */ }
-      }
-      pointers.set('p' + event.pointerId, toLocal(event.clientX, event.clientY));
-      beginFromPointers();
-    };
-    const onPointerMove = (event: any) => {
-      if (fromTouch) return;
-      const key = 'p' + event.pointerId;
-      if (!pointers.has(key)) return;
-      pointers.set(key, toLocal(event.clientX, event.clientY));
-      applyWebGesture();
-    };
-    const onPointerUp = (event: any) => {
-      if (fromTouch) return;
-      if (moved) {
-        suppressClick = true;
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      pointers.delete('p' + event.pointerId);
-      onLift();
-    };
-    const onClick = (event: any) => {
-      if (!suppressClick) return;
-      suppressClick = false;
-      event.preventDefault();
-      event.stopPropagation();
-    };
-
-    const capture = { passive: false, capture: true };
-    node.addEventListener('wheel', onWheel, { passive: false });
-    node.addEventListener('pointerdown', onPointerDown, capture);
-    node.addEventListener('pointermove', onPointerMove, capture);
-    node.addEventListener('pointerup', onPointerUp, capture);
-    node.addEventListener('pointercancel', onPointerUp, capture);
-    node.addEventListener('click', onClick, capture);
-    node.addEventListener('touchstart', onTouchStart, capture);
-    node.addEventListener('touchmove', onTouchMove, capture);
-    node.addEventListener('touchend', onTouchEnd, capture);
-    node.addEventListener('touchcancel', onTouchEnd, capture);
-    return () => {
-      node.removeEventListener('wheel', onWheel);
-      node.removeEventListener('pointerdown', onPointerDown, capture);
-      node.removeEventListener('pointermove', onPointerMove, capture);
-      node.removeEventListener('pointerup', onPointerUp, capture);
-      node.removeEventListener('pointercancel', onPointerUp, capture);
-      node.removeEventListener('click', onClick, capture);
-      node.removeEventListener('touchstart', onTouchStart, capture);
-      node.removeEventListener('touchmove', onTouchMove, capture);
-      node.removeEventListener('touchend', onTouchEnd, capture);
-      node.removeEventListener('touchcancel', onTouchEnd, capture);
-    };
-  }, [viewport.width, viewport.height]);
+    return attachWebMapGestures(node, cam);
+  }, [viewport.width, viewport.height, cam]);
 
   const results = useMemo(
     () => (focused || query.trim() ? searchEventMap(query, tentedCityVendors, filter) : []),
@@ -536,70 +305,7 @@ export default function TentedCityMap({
     return [];
   }, [filter]);
 
-  const pinch = Gesture.Pinch()
-    .onBegin((e) => {
-      cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
-      startScale.value = scale.value; startX.value = tx.value; startY.value = ty.value;
-      startFocalX.value = e.focalX; startFocalY.value = e.focalY;
-    })
-    .onUpdate((e) => {
-      const next = pinchAroundMovingFocal({
-        scale: startScale.value, tx: startX.value, ty: startY.value, nextScale: startScale.value * e.scale,
-        startFocalX: startFocalX.value, startFocalY: startFocalY.value,
-        focalX: e.focalX, focalY: e.focalY, left: originX.value, top: originY.value,
-      });
-      scale.value = next.scale; tx.value = next.tx; ty.value = next.ty;
-    })
-    .onEnd(() => {
-      const layout = { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value };
-      if (scale.value < 1) {
-        scale.value = withTiming(1, { duration: 200 }); tx.value = withTiming(0, { duration: 200 }); ty.value = withTiming(0, { duration: 200 });
-        return;
-      }
-      const bounds = translationBounds(scale.value, layout);
-      const outside = tx.value < bounds.minTx || tx.value > bounds.maxTx || ty.value < bounds.minTy || ty.value > bounds.maxTy;
-      if (!outside) return;
-      const cam = clampTranslation({ scale: scale.value, tx: tx.value, ty: ty.value }, layout);
-      tx.value = withTiming(cam.tx, { duration: 180 }); ty.value = withTiming(cam.ty, { duration: 180 });
-    });
-
-  const pan = Gesture.Pan().minPointers(1).maxPointers(1)
-    .onBegin(() => {
-      cancelAnimation(tx); cancelAnimation(ty);
-      if (scale.value <= 1) { tx.value = 0; ty.value = 0; startX.value = 0; startY.value = 0; return; }
-      startX.value = tx.value; startY.value = ty.value;
-    })
-    .onUpdate((e) => {
-      if (scale.value <= 1) { tx.value = 0; ty.value = 0; return; }
-      const layout = { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value };
-      const soft = rubberBandTranslation({ scale: scale.value, tx: startX.value + e.translationX, ty: startY.value + e.translationY }, layout);
-      tx.value = soft.tx; ty.value = soft.ty;
-    })
-    .onEnd((e) => {
-      if (scale.value <= 1) { tx.value = 0; ty.value = 0; return; }
-      const layout = { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value };
-      const bounds = translationBounds(scale.value, layout);
-      tx.value = withDecay({ velocity: e.velocityX, clamp: [bounds.minTx, bounds.maxTx], rubberBandEffect: true, rubberBandFactor: 0.55, deceleration: 0.996 });
-      ty.value = withDecay({ velocity: e.velocityY, clamp: [bounds.minTy, bounds.maxTy], rubberBandEffect: true, rubberBandFactor: 0.55, deceleration: 0.996 });
-    });
-
-  const doubleTap = Gesture.Tap().numberOfTaps(2).onEnd((e, success) => {
-    if (!success) return;
-    cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
-    if (scale.value > 1.2) {
-      scale.value = withTiming(1, { duration: 220 }); tx.value = withTiming(0, { duration: 220 }); ty.value = withTiming(0, { duration: 220 });
-    } else {
-      const next = zoomAroundFocal({
-        scale: scale.value, tx: tx.value, ty: ty.value, nextScale: DOUBLE_TAP_SCALE,
-        focalX: e.x, focalY: e.y, left: originX.value, top: originY.value,
-      });
-      const cam = clampTranslation(next, { viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value });
-      scale.value = withTiming(cam.scale, { duration: 220 }); tx.value = withTiming(cam.tx, { duration: 220 }); ty.value = withTiming(cam.ty, { duration: 220 });
-    }
-  });
-
-  pinch.blocksExternalGesture(pan);
-  const composed = Gesture.Simultaneous(pinch, pan, doubleTap);
+  const composed = useMemo(() => createMapNativeGestures(cam), [cam]);
   const mapStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }] }));
   const boothDividerStyle = useAnimatedStyle(() => ({
     opacity: scale.value >= BOOTH_DIVIDER_VISIBLE_SCALE ? 0.5 : 0,

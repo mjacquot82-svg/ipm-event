@@ -168,17 +168,21 @@ test('Valard EAST-06 and CAN-AM stay untouched', () => {
   assert.equal(canam.locationLabel, 'WEST-02');
 });
 
-test('Grounds UX: initial zoom, raised max, one-shot FoM, search, fit, box-none card', () => {
-  assert.equal(GROUNDS_INITIAL_SCALE, 1.22);
-  assert.ok(GROUNDS_MAX_SCALE >= 6);
-  assert.match(groundsMapSrc, /GROUNDS_INITIAL_SCALE/);
-  assert.match(groundsMapSrc, /GROUNDS_MAX_SCALE/);
+test('Grounds UX: shared TC gestures, one-shot FoM, search, fit, box-none card', () => {
+  // Grounds no longer independently tunes initial/max scale — mirrors TC via tentedCityCamera.
+  assert.equal(GROUNDS_INITIAL_SCALE, 1);
+  assert.equal(GROUNDS_MAX_SCALE, 4.5);
+  assert.doesNotMatch(groundsMapSrc, /GROUNDS_INITIAL_SCALE/);
+  assert.doesNotMatch(groundsMapSrc, /GROUNDS_MAX_SCALE/);
+  assert.match(groundsMapSrc, /mapInteraction/);
+  assert.match(groundsMapSrc, /attachWebMapGestures/);
+  assert.match(groundsMapSrc, /createMapNativeGestures/);
   assert.match(groundsMapSrc, /focusedKey/);
   assert.match(groundsMapSrc, /grounds-map-search/);
   assert.match(groundsMapSrc, /searchEventMap/);
   assert.match(groundsMapSrc, /grounds-fit-reset/);
   assert.match(groundsMapSrc, /pointerEvents="box-none"/);
-  assert.match(groundsMapSrc, /minPointers\(1\)\.maxPointers\(1\)/);
+  assert.match(tentedMapSrc, /mapInteraction/);
   assert.match(tentedMapSrc, /searchEventMap/);
   assert.match(tentedMapSrc, /onSwitchToGrounds\?\.\(hit.query\)/);
   assert.match(mapSrc, /overrideLocation/);
