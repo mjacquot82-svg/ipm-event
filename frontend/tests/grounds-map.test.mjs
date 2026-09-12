@@ -56,3 +56,11 @@ test('GroundsMap has the official image, camera worklet, and switch callback', (
   assert.match(componentSource, /groundsPaintViewport/);
   assert.match(componentSource, /groundsLayerLayout/);
 });
+
+test('RV Park zone offers switch-rv / View RV Site Map path', () => {
+  assert.match(zonesSource, /id: 'rv-park'/);
+  assert.match(zonesSource, /action: 'switch-rv'/);
+  assert.match(componentSource, /View RV Site Map/);
+  assert.match(componentSource, /onSwitchToRv/);
+  assert.match(mapSource, /RvParkDetailMap/);
+});
