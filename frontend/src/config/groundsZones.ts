@@ -9,7 +9,8 @@ export type GroundsZoneId =
   | 'west-parking'
   | 'north-parking'
   | 'rv-park'
-  | 'bus-stop';
+  | 'bus-stop'
+  | 'accessible-parking';
 
 export type GroundsZone = {
   id: GroundsZoneId;
@@ -51,6 +52,18 @@ export const GROUNDS_ZONES: GroundsZone[] = [
     fact: 'Shuttle stop on the site road north of Tented City.',
     action: 'info',
     color: '#7B4EA3',
+  },
+  {
+    id: 'accessible-parking',
+    label: 'Accessible Parking',
+    rect: { x: 25.372, y: 38.385, w: 4.018, h: 2.094 },
+    polygon: [
+      [25.372, 39.200], [26.200, 38.385], [27.800, 38.385], [29.390, 39.200],
+      [28.200, 40.479], [26.400, 40.479],
+    ],
+    fact: 'Accessible parking on the site road west of Tented City.',
+    action: 'info',
+    color: '#3A7BC8',
   },
   {
     id: 'horse-plowing',
@@ -160,6 +173,10 @@ const GROUNDS_ZONE_ALIASES: Record<string, GroundsZoneId> = {
   pickup: 'bus-stop',
   dropoff: 'bus-stop',
   'drop off': 'bus-stop',
+  // Grounds wheelchair icon (displayed artwork). TC strip stays the schedule semantic.
+  'accessible parking (grounds)': 'accessible-parking',
+  'grounds accessible parking': 'accessible-parking',
+  'accessible parking': 'accessible-parking',
 };
 
 /**

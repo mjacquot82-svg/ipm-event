@@ -175,6 +175,30 @@ export const MNP_LIFESTYLES_EAST2_RECT: Rect = (() => {
   if (!area) throw new Error(`Missing geometry area ${MNP_LIFESTYLES_EAST2_AREA_ID}`);
   return area.rect;
 })();
+
+// Digitized tan Britespan campus on tented-city-map.png (Third Street S/W block
+// + printed Ontario Mutuals Main Stage / Welcome Centre / Britespan building).
+// Replaces the printed-label-strip-only named rect. Not 3B-28-32 / Hydro One Avenue.
+export const BRITESPAN_BUILDING_AREA_ID = 'named-ontario-mutuals-main-stage-welcome-centre';
+export const BRITESPAN_BUILDING_RECT: Rect = (() => {
+  const area = AREA_BY_ID.get(BRITESPAN_BUILDING_AREA_ID);
+  if (!area) throw new Error(`Missing geometry area ${BRITESPAN_BUILDING_AREA_ID}`);
+  return area.rect;
+})();
+
+export const CKNX_WEST3_AREA_ID = 'named-cknx-centennial-pavilion-lounge-west-3';
+export const CKNX_WEST3_RECT: Rect = (() => {
+  const area = AREA_BY_ID.get(CKNX_WEST3_AREA_ID);
+  if (!area) throw new Error(`Missing geometry area ${CKNX_WEST3_AREA_ID}`);
+  return area.rect;
+})();
+
+export const HYDRO_ONE_EAST5_AREA_ID = 'named-east-5';
+export const HYDRO_ONE_EAST5_RECT: Rect = (() => {
+  const area = AREA_BY_ID.get(HYDRO_ONE_EAST5_AREA_ID);
+  if (!area) throw new Error(`Missing geometry area ${HYDRO_ONE_EAST5_AREA_ID}`);
+  return area.rect;
+})();
 export const AREA_BY_LABEL = new Map(TENTED_CITY_AREAS.map((area) => [area.label, area]));
 
 export function getLot(id: string) {

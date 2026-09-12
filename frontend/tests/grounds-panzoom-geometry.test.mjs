@@ -78,9 +78,10 @@ test('Bus Stop ≠ Bus Parking #1194; no bus-parking geometry invented', () => {
   assert.ok(!GROUNDS_ZONES.some((z) => z.id === 'bus-parking' || /1194/.test(z.label)));
 });
 
-test('Accessible Parking stays off grounds zones (TC wiring preserved)', () => {
-  assert.equal(resolveGroundsZone('Accessible Parking'), null);
-  assert.doesNotMatch(zonesSource, /accessible-parking/);
+test('Accessible Parking grounds icon is digitized from artwork; Bus Parking still absent', () => {
+  assert.equal(resolveGroundsZone('Accessible Parking')?.id, 'accessible-parking');
+  assert.match(zonesSource, /id: 'accessible-parking'/);
+  assert.ok(zone('accessible-parking').polygon.length >= 3);
 });
 
 test('GroundsMap uses polygon SVG highlight + MNP cyan/yellow language', () => {

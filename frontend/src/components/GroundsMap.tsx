@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, LayoutChangeEvent, Platform, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Image, Keyboard, LayoutChangeEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, runOnJS, useAnimatedStyle, useSharedValue, withDecay, withTiming } from 'react-native-reanimated';
 import colors from '../theme/colors';
 import { groundsLayerLayout, groundsPaintViewport } from '../config/groundsLayout';
-import { GROUNDS_MAP, GROUNDS_ZONES, GroundsZone, hitTestGroundsZone, resolveGroundsZone } from '../config/groundsZones';
+import { GROUNDS_MAP, GroundsZone, hitTestGroundsZone, resolveGroundsZone } from '../config/groundsZones';
+import { GROUNDS_INITIAL_SCALE, GROUNDS_MAX_SCALE } from '../config/groundsCamera';
+import { searchEventMap, type EventMapHit } from '../config/mapSearch';
+import { tentedCityVendors } from '../data/tentedCityVendors';
 import {
   clampTranslation, DOUBLE_TAP_SCALE, flyToRect, mapPointUnderFocal, pinchAroundMovingFocal,
   rubberBandTranslation, translationBounds, zoomAroundFocal,
@@ -91,12 +94,16 @@ function ZoneHighlight({ zone }: { zone: GroundsZone }) {
 
 export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
   highlightedLocation?: string | null;
-  onSwitchToTented: () => void;
+  onSwitchToTented: (location?: string) => void;
 }) {
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<GroundsZone | null>(null);
+  const [query, setQuery] = useState('');
+  const [focused, setFocused] = useState(false);
+  const focusedKey = useRef<string | null>(null);
+  const didInitCamera = useRef(false);
   const viewport = groundsPaintViewport(measured, windowSize);
   const layer = useMemo(() => groundsLayerLayout(viewport), [viewport.width, viewport.height]);
   const scale = useSharedValue(1), tx = useSharedValue(0), ty = useSharedValue(0);
@@ -123,12 +130,24 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
     ty.value = withTiming(cam.ty, { duration: 280 });
   }, [viewport.width, viewport.height, layer.width, layer.height, layer.left, layer.top]);
 
-  const chooseZone = useCallback((zone: GroundsZone | null) => {
+  const chooseZone = useCallback((zone: GroundsZone | null, opts?: { switchTented?: boolean }) => {
     if (!zone) return;
     setSelected(zone);
     flyTo(zone);
-    if (zone.action === 'switch-tented') setTimeout(onSwitchToTented, 280);
+    if ((opts?.switchTented ?? true) && zone.action === 'switch-tented') setTimeout(() => onSwitchToTented(), 280);
   }, [flyTo, onSwitchToTented]);
+
+  const selectHit = useCallback((hit: EventMapHit) => {
+    setFocused(false);
+    Keyboard.dismiss();
+    if (hit.mapType === 'tented') {
+      onSwitchToTented(hit.kind === 'semantic' ? hit.query : hit.place.kind === 'vendor' ? hit.place.vendor.name : hit.place.venue.label);
+      return;
+    }
+    setQuery(hit.title);
+    focusedKey.current = `${hit.query}::${hit.zone.id}`;
+    chooseZone(hit.zone, { switchTented: false });
+  }, [chooseZone, onSwitchToTented]);
 
   const hitViewportPoint = useCallback((x: number, y: number) => {
     const point = mapPointUnderFocal({ scale: scale.value, tx: tx.value, ty: ty.value, focalX: x, focalY: y, left: layer.left, top: layer.top });
@@ -139,8 +158,28 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
     const zone = resolveGroundsZone(highlightedLocation);
     if (!zone) return;
     setSelected(zone);
+    const key = `${highlightedLocation || ''}::${zone.id}`;
+    if (focusedKey.current === key) return;
+    focusedKey.current = key;
     flyTo(zone);
-  }, [highlightedLocation, viewport.width]);
+  }, [highlightedLocation, flyTo]);
+
+  useEffect(() => {
+    if (didInitCamera.current) return;
+    if (viewport.width <= 1 || layer.width <= 1) return;
+    if (highlightedLocation && resolveGroundsZone(highlightedLocation)) return;
+    didInitCamera.current = true;
+    const next = zoomAroundFocal({
+      scale: 1, tx: 0, ty: 0, nextScale: GROUNDS_INITIAL_SCALE,
+      focalX: viewport.width / 2, focalY: viewport.height / 2,
+      left: layer.left, top: layer.top, maxScale: GROUNDS_MAX_SCALE,
+    });
+    const cam = clampTranslation(next, {
+      viewportW: viewport.width, viewportH: viewport.height, mapW: layer.width, mapH: layer.height,
+      left: layer.left, top: layer.top,
+    });
+    scale.value = cam.scale; tx.value = cam.tx; ty.value = cam.ty;
+  }, [viewport.width, viewport.height, layer.width, layer.height, layer.left, layer.top, highlightedLocation]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return undefined;
@@ -199,7 +238,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
         const next = pinchAroundMovingFocal({
           scale: baseScale, tx: baseX, ty: baseY, nextScale: baseScale * ratio,
           startFocalX: focalX, startFocalY: focalY, focalX: mid.x, focalY: mid.y,
-          left: originX.value, top: originY.value,
+          left: originX.value, top: originY.value, maxScale: GROUNDS_MAX_SCALE,
         });
         scale.value = next.scale; tx.value = next.tx; ty.value = next.ty;
         moved ||= Math.abs(ratio - 1) > 0.02 || Math.hypot(mid.x - focalX, mid.y - focalY) > 8;
@@ -231,7 +270,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
       e.preventDefault(); const p = local(e.clientX, e.clientY);
       const next = zoomAroundFocal({
         scale: scale.value, tx: tx.value, ty: ty.value, nextScale: scale.value * Math.exp(-e.deltaY * 0.0018),
-        focalX: p.x, focalY: p.y, left: originX.value, top: originY.value,
+        focalX: p.x, focalY: p.y, left: originX.value, top: originY.value, maxScale: GROUNDS_MAX_SCALE,
       });
       const cam = next.scale < 1 ? { scale: 1, tx: 0, ty: 0 } : clampTranslation(next, layout());
       scale.value = cam.scale; tx.value = cam.tx; ty.value = cam.ty;
@@ -259,7 +298,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
     const next = pinchAroundMovingFocal({
       scale: startScale.value, tx: startX.value, ty: startY.value, nextScale: startScale.value * e.scale,
       startFocalX: startFocalX.value, startFocalY: startFocalY.value, focalX: e.focalX, focalY: e.focalY,
-      left: originX.value, top: originY.value,
+      left: originX.value, top: originY.value, maxScale: GROUNDS_MAX_SCALE,
     });
     scale.value = next.scale; tx.value = next.tx; ty.value = next.ty;
   }).onEnd(() => {
@@ -300,7 +339,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
     }
     const next = zoomAroundFocal({
       scale: scale.value, tx: tx.value, ty: ty.value, nextScale: DOUBLE_TAP_SCALE,
-      focalX: e.x, focalY: e.y, left: originX.value, top: originY.value,
+      focalX: e.x, focalY: e.y, left: originX.value, top: originY.value, maxScale: GROUNDS_MAX_SCALE,
     });
     const cam = clampTranslation(next, {
       viewportW: viewW.value, viewportH: viewH.value, mapW: mapW.value, mapH: mapH.value, left: originX.value, top: originY.value,
@@ -320,8 +359,15 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
       </Animated.View>
     </Animated.View>
   );
+  const results = useMemo(
+    () => (focused || query.trim() ? searchEventMap(query, tentedCityVendors, 'all') : []),
+    [query, focused],
+  );
   const reset = () => {
     setSelected(null);
+    setQuery('');
+    setFocused(false);
+    Keyboard.dismiss();
     cancelAnimation(scale); cancelAnimation(tx); cancelAnimation(ty);
     scale.value = withTiming(1, { duration: 220 });
     tx.value = withTiming(0, { duration: 220 });
@@ -332,6 +378,39 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented }: {
   return <View style={styles.root}>
     <View ref={viewportRef} style={[styles.viewport, webLock]} onLayout={onLayout} collapsable={false}>
       {Platform.OS === 'web' ? map : <GestureDetector gesture={composed}>{map}</GestureDetector>}
+    </View>
+    <View style={styles.searchWrap} pointerEvents="box-none">
+      <View style={styles.searchCard}>
+        <Feather name="search" size={18} color="#6B7280" />
+        <TextInput
+          value={query}
+          onChangeText={(text) => { setQuery(text); setFocused(true); }}
+          onFocus={() => setFocused(true)}
+          placeholder="Find a vendor, booth, stage, or place"
+          placeholderTextColor="#9CA3AF"
+          style={styles.searchInput}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          testID="grounds-map-search"
+          onSubmitEditing={() => { if (results[0]) selectHit(results[0]); }}
+        />
+        {query ? <TouchableOpacity onPress={() => { setQuery(''); setFocused(false); }} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
+      </View>
+      {focused && query.trim().length > 0 ? (
+        <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" nestedScrollEnabled testID="grounds-map-results">
+          {results.map((hit) => (
+            <TouchableOpacity key={hit.key} style={styles.resultRow} onPress={() => selectHit(hit)}>
+              <Feather name={hit.mapType === 'grounds' ? 'navigation' : hit.kind === 'stage' ? 'mic' : 'map-pin'} size={16} color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.resultName} numberOfLines={1}>{hit.title}</Text>
+                <Text style={styles.resultMeta}>{hit.subtitle}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+          {results.length === 0 ? <Text style={styles.empty}>No matching mapped places.</Text> : null}
+        </ScrollView>
+      ) : null}
     </View>
     <TouchableOpacity style={styles.reset} onPress={reset} accessibilityLabel="Fit map to grounds" testID="grounds-fit-reset">
       <Feather name="maximize-2" size={18} color={colors.textPrimary} />
@@ -378,6 +457,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: SELECTED_INNER,
   },
+  searchWrap: { position: 'absolute', top: 52, left: 12, right: 12, zIndex: 12 },
+  searchCard: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' },
+  searchInput: { flex: 1, fontSize: 16, color: '#111827', paddingVertical: 10 },
+  results: { marginTop: 6, backgroundColor: '#FFFFFF', borderRadius: 14, overflow: 'hidden', maxHeight: 260 },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E7EB', minHeight: 48 },
+  resultName: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  resultMeta: { fontSize: 12, color: '#6B7280', marginTop: 1 },
+  empty: { padding: 14, color: '#6B7280' },
   reset: {
     position: 'absolute', right: 12, bottom: 108, width: 44, height: 44, borderRadius: 22,
     backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', elevation: 4,

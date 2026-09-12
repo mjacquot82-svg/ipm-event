@@ -60,11 +60,11 @@ test('2. Event Centre #1 — West 2 opens Tented City (semantic)', () => {
   assert.equal(findTentedCityPlace('Event Centre #1 — West 2', vendors), undefined);
 });
 
-test('3. Accessible Parking wires via existing TC geometry (no invented grounds zone)', () => {
-  assert.equal(resolveGroundsZone('Accessible Parking'), null);
-  assert.doesNotMatch(zonesSource, /accessible-parking/);
+test('3. Accessible Parking schedule path stays Tented City; grounds icon is extra discovery', () => {
   assert.ok(findSemanticAreaForLocation('Accessible Parking'));
   assert.equal(resolveMapTypeForLocation('Accessible Parking', vendors), 'tented');
+  assert.equal(resolveGroundsZone('Accessible Parking')?.id, 'accessible-parking');
+  assert.match(zonesSource, /id: 'accessible-parking'/);
 });
 
 test('4. Welcome Centre rename preserves geometry + Centre alias', () => {
@@ -76,7 +76,7 @@ test('4. Welcome Centre rename preserves geometry + Centre alias', () => {
   assert.equal(resolveVendorMapQuery('Centre').status, 'mapped');
   assert.equal(resolveVendorMapQuery('Centre').query, 'Welcome Centre');
   assert.equal(resolveVendorMapQuery('Welcome Centre').status, 'mapped');
-  assert.equal(findTentedCityPlace('Welcome Centre', vendors)?.kind, 'vendor');
+  assert.equal(findTentedCityPlace('Welcome Centre', vendors)?.kind, 'stage');
 });
 
 test('5. Emergency / First Aid clean name + aliases + page Find-on-Map', () => {
@@ -117,7 +117,7 @@ test('8. Hydro One EAST-5 → EAST-05 label normalize; geometry preserved', () =
   assert.ok(hydro);
   assert.equal(hydro.locationLabel, 'EAST-05');
   assert.deepEqual(hydro.booths, ['EAST-05']);
-  assert.deepEqual(hydro.rect, { x: 65.2, y: 46.8, w: 12, h: 7.2 });
+  assert.deepEqual(hydro.rect, { x: 57.864, y: 58.625, w: 6.176, h: 6.444 });
   assert.equal(findTentedCityPlace('Hydro One', vendors)?.kind, 'vendor');
   assert.equal(resolveMapTypeForLocation('Hydro One', vendors), 'tented');
 });
