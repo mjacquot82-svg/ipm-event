@@ -160,12 +160,13 @@ test('unresolved destinations stay unmapped', () => {
   assert.ok(!GROUNDS_ZONES.some((z) => z.id === 'bus-parking' || /1194/.test(z.label)));
 });
 
-test('Valard and Can-Am keep staging Sept-8 booths (not FoM EAST-06 / WEST-02)', () => {
+test('Valard EAST-06 null rect; CAN-AM WEST-02 without WEST-4 footprint', () => {
   const valard = vendors.find((v) => v.name === 'Valard Construction, Vaughan');
-  assert.equal(valard.locationLabel, '5A-39-42');
-  assert.ok(valard.rect);
+  assert.equal(valard.locationLabel, 'EAST-06');
+  assert.equal(valard.rect, null);
   const canam = vendors.find((v) => v.name.startsWith('Can-Am Demo Area'));
-  assert.equal(canam.locationLabel, 'WEST-4');
+  assert.equal(canam.locationLabel, 'WEST-02');
+  assert.equal(canam.rect, null);
 });
 
 test('Grounds UX: shared camera, one-shot FoM, search, fit, box-none card', () => {

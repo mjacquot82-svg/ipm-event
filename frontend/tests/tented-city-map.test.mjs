@@ -68,7 +68,6 @@ function exhibitorBusinessName(name) {
 
 const VENDOR_MAP_ALIASES = {
   [normalizeVendorKey('Gay Lea Foods Co-operative Ltd.')]: 'Gay Lea Foods Co-operative Ltd',
-  [normalizeVendorKey('Georgian Bay Funeral Services Association (GBFSA)')]: '(GBFSA), Hanover',
   [normalizeVendorKey('Kincardine & Community Health Care Foundation')]: 'Kincardine & Community Health Care',
 };
 
@@ -112,7 +111,7 @@ function tokensMatch(hay, needle) {
 }
 
 const vendors = loadExhibitors();
-assert.equal(vendors.length, 318);
+assert.equal(vendors.length, 326);
 
 test('Tented City has valid initial dimensions without onLayout', () => {
   const viewport = tentedCityPaintViewport(null, { width: 390, height: 844 });
@@ -147,10 +146,10 @@ test('exact Vendor name resolves correctly', () => {
   assert.ok(exhibitor.rect);
 });
 
-test('confirmed alias resolves correctly', () => {
+test('Georgian Bay Funeral Services resolves by exact/normalized name', () => {
   const resolved = resolveVendorMapQuery('Georgian Bay Funeral Services Association (GBFSA)', vendors);
   assert.equal(resolved.status, 'mapped');
-  assert.equal(resolved.query, '(GBFSA), Hanover');
+  assert.equal(resolved.query, 'Georgian Bay Funeral Services Association (GBFSA)');
   assert.equal(vendors.find((v) => v.name === resolved.query).locationLabel, '4B-05');
 });
 
@@ -181,7 +180,7 @@ test('ACE does not match Wallaceburg', () => {
 test('Find on Map uses the canonical mapped exhibitor after alias resolution', () => {
   const resolved = resolveVendorMapQuery('Georgian Bay Funeral Services Association (GBFSA)', vendors);
   assert.equal(resolved.status, 'mapped');
-  assert.equal(resolved.query, '(GBFSA), Hanover');
+  assert.equal(resolved.query, 'Georgian Bay Funeral Services Association (GBFSA)');
   const exhibitor = vendors.find((v) => v.name === resolved.query);
   assert.ok(exhibitor.rect);
   assert.equal(exhibitor.locationLabel, '4B-05');
