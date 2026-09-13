@@ -85,7 +85,8 @@ function TabItem({ routeName }: { routeName: string }) {
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const topInset = Platform.OS === 'web' ? 0 : insets.top || 0;
+  // The web provider reads env(safe-area-inset-top), including standalone iOS PWAs.
+  const topInset = insets.top || 0;
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
   const totalBottomBarHeight = NAV_ICONS_HEIGHT + bottomInset;
 
