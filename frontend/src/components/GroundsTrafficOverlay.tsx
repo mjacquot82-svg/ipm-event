@@ -35,14 +35,15 @@ export function GroundsTrafficOverlay({ width, height, scale }: { width: number;
         <View style={[styles.headFill, { right: 2 }]} />
       </View>;
     })}
-    <View pointerEvents="none" testID="grounds-flow-caption" style={[styles.label, { left: width * .65 - 75, top: height * .81 - 10 }]}>
+    <View pointerEvents="none" testID="grounds-flow-caption" style={[styles.label, { left: width * .68 - 75, top: height * .7096 + 7 }]}>
       <Text style={styles.flowCaption}>Flow of traffic</Text>
     </View>
-    <RoadLabel text="Durham Rd" x={27} y={66.5} rotation={90} width={width} height={height} scale={scale} />
-    <RoadLabel text="Greenock-Brant" x={65} y={75.5} rotation={0} width={width} height={height} scale={scale} />
+    <RoadLabel text="Durham Rd" x={41.5} y={82} rotation={90} width={width} height={height} scale={scale} />
+    <RoadLabel text="Greenock-Brant" x={65} y={79} rotation={0} width={width} height={height} scale={scale} />
     <RoadLabel text="Bruce Road 2" x={24.9} y={19.42} rotation={90} width={width} height={height} scale={scale} zoomOnly />
-    <RoadLabel text="Bruce Road 3" x={53.13} y={32.4} rotation={0} width={width} height={height} scale={scale} zoomOnly />
-    <View pointerEvents="none" testID="grounds-walkerton" style={[styles.label, { left: width * .205 - 75, top: height * .115 - 10 }]}>
+    <RoadLabel text="Bruce Road 3" x={56} y={34.5} rotation={0} width={width} height={height} scale={scale} />
+    <RoadLabel text="Highway 9" x={87.5} y={48} rotation={90} width={width} height={height} scale={scale} />
+    <View pointerEvents="none" testID="grounds-walkerton" style={[styles.label, { left: width * .205 - 75, top: height * .16 - 10 }]}>
       <Text style={[styles.labelText, styles.orientation]}>↑ Walkerton</Text>
     </View>
   </View>;
@@ -54,6 +55,6 @@ const styles = StyleSheet.create({
   headFill: { position: 'absolute', top: 2, width: 0, height: 0, borderTopWidth: 4, borderBottomWidth: 4, borderLeftWidth: 9, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderLeftColor: '#FFE600' },
   label: { position: 'absolute', width: 150, height: 20, alignItems: 'center', justifyContent: 'center' },
   labelText: { fontSize: 12, lineHeight: 16, fontWeight: '700', color: '#20252B', backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 3, borderRadius: 3 },
-  flowCaption: { fontSize: 12, lineHeight: 16, fontWeight: '600', color: '#252525', backgroundColor: '#FFF2A8', paddingHorizontal: 3 },
+  flowCaption: { fontSize: 12, lineHeight: 16, fontWeight: '700', color: '#252525', backgroundColor: '#FFE600', paddingHorizontal: 4, borderColor: '#252525', borderWidth: 1, borderRadius: 3 },
   orientation: { color: '#334155', borderColor: '#64748B', borderWidth: 1 },
 });
