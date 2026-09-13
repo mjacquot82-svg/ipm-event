@@ -1,0 +1,1645 @@
+[
+  {
+    "run": 0,
+    "variant": "all",
+    "home": 903.8999999999069,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 4589.899999999907
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 4632.0999999996275
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 5633.5
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 5760.899999999907
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 6763.0999999996275
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 6827.199999999721
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 4601.5999999996275,
+          "end": 4632
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 5760.799999999814,
+          "end": 5760.899999999907
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 6774.299999999814,
+          "end": 6827.0999999996275
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 485.10000000009313,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 100.1999999997206,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 149.3000000002794,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 103.40000000037253,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 78.60000000009313,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 97,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 4590.299999999814,
+        "end": 4597.5,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 5633.799999999814,
+        "end": 5645,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 6763.299999999814,
+        "end": 6772.5999999996275,
+        "bytes": 296657,
+        "body": 296357
+      }
+    ]
+  },
+  {
+    "run": 0,
+    "variant": "no-grounds",
+    "home": 838.2000000001863,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3837.899999999907
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3838.3000000002794
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4838.700000000186
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4972.100000000093
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5972.5
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 6051.100000000093
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 4972,
+          "end": 4972.100000000093
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 5988.5,
+          "end": 6051
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 1017.7999999998137,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 143.60000000009313,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 115.39999999990687,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 159.70000000018626,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 100.1999999997206,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 132.79999999981374,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 4839,
+        "end": 4856.5,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 5972.800000000279,
+        "end": 5984.300000000279,
+        "bytes": 296657,
+        "body": 296357
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 12343.200000000186,
+        "end": 12366,
+        "bytes": 372041,
+        "body": 371741
+      }
+    ]
+  },
+  {
+    "run": 0,
+    "variant": "no-tented",
+    "home": 798.8000000002794,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3786.3000000002794
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3831.7000000001863
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4833
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4833.200000000186
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5833.600000000093
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 5933.800000000279
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 3797.9000000003725,
+          "end": 3831.600000000093
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 5851.200000000186,
+          "end": 5933.800000000279
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 699.1000000000931,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 68.70000000018626,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 104.59999999962747,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 114.3000000002794,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 72.5,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 102.3000000002794,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 3786.7000000001863,
+        "end": 3796.3000000002794,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 5833.800000000279,
+        "end": 5846.700000000186,
+        "bytes": 296657,
+        "body": 296357
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 12063.200000000186,
+        "end": 12115.400000000373,
+        "bytes": 712085,
+        "body": 711785
+      }
+    ]
+  },
+  {
+    "run": 0,
+    "variant": "no-rv",
+    "home": 1090.6999999997206,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 4085.100000000093
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 4151.100000000093
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 5151.699999999721
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 5306.600000000093
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 6307.5
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 6307.799999999814
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 4100.399999999907,
+          "end": 4150.899999999907
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 5306.399999999907,
+          "end": 5306.5
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 633.8000000002794,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 112.5,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 195.6999999997206,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 141.39999999990687,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 126.1999999997206,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 138.70000000018626,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 4085.399999999907,
+        "end": 4095.7999999998137,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 5152.5,
+        "end": 5180.199999999721,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 12926.399999999907,
+        "end": 12951.5,
+        "bytes": 296657,
+        "body": 296357
+      }
+    ]
+  },
+  {
+    "run": 1,
+    "variant": "all",
+    "home": 1177.8999999999069,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 4076.9999999995343
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 4145.699999999721
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 5145.999999999534
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 5241.399999999907
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 6241.800000000279
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 6316.899999999907
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 4102.199999999721,
+          "end": 4145.600000000093
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 5241.300000000279,
+          "end": 5241.300000000279
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 6255.600000000093,
+          "end": 6316.899999999907
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 576,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 129.09999999962747,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 166,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 92.6000000005588,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 73.90000000037253,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 151.70000000018626,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 4077.4999999995343,
+        "end": 4098.499999999534,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 5146.300000000279,
+        "end": 5154.899999999907,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 6242.399999999907,
+        "end": 6251.699999999721,
+        "bytes": 296657,
+        "body": 296357
+      }
+    ]
+  },
+  {
+    "run": 1,
+    "variant": "no-grounds",
+    "home": 780.2999999998137,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3763.7999999998137
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3764.2999999998137
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4764.5999999996275
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4856.4000000003725
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5865.5
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 6028.5999999996275
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 4856.4000000003725,
+          "end": 4856.4000000003725
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 5906.299999999814,
+          "end": 6028.5999999996275
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 910,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 248.6000000005588,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 299.29999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 216,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 113.20000000018626,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 134.40000000037253,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 4764.9000000003725,
+        "end": 4777,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 5866.299999999814,
+        "end": 5898.799999999814,
+        "bytes": 296657,
+        "body": 296357
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 12243.799999999814,
+        "end": 12312,
+        "bytes": 372041,
+        "body": 371741
+      }
+    ]
+  },
+  {
+    "run": 1,
+    "variant": "no-tented",
+    "home": 887,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3856.2999999998137
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3896.899999999441
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4897.199999999255
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4897.399999999441
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5897.5999999996275
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 5943.699999999255
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 3868.2999999998137,
+          "end": 3896.5999999996275
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 5907.399999999441,
+          "end": 5943.699999999255
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 637.1000000005588,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 171.5,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 143.79999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 167.29999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 124.79999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 107.59999999962747,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 3856.5999999996275,
+        "end": 3864.199999999255,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 5898,
+        "end": 5905.5999999996275,
+        "bytes": 296657,
+        "body": 296357
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 12077.299999999814,
+        "end": 12095.799999999814,
+        "bytes": 712085,
+        "body": 711785
+      }
+    ]
+  },
+  {
+    "run": 1,
+    "variant": "no-rv",
+    "home": 1088.2000000001863,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 4076.2000000001863
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 4111.5
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 5111.799999999814
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 5246
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 6246.200000000186
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 6246.5
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 4085.5,
+          "end": 4111.399999999441
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 5245.899999999441,
+          "end": 5245.899999999441
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 549.5,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 132.29999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 204,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 114.40000000037253,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 85.40000000037253,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 130.70000000018626,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 4076.7000000001863,
+        "end": 4082.2000000001863,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 5112,
+        "end": 5120.899999999441,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 12865.5,
+        "end": 12886.099999999627,
+        "bytes": 296657,
+        "body": 296357
+      }
+    ]
+  },
+  {
+    "run": 2,
+    "variant": "all",
+    "home": 767.2000000001863,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3762.7000000001863
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3803
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4803.4000000003725
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4890
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5890.4000000003725
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 5935
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 3774.2000000001863,
+          "end": 3803
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 4890,
+          "end": 4890
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 5898.4000000003725,
+          "end": 5934.9000000003725
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 543.2999999998137,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 229.30000000074506,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 89.30000000074506,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 122.79999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 65.29999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 108.79999999981374,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 3763,
+        "end": 3772.4000000003725,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 4803.700000000186,
+        "end": 4812.9000000003725,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 5890.700000000186,
+        "end": 5896.0999999996275,
+        "bytes": 296657,
+        "body": 296357
+      }
+    ]
+  },
+  {
+    "run": 2,
+    "variant": "no-grounds",
+    "home": 873,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3867.199999999255
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3867.5999999996275
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4867.899999999441
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4951.0999999996275
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5951.299999999814
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 6002.899999999441
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 4951,
+          "end": 4951
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 5959.899999999441,
+          "end": 6002.799999999814
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 732.7999999998137,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 100.6000000005588,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 152.09999999962747,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 121.6000000005588,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 123,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 182.90000000037253,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 4868.299999999814,
+        "end": 4878.399999999441,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 5951.5999999996275,
+        "end": 5956.799999999814,
+        "bytes": 296657,
+        "body": 296357
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 12338.599999999627,
+        "end": 12368.5,
+        "bytes": 372041,
+        "body": 371741
+      }
+    ]
+  },
+  {
+    "run": 2,
+    "variant": "no-tented",
+    "home": 1208.5,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 4167.799999999814
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 4201.100000000559
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 5201.5
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 5201.799999999814
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 6202.100000000559
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 6241.700000000186
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 4175.4000000003725,
+          "end": 4200.9000000003725
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 6209.799999999814,
+          "end": 6241.700000000186
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 455.1000000005588,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 148,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 153.90000000037253,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 110.40000000037253,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 74.90000000037253,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 103.3999999994412,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 4168.100000000559,
+        "end": 4173.600000000559,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 6202.4000000003725,
+        "end": 6207.5,
+        "bytes": 296657,
+        "body": 296357
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 12364.299999999814,
+        "end": 12411.700000000186,
+        "bytes": 712085,
+        "body": 711785
+      }
+    ]
+  },
+  {
+    "run": 2,
+    "variant": "no-rv",
+    "home": 724.5999999996275,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3707.7000000001863
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3736.7999999998137
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4737.0999999996275
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4807.700000000186
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5808
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 5808.200000000186
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 3715.9000000003725,
+          "end": 3736.5999999996275
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 4807.5999999996275,
+          "end": 4807.700000000186
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 450.40000000037253,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 141.90000000037253,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 315.90000000037253,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 146.09999999962747,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 81.09999999962747,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 124.8999999994412,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 3708.2999999998137,
+        "end": 3714.5999999996275,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 4737.5,
+        "end": 4747.200000000186,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 12447.900000000373,
+        "end": 12473.5,
+        "bytes": 296657,
+        "body": 296357
+      }
+    ]
+  },
+  {
+    "run": 3,
+    "variant": "all",
+    "home": 760.5,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3743.800000000745
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3773.9000000003725
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4774.300000000745
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4880.9000000003725
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5881.4000000003725
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 5934.4000000003725
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 3751.300000000745,
+          "end": 3773.800000000745
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 4880.800000000745,
+          "end": 4880.9000000003725
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 5890.300000000745,
+          "end": 5934.300000000745
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 459.5,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 102.59999999962747,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 121.5,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 115.29999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 80.5,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 183.6000000005588,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 3744.100000000559,
+        "end": 3749.800000000745,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 4774.600000000559,
+        "end": 4783.700000000186,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 5881.700000000186,
+        "end": 5887.300000000745,
+        "bytes": 296657,
+        "body": 296357
+      }
+    ]
+  },
+  {
+    "run": 3,
+    "variant": "no-grounds",
+    "home": 790.7999999998137,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3773.7000000001863
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3774
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4774.299999999814
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4851.5
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5851.799999999814
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 5899
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 4851.4000000003725,
+          "end": 4851.4000000003725
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 5862.5,
+          "end": 5898.9000000003725
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 508.20000000018626,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 124.8999999994412,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 148.29999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 180.70000000018626,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 106.1000000005588,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 138.20000000018626,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 4774.5999999996275,
+        "end": 4784.9000000003725,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 5852.0999999996275,
+        "end": 5859.700000000186,
+        "bytes": 296657,
+        "body": 296357
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 12020,
+        "end": 12054.400000000373,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 12690.5,
+        "end": 12699.5,
+        "bytes": 300,
+        "body": 371741
+      }
+    ]
+  },
+  {
+    "run": 3,
+    "variant": "no-tented",
+    "home": 858,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3856.7000000001863
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3892
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4892.299999999814
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4892.5
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5892.9000000003725
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 5949.799999999814
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 3865,
+          "end": 3891.9000000003725
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+          "start": 5906.600000000559,
+          "end": 5949.799999999814
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 882.0999999996275,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 93.5,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 116.5,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 129.59999999962747,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 99,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 199.20000000018626,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 3857.2000000001863,
+        "end": 3863.2000000001863,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 5893.100000000559,
+        "end": 5901.4000000003725,
+        "bytes": 296657,
+        "body": 296357
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 12269.299999999814,
+        "end": 12325.200000000186,
+        "bytes": 712085,
+        "body": 711785
+      }
+    ]
+  },
+  {
+    "run": 3,
+    "variant": "no-rv",
+    "home": 797.6999999992549,
+    "homeState": {
+      "marks": [
+        {
+          "name": "ipm-map-preload-grounds-start",
+          "t": 3778.0999999996275
+        },
+        {
+          "name": "ipm-map-preload-grounds-end",
+          "t": 3811.0999999996275
+        },
+        {
+          "name": "ipm-map-preload-tented-start",
+          "t": 4811.5
+        },
+        {
+          "name": "ipm-map-preload-tented-end",
+          "t": 4915.399999999441
+        },
+        {
+          "name": "ipm-map-preload-rv-start",
+          "t": 5915.799999999814
+        },
+        {
+          "name": "ipm-map-preload-rv-end",
+          "t": 5916
+        }
+      ],
+      "dividers": 0,
+      "decodes": [
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+          "start": 3787.5999999996275,
+          "end": 3810.899999999441
+        },
+        {
+          "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+          "start": 4915.299999999814,
+          "end": 4915.399999999441
+        }
+      ]
+    },
+    "opens": [
+      {
+        "mode": "grounds",
+        "ms": 484.79999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 84.29999999981374,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 171.1000000005588,
+        "dividers": 284
+      },
+      {
+        "mode": "grounds",
+        "ms": 140.59999999962747,
+        "dividers": 284
+      },
+      {
+        "mode": "tented",
+        "ms": 68.5,
+        "dividers": 284
+      },
+      {
+        "mode": "rv",
+        "ms": 125.79999999981374,
+        "dividers": 284
+      }
+    ],
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/grounds-site-map.f0f749ac0d9f6b3f727be83771fd128e.jpg",
+        "start": 3778.7999999998137,
+        "end": 3785.899999999441,
+        "bytes": 372041,
+        "body": 371741
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/tented-city-map-app-ready.b2d9ba7f15bcc227c095b98b2c912157.svg",
+        "start": 4811.899999999441,
+        "end": 4823.5,
+        "bytes": 712085,
+        "body": 711785
+      },
+      {
+        "url": "http://127.0.0.1:8797/assets/assets/images/rv-park-detail-map.05f87e0e3ae1bc57c49a84ae27f5df12.png",
+        "start": 12453.799999999814,
+        "end": 12466.899999999441,
+        "bytes": 296657,
+        "body": 296357
+      }
+    ]
+  }
+]

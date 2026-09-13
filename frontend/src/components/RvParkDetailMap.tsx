@@ -1,3 +1,4 @@
+import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image, Keyboard, LayoutChangeEvent, Platform, StyleSheet, Text, TextInput,
@@ -55,6 +56,7 @@ export default function RvParkDetailMap({
   onSwitchToGrounds: () => void;
   hideModeSelector?: boolean;
 }) {
+  const artwork = useArtworkReveal('rv');
   const viewportRef = useRef<View>(null);
   const focusedKey = useRef<string | null>(null);
   const windowSize = useWindowDimensions();
@@ -165,9 +167,9 @@ export default function RvParkDetailMap({
   };
 
   const map = (
-    <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
+    <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
-        <Image source={MAP_SOURCE} resizeMode="stretch" style={styles.image} accessibilityLabel="RV park site map" />
+        <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} accessibilityLabel="RV park site map" />
         {selected ? <SiteHighlight site={selected} layer={layer} /> : null}
       </Animated.View>
     </Animated.View>
@@ -177,6 +179,7 @@ export default function RvParkDetailMap({
     <View style={styles.root} testID="rv-park-detail-map">
       <View ref={viewportRef} style={[styles.viewport, webLock]} onLayout={onLayout} collapsable={false}>
         {Platform.OS === 'web' ? map : <GestureDetector gesture={composed}>{map}</GestureDetector>}
+      <MapArtworkLoading artwork={artwork} map="rv" />
       </View>
 
       <View style={styles.chrome} pointerEvents="box-none">

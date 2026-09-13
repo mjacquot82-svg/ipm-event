@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "base": "75be97fb5de65e415bfc4f9ee5dc15704adfd540",
+  "candidate_build": 368147,
+  "source_tests": 272,
+  "chromium_loading": true,
+  "webkit_loading": true,
+  "chromium_layout_cases": 23,
+  "webkit_layout_cases": 45,
+  "loading_layout_cases": 14,
+  "core_browser": true,
+  "offline_browser": true,
+  "updater_browser": true,
+  "tsc": true,
+  "build": true,
+  "offline_preflight": true,
+  "tented_performance": true,
+  "grounds_improvement": true,
+  "home_camping_no_material_regression": true,
+  "physical_iphone_approval": "pending"
+}

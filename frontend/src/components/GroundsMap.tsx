@@ -1,3 +1,4 @@
+import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Keyboard, LayoutChangeEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -86,6 +87,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   onSwitchToTented: (location?: string) => void;
   onSwitchToRv?: () => void;
 }) {
+  const artwork = useArtworkReveal('grounds');
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
@@ -174,9 +176,9 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   const cameraStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }] }));
   const webLock = Platform.OS === 'web' ? WEB_TOUCH_LOCK : null;
   const map = (
-    <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
+    <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
-        <Image source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />
+        <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
       </Animated.View>
     </Animated.View>
@@ -197,6 +199,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   return <View style={styles.root}>
     <View ref={viewportRef} style={[styles.viewport, webLock]} onLayout={onLayout} collapsable={false}>
       {Platform.OS === 'web' ? map : <GestureDetector gesture={composed}>{map}</GestureDetector>}
+      <MapArtworkLoading artwork={artwork} map="grounds" />
     </View>
     <View style={styles.searchWrap} pointerEvents="box-none">
       <View style={styles.searchCard}>

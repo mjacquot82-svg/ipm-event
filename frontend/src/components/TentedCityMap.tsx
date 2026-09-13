@@ -1,3 +1,4 @@
+import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import { EXACT_MAP_UNAVAILABLE, hasTrustedMapGeometry } from '../config/mapAvailability';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -88,6 +89,7 @@ export default function TentedCityMap({
   const [unmappedInitialLocation, setUnmappedInitialLocation] = useState(false);
   const [verify1A, setVerify1A] = useState(Boolean(verify1AProp));
   const verifyTaps = useRef({ count: 0, at: 0 });
+  const artwork = useArtworkReveal('tented');
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
@@ -360,9 +362,9 @@ export default function TentedCityMap({
   }, [selectedSemanticArea]);
 
   const mapGestures = (
-    <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
+    <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.mapLayer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, mapStyle]}>
-        <Image source={MAP_SOURCE} style={[styles.mapImage, { width: layer.width, height: layer.height }]} resizeMode="stretch" />
+        <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} style={[styles.mapImage, { width: layer.width, height: layer.height }]} resizeMode="stretch" />
         {TENTED_CITY_BOOTH_DIVIDER_SEGMENTS.map((seg) => (
           <Animated.View
             key={seg.key}
@@ -522,6 +524,7 @@ export default function TentedCityMap({
         {Platform.OS === 'web' ? mapGestures : (
           <GestureDetector gesture={composed}>{mapGestures}</GestureDetector>
         )}
+        <MapArtworkLoading artwork={artwork} map="tented" />
       </View>
       <View style={styles.chrome} pointerEvents="box-none">
       <View style={[styles.topOverlay, hideModeSelector && styles.topOverlayWithParentSelector]} pointerEvents="box-none">

@@ -16,7 +16,9 @@ const server=http.createServer((req,res)=>{
  await p.evaluate(async()=>{await navigator.serviceWorker.register('/webpushr-sw.js');await navigator.serviceWorker.ready;});
  await p.waitForFunction(async()=>!!(await caches.match('/index.html')));
  await c.setOffline(true);await p.reload();await p.getByTestId('map-mode-selector').waitFor();
- await p.getByTestId('map-mode-rv').click();await p.getByTestId('rv-site-search').fill('M27');await p.getByText('RV Site M27',{exact:true}).click();await p.getByTestId('rv-site-highlight').waitFor();
+ await p.getByTestId('map-mode-rv').click();await p.getByTestId('rv-site-search').fill('M27');await p.getByText('RV Site M27',{exact:true}).click();await p.getByTestId('rv-site-highlight').waitFor({state:'attached'});
+ await p.getByTestId('map-artwork-rv-error').waitFor();
+ assert.equal(await p.getByTestId('map-artwork-rv-loading').count(),0);
  assert.equal(await p.getByTestId('rv-site-title').isVisible(),true);
  console.log('PASS: generated production shell installs, reloads Maps offline, switches Camping, and resolves manual M27. Push provider stubbed; no remote writes.');
 }finally{await b.close();server.close();}})().catch(e=>{console.error(e);server.close();process.exitCode=1;});
