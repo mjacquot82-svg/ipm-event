@@ -37,7 +37,7 @@ import {
   ScheduleResponse,
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
-import { formatScheduleDate, getScheduleWeekday } from '../../src/utils/scheduleDate';
+import { compareScheduleDates, formatScheduleDate, getScheduleWeekday } from '../../src/utils/scheduleDate';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
@@ -321,19 +321,12 @@ export default function ScheduleScreen() {
   }, [category, categoryOptions]);
 
   const dayOptions = useMemo(() => {
-    const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const days = new Set<string>();
-    events.forEach((event) => {
+    // Order weekday filters by their first real event date, not a week-start rule.
+    [...events].sort((a, b) => compareScheduleDates(a.start_date, b.start_date)).forEach((event) => {
       getEventDayLabels(event).forEach((day) => days.add(day));
     });
-    return Array.from(days).sort((a, b) => {
-      const aIndex = dayOrder.indexOf(a);
-      const bIndex = dayOrder.indexOf(b);
-      if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
-      if (aIndex === -1) return 1;
-      if (bIndex === -1) return -1;
-      return aIndex - bIndex;
-    });
+    return Array.from(days);
   }, [events, getEventDayLabels]);
 
   const filterOptions = [
@@ -396,7 +389,9 @@ export default function ScheduleScreen() {
   }, [filteredEvents]);
 
   const scheduleSections = useMemo(
-    () => Object.entries(filteredGroupedEvents).map(([title, data]) => ({ title, data })),
+    () => Object.entries(filteredGroupedEvents)
+      .map(([title, data]) => ({ title, data }))
+      .sort((a, b) => compareScheduleDates(a.data[0].start_date, b.data[0].start_date)),
     [filteredGroupedEvents],
   );
 

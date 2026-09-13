@@ -39,3 +39,15 @@ export function formatScheduleDate(
 export function getScheduleWeekday(value: string): string | null {
   return formatScheduleDate(value, { weekday: 'long' });
 }
+
+/** Calendar-date ordering; unknown dates follow valid dates without changing event data. */
+export function compareScheduleDates(a: string, b: string): number {
+  const order = (value: string): number => {
+    const date = DATE_ONLY_PATTERN.test(value) ? parseDateOnlyAnchor(value) : new Date(value);
+    const time = date?.getTime();
+    return time !== undefined && Number.isFinite(time) ? time : Number.POSITIVE_INFINITY;
+  };
+  const first = order(a);
+  const second = order(b);
+  return first === second ? 0 : first - second;
+}
