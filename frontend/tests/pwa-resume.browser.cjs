@@ -30,7 +30,8 @@ const server=http.createServer((req,res)=>{
  const keys=['personal-itinerary','starred-events','announcement-dismissals','wonderpush-installation','local-preferences'];
  await page.evaluate(keys=>keys.forEach(k=>localStorage.setItem(k,'keep')),keys);
  const permission=await page.evaluate(()=>Notification.permission);
- async function resume(ms){await page.evaluate(ms=>{let visibility='hidden';Object.defineProperty(document,'visibilityState',{configurable:true,get:()=>visibility});document.dispatchEvent(new Event('visibilitychange'));const now=Date.now;Date.now=()=>now()+ms;visibility='visible';document.dispatchEvent(new Event('visibilitychange'));Date.now=now;},ms);}
+ // Freeze both timestamps: real execution time must not push 599999ms across the 600000ms boundary.
+ async function resume(ms){await page.evaluate(ms=>{const now=Date.now;const start=now();let visibility='hidden';try{Date.now=()=>start;Object.defineProperty(document,'visibilityState',{configurable:true,get:()=>visibility});document.dispatchEvent(new Event('visibilitychange'));Date.now=()=>start+ms;visibility='visible';document.dispatchEvent(new Event('visibilitychange'));}finally{Date.now=now;}},ms);}
  version='B';await resume(599999);await page.waitForTimeout(100);assert.equal(await page.locator('#refresh').isVisible(),false);
  await resume(600000);await page.locator('#refresh').waitFor({state:'visible'});assert.equal(await page.locator('h1').textContent(),'Version A');
  let navigations=0;page.on('framenavigated',frame=>{if(frame===page.mainFrame())navigations++;});
