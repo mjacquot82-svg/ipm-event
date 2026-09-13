@@ -1,9 +1,10 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React from 'react';
+import { ATTENDEE_DESKTOP_BREAKPOINT } from '../../src/theme/attendeePageLayout';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
-import { StyleSheet, View, Platform, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, View, Platform, TouchableOpacity, Text, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../src/theme/colors';
 
@@ -85,6 +86,9 @@ function TabItem({ routeName }: { routeName: string }) {
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const pathname = usePathname();
+  const desktopMaps = Platform.OS === 'web' && width >= ATTENDEE_DESKTOP_BREAKPOINT && pathname.startsWith('/map');
   // The web provider reads env(safe-area-inset-top), including standalone iOS PWAs.
   const topInset = insets.top || 0;
   const bottomInset = Platform.OS === 'web' ? 0 : insets.bottom || 0;
@@ -115,7 +119,7 @@ export default function TabLayout() {
         styles.combinedBottomBar,
         { height: totalBottomBarHeight, paddingBottom: bottomInset }
       ]}>
-        <View style={styles.iconsSection}>
+        <View style={[styles.iconsSection, desktopMaps && { width: '100%', maxWidth: 960, alignSelf: 'center' }]}>
           <TabItem routeName="index" />
           <TabItem routeName="map" />
           <TabItem routeName="schedule" />

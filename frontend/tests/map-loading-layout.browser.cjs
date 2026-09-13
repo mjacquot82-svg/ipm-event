@@ -4,8 +4,8 @@ const {chromium,webkit}=require(process.env.IPM_PLAYWRIGHT_MODULE||'/tmp/ipm-bro
 const origin=process.env.IPM_PREVIEW_URL||'http://127.0.0.1:8797';
 const engine=process.env.IPM_BROWSER==='webkit'?webkit:chromium;
 (async()=>{const browser=await engine.launch({headless:true,args:engine===chromium?['--no-sandbox']:[]});try{
- for(const width of [320,375,390,393,430,360,412]) {
-  const inset=[360,412].includes(width)?0:59;
+ for(const width of (process.env.IPM_WIDTHS ? process.env.IPM_WIDTHS.split(',').map(Number) : [320,375,390,393,430,360,412])) {
+  const inset=width>=768||[360,412].includes(width)?0:59;
   const c=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});
   await c.route('**/*',r=>r.request().method()!=='GET'||/wonderpush|webpushr|google-analytics|ipm-backend/.test(r.request().url())?r.abort():r.continue());
   await c.addInitScript(inset=>{
