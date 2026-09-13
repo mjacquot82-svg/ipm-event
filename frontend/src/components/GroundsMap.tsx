@@ -1,3 +1,4 @@
+import { GroundsTrafficOverlay, GROUNDS_TRAFFIC_NOTICE } from './GroundsTrafficOverlay';
 import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -21,7 +22,7 @@ import {
 } from '../config/mapInteraction';
 
 const MAP_SOURCE = require('../../assets/images/grounds-site-map.jpg');
-const INFO_CARD_BOTTOM = 68;
+const INFO_CARD_BOTTOM = 164;
 /** Same language as MNP stage parent-fallback highlight. */
 const SELECTED_FILL = 'rgba(0, 229, 255, 0.45)';
 const SELECTED_OUTER = '#FFD600';
@@ -181,6 +182,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
         <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />
+        <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
       </Animated.View>
     </Animated.View>
@@ -240,7 +242,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
       <Feather name="maximize-2" size={18} color={colors.textPrimary} />
     </TouchableOpacity>
     {selected?.action === 'info' || selected?.action === 'switch-rv' ? (
-      <View style={[styles.card, desktop && desktopMapStyles.groundsInfo]} pointerEvents="box-none" testID="grounds-info-card">
+      <View style={[styles.card, desktop && desktopMapStyles.groundsInfo, desktop && { bottom: 124 }]} pointerEvents="box-none" testID="grounds-info-card">
         <View style={styles.cardInner} pointerEvents="auto">
           <View style={styles.cardRow}>
             <View style={styles.cardCopy}>
@@ -258,11 +260,10 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
           ) : null}
         </View>
       </View>
-    ) : (
-      <View style={[styles.hint, desktop && desktopMapStyles.hint]} pointerEvents="none">
-        <Text style={styles.hintText}>Drag · pinch · double-tap · tap a map area</Text>
+    ) : null}
+      <View style={[styles.hint, desktop && desktopMapStyles.hint, desktop && { bottom: 6 }]} pointerEvents="none">
+        <Text style={styles.hintText} testID="grounds-traffic-notice">{GROUNDS_TRAFFIC_NOTICE}</Text>
       </View>
-    )}
   </View>;
 }
 
@@ -309,10 +310,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 17, fontWeight: '800', color: colors.textPrimary },
   fact: { marginTop: 4, fontSize: 14, color: colors.textSecondary },
   hint: {
-    position: 'absolute', alignSelf: 'center', bottom: 72, backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, zIndex: 4,
+    position: 'absolute', left: 12, right: 68, bottom: 68, backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, zIndex: 4,
   },
-  hintText: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  hintText: { fontSize: 11, lineHeight: 14, color: colors.textSecondary },
   rvCta: { marginTop: 12, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   rvCtaText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
 });
