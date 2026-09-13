@@ -1,5 +1,5 @@
 import { GroundsTrafficOverlay } from './GroundsTrafficOverlay';
-import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
+import { DESKTOP_MAP_BREAKPOINT, desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Keyboard, LayoutChangeEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
@@ -8,6 +8,7 @@ import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import colors from '../theme/colors';
 import { groundsLayerLayout, groundsPaintViewport } from '../config/groundsLayout';
+import { groundsPhoneLayerLayout } from '../config/groundsPhoneLayout';
 import { GROUNDS_MAP, GroundsZone, hitTestGroundsZone, resolveGroundsZone } from '../config/groundsZones';
 import { searchEventMap, type EventMapHit } from '../config/mapSearch';
 import { tentedCityVendors } from '../data/tentedCityVendors';
@@ -93,13 +94,16 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   const artwork = useArtworkReveal('grounds');
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
+  const phone = windowSize.width < DESKTOP_MAP_BREAKPOINT;
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<GroundsZone | null>(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const focusedKey = useRef<string | null>(null);
   const viewport = groundsPaintViewport(measured, windowSize);
-  const layer = useMemo(() => groundsLayerLayout(viewport), [viewport.width, viewport.height]);
+  const layer = useMemo(() => phone
+    ? groundsPhoneLayerLayout(viewport)
+    : { ...groundsLayerLayout(viewport), headerHeight: 0 }, [viewport.width, viewport.height, phone]);
   const scale = useSharedValue(1), tx = useSharedValue(0), ty = useSharedValue(0);
   const startScale = useSharedValue(1), startX = useSharedValue(0), startY = useSharedValue(0);
   const startFocalX = useSharedValue(0), startFocalY = useSharedValue(0);
@@ -181,7 +185,9 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   const map = (
     <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
-        <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />
+        {phone ? <View testID="grounds-artwork-crop" style={[StyleSheet.absoluteFillObject, { top: layer.headerHeight, overflow: 'hidden' }]}>
+          <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={[styles.image, { position: 'absolute', top: -layer.headerHeight, height: layer.height }]} />
+        </View> : <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />}
         <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
       </Animated.View>
@@ -201,7 +207,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   const onLayout = (e: LayoutChangeEvent) => { const { width, height } = e.nativeEvent.layout; if (width > 1 && height > 1) setMeasured({ width, height }); };
 
   return <View style={[styles.root, desktop && desktopMapStyles.root]}>
-    <View ref={viewportRef} style={[styles.viewport, webLock, desktop && desktopMapStyles.viewport]} onLayout={onLayout} collapsable={false}>
+    <View testID="grounds-map-viewport" ref={viewportRef} style={[styles.viewport, webLock, phone && styles.phoneViewport, desktop && desktopMapStyles.viewport]} onLayout={onLayout} collapsable={false}>
       {Platform.OS === 'web' ? map : <GestureDetector gesture={composed}>{map}</GestureDetector>}
       <MapArtworkLoading artwork={artwork} map="grounds" />
     </View>
@@ -267,6 +273,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
 const styles = StyleSheet.create({
   root: { flex: 1, width: '100%', height: '100%', position: 'relative', backgroundColor: '#D9D1BE' },
   viewport: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
+  phoneViewport: { top: 108, bottom: 68 },
   gestureRoot: { ...StyleSheet.absoluteFillObject },
   layer: { position: 'absolute', overflow: 'visible' },
   image: { width: '100%', height: '100%' },
