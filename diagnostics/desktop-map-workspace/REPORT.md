@@ -8,7 +8,7 @@ Result: responsive/regression gates passed; production-style draft preview autho
 - Deploy: 6aa6d09275582e0008d2b15d
 - Entry: /_expo/static/js/web/entry-937bb24b7c6bc507e39455c996ef2e25.js
 - Build: 368195. Reverified before preview preparation.
-- Branch: feat/desktop-map-workspace-20260913; one isolated commit directly above live production. Sunday-first Schedule candidate 893fa612 is excluded.
+- Branch: feat/desktop-map-workspace-20260913; isolated implementation and report-correction commits directly above live production. Sunday-first Schedule candidate 893fa612 is excluded.
 
 ## Root cause and final layout
 
@@ -41,7 +41,9 @@ This intentionally reduces fitted artwork height to make room for controls; it d
 - Desktop pan/double-click zoom/Fit passed all three maps. M27, MNP EAST-2 fallback and Ontario Government's exact 3B-19-24 cyan/yellow union passed. Canonical geometry/search/single/multibooth and 690-site regressions passed.
 - Home, Schedule, Vendors=224, Maps, CAN-AM/Valard unavailable messaging passed. Core mobile gestures/Fit and updater Later/no unexpected reload passed; no browser runtime errors.
 - Real generated offline shell and updater legacy→A→B Refresh/10-minute/one-shot/offline regressions passed with push provider stubbed and remote writes blocked.
-- TypeScript passed; production build:web passed (candidate Build 368241); final offline preflight passed.
+- TypeScript passed; production build:web passed (candidate Build 368236); final offline preflight passed.
+
+The build wrapper logged 368241 on its second export, but the reused Metro About module retained build label 368236. The tested and uploaded bundle bytes match exactly and display Build 368236. The final release record uses that verified embedded value; build/updater logic was not changed.
 
 ## Switching and preload check
 
