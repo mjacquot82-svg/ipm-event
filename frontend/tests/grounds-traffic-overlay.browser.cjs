@@ -21,7 +21,12 @@ const out=process.env.IPM_TRAFFIC_OUTPUT||require('node:path').resolve(__dirname
     const q=id=>document.querySelector(`[data-testid="${id}"]`),box=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}};
     return {angles:['Durham-Rd','Greenock-Brant','Bruce-Road-2','Bruce-Road-3','Highway-9'].map(n=>{const m=new DOMMatrix(getComputedStyle(q('grounds-road-'+n)).transform);return Math.round(Math.atan2(m.b,m.a)*180/Math.PI)}),caption:box(q('grounds-flow-caption').firstElementChild),greenock:box(q('grounds-road-Greenock-Brant').firstElementChild),passive:getComputedStyle(q('grounds-flow-caption')).pointerEvents,walkerton:getComputedStyle(q('grounds-walkerton').firstElementChild).backgroundColor,flow:getComputedStyle(q('grounds-flow-caption').firstElementChild).backgroundColor,animation:getComputedStyle(q('grounds-flow-caption')).animationName};
   });
-  assert.deepEqual(visuals.angles,[90,0,90,0,90]);assert.equal(visuals.passive,'none');assert.notEqual(visuals.walkerton,visuals.flow);assert.equal(visuals.animation,'none');assert.equal(visuals.flow,'rgb(255, 230, 0)');const routeY=r.image.y+r.image.h*.76;assert.ok(visuals.caption.y+visuals.caption.h<routeY);assert.ok(visuals.caption.x+visuals.caption.w<r.image.x+r.image.w*.365);const walk=await p.getByTestId('grounds-walkerton').boundingBox();assert.ok(Math.abs(walk.y+walk.height/2-r.image.y-r.image.h*.16)<1);assert.ok(visuals.caption.y+visuals.caption.h+2<visuals.greenock.y);assert.ok(visuals.caption.x>=r.image.x&&visuals.caption.x+visuals.caption.w<=r.image.x+r.image.w);assert.ok(visuals.greenock.x>=r.image.x&&visuals.greenock.x+visuals.greenock.w<=r.image.x+r.image.w);
+  assert.deepEqual(visuals.angles,[90,0,90,0,90]);assert.equal(visuals.passive,'none');assert.notEqual(visuals.walkerton,visuals.flow);assert.equal(visuals.animation,'none');assert.equal(visuals.flow,'rgb(255, 230, 0)');const routeY=r.image.y+r.image.h*.76;assert.ok(visuals.caption.y+visuals.caption.h<routeY);assert.ok(visuals.caption.x+visuals.caption.w<r.image.x+r.image.w*.365);const walk=await p.getByTestId('grounds-walkerton').boundingBox();assert.ok(Math.abs(walk.y+walk.height/2-r.image.y-r.image.h*.16)<1);assert.ok(visuals.caption.x+visuals.caption.w+2<visuals.greenock.x);assert.ok(visuals.caption.x>=r.image.x&&visuals.caption.x+visuals.caption.w<=r.image.x+r.image.w);assert.ok(visuals.greenock.x>=r.image.x&&visuals.greenock.x+visuals.greenock.w<=r.image.x+r.image.w);
+  const gx=(visuals.greenock.x-r.image.x)/r.image.w*100;
+  const routeAtLeft=r.image.y+r.image.h*(68.21+(90.5-gx)*(74.23-68.21)/(90.5-41.28))/100;
+  const roadGap=visuals.greenock.y-routeAtLeft-2.5;
+  assert.ok(roadGap>=3&&roadGap<=9,JSON.stringify({width,roadGap}));
+  assert.ok(visuals.greenock.y+visuals.greenock.h/2<r.image.y+r.image.h*.79-8);
   assert.equal(r.arrows,3);assert.ok(r.angles[0]>-20&&r.angles[0]<0&&r.angles[1]>-110&&r.angles[1]<-90&&r.angles[2]>160&&r.angles[2]<180);assert.equal(r.roads[1],'1');assert.ok(r.notice.x>r.image.x+r.image.w*.45&&r.notice.y>=r.image.y+r.image.h*.15&&r.notice.y+r.notice.h<r.image.y+r.image.h*.34,JSON.stringify(r));assert.equal(r.passive,'none');assert.equal(r.roads[0],'1');assert.equal(r.roads[2],'0');assert.equal(r.roads[3],'1');assert.equal(r.roads[4],'1');assert.ok(!r.overflow);assert.ok(r.arrow.y>r.parking.y+3,JSON.stringify(r));
   assert.equal(r.noticeText,'Durham Road is barricaded at Huron Tractor to control traffic arriving from the east.');
   assert.ok(r.notice.x>=0&&r.notice.x+r.notice.w<=width);assert.ok(r.notice.y+r.notice.h<= (width<768?844:900)-60);
@@ -31,7 +36,6 @@ const out=process.env.IPM_TRAFFIC_OUTPUT||require('node:path').resolve(__dirname
   const horse=await p.getByTestId('grounds-horse-plowing-label').locator('div').first().boundingBox();
   assert.ok(horse);const hx=(horse.x+horse.width/2-r.image.x)/r.image.w*100,hy=(horse.y+horse.height/2-r.image.y)/r.image.h*100;
   assert.ok(Math.abs(hx-22.2)<.2&&Math.abs(hy-45.3)<.2);
-  await p.screenshot({path:`${out}/traffic-${width}.png`});
   assert.ok(horse.x>=r.image.x+r.image.w*.178&&horse.x+horse.width<=r.image.x+r.image.w*.264&&horse.y>=r.image.y+r.image.h*.424&&horse.y+horse.height<=r.image.y+r.image.h*.481,JSON.stringify({horse,image:r.image}));
   await p.screenshot({path:`${out}/traffic-${width}.png`});cases.push({width,...r});
  }
@@ -41,5 +45,18 @@ const out=process.env.IPM_TRAFFIC_OUTPUT||require('node:path').resolve(__dirname
  assert.equal(await p.getByTestId('grounds-road-Bruce-Road-3').evaluate(e=>getComputedStyle(e).opacity),'1');
  await p.getByTestId('grounds-fit-reset').click();await p.waitForFunction(()=>getComputedStyle(document.querySelector('[data-testid="grounds-road-Bruce-Road-2"]')).opacity==='0');
  await p.getByTestId('grounds-map-search').fill('West Parking');await p.getByText('West Parking Lot',{exact:true}).first().click();await p.locator('[data-testid^="grounds-zone-highlight-"]').waitFor();await p.getByTestId('grounds-traffic-notice').waitFor({state:'attached'});await p.getByTestId('grounds-fit-reset').click();
+ await p.waitForTimeout(350);
+ const camera=()=>img.evaluate(e=>new DOMMatrix(getComputedStyle(e.closest('[style*="transform:"]')).transform).a);
+ const touchBox=await img.boundingBox(),cx=touchBox.x+touchBox.width*.55,cy=touchBox.y+touchBox.height*.55;
+ const cd=await c.newCDPSession(p);
+ await cd.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:cx-25,y:cy,id:1},{x:cx+25,y:cy,id:2}]});
+ for(const distance of [35,45,60])await cd.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:cx-distance,y:cy,id:1},{x:cx+distance,y:cy,id:2}]});
+ await cd.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await p.waitForTimeout(350);assert.ok(await camera()>1.1,'pinch zoom');
+ await p.getByTestId('grounds-fit-reset').click();await p.waitForTimeout(350);
+ for(let tap=0;tap<2;tap++){await cd.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:cx,y:cy,id:1}]});await cd.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await p.waitForTimeout(70);}
+ await p.waitForTimeout(350);assert.ok(await camera()>1.1,'double tap zoom');
+ await p.getByTestId('grounds-fit-reset').click();await p.waitForTimeout(350);
+ await p.evaluate(()=>document.documentElement.requestFullscreen());assert.equal(await p.evaluate(()=>!!document.fullscreenElement),true);
+ await p.getByTestId('grounds-fit-reset').click();await p.evaluate(()=>document.exitFullscreen());
  assert.deepEqual(errors,[]);fs.writeFileSync(out+'/traffic-browser.json',JSON.stringify(cases,null,2));console.log('PASS 15 widths; arrows, P clearance, labels, zoom threshold/Fit, search/highlight, notice, no toggle, no errors');await c.close();
  }finally{await b.close()}})().catch(e=>{console.error(e);process.exit(1)});

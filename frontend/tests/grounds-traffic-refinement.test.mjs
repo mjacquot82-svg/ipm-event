@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 const path='frontend/src/components/GroundsTrafficOverlay.tsx';
 const source=readFileSync(new URL('../src/components/GroundsTrafficOverlay.tsx',import.meta.url),'utf8');
-const original=execFileSync('git',['show',`f87e5ed0a0363bc92724e18180a8ed14d86e1041:${path}`],{encoding:'utf8'});
+const original=execFileSync('git',['show',`34359866d41ad09deeeb962de63802565f52cf88:${path}`],{encoding:'utf8'});
 test('physical-review refinement freezes all traffic coordinates, arrow rendering and casing',()=>{
  const coordinates=s=>s.split('export const GROUNDS_TRAFFIC_ARROWS = ')[1].split('] as const;')[0];
  const rendering=s=>s.split('{GROUNDS_TRAFFIC_ARROWS.map')[1].split('    })}')[0];
@@ -36,9 +36,9 @@ test('final positioning uses a yellow route caption and source-supported road la
 });
 
 test('polish freezes road labels, Walkerton and yellow-area source geometry',()=>{
- assert.deepEqual(source.match(/    <RoadLabel[^\n]+/g),original.match(/    <RoadLabel[^\n]+/g));
+ assert.deepEqual(source.match(/    <RoadLabel[^\n]+/g).filter(s=>!s.includes('Greenock-Brant')),original.match(/    <RoadLabel[^\n]+/g).filter(s=>!s.includes('Greenock-Brant')));
  const walk=s=>s.split('testID="grounds-walkerton"')[1].split('</View>')[0];assert.equal(walk(source),walk(original));
- for(const p of ['frontend/src/config/groundsZones.ts','frontend/assets/images/grounds-site-map.jpg'])assert.deepEqual(readFileSync(new URL('../'+p.replace('frontend/',''),import.meta.url)),execFileSync('git',['show',`f87e5ed0a0363bc92724e18180a8ed14d86e1041:${p}`]));
+ for(const p of ['frontend/src/config/groundsZones.ts','frontend/assets/images/grounds-site-map.jpg'])assert.deepEqual(readFileSync(new URL('../'+p.replace('frontend/',''),import.meta.url)),execFileSync('git',['show',`34359866d41ad09deeeb962de63802565f52cf88:${p}`]));
 });
 test('notice moves into passive artwork overlay without closure geometry',()=>{
  const map=readFileSync(new URL('../src/components/GroundsMap.tsx',import.meta.url),'utf8');
@@ -47,4 +47,10 @@ test('notice moves into passive artwork overlay without closure geometry',()=>{
  assert.match(source,/pointerEvents="none" testID="grounds-traffic-notice"/);
  assert.match(source,/pointerEvents="none" testID="grounds-horse-plowing-label"/);
  assert.doesNotMatch(source,/barricade-pin|closure|Polyline|Polygon|Marker/);
+});
+
+test('Greenock alone moves close to the road with clearance for a horizontal label',()=>{
+ assert.match(source,/<RoadLabel text="Greenock-Brant" x=\{65\} y=\{71.33\} offsetY=\{24\} rotation=\{0\}/);
+ assert.match(source,/top: y \* height \/ 100 - 10 \+ offsetY/);
+ assert.match(source,/zoomOnly = false, offsetY = 0/);
 });

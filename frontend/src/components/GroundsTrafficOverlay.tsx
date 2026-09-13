@@ -10,13 +10,13 @@ export const GROUNDS_TRAFFIC_ARROWS = [
 ] as const;
 export const GROUNDS_TRAFFIC_NOTICE = 'Durham Road is barricaded at Huron Tractor to control traffic arriving from the east.';
 
-function RoadLabel({ text, x, y, rotation, width, height, scale, zoomOnly = false }: {
+function RoadLabel({ text, x, y, rotation, width, height, scale, zoomOnly = false, offsetY = 0 }: {
   text: string; x: number; y: number; rotation: number; width: number; height: number;
-  scale: SharedValue<number>; zoomOnly?: boolean;
+  scale: SharedValue<number>; zoomOnly?: boolean; offsetY?: number;
 }) {
   const visibility = useAnimatedStyle(() => ({ opacity: zoomOnly && scale.value < 1.5 ? 0 : 1 }));
   return <Animated.View pointerEvents="none" testID={`grounds-road-${text.replaceAll(' ', '-')}`}
-    style={[styles.label, { left: x * width / 100 - 75, top: y * height / 100 - 10, transform: [{ rotate: `${rotation}deg` }] }, visibility]}>
+    style={[styles.label, { left: x * width / 100 - 75, top: y * height / 100 - 10 + offsetY, transform: [{ rotate: `${rotation}deg` }] }, visibility]}>
     <Text style={styles.labelText}>{text}</Text>
   </Animated.View>;
 }
@@ -45,7 +45,7 @@ export function GroundsTrafficOverlay({ width, height, scale }: { width: number;
       <Text style={[styles.noticeText, { fontSize: width < 360 ? 10 : 11, lineHeight: width < 360 ? 12 : 14 }]}>{GROUNDS_TRAFFIC_NOTICE}</Text>
     </View>
     <RoadLabel text="Durham Rd" x={41.5} y={82} rotation={90} width={width} height={height} scale={scale} />
-    <RoadLabel text="Greenock-Brant" x={65} y={79} rotation={0} width={width} height={height} scale={scale} />
+    <RoadLabel text="Greenock-Brant" x={65} y={71.33} offsetY={24} rotation={0} width={width} height={height} scale={scale} />
     <RoadLabel text="Bruce Road 2" x={24.9} y={19.42} rotation={90} width={width} height={height} scale={scale} zoomOnly />
     <RoadLabel text="Bruce Road 3" x={56} y={34.5} rotation={0} width={width} height={height} scale={scale} />
     <RoadLabel text="Highway 9" x={87.5} y={48} rotation={90} width={width} height={height} scale={scale} />
