@@ -1,3 +1,4 @@
+import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Keyboard, LayoutChangeEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
@@ -87,6 +88,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   onSwitchToTented: (location?: string) => void;
   onSwitchToRv?: () => void;
 }) {
+  const desktop = useDesktopMapWorkspace('grounds');
   const artwork = useArtworkReveal('grounds');
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
@@ -196,12 +198,12 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   };
   const onLayout = (e: LayoutChangeEvent) => { const { width, height } = e.nativeEvent.layout; if (width > 1 && height > 1) setMeasured({ width, height }); };
 
-  return <View style={styles.root}>
-    <View ref={viewportRef} style={[styles.viewport, webLock]} onLayout={onLayout} collapsable={false}>
+  return <View style={[styles.root, desktop && desktopMapStyles.root]}>
+    <View ref={viewportRef} style={[styles.viewport, webLock, desktop && desktopMapStyles.viewport]} onLayout={onLayout} collapsable={false}>
       {Platform.OS === 'web' ? map : <GestureDetector gesture={composed}>{map}</GestureDetector>}
       <MapArtworkLoading artwork={artwork} map="grounds" />
     </View>
-    <View style={styles.searchWrap} pointerEvents="box-none">
+    <View style={[styles.searchWrap, desktop && desktopMapStyles.search]} pointerEvents="box-none">
       <View style={styles.searchCard}>
         <Feather name="search" size={18} color="#6B7280" />
         <TextInput
@@ -234,11 +236,11 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
         </ScrollView>
       ) : null}
     </View>
-    <TouchableOpacity style={styles.reset} onPress={reset} accessibilityLabel="Fit map to grounds" testID="grounds-fit-reset">
+    <TouchableOpacity style={[styles.reset, desktop && desktopMapStyles.fit]} onPress={reset} accessibilityLabel="Fit map to grounds" testID="grounds-fit-reset">
       <Feather name="maximize-2" size={18} color={colors.textPrimary} />
     </TouchableOpacity>
     {selected?.action === 'info' || selected?.action === 'switch-rv' ? (
-      <View style={styles.card} pointerEvents="box-none" testID="grounds-info-card">
+      <View style={[styles.card, desktop && desktopMapStyles.groundsInfo]} pointerEvents="box-none" testID="grounds-info-card">
         <View style={styles.cardInner} pointerEvents="auto">
           <View style={styles.cardRow}>
             <View style={styles.cardCopy}>
@@ -257,7 +259,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
         </View>
       </View>
     ) : (
-      <View style={styles.hint} pointerEvents="none">
+      <View style={[styles.hint, desktop && desktopMapStyles.hint]} pointerEvents="none">
         <Text style={styles.hintText}>Drag · pinch · double-tap · tap a map area</Text>
       </View>
     )}
