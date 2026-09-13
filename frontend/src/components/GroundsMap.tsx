@@ -1,4 +1,4 @@
-import { GroundsTrafficOverlay, GROUNDS_TRAFFIC_NOTICE } from './GroundsTrafficOverlay';
+import { GroundsTrafficOverlay } from './GroundsTrafficOverlay';
 import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -261,9 +261,6 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
         </View>
       </View>
     ) : null}
-      <View style={[styles.hint, desktop && desktopMapStyles.hint, desktop && { bottom: 6 }]} pointerEvents="none">
-        <Text style={styles.hintText} testID="grounds-traffic-notice">{GROUNDS_TRAFFIC_NOTICE}</Text>
-      </View>
   </View>;
 }
 

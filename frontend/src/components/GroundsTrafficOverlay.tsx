@@ -35,8 +35,14 @@ export function GroundsTrafficOverlay({ width, height, scale }: { width: number;
         <View style={[styles.headFill, { right: 2 }]} />
       </View>;
     })}
-    <View pointerEvents="none" testID="grounds-flow-caption" style={[styles.label, { left: width * .68 - 75, top: height * .7096 + 7 }]}>
+    <View pointerEvents="none" testID="grounds-flow-caption" style={[styles.label, { left: width * .215 - 75, top: height * .73 - 10 }]}>
       <Text style={styles.flowCaption}>Flow of traffic</Text>
+    </View>
+    <View pointerEvents="none" testID="grounds-horse-plowing-label" style={{ position: 'absolute', left: width * .222 - width * .0435, top: height * .453 - height * .0225, width: width * .087, height: height * .045, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={[styles.horseText, { fontSize: Math.min(12, width * .019), lineHeight: Math.min(14, width * .023) }]}>{'Horse\nPlowing'}</Text>
+    </View>
+    <View pointerEvents="none" testID="grounds-traffic-notice" style={[styles.notice, { right: width * .08, top: height * .165, width: Math.min(180, width * .46) }]}>
+      <Text style={[styles.noticeText, { fontSize: width < 360 ? 10 : 11, lineHeight: width < 360 ? 12 : 14 }]}>{GROUNDS_TRAFFIC_NOTICE}</Text>
     </View>
     <RoadLabel text="Durham Rd" x={41.5} y={82} rotation={90} width={width} height={height} scale={scale} />
     <RoadLabel text="Greenock-Brant" x={65} y={79} rotation={0} width={width} height={height} scale={scale} />
@@ -56,5 +62,8 @@ const styles = StyleSheet.create({
   label: { position: 'absolute', width: 150, height: 20, alignItems: 'center', justifyContent: 'center' },
   labelText: { fontSize: 12, lineHeight: 16, fontWeight: '700', color: '#20252B', backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 3, borderRadius: 3 },
   flowCaption: { fontSize: 12, lineHeight: 16, fontWeight: '700', color: '#252525', backgroundColor: '#FFE600', paddingHorizontal: 4, borderColor: '#252525', borderWidth: 1, borderRadius: 3 },
+  horseText: { fontWeight: '800', color: '#20252B', textAlign: 'center' },
+  notice: { position: 'absolute', padding: 6, borderRadius: 6, borderWidth: 1, borderColor: '#CBD5E1', backgroundColor: 'rgba(255,255,255,0.96)' },
+  noticeText: { color: '#334155' },
   orientation: { color: '#334155', borderColor: '#64748B', borderWidth: 1 },
 });
