@@ -7,6 +7,7 @@ const out=process.env.IPM_TRAFFIC_OUTPUT||require('node:path').resolve(__dirname
  await c.route('**/*',r=>r.request().method()!=='GET'||/wonderpush|webpushr|google-analytics/.test(r.request().url())?r.abort():r.continue());
  const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(origin+'/map');
  await p.waitForFunction(()=>document.querySelector('img[src*="grounds-site-map"]')?.complete&&!document.querySelector('[data-testid="map-artwork-grounds-loading"]'));
+ if(await p.getByTestId('grounds-view-traffic').count())await p.getByTestId('grounds-view-traffic').click();
  const cases=[];
  for(const width of [320,360,375,390,393,412,430,768,1024,1280,1366,1440,1600,1920,2560]){
   await p.setViewportSize({width,height:width<768?844:900});await p.getByTestId('grounds-fit-reset').click();await p.waitForTimeout(350);

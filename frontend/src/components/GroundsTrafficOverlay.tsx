@@ -22,9 +22,9 @@ function RoadLabel({ text, x, y, rotation, width, height, scale, zoomOnly = fals
 }
 
 /** Passive geometry shares the artwork's camera; never registers gesture handlers or requests artwork. */
-export function GroundsTrafficOverlay({ width, height, scale }: { width: number; height: number; scale: SharedValue<number> }) {
+export function GroundsTrafficOverlay({ width, height, scale, showTraffic = true }: { width: number; height: number; scale: SharedValue<number>; showTraffic?: boolean }) {
   return <View pointerEvents="none" style={StyleSheet.absoluteFill} testID="grounds-traffic-overlay">
-    {GROUNDS_TRAFFIC_ARROWS.map(({ id, start, end }) => {
+    {showTraffic && GROUNDS_TRAFFIC_ARROWS.map(({ id, start, end }) => {
       const x = start[0] * width / 100, y = start[1] * height / 100;
       const dx = (end[0] - start[0]) * width / 100, dy = (end[1] - start[1]) * height / 100;
       const length = Math.hypot(dx, dy), angle = Math.atan2(dy, dx) * 180 / Math.PI;
@@ -35,15 +35,15 @@ export function GroundsTrafficOverlay({ width, height, scale }: { width: number;
         <View style={[styles.headFill, { right: 2 }]} />
       </View>;
     })}
-    <View pointerEvents="none" testID="grounds-flow-caption" style={[styles.label, { left: width * .215 - 75, top: height * .73 - 10 }]}>
+    {showTraffic && <View pointerEvents="none" testID="grounds-flow-caption" style={[styles.label, { left: width * .215 - 75, top: height * .73 - 10 }]}>
       <Text style={styles.flowCaption}>Flow of traffic</Text>
-    </View>
+    </View>}
     <View pointerEvents="none" testID="grounds-horse-plowing-label" style={{ position: 'absolute', left: width * .222 - width * .0435, top: height * .453 - height * .0225, width: width * .087, height: height * .045, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={[styles.horseText, { fontSize: Math.min(12, width * .019), lineHeight: Math.min(14, width * .023) }]}>{'Horse\nPlowing'}</Text>
     </View>
-    <View pointerEvents="none" testID="grounds-traffic-notice" style={[styles.notice, { right: width * .08, top: height * .165, width: Math.min(180, width * .46) }]}>
+    {showTraffic && <View pointerEvents="none" testID="grounds-traffic-notice" style={[styles.notice, { right: width * .08, top: height * .165, width: Math.min(180, width * .46) }]}>
       <Text style={[styles.noticeText, { fontSize: width < 360 ? 10 : 11, lineHeight: width < 360 ? 12 : 14 }]}>{GROUNDS_TRAFFIC_NOTICE}</Text>
-    </View>
+    </View>}
     <RoadLabel text="Durham Rd" x={41.5} y={82} rotation={90} width={width} height={height} scale={scale} />
     <RoadLabel text="Greenock-Brant" x={65} y={71.33} offsetY={24} rotation={0} width={width} height={height} scale={scale} />
     <RoadLabel text="Bruce Road 2" x={24.9} y={19.42} rotation={90} width={width} height={height} scale={scale} zoomOnly />

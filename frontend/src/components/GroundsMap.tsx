@@ -1,4 +1,7 @@
 import { GroundsTrafficOverlay } from './GroundsTrafficOverlay';
+import { GroundsParkingOverlay } from './GroundsParkingOverlay';
+import { GroundsViewSelector } from './GroundsViewSelector';
+import { hitGroundsParking, type GroundsView, type GroundsParkingPoi } from '../config/groundsParking';
 import { DESKTOP_MAP_BREAKPOINT, desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -97,6 +100,8 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   const phone = windowSize.width < DESKTOP_MAP_BREAKPOINT;
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<GroundsZone | null>(null);
+  const [groundsView, setGroundsView] = useState<GroundsView>('general');
+  const [parkingPoi, setParkingPoi] = useState<GroundsParkingPoi | null>(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const focusedKey = useRef<string | null>(null);
@@ -141,6 +146,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   }, [flyTo, onSwitchToTented]);
 
   const selectHit = useCallback((hit: EventMapHit) => {
+    setParkingPoi(null);
     setFocused(false);
     Keyboard.dismiss();
     if (hit.mapType === 'tented') {
@@ -154,8 +160,13 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
 
   const hitViewportPoint = useCallback((x: number, y: number) => {
     const point = mapPointUnderFocal({ scale: scale.value, tx: tx.value, ty: ty.value, focalX: x, focalY: y, left: layer.left, top: layer.top });
+    if (groundsView === 'parking') {
+      const poi = hitGroundsParking(point.x, point.y, layer.width, layer.height, scale.value);
+      if (poi) { setParkingPoi(poi); return; }
+    }
+    setParkingPoi(null);
     chooseZone(hitTestGroundsZone((point.x / layer.width) * 100, (point.y / layer.height) * 100));
-  }, [chooseZone, layer.left, layer.top, layer.width, layer.height]);
+  }, [chooseZone, layer.left, layer.top, layer.width, layer.height, groundsView]);
 
   useEffect(() => {
     const zone = resolveGroundsZone(highlightedLocation);
@@ -188,8 +199,9 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
         {phone ? <View testID="grounds-artwork-crop" style={[StyleSheet.absoluteFillObject, { top: layer.headerHeight, overflow: 'hidden' }]}>
           <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={[styles.image, { position: 'absolute', top: -layer.headerHeight, height: layer.height }]} />
         </View> : <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />}
-        <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} />
+        <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} showTraffic={groundsView === 'traffic'} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
+        {groundsView === 'parking' ? <GroundsParkingOverlay width={layer.width} height={layer.height} scale={scale} selected={parkingPoi?.id || null} onSelect={setParkingPoi} /> : null}
       </Animated.View>
     </Animated.View>
   );
@@ -198,6 +210,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     [query, focused],
   );
   const reset = () => {
+    setParkingPoi(null);
     setSelected(null);
     setQuery('');
     setFocused(false);
@@ -247,7 +260,21 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     <TouchableOpacity style={[styles.reset, desktop && desktopMapStyles.fit]} onPress={reset} accessibilityLabel="Fit map to grounds" testID="grounds-fit-reset">
       <Feather name="maximize-2" size={18} color={colors.textPrimary} />
     </TouchableOpacity>
-    {selected?.action === 'info' || selected?.action === 'switch-rv' ? (
+    <View style={[styles.viewControl, desktop && { left: 16, right: 76, bottom: 8 }]}>
+      <GroundsViewSelector value={groundsView} compact={!!desktop} onChange={view => { setGroundsView(view); setParkingPoi(null); }} />
+    </View>
+    {parkingPoi ? <View style={[styles.card, desktop && { bottom: 76 }]} testID="grounds-parking-info">
+      <View style={styles.cardInner}>
+        <View style={styles.cardRow}>
+          <View style={styles.cardCopy}>
+            <Text style={styles.title}>{parkingPoi.id === 'accessible' ? parkingPoi.label : `#${parkingPoi.id} · ${parkingPoi.label}`}</Text>
+            {parkingPoi.detail ? <Text style={styles.fact}>{parkingPoi.detail}</Text> : null}
+          </View>
+          <TouchableOpacity onPress={() => setParkingPoi(null)} accessibilityLabel="Close parking information"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity>
+        </View>
+      </View>
+    </View> : null}
+    {!parkingPoi && (selected?.action === 'info' || selected?.action === 'switch-rv') ? (
       <View style={[styles.card, desktop && desktopMapStyles.groundsInfo, desktop && { bottom: 124 }]} pointerEvents="box-none" testID="grounds-info-card">
         <View style={styles.cardInner} pointerEvents="auto">
           <View style={styles.cardRow}>
@@ -273,7 +300,8 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
 const styles = StyleSheet.create({
   root: { flex: 1, width: '100%', height: '100%', position: 'relative', backgroundColor: '#D9D1BE' },
   viewport: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
-  phoneViewport: { top: 108, bottom: 68 },
+  phoneViewport: { top: 108, bottom: 140 },
+  viewControl: { position: 'absolute', bottom: 76, left: 12, right: 68, zIndex: 8 },
   gestureRoot: { ...StyleSheet.absoluteFillObject },
   layer: { position: 'absolute', overflow: 'visible' },
   image: { width: '100%', height: '100%' },
