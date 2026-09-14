@@ -1,3 +1,9 @@
+import { GroundsTrafficOverlay } from './GroundsTrafficOverlay';
+import { GroundsParkingOverlay } from './GroundsParkingOverlay';
+import { GroundsViewSelector } from './GroundsViewSelector';
+import { hitGroundsParking, type GroundsView, type GroundsParkingPoi } from '../config/groundsParking';
+import { DESKTOP_MAP_BREAKPOINT, desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
+import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Keyboard, LayoutChangeEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -5,6 +11,7 @@ import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import colors from '../theme/colors';
 import { groundsLayerLayout, groundsPaintViewport } from '../config/groundsLayout';
+import { groundsPhoneLayerLayout } from '../config/groundsPhoneLayout';
 import { GROUNDS_MAP, GroundsZone, hitTestGroundsZone, resolveGroundsZone } from '../config/groundsZones';
 import { searchEventMap, type EventMapHit } from '../config/mapSearch';
 import { tentedCityVendors } from '../data/tentedCityVendors';
@@ -19,7 +26,7 @@ import {
 } from '../config/mapInteraction';
 
 const MAP_SOURCE = require('../../assets/images/grounds-site-map.jpg');
-const INFO_CARD_BOTTOM = 68;
+const INFO_CARD_BOTTOM = 164;
 /** Same language as MNP stage parent-fallback highlight. */
 const SELECTED_FILL = 'rgba(0, 229, 255, 0.45)';
 const SELECTED_OUTER = '#FFD600';
@@ -86,15 +93,22 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   onSwitchToTented: (location?: string) => void;
   onSwitchToRv?: () => void;
 }) {
+  const desktop = useDesktopMapWorkspace('grounds');
+  const artwork = useArtworkReveal('grounds');
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
+  const phone = windowSize.width < DESKTOP_MAP_BREAKPOINT;
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<GroundsZone | null>(null);
+  const [groundsView, setGroundsView] = useState<GroundsView>('general');
+  const [parkingPoi, setParkingPoi] = useState<GroundsParkingPoi | null>(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const focusedKey = useRef<string | null>(null);
   const viewport = groundsPaintViewport(measured, windowSize);
-  const layer = useMemo(() => groundsLayerLayout(viewport), [viewport.width, viewport.height]);
+  const layer = useMemo(() => phone
+    ? groundsPhoneLayerLayout(viewport)
+    : { ...groundsLayerLayout(viewport), headerHeight: 0 }, [viewport.width, viewport.height, phone]);
   const scale = useSharedValue(1), tx = useSharedValue(0), ty = useSharedValue(0);
   const startScale = useSharedValue(1), startX = useSharedValue(0), startY = useSharedValue(0);
   const startFocalX = useSharedValue(0), startFocalY = useSharedValue(0);
@@ -132,6 +146,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   }, [flyTo, onSwitchToTented]);
 
   const selectHit = useCallback((hit: EventMapHit) => {
+    setParkingPoi(null);
     setFocused(false);
     Keyboard.dismiss();
     if (hit.mapType === 'tented') {
@@ -145,8 +160,13 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
 
   const hitViewportPoint = useCallback((x: number, y: number) => {
     const point = mapPointUnderFocal({ scale: scale.value, tx: tx.value, ty: ty.value, focalX: x, focalY: y, left: layer.left, top: layer.top });
+    if (groundsView === 'parking') {
+      const poi = hitGroundsParking(point.x, point.y, layer.width, layer.height, scale.value);
+      if (poi) { setParkingPoi(poi); return; }
+    }
+    setParkingPoi(null);
     chooseZone(hitTestGroundsZone((point.x / layer.width) * 100, (point.y / layer.height) * 100));
-  }, [chooseZone, layer.left, layer.top, layer.width, layer.height]);
+  }, [chooseZone, layer.left, layer.top, layer.width, layer.height, groundsView]);
 
   useEffect(() => {
     const zone = resolveGroundsZone(highlightedLocation);
@@ -174,10 +194,14 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   const cameraStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }] }));
   const webLock = Platform.OS === 'web' ? WEB_TOUCH_LOCK : null;
   const map = (
-    <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
+    <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
-        <Image source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />
+        {phone ? <View testID="grounds-artwork-crop" style={[StyleSheet.absoluteFillObject, { top: layer.headerHeight, overflow: 'hidden' }]}>
+          <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={[styles.image, { position: 'absolute', top: -layer.headerHeight, height: layer.height }]} />
+        </View> : <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />}
+        <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} showTraffic={groundsView === 'general'} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
+        {groundsView === 'parking' ? <GroundsParkingOverlay width={layer.width} height={layer.height} scale={scale} selected={parkingPoi?.id || null} onSelect={setParkingPoi} /> : null}
       </Animated.View>
     </Animated.View>
   );
@@ -186,6 +210,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     [query, focused],
   );
   const reset = () => {
+    setParkingPoi(null);
     setSelected(null);
     setQuery('');
     setFocused(false);
@@ -194,11 +219,12 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   };
   const onLayout = (e: LayoutChangeEvent) => { const { width, height } = e.nativeEvent.layout; if (width > 1 && height > 1) setMeasured({ width, height }); };
 
-  return <View style={styles.root}>
-    <View ref={viewportRef} style={[styles.viewport, webLock]} onLayout={onLayout} collapsable={false}>
+  return <View style={[styles.root, desktop && desktopMapStyles.root]}>
+    <View testID="grounds-map-viewport" ref={viewportRef} style={[styles.viewport, webLock, phone && styles.phoneViewport, desktop && desktopMapStyles.viewport]} onLayout={onLayout} collapsable={false}>
       {Platform.OS === 'web' ? map : <GestureDetector gesture={composed}>{map}</GestureDetector>}
+      <MapArtworkLoading artwork={artwork} map="grounds" />
     </View>
-    <View style={styles.searchWrap} pointerEvents="box-none">
+    <View style={[styles.searchWrap, desktop && desktopMapStyles.search]} pointerEvents="box-none">
       <View style={styles.searchCard}>
         <Feather name="search" size={18} color="#6B7280" />
         <TextInput
@@ -231,11 +257,25 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
         </ScrollView>
       ) : null}
     </View>
-    <TouchableOpacity style={styles.reset} onPress={reset} accessibilityLabel="Fit map to grounds" testID="grounds-fit-reset">
+    <TouchableOpacity style={[styles.reset, desktop && desktopMapStyles.fit]} onPress={reset} accessibilityLabel="Fit map to grounds" testID="grounds-fit-reset">
       <Feather name="maximize-2" size={18} color={colors.textPrimary} />
     </TouchableOpacity>
-    {selected?.action === 'info' || selected?.action === 'switch-rv' ? (
-      <View style={styles.card} pointerEvents="box-none" testID="grounds-info-card">
+    <View style={[styles.viewControl, desktop && { left: 16, right: 76, bottom: 8 }]}>
+      <GroundsViewSelector value={groundsView} compact={!!desktop} onChange={view => { setGroundsView(view); setParkingPoi(null); }} />
+    </View>
+    {parkingPoi ? <View style={[styles.card, desktop && { bottom: 76 }]} testID="grounds-parking-info">
+      <View style={styles.cardInner}>
+        <View style={styles.cardRow}>
+          <View style={styles.cardCopy}>
+            <Text style={styles.title}>{parkingPoi.id === 'accessible' ? parkingPoi.label : `#${parkingPoi.id} · ${parkingPoi.label}`}</Text>
+            {parkingPoi.detail ? <Text style={styles.fact}>{parkingPoi.detail}</Text> : null}
+          </View>
+          <TouchableOpacity onPress={() => setParkingPoi(null)} accessibilityLabel="Close parking information"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity>
+        </View>
+      </View>
+    </View> : null}
+    {!parkingPoi && (selected?.action === 'info' || selected?.action === 'switch-rv') ? (
+      <View style={[styles.card, desktop && desktopMapStyles.groundsInfo, desktop && { bottom: 124 }]} pointerEvents="box-none" testID="grounds-info-card">
         <View style={styles.cardInner} pointerEvents="auto">
           <View style={styles.cardRow}>
             <View style={styles.cardCopy}>
@@ -253,17 +293,15 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
           ) : null}
         </View>
       </View>
-    ) : (
-      <View style={styles.hint} pointerEvents="none">
-        <Text style={styles.hintText}>Drag · pinch · double-tap · tap a map area</Text>
-      </View>
-    )}
+    ) : null}
   </View>;
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, width: '100%', height: '100%', position: 'relative', backgroundColor: '#D9D1BE' },
   viewport: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
+  phoneViewport: { top: 108, bottom: 140 },
+  viewControl: { position: 'absolute', bottom: 76, left: 12, right: 68, zIndex: 8 },
   gestureRoot: { ...StyleSheet.absoluteFillObject },
   layer: { position: 'absolute', overflow: 'visible' },
   image: { width: '100%', height: '100%' },
@@ -304,10 +342,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 17, fontWeight: '800', color: colors.textPrimary },
   fact: { marginTop: 4, fontSize: 14, color: colors.textSecondary },
   hint: {
-    position: 'absolute', alignSelf: 'center', bottom: 72, backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, zIndex: 4,
+    position: 'absolute', left: 12, right: 68, bottom: 68, backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, zIndex: 4,
   },
-  hintText: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+  hintText: { fontSize: 11, lineHeight: 14, color: colors.textSecondary },
   rvCta: { marginTop: 12, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   rvCtaText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
 });

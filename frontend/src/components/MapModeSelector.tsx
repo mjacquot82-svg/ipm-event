@@ -15,19 +15,21 @@ export const MAP_MODE_OPTIONS: { id: MapMode; label: string; accessibilityLabel:
 export default function MapModeSelector({
   mode,
   onChange,
+  desktop = false,
   testID = 'map-mode-selector',
 }: {
   mode: MapMode;
   onChange: (mode: MapMode) => void;
   testID?: string;
+  desktop?: boolean;
 }) {
   return (
-    <View style={styles.wrap} testID={testID} accessibilityRole="tablist">
+    <View style={[styles.wrap, desktop && { width: '100%' }]} testID={testID} accessibilityRole="tablist">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-        style={styles.scroll}
+        contentContainerStyle={[styles.row, desktop && { width: '100%', minWidth: 0, flexGrow: 1 }]}
+        style={[styles.scroll, desktop && { width: '100%' }]}
         keyboardShouldPersistTaps="handled"
       >
         {MAP_MODE_OPTIONS.map((option) => {
@@ -35,7 +37,7 @@ export default function MapModeSelector({
           return (
             <TouchableOpacity
               key={option.id}
-              style={[styles.btn, on && styles.btnOn]}
+              style={[styles.btn, desktop && { flex: 1, flexShrink: 1, alignItems: 'center' }, on && styles.btnOn]}
               onPress={() => onChange(option.id)}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}

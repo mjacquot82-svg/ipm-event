@@ -1,3 +1,5 @@
+import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
+import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import { EXACT_MAP_UNAVAILABLE, hasTrustedMapGeometry } from '../config/mapAvailability';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -88,6 +90,8 @@ export default function TentedCityMap({
   const [unmappedInitialLocation, setUnmappedInitialLocation] = useState(false);
   const [verify1A, setVerify1A] = useState(Boolean(verify1AProp));
   const verifyTaps = useRef({ count: 0, at: 0 });
+  const desktop = useDesktopMapWorkspace('tented');
+  const artwork = useArtworkReveal('tented');
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
@@ -360,9 +364,9 @@ export default function TentedCityMap({
   }, [selectedSemanticArea]);
 
   const mapGestures = (
-    <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
+    <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.mapLayer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, mapStyle]}>
-        <Image source={MAP_SOURCE} style={[styles.mapImage, { width: layer.width, height: layer.height }]} resizeMode="stretch" />
+        <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} style={[styles.mapImage, { width: layer.width, height: layer.height }]} resizeMode="stretch" />
         {TENTED_CITY_BOOTH_DIVIDER_SEGMENTS.map((seg) => (
           <Animated.View
             key={seg.key}
@@ -512,22 +516,23 @@ export default function TentedCityMap({
   );
 
   return (
-    <View style={styles.root} collapsable={false}>
+    <View style={[styles.root, desktop && desktopMapStyles.root]} collapsable={false}>
       <View
         ref={viewportRef}
-        style={[styles.viewport, webLock]}
+        style={[styles.viewport, webLock, desktop && desktopMapStyles.viewport, desktop && desktopMapStyles.tentedViewport]}
         onLayout={onLayout}
         collapsable={false}
       >
         {Platform.OS === 'web' ? mapGestures : (
           <GestureDetector gesture={composed}>{mapGestures}</GestureDetector>
         )}
+        <MapArtworkLoading artwork={artwork} map="tented" />
       </View>
-      <View style={styles.chrome} pointerEvents="box-none">
-      <View style={[styles.topOverlay, hideModeSelector && styles.topOverlayWithParentSelector]} pointerEvents="box-none">
+      <View style={[styles.chrome, desktop && desktopMapStyles.chrome]} pointerEvents="box-none">
+      <View style={[styles.topOverlay, hideModeSelector && styles.topOverlayWithParentSelector, desktop && desktopMapStyles.search]} pointerEvents="box-none">
         {hideModeSelector ? (
           <TouchableOpacity
-            style={styles.verifyTapTarget}
+            style={[styles.verifyTapTarget, desktop && desktopMapStyles.verifyTarget]}
             onPress={() => {
               const now = Date.now();
               if (now - verifyTaps.current.at > 900) verifyTaps.current.count = 0;
@@ -573,11 +578,11 @@ export default function TentedCityMap({
           </ScrollView>
         ) : null}
       </View>
-      <View style={styles.fabCol}>
+      <View style={[styles.fabCol, desktop && desktopMapStyles.fit]}>
         <TouchableOpacity style={styles.fab} onPress={resetMap} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
       </View>
       {unmappedInitialLocation ? (
-        <View style={styles.infoCard} accessibilityRole="alert">
+        <View style={[styles.infoCard, desktop && desktopMapStyles.info]} accessibilityRole="alert">
           <View style={styles.infoHeader}>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <Text style={styles.infoTitle}>This location isn’t mapped yet.</Text>
@@ -587,7 +592,7 @@ export default function TentedCityMap({
           </View>
         </View>
       ) : selected || selectedSemanticArea ? (
-        <View style={styles.infoCard}>
+        <View style={[styles.infoCard, desktop && desktopMapStyles.info]}>
           <View style={styles.infoHeader}>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <Text style={styles.infoTitle} numberOfLines={2}>{selectedTitle}</Text>
@@ -601,14 +606,14 @@ export default function TentedCityMap({
           {stageEvents.length > 0 ? <View style={styles.events}>{stageEvents.map((event) => <Text key={event.id} style={styles.eventLine} numberOfLines={1}>{event.start_time ? `${event.start_time}  \u00b7  ` : ''}{event.title}</Text>)}</View> : null}
         </View>
       ) : unavailable ? (
-        <View style={styles.infoCard}>
+        <View style={[styles.infoCard, desktop && desktopMapStyles.info]}>
           <View style={styles.infoHeader}>
             <View style={{ flex: 1, paddingRight: 8 }}><Text style={styles.infoTitle}>Map location not available</Text></View>
             <TouchableOpacity onPress={clearSelection} hitSlop={10} accessibilityLabel="Dismiss"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity>
           </View>
         </View>
       ) : (
-        <View style={styles.hint} pointerEvents="none"><Feather name="zoom-in" size={14} color={colors.textMuted} /><Text style={styles.hintText}>Drag \u00b7 pinch \u00b7 double-tap</Text></View>
+        <View style={[styles.hint, desktop && desktopMapStyles.hint]} pointerEvents="none"><Feather name="zoom-in" size={14} color={colors.textMuted} /><Text style={styles.hintText}>Drag \u00b7 pinch \u00b7 double-tap</Text></View>
       )}
       </View>
     </View>

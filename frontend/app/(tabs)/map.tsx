@@ -1,6 +1,7 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { desktopMapStyles, useDesktopMapWorkspace } from '../../src/theme/desktopMapWorkspace';
 import { View, StyleSheet, StatusBar } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import GroundsMap from '../../src/components/GroundsMap';
@@ -72,6 +73,10 @@ export default function MapScreen() {
   );
 
   const [mode, setMode] = useState<MapMode>(desiredMode);
+  const desktop = useDesktopMapWorkspace(mode);
+  const groundsDesktop = useDesktopMapWorkspace('grounds');
+  const tentedDesktop = useDesktopMapWorkspace('tented');
+  const rvDesktop = useDesktopMapWorkspace('rv');
   const [overrideLocation, setOverrideLocation] = useState<string | null>(null);
 
   // Tab navigators keep Map mounted — sync mode when schedule/vendors navigate with new params.
@@ -81,8 +86,8 @@ export default function MapScreen() {
   }, [desiredMode, location]);
 
   const selector = (
-    <View style={styles.selectorHost} pointerEvents="box-none">
-      <MapModeSelector mode={mode} onChange={setMode} />
+    <View style={[styles.selectorHost, desktop && { top: 32, left: desktop.left + 16, right: 'auto', width: desktop.width - 32 }]} pointerEvents="box-none">
+      <MapModeSelector mode={mode} onChange={setMode} desktop={Boolean(desktop)} />
     </View>
   );
 
@@ -90,7 +95,7 @@ export default function MapScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <View
-        style={[styles.tentedHost, mode !== 'tented' && styles.tentedHostHidden]}
+        style={[styles.tentedHost, tentedDesktop && desktopMapStyles.host, tentedDesktop, mode !== 'tented' && styles.tentedHostHidden]}
         pointerEvents={mode === 'tented' ? 'auto' : 'none'}
         accessibilityElementsHidden={mode !== 'tented'}
         importantForAccessibility={mode === 'tented' ? 'yes' : 'no-hide-descendants'}
@@ -109,7 +114,7 @@ export default function MapScreen() {
         />
       </View>
       {mode === 'rv' ? (
-        <View style={styles.rvHost}>
+        <View style={[styles.rvHost, rvDesktop && desktopMapStyles.host, rvDesktop]}>
           <RvParkDetailMap
             onSwitchToGrounds={() => setMode('grounds')}
             hideModeSelector
@@ -117,7 +122,7 @@ export default function MapScreen() {
         </View>
       ) : null}
       {mode === 'grounds' ? (
-        <View style={styles.grounds}>
+        <View style={[styles.grounds, groundsDesktop && desktopMapStyles.host, groundsDesktop]}>
           <GroundsMap
             highlightedLocation={overrideLocation || location || null}
             onSwitchToTented={(loc) => {

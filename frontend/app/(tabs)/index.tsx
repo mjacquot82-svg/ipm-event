@@ -1,3 +1,4 @@
+import { scheduleMapArtworkPreload } from '../../src/services/mapArtwork';
 // © 2026 1001538341 ONTARIO INC.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -9,6 +10,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -210,6 +212,7 @@ export default function HomeScreen() {
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialDataSettled, setInitialDataSettled] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
@@ -277,9 +280,11 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    fetchSchedule();
-    fetchAnnouncements();
-    loadFavorites();
+    let active = true;
+    void Promise.allSettled([fetchSchedule(), fetchAnnouncements(), loadFavorites()]).then(() => {
+      if (active) setInitialDataSettled(true);
+    });
+    return () => { active = false; };
   }, [fetchAnnouncements, fetchSchedule, loadFavorites]);
 
   useFocusEffect(
@@ -287,6 +292,10 @@ export default function HomeScreen() {
       loadFavorites();
     }, [loadFavorites])
   );
+
+  useFocusEffect(useCallback(() => {
+    if (Platform.OS === 'web' && initialDataSettled && !loading && !refreshing) return scheduleMapArtworkPreload();
+  }, [initialDataSettled, loading, refreshing]));
 
   const sortedEvents = useMemo(() => {
     return [...events].sort((a, b) => {

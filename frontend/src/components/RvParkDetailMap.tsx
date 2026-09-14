@@ -1,3 +1,5 @@
+import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
+import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image, Keyboard, LayoutChangeEvent, Platform, StyleSheet, Text, TextInput,
@@ -55,6 +57,8 @@ export default function RvParkDetailMap({
   onSwitchToGrounds: () => void;
   hideModeSelector?: boolean;
 }) {
+  const desktop = useDesktopMapWorkspace('rv');
+  const artwork = useArtworkReveal('rv');
   const viewportRef = useRef<View>(null);
   const focusedKey = useRef<string | null>(null);
   const windowSize = useWindowDimensions();
@@ -165,22 +169,23 @@ export default function RvParkDetailMap({
   };
 
   const map = (
-    <Animated.View style={[styles.gestureRoot, webLock]} collapsable={false}>
+    <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
-        <Image source={MAP_SOURCE} resizeMode="stretch" style={styles.image} accessibilityLabel="RV park site map" />
+        <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} accessibilityLabel="RV park site map" />
         {selected ? <SiteHighlight site={selected} layer={layer} /> : null}
       </Animated.View>
     </Animated.View>
   );
 
   return (
-    <View style={styles.root} testID="rv-park-detail-map">
-      <View ref={viewportRef} style={[styles.viewport, webLock]} onLayout={onLayout} collapsable={false}>
+    <View style={[styles.root, desktop && desktopMapStyles.root]} testID="rv-park-detail-map">
+      <View ref={viewportRef} style={[styles.viewport, webLock, desktop && desktopMapStyles.viewport]} onLayout={onLayout} collapsable={false}>
         {Platform.OS === 'web' ? map : <GestureDetector gesture={composed}>{map}</GestureDetector>}
+      <MapArtworkLoading artwork={artwork} map="rv" />
       </View>
 
-      <View style={styles.chrome} pointerEvents="box-none">
-        <View style={[styles.topOverlay, hideModeSelector && styles.topOverlayWithParentSelector]} pointerEvents="box-none">
+      <View style={[styles.chrome, desktop && desktopMapStyles.chrome]} pointerEvents="box-none">
+        <View style={[styles.topOverlay, hideModeSelector && styles.topOverlayWithParentSelector, desktop && desktopMapStyles.search]} pointerEvents="box-none">
           {hideModeSelector ? null : (
           <View style={styles.modeRow}>
             <TouchableOpacity style={styles.modeBtn} onPress={onSwitchToGrounds} accessibilityLabel="Show grounds map">
@@ -238,12 +243,12 @@ export default function RvParkDetailMap({
           ) : null}
         </View>
 
-        <TouchableOpacity style={styles.reset} onPress={reset} accessibilityLabel="Reset map zoom" testID="rv-map-fit-reset">
+        <TouchableOpacity style={[styles.reset, desktop && desktopMapStyles.fit]} onPress={reset} accessibilityLabel="Reset map zoom" testID="rv-map-fit-reset">
           <Feather name="maximize-2" size={18} color={colors.textPrimary} />
         </TouchableOpacity>
 
         {selected || notFound ? (
-          <View style={styles.card}>
+          <View style={[styles.card, desktop && desktopMapStyles.info]}>
             <View style={styles.cardRow}>
               <View style={styles.cardCopy}>
                 <Text style={styles.title} testID="rv-site-title">{title || 'Site not found'}</Text>
@@ -265,7 +270,7 @@ export default function RvParkDetailMap({
             </View>
           </View>
         ) : (
-          <View style={styles.hint} pointerEvents="none">
+          <View style={[styles.hint, desktop && desktopMapStyles.hint]} pointerEvents="none">
             <Text style={styles.hintText}>Search a site · pinch · drag · Fit to reset</Text>
           </View>
         )}
