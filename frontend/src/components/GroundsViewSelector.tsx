@@ -1,12 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import type { GroundsView } from '../config/groundsParking';
+import { GROUNDS_VIEWS, type GroundsView } from '../config/groundsParking';
 
 export function GroundsViewSelector({ value, onChange, compact = false }: { value: GroundsView; onChange: (view: GroundsView) => void; compact?: boolean }) {
   return <View style={[styles.control, compact && { padding: 3 }]} testID="grounds-view-selector" accessibilityLabel="Grounds view">
     <Text style={styles.caption}>Grounds view</Text>
     <View style={styles.options} accessibilityRole="tablist">
-      {(['general', 'traffic', 'parking'] as const).map(view => <TouchableOpacity
+      {GROUNDS_VIEWS.map(view => <TouchableOpacity
         key={view} testID={`grounds-view-${view}`} accessibilityRole="tab"
         accessibilityLabel={`${view[0].toUpperCase() + view.slice(1)} Grounds view`}
         accessibilityState={{ selected: value === view }} aria-selected={value === view} onPress={() => onChange(view)}

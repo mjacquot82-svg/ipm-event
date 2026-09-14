@@ -26,17 +26,21 @@ const zoom = p => image(p).evaluate(e => new DOMMatrix(getComputedStyle(e.closes
       const size = { width, height: width < 768 ? 844 : 900 };
       for (const page of [p, base]) { await page.setViewportSize(size); await page.getByTestId('grounds-fit-reset').click(); await ready(page); await page.waitForTimeout(300); await page.evaluate(() => document.fonts.ready); }
       await p.evaluate(() => window.originalGrounds = document.querySelector('img[src*="grounds-site-map"]'));
+      assert.deepEqual(await p.getByTestId('grounds-view-selector').getByRole('tab').allTextContents(), ['General', 'Parking']);
+      assert.equal(await p.getByTestId('grounds-view-traffic').count(), 0);
       const before = downloads, initialCamera = await camera(p);
-      for (const view of ['general', 'traffic', 'parking', 'general', 'parking', 'traffic']) {
+      for (const view of ['general', 'parking', 'general', 'parking', 'general']) {
         await p.getByTestId('grounds-view-' + view).click();
         assert.equal(await p.evaluate(() => window.originalGrounds === document.querySelector('img[src*="grounds-site-map"]') && window.originalGrounds.complete && window.originalGrounds.naturalWidth === 1344), true, 'same mounted aerial image');
         assert.equal(await p.getByTestId('map-artwork-grounds-loading').count(), 0, 'no blank/loading transition');
         assert.equal(downloads, before, 'no new map download between layers');
         assert.equal(await camera(p), initialCamera, 'view selection retains camera');
-        assert.equal(await p.locator('[data-testid^="TRAFFIC-"]').count(), view === 'traffic' ? 3 : 0);
-        assert.equal(await p.getByTestId('grounds-flow-caption').count(), view === 'traffic' ? 1 : 0);
-        assert.equal(await p.getByTestId('grounds-traffic-notice').count(), view === 'traffic' ? 1 : 0);
+        assert.equal(await p.locator('[data-testid^="TRAFFIC-"]').count(), view === 'general' ? 3 : 0);
+        assert.equal(await p.getByTestId('grounds-flow-caption').count(), view === 'general' ? 1 : 0);
+        assert.equal(await p.getByTestId('grounds-traffic-notice').count(), view === 'general' ? 1 : 0);
         assert.equal(await p.locator('[data-testid^="grounds-parking-"][role="button"]').count(), view === 'parking' ? 15 : 0);
+        for (const id of ['grounds-walkerton','grounds-horse-plowing-label','grounds-road-Durham-Rd','grounds-road-Greenock-Brant','grounds-road-Bruce-Road-3','grounds-road-Highway-9']) assert.equal(await p.getByTestId(id).count(), 1);
+        assert.equal(await p.getByTestId('grounds-view-selector').boundingBox().then(r=>r.height), width < 768 ? 60 : 52, 'selector height unchanged');
         const layout = await p.evaluate(() => {
           const q = id => document.querySelector(`[data-testid="${id}"]`), rect = e => { const r = e.getBoundingClientRect(); return { x:r.x,y:r.y,width:r.width,height:r.height }; };
           return { control: rect(q('grounds-view-selector')), viewport: rect(q('grounds-map-viewport')), search: rect(q('grounds-map-search').parentElement), selector: rect(q('map-mode-selector')), crop: q('grounds-artwork-crop') ? rect(q('grounds-artwork-crop')) : null, overflow: document.documentElement.scrollWidth > innerWidth + 1 };
@@ -46,8 +50,8 @@ const zoom = p => image(p).evaluate(e => new DOMMatrix(getComputedStyle(e.closes
         assert.ok(layout.control.y >= layout.viewport.y + layout.viewport.height - 1, 'layer control uses reserved footer, not map/search space');
         assert.ok(layout.search.y >= layout.selector.y + layout.selector.height);
         if (width < 768) assert.ok(layout.crop && Math.abs(layout.crop.y - layout.search.y - layout.search.height - 8) < 1, 'mobile heading stays cropped with no new header space');
-        for (const tab of ['general','traffic','parking']) assert.ok(await p.getByTestId('grounds-view-'+tab).evaluate(e => { const r=e.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return e===hit||e.contains(hit); }), 'layer control remains clickable');
-        if (view === 'traffic') {
+        for (const tab of ['general','parking']) assert.ok(await p.getByTestId('grounds-view-'+tab).evaluate(e => { const r=e.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return e===hit||e.contains(hit); }), 'layer control remains clickable');
+        if (view === 'general') {
           const clips = await Promise.all([p, base].map(page => page.evaluate(() => { const e=document.querySelector('[data-testid="grounds-artwork-crop"]') || document.querySelector('img[src*="grounds-site-map"]');const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}; })));
           assert.deepEqual(clips[0], clips[1], 'approved artwork geometry unchanged');
           const currentPixels = await p.screenshot({clip:clips[0]}), basePixels = await base.screenshot({clip:clips[1]});
@@ -79,7 +83,7 @@ const zoom = p => image(p).evaluate(e => new DOMMatrix(getComputedStyle(e.closes
       if(['1','2'].includes(id))assert.ok((await card.textContent()).includes('Buses Only'));
       await p.getByLabel('Close parking information').click();
     }
-    for(const view of ['general','traffic','parking']) {
+    for(const view of ['general','parking']) {
       await p.getByTestId('grounds-view-'+view).click();await p.getByTestId('grounds-fit-reset').click();await p.waitForTimeout(300);
       const box=await image(p).boundingBox(),x=box.x+box.width*.72,y=box.y+box.height*.55;
       await p.mouse.move(x,y);await p.mouse.wheel(0,-450);await p.waitForTimeout(300);assert.ok(await zoom(p)>1.1);
@@ -89,13 +93,13 @@ const zoom = p => image(p).evaluate(e => new DOMMatrix(getComputedStyle(e.closes
     await p.getByTestId('grounds-map-search').fill('West Parking');await p.getByText('West Parking Lot',{exact:true}).first().click();
     const selected=p.locator('[data-testid^="grounds-zone-highlight-"]');await selected.waitFor();await p.waitForTimeout(350);
     const selectedCamera=await camera(p);
-    for(const view of ['general','traffic','parking']) {await p.getByTestId('grounds-view-'+view).click();await selected.waitFor();assert.equal(await camera(p),selectedCamera);}
+    for(const view of ['general','parking']) {await p.getByTestId('grounds-view-'+view).click();await selected.waitFor();assert.equal(await camera(p),selectedCamera);}
     await p.getByTestId('grounds-fit-reset').click();
     await p.getByTestId('grounds-map-search').fill('Ontario Government');await p.getByText('Ontario Government',{exact:true}).first().click();await p.getByTestId('vendor-booth-highlight').waitFor();
     await p.getByTestId('map-mode-grounds').click();await ready(p);await p.getByTestId('grounds-view-selector').waitFor();
     assert.deepEqual(errors,[]);
     fs.writeFileSync(path.join(out,'browser.json'),JSON.stringify({records,downloads,errors},null,2));
-    console.log('PASS 15 widths × 3 views; repeated switching, same mounted image/no downloads/no blank map, approved traffic rendering, all POI taps, control/footer, pan/zoom/Fit, persistent search/highlights and vendor Find-on-Map');
+    console.log('PASS 15 widths × 2 views; repeated switching, same mounted image/no downloads/no blank map, approved traffic rendering, all POI taps, control/footer, pan/zoom/Fit, persistent search/highlights and vendor Find-on-Map');
     await c.close();
   } finally { await b.close(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});

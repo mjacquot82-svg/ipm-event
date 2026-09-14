@@ -14,7 +14,7 @@ const origin=process.env.IPM_PREVIEW_URL||'http://127.0.0.1:8863';
       const p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto(origin+'/map');
       await p.waitForFunction(()=>document.querySelector('img[src*="grounds-site-map"]')?.complete&&!document.querySelector('[data-testid="map-artwork-grounds-loading"]'));
       await p.evaluate(()=>window.originalGrounds=document.querySelector('img[src*="grounds-site-map"]'));
-      for(const view of ['general','traffic','parking','general','parking']){
+      for(const view of ['general','parking','general','parking']){
         await p.getByTestId('grounds-view-'+view).tap();
         assert.equal(await p.evaluate(()=>window.originalGrounds===document.querySelector('img[src*="grounds-site-map"]')),true);
         const control=await p.getByTestId('grounds-view-selector').boundingBox(),selector=await p.getByTestId('map-mode-selector').boundingBox();

@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ts from 'typescript';
+import { execFileSync } from 'node:child_process';
 const source = fs.readFileSync(new URL('../src/config/groundsParking.ts', import.meta.url), 'utf8');
 const mod = { exports: {} };
 new Function('module', 'exports', ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(mod, mod.exports);
-const { GROUNDS_PARKING_POIS: pois, hitGroundsParking } = mod.exports;
+const { GROUNDS_VIEWS, GROUNDS_PARKING_POIS: pois, hitGroundsParking } = mod.exports;
 
 test('parking contains only the official numbered entrances plus the existing accessible symbol', () => {
   assert.deepEqual(pois.map(p => p.id), ['1', '2', '3', '4A', '4B', '5', '7', '8', '9', '10', '11', '12', '13', '14', 'accessible']);
@@ -28,4 +29,18 @@ test('marker labels and geographic hit tests agree at Fit and zoom, including se
       assert.equal(hitGroundsParking(width, height, width, height, scale), null);
     }
   }
+});
+
+test("Grounds exposes exactly General and Parking", () => {
+  assert.deepEqual(GROUNDS_VIEWS, ["general", "parking"]);
+});
+
+test('two-layer refinement preserves approved traffic renderer, artwork, areas and Parking positions', () => {
+  const base = '5e445dd3706865132d6a468ecd4bdf5577ef6fe4';
+  for (const file of ['src/components/GroundsTrafficOverlay.tsx', 'src/components/GroundsParkingOverlay.tsx', 'src/config/groundsZones.ts', 'src/config/groundsPhoneLayout.ts', 'assets/images/grounds-site-map.jpg']) {
+    const expected = execFileSync('git', ['show', `${base}:frontend/${file}`], { maxBuffer: 10 * 1024 * 1024 });
+    assert.deepEqual(fs.readFileSync(new URL('../' + file, import.meta.url)), expected, file);
+  }
+  const old = execFileSync('git', ['show', `${base}:frontend/src/config/groundsParking.ts`], { encoding: 'utf8' });
+  assert.equal(source.slice(source.indexOf('export type GroundsParkingPoi')), old.slice(old.indexOf('export type GroundsParkingPoi')));
 });

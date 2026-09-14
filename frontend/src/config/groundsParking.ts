@@ -1,4 +1,5 @@
-export type GroundsView = 'general' | 'traffic' | 'parking';
+export const GROUNDS_VIEWS = ['general', 'parking'] as const;
+export type GroundsView = typeof GROUNDS_VIEWS[number];
 export type GroundsParkingPoi = {
   id: string;
   label: string;

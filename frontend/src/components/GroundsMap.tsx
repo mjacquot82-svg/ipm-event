@@ -199,7 +199,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
         {phone ? <View testID="grounds-artwork-crop" style={[StyleSheet.absoluteFillObject, { top: layer.headerHeight, overflow: 'hidden' }]}>
           <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={[styles.image, { position: 'absolute', top: -layer.headerHeight, height: layer.height }]} />
         </View> : <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />}
-        <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} showTraffic={groundsView === 'traffic'} />
+        <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} showTraffic={groundsView === 'general'} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
         {groundsView === 'parking' ? <GroundsParkingOverlay width={layer.width} height={layer.height} scale={scale} selected={parkingPoi?.id || null} onSelect={setParkingPoi} /> : null}
       </Animated.View>
