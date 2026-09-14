@@ -17,32 +17,38 @@ export function useMapEducationAnchor(name: string) {
 // A single lease prevents competing directory cards / screens from opening two tips.
 let owner: object | null = null;
 const remembered = new Set<EducationKind>();
-function useEducation(kind: EducationKind, eligible: boolean) {
+function useEducation(kind: EducationKind, eligible: boolean, autoStart = true) {
   const pathname = usePathname();
   const focused = pathname.endsWith(kind === 'mapsTourSeen' ? '/map' : kind.startsWith('schedule') ? '/schedule' : '/vendors');
   const token = useRef({}).current;
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState<'automatic' | 'manual' | null>(null);
   useEffect(() => {
-    if (!eligible || !focused) { setVisible(false); return; }
+    if (!eligible || !focused) { setVisible(null); return; }
+    if (!autoStart) {
+      setVisible(null);
+      // Manual Help can still acquire the lease during a deferred visit.
+      return () => { if (owner === token) owner = null; };
+    }
     let live = true;
     const check = async () => {
       try {
         const seen = remembered.has(kind) || await AsyncStorage.getItem(EDUCATION_KEYS[kind]) === 'true';
-        if (live && !seen && (!owner || owner === token)) { owner = token; setVisible(true); }
+        if (live && !seen && (!owner || owner === token)) { owner = token; setVisible('automatic'); }
       } catch { /* Unavailable storage must never block the underlying app. */ }
     };
     void check();
     const timer = setInterval(() => void check(), 700);
     return () => { live = false; clearInterval(timer); if (owner === token) owner = null; };
-  }, [eligible, focused, kind, token]);
+  }, [eligible, focused, kind, token, autoStart]);
   const dismiss = () => {
     remembered.add(kind);
     void AsyncStorage.setItem(EDUCATION_KEYS[kind], 'true').catch(() => {});
-    setVisible(false);
+    setVisible(null);
     if (owner === token) owner = null;
   };
-  const replay = () => { if (!owner || owner === token) { owner = token; setVisible(true); } };
-  return { visible: visible && focused && eligible, dismiss, replay };
+  const replay = () => { if (!owner || owner === token) { owner = token; setVisible('manual'); } };
+  // Gate automatic visibility during render as well: destination arrivals must never flash a tour.
+  return { visible: focused && eligible && (visible === 'manual' || (autoStart && visible === 'automatic')), dismiss, replay };
 }
 
 function EducationCallout({ title, body, progress, target, fallback, onNext, onDismiss, onTargetPress }: {
@@ -131,10 +137,10 @@ export function MapEducationHelpButton({ mode }: { mode: string }) {
   return <TouchableOpacity accessibilityRole="button" accessibilityLabel="Help, replay Maps tour" testID="maps-help" style={styles.help} onPress={() => replay.current?.()}><Text style={styles.helpText}>?</Text></TouchableOpacity>;
 }
 
-export function MapsEducation({ mode }: { mode: string }) {
+export function MapsEducation({ mode, autoStart = true }: { mode: string; autoStart?: boolean }) {
   const replay = useContext(MapEducationReplay)!;
   const anchors = useContext(MapEducationAnchors)!;
-  const state = useEducation('mapsTourSeen', true);
+  const state = useEducation('mapsTourSeen', true, autoStart);
   const [step, setStep] = useState(0);
   replay.current = () => { setStep(0); state.replay(); };
   const definition = MAP_TOUR_STEPS[step];

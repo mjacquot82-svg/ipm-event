@@ -140,7 +140,8 @@ function MapContent() {
         </View>
       ) : null}
       {selector}
-      <MapsEducation mode={mode} />
+      {/* Existing destination params defer auto-onboarding for this visit, without changing routing or seen state. */}
+      <MapsEducation mode={mode} autoStart={!Boolean(location || paramStr(params.showOnly) === 'true' || unavailable || verify1A)} />
     </View></MapEducationMode.Provider>
   );
 }
