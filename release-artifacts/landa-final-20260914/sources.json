@@ -1,0 +1,34 @@
+{
+  "source_email": {
+    "id": "1a0989742c346e82",
+    "date": "2026-09-12",
+    "subject": "Bio for Lifestyles Tent",
+    "context": "James Wilton: Attached, please find Carol’s bio information for her Thursday session at the IPM. Forwarded through Harley’s and Landa."
+  },
+  "files": [
+    {
+      "filename": "Carol W bio re IPM.docx",
+      "bytes": 11933,
+      "sha256": "7151703fdebea791c4cdcbfdda084cbd182b58fb9abf9db53dea021bdca48efb"
+    },
+    {
+      "filename": "Carol Weigel photo Aug 2026.jpg",
+      "bytes": 217088,
+      "sha256": "fd34e6e0d994a1cf28f346ce908af964fccec62ad33188a67a920dc213fd1fcb"
+    },
+    {
+      "filename": "Copy of Carrick Creek Farmstead SOCIAL LOGO_just text 2.jpg",
+      "bytes": 278944,
+      "sha256": "a71f150bb5c2fb6b32778a0c24e593f964641e79e90d3c41c70a8176b6f40db7"
+    }
+  ],
+  "biography_extraction": "DOCX word/document.xml paragraphs, paragraph-edge whitespace trimmed; internal whitespace and supplied wording preserved. No spelling corrections.",
+  "event_id": "69f9ab32-bee3-5ac4-b97f-8c97d4b99bf7",
+  "event_image": {
+    "url": "https://staging.theipm.ca/event-media/carol-weigel-fd34e6e0d994.jpg",
+    "alt": "Carol Weigel",
+    "width": 480,
+    "height": 640
+  },
+  "logo_usage": "Archived source only; no separate logo slot or requested logo replacement. Presenter photograph is the established event-detail image."
+}
