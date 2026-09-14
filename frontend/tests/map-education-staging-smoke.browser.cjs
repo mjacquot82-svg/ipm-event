@@ -17,4 +17,6 @@ const origin=process.env.IPM_PREVIEW_URL;assert.ok(origin&&origin!=='https://the
  await p.goto(origin+'/schedule?eventId=3c69ff36-6271-4afa-973c-b8609db8dc24');await p.getByTestId('schedule-find-on-map').waitFor({timeout:60000});await p.getByTestId('schedule-find-on-map').scrollIntoViewIfNeeded();await card.getByText('Find this event',{exact:true}).waitFor();await p.keyboard.press('Escape');await p.getByTestId('schedule-find-on-map').click();await p.getByTestId('selected-stage-highlight').waitFor();
  await p.reload();await p.getByRole('button',{name:'Help, replay Maps tour'}).waitFor();await p.waitForTimeout(1000);assert.equal(await card.count(),0);assert.deepEqual(errors,[]);console.log('PASS actual staging artifact: phone/desktop tour, Help, persistence, Parking POI close/Fit, Camping M27, live 224 vendors, contextual tips, CAN-AM/Valard, Ontario/MNP destinations, Schedule, no browser errors; external writes blocked');
  if(process.env.IPM_SMOKE_SCREENSHOT)await p.screenshot({path:process.env.IPM_SMOKE_SCREENSHOT});
+ // Finish preview CORS relay requests before disposing their request context.
+ await c.unrouteAll({behavior:'wait'});await c.close();
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
