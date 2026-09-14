@@ -1,4 +1,4 @@
-import { FindOnMapTip } from '../../src/components/MapEducation';
+import { FindOnMapTip, ScheduleEventDetailsTip } from '../../src/components/MapEducation';
 import { scheduleMapTipEligible } from '../../src/services/mapEducationEligibility';
 import { EventDetailMedia } from '@/src/components/EventDetailMedia';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
@@ -78,6 +78,12 @@ export default function ScheduleScreen() {
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showScheduleOnboarding, setShowScheduleOnboarding] = useState(false);
+  const [onboardingLoaded, setOnboardingLoaded] = useState(false);
+  const [visibleEducationEventId, setVisibleEducationEventId] = useState<string | null>(null);
+  const educationViewability = useRef({ itemVisiblePercentThreshold: 100, minimumViewTime: 200 }).current;
+  const educationViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { item: ScheduleEvent; isViewable: boolean }[] }) => {
+    setVisibleEducationEventId(viewableItems.find(item => item.isViewable && item.item.id)?.item.id ?? null);
+  }).current;
   const [showStarConfirmation, setShowStarConfirmation] = useState(false);
   const onboardingDismissRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
   const [successfulAddition, setSuccessfulAddition] = useState(0);
@@ -155,7 +161,7 @@ export default function ScheduleScreen() {
     let active = true;
     const loadOnboardingState = async () => {
       const acknowledged = await hasAcknowledgedScheduleOnboarding(AsyncStorage);
-      if (active) setShowScheduleOnboarding(!acknowledged);
+      if (active) { setShowScheduleOnboarding(!acknowledged); setOnboardingLoaded(true); }
     };
     void loadOnboardingState();
     return () => { active = false; };
@@ -514,6 +520,8 @@ export default function ScheduleScreen() {
   return (
     <View style={styles.container}>
       <SectionList
+        viewabilityConfig={educationViewability}
+        onViewableItemsChanged={educationViewableItemsChanged}
         style={styles.content}
         contentContainerStyle={styles.listContent}
         sections={scheduleSections}
@@ -768,17 +776,20 @@ export default function ScheduleScreen() {
           const isFavorite = favorites.includes(event.id);
           const categoryStyle = getScheduleCategoryStyle(event.category);
 
+          const openEvent = () => {
+            void queueAnalyticsEvent('schedule_event_opened', {
+              schedule_item_id: event.id, category: event.category || 'uncategorized', source: 'schedule',
+            });
+            setSelectedEvent(event);
+            setShowEventModal(true);
+          };
+
           return (
             <View style={sectionStyle}>
-                  <TouchableOpacity 
+              <ScheduleEventDetailsTip eligible={onboardingLoaded && !showScheduleOnboarding && !showEventModal && !showCategorySelector && !loading && !refreshing && visibleEducationEventId === event.id} onOpen={openEvent}>
+                  <TouchableOpacity
                     style={[styles.eventCard, { backgroundColor: categoryStyle.tint }]}
-                    onPress={() => {
-                      void queueAnalyticsEvent('schedule_event_opened', {
-                        schedule_item_id: event.id, category: event.category || 'uncategorized', source: 'schedule',
-                      });
-                      setSelectedEvent(event);
-                      setShowEventModal(true);
-                    }}
+                    onPress={openEvent}
                     activeOpacity={0.7}
                   >
                     <View
@@ -849,6 +860,7 @@ export default function ScheduleScreen() {
                       </View>
                     </View>
                   </TouchableOpacity>
+              </ScheduleEventDetailsTip>
             </View>
           );
         }}

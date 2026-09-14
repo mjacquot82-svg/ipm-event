@@ -17,9 +17,9 @@ test('three map-only steps retain their control anchors',()=>{
  assert.match(MAP_TOUR_STEPS[1].body,/Pinch to zoom and drag to move around/);
  assert.doesNotMatch(JSON.stringify(MAP_TOUR_STEPS),/Find exhibitors|Search the maps|Find on Map|Jump straight/);
 });
-test('three learning states have independent versioned persistence keys',()=>{
- assert.deepEqual(Object.values(EDUCATION_KEYS),['@ipm_maps_tour_seen_v1','@ipm_schedule_find_on_map_tip_seen_v1','@ipm_vendor_find_on_map_tip_seen_v1']);
- assert.deepEqual(Object.keys(EDUCATION_KEYS),['mapsTourSeen','scheduleFindOnMapTipSeen','vendorFindOnMapTipSeen']);
+test('four learning states have independent versioned persistence keys',()=>{
+ assert.deepEqual(Object.values(EDUCATION_KEYS),['@ipm_maps_tour_seen_v1','@ipm_schedule_find_on_map_tip_seen_v1','@ipm_schedule_event_details_tip_seen_v1','@ipm_vendor_find_on_map_tip_seen_v1']);
+ assert.deepEqual(Object.keys(EDUCATION_KEYS),['mapsTourSeen','scheduleFindOnMapTipSeen','scheduleEventDetailsTipSeen','vendorFindOnMapTipSeen']);
 });
 test('Schedule education only accompanies a usable existing destination',()=>{
  for(const [location,title] of [['The Beyond Wireless Stage',''],['Plowing Fields','Tractor Plowing'],['Plowing Fields','Horse Plowing'],['CKNX Centennial Pavilion (GFO Stage)',''],['Event Centre #1 — West 2','']]) assert.equal(scheduleMapTipEligible(location,title),true,location);

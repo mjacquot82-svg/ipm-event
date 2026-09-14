@@ -19,7 +19,7 @@ let owner: object | null = null;
 const remembered = new Set<EducationKind>();
 function useEducation(kind: EducationKind, eligible: boolean) {
   const pathname = usePathname();
-  const focused = pathname.endsWith(kind === 'mapsTourSeen' ? '/map' : kind === 'scheduleFindOnMapTipSeen' ? '/schedule' : '/vendors');
+  const focused = pathname.endsWith(kind === 'mapsTourSeen' ? '/map' : kind.startsWith('schedule') ? '/schedule' : '/vendors');
   const token = useRef({}).current;
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -45,9 +45,9 @@ function useEducation(kind: EducationKind, eligible: boolean) {
   return { visible: visible && focused && eligible, dismiss, replay };
 }
 
-function EducationCallout({ title, body, progress, target, fallback, onNext, onDismiss }: {
+function EducationCallout({ title, body, progress, target, fallback, onNext, onDismiss, onTargetPress }: {
   title: string; body: string; progress?: string; target?: Anchor | null; fallback?: Anchor | null;
-  onNext?: () => void; onDismiss: () => void;
+  onNext?: () => void; onDismiss: () => void; onTargetPress?: () => void;
 }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -103,6 +103,9 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
         <View style={[styles.dim, { top: rect.y + rect.height, left: 0, right: 0, bottom: 0 }]} />
         <View testID="map-education-spotlight" style={[styles.spotlight, { top: rect.y - 3, left: rect.x - 3, width: rect.width + 6, height: rect.height + 6 }]} />
       </> : <View style={[StyleSheet.absoluteFill, styles.dim]} />}
+      {rect && onTargetPress ? <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open highlighted event details"
+        testID="schedule-education-open-event" onPress={onTargetPress}
+        style={{ position: 'absolute', top: rect.y, left: rect.x, width: rect.width, height: rect.height }} /> : null}
       <View ref={card} role="dialog" accessibilityLabel={title} accessibilityViewIsModal testID="map-education-card"
         style={[styles.card, { top, left, width: cardWidth, maxHeight }]}>
         <ScrollView onContentSizeChange={(_, h) => setCardHeight(h)} contentContainerStyle={styles.content}>
@@ -162,6 +165,30 @@ export function FindOnMapTip({ kind, eligible, children }: { kind: 'scheduleFind
     {children}
     {state.visible ? <EducationCallout target={anchor.current} title={event ? 'Find this event' : 'Find this vendor'}
       body={event ? 'Tap here to see exactly where this event is on the map.' : "Tap here to jump directly to this vendor’s location on the map."} onDismiss={state.dismiss} /> : null}
+  </View>;
+}
+// Schedule-only bridge between the introduction and the existing location education.
+export function ScheduleEventDetailsTip({ eligible, onOpen, children }: {
+  eligible: boolean; onOpen: () => void; children: React.ReactNode;
+}) {
+  const anchor = useRef<View>(null);
+  const { height } = useWindowDimensions();
+  const [stable, setStable] = useState(false);
+  useEffect(() => {
+    setStable(false);
+    if (!eligible) return;
+    // Wait beyond the introduction's fade, then require a fully visible card.
+    const timer = setTimeout(() => anchor.current?.measureInWindow((x, y, w, h) => {
+      setStable(w > 0 && h > 0 && y >= 0 && y + h < height - 60);
+    }), 500);
+    return () => clearTimeout(timer);
+  }, [eligible, height]);
+  const state = useEducation('scheduleEventDetailsTipSeen', eligible && stable);
+  return <View ref={anchor} collapsable={false}>
+    {children}
+    {state.visible ? <EducationCallout target={anchor.current} title="View event details"
+      body="Tap an event to see its time, description and location." onDismiss={state.dismiss}
+      onTargetPress={() => { state.dismiss(); onOpen(); }} /> : null}
   </View>;
 }
 const styles = StyleSheet.create({

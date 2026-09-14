@@ -1,6 +1,7 @@
 export const EDUCATION_KEYS = {
   mapsTourSeen: '@ipm_maps_tour_seen_v1',
   scheduleFindOnMapTipSeen: '@ipm_schedule_find_on_map_tip_seen_v1',
+  scheduleEventDetailsTipSeen: '@ipm_schedule_event_details_tip_seen_v1',
   vendorFindOnMapTipSeen: '@ipm_vendor_find_on_map_tip_seen_v1',
 } as const;
 export type EducationKind = keyof typeof EDUCATION_KEYS;
