@@ -135,7 +135,7 @@ export function MapsEducation({ mode }: { mode: string }) {
   const [step, setStep] = useState(0);
   replay.current = () => { setStep(0); state.replay(); };
   const definition = MAP_TOUR_STEPS[step];
-  const targetName = definition.target === 'search' ? `${mode}-search` : definition.target;
+  const targetName = definition.target;
   // Deep links and Help preserve the active map. Explain Grounds without switching layers.
   const missingParking = step === 0 && mode !== 'grounds';
   return <>

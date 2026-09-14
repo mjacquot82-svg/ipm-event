@@ -11,12 +11,14 @@ function load(url){
 }
 const {scheduleMapTipEligible,vendorMapTipEligible}=load(new URL('../src/services/mapEducationEligibility.ts',import.meta.url));
 const {EDUCATION_KEYS,MAP_TOUR_STEPS}=load(new URL('../src/services/mapEducationState.ts',import.meta.url));
-test('five steps in order use actual control anchors and explanatory final card',()=>{
- assert.deepEqual(MAP_TOUR_STEPS.map(s=>s.target),['parking','tented','rv','search','grounds']);
- assert.match(MAP_TOUR_STEPS[4].body,/Events and vendors.*Find on Map/);
+test('three map-only steps retain their control anchors',()=>{
+ assert.deepEqual(MAP_TOUR_STEPS.map(s=>s.target),['parking','tented','rv']);
+ assert.deepEqual(MAP_TOUR_STEPS.map(s=>s.title),['Find parking','Explore Tented City','Find your campsite']);
+ assert.match(MAP_TOUR_STEPS[1].body,/Pinch to zoom and drag to move around/);
+ assert.doesNotMatch(JSON.stringify(MAP_TOUR_STEPS),/Find exhibitors|Search the maps|Find on Map|Jump straight/);
 });
 test('three learning states have independent versioned persistence keys',()=>{
- assert.equal(new Set(Object.values(EDUCATION_KEYS)).size,3);
+ assert.deepEqual(Object.values(EDUCATION_KEYS),['@ipm_maps_tour_seen_v1','@ipm_schedule_find_on_map_tip_seen_v1','@ipm_vendor_find_on_map_tip_seen_v1']);
  assert.deepEqual(Object.keys(EDUCATION_KEYS),['mapsTourSeen','scheduleFindOnMapTipSeen','vendorFindOnMapTipSeen']);
 });
 test('Schedule education only accompanies a usable existing destination',()=>{

@@ -1,8 +1,8 @@
 # Maps education — staging review
 
-Based on canonical staging `17cfd9624be0df05feef5ca22bb1e30da22f9098`, Netlify deploy `6aa751eda5e68500085ae6ae`, build `368747`.
+Three-step refinement based on canonical staging `cd3b8375dd8e0dab6d405aa32ab4b6bab934fb1c`, Netlify deploy `6aa7d10b59ce9b0008d4f7d3`, build `369289`.
 
-Five sequential callouts explain Parking, Tented City, Camping Map, search and Find on Map. A 44px Help button sits in the active map's existing search row. Displaying or replaying education never selects a map or layer. If Maps is first opened via a Tented City/Camping deep link, the Parking step explains “On Grounds…” and anchors to Grounds without changing the requested destination.
+Three sequential callouts explain Parking, exploring and navigating Tented City, and Camping Map. Find on Map education remains contextual to Vendors and Schedule. Existing v1 persistence keys are unchanged, so previous completion/Skip remains respected and Help replays the new three-step tour. A 44px Help button sits in the active map's existing search row. Displaying or replaying education never selects a map or layer. If Maps is first opened via a Tented City/Camping deep link, the Parking step explains “On Grounds…” and anchors to Grounds without changing the requested destination.
 
 Schedule and Vendor tips wrap the existing action. Schedule uses the same plowing normalization and existing trusted map resolvers; Vendors require both a mapped crosswalk and trusted geometry. No location data or routing handlers changed. A shared display lease allows only one education callout at a time; the Schedule tip also waits for the existing introduction. Vendor cards must be visible before they can claim the tip.
 
