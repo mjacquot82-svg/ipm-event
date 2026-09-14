@@ -1,3 +1,4 @@
+import { useMapEducationAnchor, MapEducationHelpButton } from './MapEducation';
 import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import { EXACT_MAP_UNAVAILABLE, hasTrustedMapGeometry } from '../config/mapAvailability';
@@ -79,6 +80,7 @@ export default function TentedCityMap({
 }: {
   initialQuery?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: (location?: string) => void; hideModeSelector?: boolean;
 }) {
+  const educationSearchAnchor = useMapEducationAnchor('tented-search');
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [selected, setSelected] = useState<TentedCityPlace | null>(null);
@@ -556,9 +558,10 @@ export default function TentedCityMap({
         )}
         <View style={styles.searchCard}>
           <Feather name="search" size={18} color="#6B7280" />
-          <TextInput value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) { setSelected(null); setSelectedBoothId(null); setSelectedSemanticArea(null); } }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, stage, or place" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectHit(results[0]); }} />
+          <TextInput ref={educationSearchAnchor} value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) { setSelected(null); setSelectedBoothId(null); setSelectedSemanticArea(null); } }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, stage, or place" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectHit(results[0]); }} />
           {query ? <TouchableOpacity onPress={clearSelection} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
-        </View>
+        <MapEducationHelpButton mode="tented" />
+          </View>
         <View style={styles.filters}>
           {FILTERS.map((item) => {
             const on = filter === item.id;

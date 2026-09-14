@@ -1,6 +1,7 @@
+import { MapEducationAnchors, MapEducationMode, MapEducationReplay, MapsEducation } from '../../src/components/MapEducation';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { desktopMapStyles, useDesktopMapWorkspace } from '../../src/theme/desktopMapWorkspace';
 import { View, StyleSheet, StatusBar } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
@@ -41,6 +42,11 @@ function resolveInitialMode(args: {
 }
 
 export default function MapScreen() {
+  const anchors = useRef({});
+  const replay = useRef<(() => void) | null>(null);
+  return <MapEducationReplay.Provider value={replay}><MapEducationAnchors.Provider value={anchors}><MapContent /></MapEducationAnchors.Provider></MapEducationReplay.Provider>;
+}
+function MapContent() {
   const params = useLocalSearchParams<{
     location?: string | string[];
     showOnly?: string | string[];
@@ -92,7 +98,7 @@ export default function MapScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <MapEducationMode.Provider value={mode}><View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <View
         style={[styles.tentedHost, tentedDesktop && desktopMapStyles.host, tentedDesktop, mode !== 'tented' && styles.tentedHostHidden]}
@@ -134,7 +140,8 @@ export default function MapScreen() {
         </View>
       ) : null}
       {selector}
-    </View>
+      <MapsEducation mode={mode} />
+    </View></MapEducationMode.Provider>
   );
 }
 

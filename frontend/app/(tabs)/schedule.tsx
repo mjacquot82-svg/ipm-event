@@ -1,3 +1,5 @@
+import { FindOnMapTip } from '../../src/components/MapEducation';
+import { scheduleMapTipEligible } from '../../src/services/mapEducationEligibility';
 import { EventDetailMedia } from '@/src/components/EventDetailMedia';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
@@ -1046,7 +1048,8 @@ export default function ScheduleScreen() {
 
                   {/* Location */}
                   {selectedEvent.location_name && (
-                    <TouchableOpacity 
+                    <FindOnMapTip kind="scheduleFindOnMapTipSeen" eligible={showEventModal && !showScheduleOnboarding && scheduleMapTipEligible(selectedEvent.location_name, selectedEvent.title)}>
+                    <TouchableOpacity testID="schedule-find-on-map"
                       style={[styles.detailSection, styles.locationClickable, { borderColor: selectedEventCategoryStyle.primary }]}
                       onPress={() => {
                         console.log('Location clicked:', selectedEvent.location_name);
@@ -1080,6 +1083,7 @@ export default function ScheduleScreen() {
                         <Feather name="chevron-right" size={20} color={selectedEventCategoryStyle.primary} />
                       </View>
                     </TouchableOpacity>
+                    </FindOnMapTip>
                   )}
 
                   {/* Category */}

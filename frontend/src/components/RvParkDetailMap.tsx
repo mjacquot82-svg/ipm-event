@@ -1,3 +1,4 @@
+import { useMapEducationAnchor, MapEducationHelpButton } from './MapEducation';
 import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -57,6 +58,7 @@ export default function RvParkDetailMap({
   onSwitchToGrounds: () => void;
   hideModeSelector?: boolean;
 }) {
+  const educationSearchAnchor = useMapEducationAnchor('rv-search');
   const desktop = useDesktopMapWorkspace('rv');
   const artwork = useArtworkReveal('rv');
   const viewportRef = useRef<View>(null);
@@ -198,7 +200,7 @@ export default function RvParkDetailMap({
           )}
           <View style={styles.searchCard}>
             <Feather name="search" size={18} color="#6B7280" />
-            <TextInput
+            <TextInput ref={educationSearchAnchor}
               value={query}
               onChangeText={(text) => {
                 setQuery(text);
@@ -221,6 +223,7 @@ export default function RvParkDetailMap({
                 <Feather name="x" size={18} color="#6B7280" />
               </TouchableOpacity>
             ) : null}
+          <MapEducationHelpButton mode="rv" />
           </View>
           {focused && query.trim() ? (
             <View style={styles.results}>

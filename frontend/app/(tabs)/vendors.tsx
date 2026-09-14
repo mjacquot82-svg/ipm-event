@@ -1,3 +1,5 @@
+import { FindOnMapTip } from '../../src/components/MapEducation';
+import { vendorMapTipEligible } from '../../src/services/mapEducationEligibility';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
@@ -256,7 +258,7 @@ export default function VendorsScreen() {
               ) : null}
               {item.location?.trim() && !vendorHasTrustedMapGeometry(item.name) ? (
                 <Text style={styles.meta}>{EXACT_MAP_UNAVAILABLE}</Text>
-              ) : <TouchableOpacity
+              ) : <FindOnMapTip key={item.id} kind="vendorFindOnMapTipSeen" eligible={vendorMapTipEligible(item.name, item.location)}><TouchableOpacity testID="vendor-find-on-map"
                 style={styles.mapLink}
                 onPress={() => {
                   const resolved = resolveVendorMapQuery(item.name, item.location);
@@ -275,7 +277,7 @@ export default function VendorsScreen() {
               >
                 <Feather name="map-pin" size={16} color="#8B1538" />
                 <Text style={styles.mapLinkText}>Find on Map</Text>
-              </TouchableOpacity>}
+              </TouchableOpacity></FindOnMapTip>}
             </View>
           </View>
         )}

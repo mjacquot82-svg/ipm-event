@@ -1,3 +1,4 @@
+import { useMapEducationAnchor, MapEducationHelpButton } from './MapEducation';
 import { GroundsTrafficOverlay } from './GroundsTrafficOverlay';
 import { GroundsParkingOverlay } from './GroundsParkingOverlay';
 import { GroundsViewSelector } from './GroundsViewSelector';
@@ -93,6 +94,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   onSwitchToTented: (location?: string) => void;
   onSwitchToRv?: () => void;
 }) {
+  const educationSearchAnchor = useMapEducationAnchor('grounds-search');
   const desktop = useDesktopMapWorkspace('grounds');
   const artwork = useArtworkReveal('grounds');
   const viewportRef = useRef<View>(null);
@@ -227,7 +229,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     <View style={[styles.searchWrap, desktop && desktopMapStyles.search]} pointerEvents="box-none">
       <View style={styles.searchCard}>
         <Feather name="search" size={18} color="#6B7280" />
-        <TextInput
+        <TextInput ref={educationSearchAnchor}
           value={query}
           onChangeText={(text) => { setQuery(text); setFocused(true); }}
           onFocus={() => setFocused(true)}
@@ -241,7 +243,8 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
           onSubmitEditing={() => { if (results[0]) selectHit(results[0]); }}
         />
         {query ? <TouchableOpacity onPress={() => { setQuery(''); setFocused(false); }} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
-      </View>
+      <MapEducationHelpButton mode="grounds" />
+          </View>
       {focused && query.trim().length > 0 ? (
         <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" nestedScrollEnabled testID="grounds-map-results">
           {results.map((hit) => (

@@ -1,3 +1,4 @@
+import { MapEducationAnchors } from './MapEducation';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React from 'react';
@@ -23,6 +24,7 @@ export default function MapModeSelector({
   testID?: string;
   desktop?: boolean;
 }) {
+  const educationAnchors = React.useContext(MapEducationAnchors);
   return (
     <View style={[styles.wrap, desktop && { width: '100%' }]} testID={testID} accessibilityRole="tablist">
       <ScrollView
@@ -36,6 +38,7 @@ export default function MapModeSelector({
           const on = mode === option.id;
           return (
             <TouchableOpacity
+              ref={node => { if (educationAnchors) educationAnchors.current[option.id] = node; }}
               key={option.id}
               style={[styles.btn, desktop && { flex: 1, flexShrink: 1, alignItems: 'center' }, on && styles.btnOn]}
               onPress={() => onChange(option.id)}
