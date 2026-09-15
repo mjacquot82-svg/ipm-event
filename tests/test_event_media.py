@@ -25,6 +25,12 @@ class EventMediaTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(a.event_image, b.event_image)
         self.assertEqual(a.external_links, patch['external_links'])
 
+    def test_opt_in_crop_roundtrips_and_invalid_crop_is_rejected(self):
+        image = {**IMAGE, 'crop': 'top-square'}
+        self.assertEqual(content_patch(EventDetailContent(event_image=image))['event_image'], image)
+        with self.assertRaises(ValidationError):
+            EventImage(**{**IMAGE, 'crop': 'arbitrary-crop'})
+
     def test_old_database_rows_remain_readable(self):
         row=self.service()._row_to_schedule_event({'id':'old'})
         self.assertIsNone(row.event_image)

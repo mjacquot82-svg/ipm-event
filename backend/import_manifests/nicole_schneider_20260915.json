@@ -1,0 +1,35 @@
+{
+  "status": "local review; not applied",
+  "external_id": "2026-09-25-quality-homes-m15",
+  "staging_event_id": "51000000-0000-4000-8000-000000000001",
+  "schedule_item_id": "39891220-5824-4536-aac8-be0290ecdc19",
+  "source_photo": "/workspaces/ipm-event/.worktrees/grounds-no-entry/data/nicole.jpg",
+  "source_sha256": "21a20f01ecdd752679c448d0093a6e148aaa526502b37d7fb4eaa3e5090295e6",
+  "asset": "frontend/public/event-media/nicole-schneider-21a20f01ecdd.jpg",
+  "before": {
+    "event_image": null,
+    "external_links": [],
+    "id": "39891220-5824-4536-aac8-be0290ecdc19",
+    "title": "Flowers by Uss - The Perfect Christmas Tree",
+    "description": "Flowers by Uss",
+    "start_date": "2026-09-25",
+    "start_time": "12:15 PM",
+    "end_time": "1:15 PM",
+    "category": "MNP Lifestyles Tent Events",
+    "latitude": null,
+    "longitude": null,
+    "days_active": "Friday",
+    "location_name": "Quality Homes - Stage"
+  },
+  "patch": {
+    "title": "Nicole Schneider - The Perfect Christmas Tree",
+    "description": "Nicole Schneider\nPorterhouse – Flowers By Usss\n\nHi, I’m Nicole Schneider of Porterhouse - Flowers By Usss. For years, decorating for Christmas has been a true passion of mine. I took that love to the next level while running my own storefront, where I displayed elaborate Christmas trees each season; people came from far to see them. Since then, I’ve continued that passion working with wonderful clients — and now, I’m excited to share it with you.\n\nIf you love Christmas, want to see the latest trends in tree decorating, or just want to learn how to build the perfect Christmas tree, this is your chance! I’ll be working on two different trees in the lifestyle tent on the side stage, demonstrating ribbon placement techniques, bow-making, the importance of layering, and more.\n\nStop by and share the joy of Christmas decorating with me. I look forward to seeing everyone!",
+    "event_image": {
+      "url": "https://staging.theipm.ca/event-media/nicole-schneider-21a20f01ecdd.jpg",
+      "alt": "Nicole Schneider, Porterhouse – Flowers By Usss",
+      "width": 452,
+      "height": 640,
+      "crop": "top-square"
+    }
+  }
+}

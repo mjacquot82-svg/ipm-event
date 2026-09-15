@@ -16,9 +16,7 @@ export function EventDetailMedia({ image, links = [] }: { image?: EventImage | n
   const validLinks = links.filter(link => link.label?.trim() && safeExternalUrl(link.url));
   if (!showImage && !validLinks.length) return null;
   const width = showImage ? Math.min(240, image.width, 260 * image.width / image.height) : 0;
-  return (
-    <View style={styles.container}>
-      {showImage && (Platform.OS === 'web' ? (
+  const portrait = showImage && (Platform.OS === 'web' ? (
         <img src={image.url} alt={image.alt} loading="lazy" decoding="async"
           width={image.width} height={image.height} onError={() => setFailedUrl(image.url)}
           style={{ display: 'block', width: '100%', maxWidth: width, height: 'auto', borderRadius: 8, alignSelf: 'center' }} />
@@ -26,7 +24,14 @@ export function EventDetailMedia({ image, links = [] }: { image?: EventImage | n
         <Image source={{ uri: image.url }} accessible accessibilityLabel={image.alt}
           resizeMode="contain" onError={() => setFailedUrl(image.url)}
           style={{ width: '100%', maxWidth: width, aspectRatio: image.width / image.height, alignSelf: 'center', borderRadius: 8 }} />
-      ))}
+      ));
+  return (
+    <View style={styles.container}>
+      {showImage && image.crop === 'top-square' ? (
+        <View testID="event-image-top-crop" style={{ width: '100%', maxWidth: width, aspectRatio: 1, overflow: 'hidden', alignSelf: 'center', borderRadius: 8 }}>
+          {portrait}
+        </View>
+      ) : portrait}
       {validLinks.map(link => Platform.OS === 'web' ? (
         <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
           aria-label={`${link.label} (opens in a new tab)`}

@@ -44,7 +44,7 @@ export type SupabaseFetchOptions<T> = {
   onBackgroundRefreshError?: (error: unknown) => void;
 };
 
-export type EventImage = { url: string; alt: string; width: number; height: number };
+export type EventImage = { url: string; alt: string; width: number; height: number; crop?: 'top-square' | null };
 export type EventExternalLink = { label: string; url: string };
 
 export type ScheduleEvent = {
@@ -298,13 +298,28 @@ function isAnnouncementsResponse(data: unknown): data is AnnouncementsResponse {
   return !!data && typeof data === 'object' && Array.isArray((data as AnnouncementsResponse).announcements);
 }
 
+// Review-only presentation: never mutate the cached/shared schedule response.
+export function applyNicolePreview(result: CachedApiResult<ScheduleResponse>): CachedApiResult<ScheduleResponse> {
+  const encoded = process.env.EXPO_PUBLIC_NICOLE_REVIEW_CONTENT;
+  if (!encoded || typeof window === 'undefined') return result;
+  const review = JSON.parse(encoded) as { origin: string; id: string; before: ScheduleEvent; patch: Pick<ScheduleEvent, 'title' | 'description' | 'event_image'> };
+  if (window.location.origin !== review.origin) return result;
+  const targets = result.data.events.filter(event => event.id === review.id);
+  const protectedFields = ['start_date', 'start_time', 'end_time', 'location_name', 'category', 'days_active'] as const;
+  if (targets.length !== 1 || protectedFields.some(key => targets[0][key] !== review.before[key])) return result;
+  return { ...result, data: { ...result.data, events: result.data.events.map(event =>
+    event.id === review.id ? { ...event, ...review.patch } : event) } };
+}
+
 export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> = {}) {
   return fetchCachedApiData<ScheduleResponse>({
     cacheKey: 'schedule',
     url: `${getApiBaseUrl()}/api/schedule`,
     isCacheableResponse: isSupabaseScheduleResponse,
     ...options,
-  });
+    onBackgroundRefresh: options.onBackgroundRefresh
+      ? result => options.onBackgroundRefresh?.(applyNicolePreview(result)) : undefined,
+  }).then(applyNicolePreview);
 }
 
 export async function getVendorsData(options: SupabaseFetchOptions<VendorsResponse> = {}) {
