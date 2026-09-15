@@ -1053,6 +1053,14 @@ def announcement_expiration_time(announcement: dict, *, now: datetime | None = N
     return f"{ttl_seconds} seconds"
 
 
+def require_owner_role(user: dict):
+    if user.get("role") != "Owner":
+        raise HTTPException(
+            status_code=403,
+            detail="Your organizer role cannot manage organizer users",
+        )
+
+
 def require_schedule_manager_role(user: dict):
     if user.get("role") not in ("Owner", "Schedule"):
         raise HTTPException(
@@ -1474,9 +1482,11 @@ async def bootstrap_organizer_owner(data: OrganizerBootstrapRequest, response: R
     if len(data.password) < 10:
         raise HTTPException(status_code=400, detail="Password must be at least 10 characters")
 
-    existing_count = await database.organizer_users.count_documents({"event_id": event_id})
+    # Bootstrap is only for a pristine organizer database. Event-scoped checks
+    # let a caller mint an Owner in a new event and bypass account-management guards.
+    existing_count = await database.organizer_users.count_documents({})
     if existing_count > 0:
-        raise HTTPException(status_code=409, detail="Organizer users already exist for this event")
+        raise HTTPException(status_code=409, detail="Organizer users already exist; an Owner must create additional accounts")
 
     now = datetime.utcnow()
     user = {
@@ -1531,6 +1541,7 @@ async def get_organizer_me(current_user: dict = Depends(get_current_organizer_us
 
 @api_router.get("/admin/users", response_model=OrganizerUsersResponse)
 async def list_organizer_users(current_user: dict = Depends(get_current_organizer_user)):
+    require_owner_role(current_user)
     database = require_mongodb()
     users = await database.organizer_users.find({
         "event_id": get_admin_event_id(current_user)
@@ -1544,6 +1555,7 @@ async def create_organizer_user(
     data: OrganizerCreateUserRequest,
     current_user: dict = Depends(get_current_organizer_user),
 ):
+    require_owner_role(current_user)
     database = require_mongodb()
     event_id = get_admin_event_id(current_user, data.event_id)
     username = normalize_username(data.username)
