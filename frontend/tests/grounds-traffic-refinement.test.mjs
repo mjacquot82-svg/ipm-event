@@ -54,3 +54,11 @@ test('Greenock alone moves close to the road with clearance for a horizontal lab
  assert.match(source,/top: y \* height \/ 100 - 10 \+ offsetY/);
  assert.match(source,/zoomOnly = false, offsetY = 0/);
 });
+
+test('continuous-line refinement preserves the approved restriction annotation exactly',()=>{
+ const approved=execFileSync('git',['show',`6c6c04235e0cd289f54d9a3a7cc4a6ea4b9a4fc7:${path}`],{encoding:'utf8'});
+ const leader=s=>s.split('  // Start at the notice')[1].split('    {showTraffic && GROUNDS_TRAFFIC_ARROWS.map')[0];
+ const signAndLabels=s=>s.split('    <View pointerEvents="none" testID="grounds-no-entry"')[1];
+ assert.equal(leader(source),leader(approved));
+ assert.equal(signAndLabels(source),signAndLabels(approved));
+});

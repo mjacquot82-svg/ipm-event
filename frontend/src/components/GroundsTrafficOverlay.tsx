@@ -7,14 +7,13 @@ export const GROUNDS_TRAFFIC_ARROWS = [
   { id: 'TRAFFIC-01', start: [24.12, 76.50], end: [37.63, 74.94] },
   { id: 'TRAFFIC-02', start: [36.45, 72.96], end: [34.23, 64.50] },
   { id: 'TRAFFIC-03', start: [90.50, 68.21], end: [41.28, 74.23] },
-  // Bruce Rd 3 east → west; short junction exits use separate road sides.
-  { id: 'TRAFFIC-BR3-EAST', start: [80, 32.35], end: [71.5, 33.35] },
-  { id: 'TRAFFIC-BR3-WEST', start: [53, 35.5], end: [40, 37.0] },
-  // Bruce Rd 2 outbound toward Walkerton / the Bruce Rd 3 junction.
-  { id: 'TRAFFIC-BR2-NORTH', start: [32.4, 57], end: [30.6, 48] },
-  { id: 'TRAFFIC-BR2-APPROACH', start: [30.2, 46], end: [29.1, 41.3] },
-  { id: 'TRAFFIC-TURN-WEST', start: [28.2, 38.0], end: [19, 39.1] },
-  { id: 'TRAFFIC-TURN-EAST', start: [29.4, 38.3], end: [38, 37.3] },
+] as const;
+
+// Continuous shafts in whole-artwork coordinates. Endpoint heads show the two
+// junction exits; the inline westbound head retains Bruce Rd 3's incoming flow.
+export const GROUNDS_BRUCE_TRAFFIC_LINES = [
+  { id: 'grounds-bruce-3-line', start: [19, 39.1], end: [80, 32.35], bothEnds: true },
+  { id: 'grounds-bruce-2-line', start: [32.4, 57], end: [29.1, 41.3], bothEnds: false },
 ] as const;
 export const GROUNDS_TRAFFIC_NOTICE = 'Durham Road is barricaded at Huron Tractor to control traffic arriving from the east.';
 
@@ -62,6 +61,26 @@ export function GroundsTrafficOverlay({ width, height, scale, showTraffic = true
         <View style={[styles.shaft, { width: Math.max(0, length - 8) }]} />
         <View style={[styles.head, { right: 0 }]} />
         <View style={[styles.headFill, { right: 2 }]} />
+      </View>;
+    })}
+    {showTraffic && GROUNDS_BRUCE_TRAFFIC_LINES.map(({ id, start, end, bothEnds }) => {
+      const x = start[0] * width / 100, y = start[1] * height / 100;
+      const dx = (end[0] - start[0]) * width / 100, dy = (end[1] - start[1]) * height / 100;
+      const length = Math.hypot(dx, dy), angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      // Heads overlap a single unbroken shaft; there are no detached arrows.
+      const heads = bothEnds
+        ? [{ tip: 0, reverse: true }, { tip: length * .86, reverse: true }, { tip: length, reverse: false }]
+        : [{ tip: length, reverse: false }];
+      return <View key={id} pointerEvents="none" testID={id} style={{ position: 'absolute', left: x, top: y - 6,
+        width: length, height: 12, transformOrigin: 'left center', transform: [{ rotate: `${angle}deg` }] }}>
+        <View testID={`${id}-casing`} style={[styles.casing, { left: bothEnds ? 8 : 0, width: Math.max(0, length - (bothEnds ? 16 : 8)) }]} />
+        <View testID={`${id}-shaft`} style={[styles.shaft, { left: bothEnds ? 8 : 0, width: Math.max(0, length - (bothEnds ? 16 : 8)) }]} />
+        {heads.map(({ tip, reverse }, i) => <View key={i} testID={`${id}-head-${i}`} style={{ position: 'absolute',
+          left: reverse ? tip : tip - 13, top: 0, width: 13, height: 12,
+          transform: [{ rotate: reverse ? '180deg' : '0deg' }] }}>
+          <View style={[styles.head, { right: 0 }]} />
+          <View style={[styles.headFill, { right: 2 }]} />
+        </View>)}
       </View>;
     })}
     <View pointerEvents="none" testID="grounds-no-entry" accessibilityLabel="No entry for incoming traffic south of Bruce Road 3"

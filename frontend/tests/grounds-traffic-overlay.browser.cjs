@@ -24,14 +24,28 @@ fs.mkdirSync(out,{recursive:true});
    };
    return {x:(sign.x+sign.width/2-img.x)/img.width,y:(sign.y+sign.height/2-img.y)/img.height,
     passive:getComputedStyle(q('grounds-no-entry')).pointerEvents, start:endpoint(segment,false), noticeX:notice.x, end:endpoint(last,true), signCenter:{x:sign.x+sign.width/2,y:sign.y+sign.height/2},
-    angles:['TRAFFIC-BR3-EAST','TRAFFIC-BR3-WEST','TRAFFIC-BR2-NORTH','TRAFFIC-BR2-APPROACH','TRAFFIC-TURN-WEST','TRAFFIC-TURN-EAST'].map(id=>{const m=new DOMMatrix(getComputedStyle(q(id)).transform);return Math.atan2(m.b,m.a)*180/Math.PI})};
+    angles:['grounds-bruce-3-line','grounds-bruce-2-line'].map(id=>{const m=new DOMMatrix(getComputedStyle(q(id)).transform);return Math.atan2(m.b,m.a)*180/Math.PI})};
   });
   assert.ok(Math.abs(r.x-.299)<.001 && Math.abs(r.y-.391)<.001,'sign anchored to incoming entrance');
   assert.ok(Math.hypot(r.end.x-r.signCenter.x,r.end.y-r.signCenter.y)<1,'leader ends at symbol');
   assert.equal(r.passive,'none');assert.ok(Math.abs(r.start.x-r.noticeX)<1,'leader starts at notice edge');
-  assert.ok(r.angles.slice(0,2).every(a=>a>160&&a<180),'Bruce 3 westbound');
-  assert.ok(r.angles.slice(2,4).every(a=>a>-110&&a<-90),'Bruce 2 northbound');
-  assert.ok(r.angles[4]>160&&r.angles[4]<180&&r.angles[5]>-20&&r.angles[5]<0,'both junction exits');
+  assert.ok(r.angles[0]>-20&&r.angles[0]<0,'Bruce 3 shaft follows road west to east');
+  assert.ok(r.angles[1]>-110&&r.angles[1]<-90,'Bruce 2 northbound');
+  const lines = await p.evaluate(() => ['grounds-bruce-3-line','grounds-bruce-2-line'].map(id => {
+   const root=document.querySelector(`[data-testid="${id}"]`),shaft=root.querySelector(`[data-testid="${id}-shaft"]`);
+   return {length:parseFloat(root.style.width),left:parseFloat(shaft.style.left),width:parseFloat(shaft.style.width),
+    shafts:root.querySelectorAll(`[data-testid="${id}-shaft"]`).length,
+    heads:[...root.querySelectorAll(`[data-testid^="${id}-head-"]`)].map(e=>({left:parseFloat(e.style.left),width:parseFloat(e.style.width),reverse:new DOMMatrix(getComputedStyle(e).transform).a<0})),
+    color:getComputedStyle(shaft).backgroundColor,thickness:parseFloat(shaft.style.height)||parseFloat(getComputedStyle(shaft).height)};
+  }));
+  for (const line of lines) {
+   assert.equal(line.shafts,1,'one continuous shaft per road');assert.equal(line.color,'rgb(255, 230, 0)');assert.equal(line.thickness,3);
+   for (const head of line.heads) assert.ok(head.left<=line.left+line.width&&head.left+head.width>=line.left,'every arrowhead joins the same shaft');
+   const end=line.heads.at(-1);assert.ok(Math.abs(end.left+end.width-line.length)<.01,'terminal head at far end');assert.equal(end.reverse,false);
+  }
+  assert.equal(lines[0].heads.length,3);assert.equal(lines[0].heads[0].left,0,'west head at far left');
+  assert.equal(lines[0].heads[0].reverse,true);assert.equal(lines[0].heads[1].reverse,true,'east-side traffic stays westbound');
+  assert.equal(lines[1].heads.length,1,'Bruce 2 has only a northbound terminal head');
  };
  const checkAccessParking=async()=>{assert.equal(await p.getByTestId('grounds-no-entry').count(),1);assert.equal(await p.getByTestId('grounds-traffic-notice').count(),1);};
  const cases=[];
@@ -54,7 +68,7 @@ fs.mkdirSync(out,{recursive:true});
   const roadGap=visuals.greenock.y-routeAtLeft-2.5;
   assert.ok(roadGap>=3&&roadGap<=9,JSON.stringify({width,roadGap}));
   assert.ok(visuals.greenock.y+visuals.greenock.h/2<r.image.y+r.image.h*.79-8);
-  assert.equal(r.arrows,9);assert.ok(r.angles[0]>-20&&r.angles[0]<0&&r.angles[1]>-110&&r.angles[1]<-90&&r.angles[2]>160&&r.angles[2]<180);assert.equal(r.roads[1],'1');assert.ok(r.notice.x>r.image.x+r.image.w*.45&&r.notice.y>=r.image.y+r.image.h*.15&&r.notice.y+r.notice.h<r.image.y+r.image.h*.34,JSON.stringify(r));assert.equal(r.passive,'none');assert.equal(r.roads[0],'1');assert.equal(r.roads[2],'0');assert.equal(r.roads[3],'1');assert.equal(r.roads[4],'1');assert.ok(!r.overflow);assert.ok(r.arrow.y>r.parking.y+3,JSON.stringify(r));
+  assert.equal(r.arrows,3);assert.ok(r.angles[0]>-20&&r.angles[0]<0&&r.angles[1]>-110&&r.angles[1]<-90&&r.angles[2]>160&&r.angles[2]<180);assert.equal(r.roads[1],'1');assert.ok(r.notice.x>r.image.x+r.image.w*.45&&r.notice.y>=r.image.y+r.image.h*.15&&r.notice.y+r.notice.h<r.image.y+r.image.h*.34,JSON.stringify(r));assert.equal(r.passive,'none');assert.equal(r.roads[0],'1');assert.equal(r.roads[2],'0');assert.equal(r.roads[3],'1');assert.equal(r.roads[4],'1');assert.ok(!r.overflow);assert.ok(r.arrow.y>r.parking.y+3,JSON.stringify(r));
   assert.equal(r.noticeText,'Durham Road is barricaded at Huron Tractor to control traffic arriving from the east.');
   assert.ok(r.notice.x>=0&&r.notice.x+r.notice.w<=width);assert.ok(r.notice.y+r.notice.h<= (width<768?844:900)-60);
   assert.equal(await p.getByText('Traffic Flow',{exact:true}).count(),0);await p.getByTestId('grounds-walkerton').waitFor();
@@ -89,9 +103,10 @@ fs.mkdirSync(out,{recursive:true});
  await p.getByTestId('grounds-fit-reset').click();await p.waitForTimeout(350);
  await p.evaluate(()=>document.documentElement.requestFullscreen());assert.equal(await p.evaluate(()=>!!document.fullscreenElement),true);
  await p.getByTestId('grounds-fit-reset').click();await p.evaluate(()=>document.exitFullscreen());
- await p.getByTestId('grounds-view-parking').click();assert.equal(await p.locator('[data-testid^="TRAFFIC-"]').count(),0);await checkAccessParking();
- await p.getByTestId('grounds-view-general').click();assert.equal(await p.locator('[data-testid^="TRAFFIC-"]').count(),9);
+ await p.getByTestId('grounds-view-parking').click();assert.equal(await p.locator('[data-testid^="TRAFFIC-"]').count(),0);await checkAccessParking();assert.equal(await p.getByTestId('grounds-bruce-3-line').count(),0);assert.equal(await p.getByTestId('grounds-bruce-2-line').count(),0);
+ await p.getByTestId('grounds-view-general').click();assert.equal(await p.locator('[data-testid^="TRAFFIC-"]').count(),3);
  await p.mouse.move(245,220);await p.mouse.wheel(0,-155);await p.waitForTimeout(350);await checkAccess();
  await p.screenshot({path:`${out}/phone-close.png`});
+ await p.getByTestId('grounds-fit-reset').click();await p.waitForTimeout(350);await p.mouse.move(170,170);await p.mouse.wheel(0,-225);await p.waitForTimeout(350);await checkAccess();await p.screenshot({path:`${out}/phone-intersection.png`});
  assert.deepEqual(errors,[]);fs.writeFileSync(out+'/traffic-browser.json',JSON.stringify(cases,null,2));console.log('PASS 15 widths; arrows, P clearance, labels, zoom threshold/Fit, search/highlight, notice, no toggle, no errors');await c.close();
  }finally{await b.close()}})().catch(e=>{console.error(e);process.exit(1)});
