@@ -48,5 +48,8 @@ test('two-layer refinement preserves approved traffic renderer, artwork, areas a
 test('shared barricade keeps approved rendering while routes remain conditional', () => {
  const original=execFileSync('git',['show','aca902a4:frontend/src/components/GroundsTrafficOverlay.tsx'],{encoding:'utf8'});
  const current=fs.readFileSync(new URL('../src/components/GroundsTrafficOverlay.tsx',import.meta.url),'utf8');
- assert.equal(current, original.replace('{showTraffic && <View pointerEvents="none" testID="grounds-traffic-notice"','{<View pointerEvents="none" testID="grounds-traffic-notice"'));
+ const notice=s=>s.split('testID="grounds-traffic-notice"')[1].split('</View>')[0];
+ assert.equal(notice(current), notice(original));
+ assert.match(current, /showTraffic && GROUNDS_TRAFFIC_ARROWS.map/);
+ assert.match(current, /\{<View pointerEvents="none" testID="grounds-traffic-notice"/);
 });

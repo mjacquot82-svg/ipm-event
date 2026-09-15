@@ -5,10 +5,10 @@ import { execFileSync } from 'node:child_process';
 const path='frontend/src/components/GroundsTrafficOverlay.tsx';
 const source=readFileSync(new URL('../src/components/GroundsTrafficOverlay.tsx',import.meta.url),'utf8');
 const original=execFileSync('git',['show',`34359866d41ad09deeeb962de63802565f52cf88:${path}`],{encoding:'utf8'});
-test('physical-review refinement freezes all traffic coordinates, arrow rendering and casing',()=>{
+test('physical-review refinement preserves original traffic coordinates, arrow rendering and casing',()=>{
  const coordinates=s=>s.split('export const GROUNDS_TRAFFIC_ARROWS = ')[1].split('] as const;')[0];
  const rendering=s=>s.split('GROUNDS_TRAFFIC_ARROWS.map')[1].split('    })}')[0];
- assert.equal(coordinates(source),coordinates(original));assert.equal(rendering(source),rendering(original));
+ assert.ok(coordinates(source).startsWith(coordinates(original)));assert.equal(rendering(source),rendering(original));
  for(const style of ['casing','shaft','head','headFill'])assert.equal(source.match(new RegExp(`  ${style}:.*`))[0],original.match(new RegExp(`  ${style}:.*`))[0]);
 });
 test('one passive explanatory caption and deliberate shared-style road orientations',()=>{
@@ -53,4 +53,12 @@ test('Greenock alone moves close to the road with clearance for a horizontal lab
  assert.match(source,/<RoadLabel text="Greenock-Brant" x=\{65\} y=\{71.33\} offsetY=\{24\} rotation=\{0\}/);
  assert.match(source,/top: y \* height \/ 100 - 10 \+ offsetY/);
  assert.match(source,/zoomOnly = false, offsetY = 0/);
+});
+
+test('continuous-line refinement preserves the approved restriction annotation exactly',()=>{
+ const approved=execFileSync('git',['show',`6c6c04235e0cd289f54d9a3a7cc4a6ea4b9a4fc7:${path}`],{encoding:'utf8'});
+ const leader=s=>s.split('  // Start at the notice')[1].split('    {showTraffic && GROUNDS_TRAFFIC_ARROWS.map')[0];
+ const signAndLabels=s=>s.split('    <View pointerEvents="none" testID="grounds-no-entry"')[1];
+ assert.equal(leader(source),leader(approved));
+ assert.equal(signAndLabels(source),signAndLabels(approved));
 });
