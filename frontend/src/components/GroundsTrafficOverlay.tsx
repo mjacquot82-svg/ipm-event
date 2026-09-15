@@ -12,8 +12,10 @@ export const GROUNDS_TRAFFIC_ARROWS = [
 // Continuous shafts in whole-artwork coordinates. Endpoint heads show the two
 // junction exits, without extra standalone direction markers.
 export const GROUNDS_BRUCE_TRAFFIC_LINES = [
-  { id: 'grounds-bruce-3-line', start: [19, 39.1], end: [80, 32.35], bothEnds: true },
-  { id: 'grounds-bruce-2-line', start: [32.4, 57], end: [29.1, 41.3], bothEnds: false },
+  { id: 'grounds-bruce-3-line', start: [19, 39.1], end: [80, 32.35], points: [[19, 39.1], [80, 32.35]], bothEnds: true },
+  // A connected polyline follows the slight bend in Bruce Rd 2 beside West
+  // Parking, so the overlay does not appear to split into two sections.
+  { id: 'grounds-bruce-2-line', start: [32.4, 57], end: [29.1, 41.3], points: [[32.4, 57], [31.5, 53], [30.7, 48], [30.0, 44], [29.1, 41.3]], bothEnds: false },
 ] as const;
 export const GROUNDS_TRAFFIC_NOTICE = 'Durham Road is barricaded at Huron Tractor to control traffic arriving from the east.';
 
@@ -63,17 +65,22 @@ export function GroundsTrafficOverlay({ width, height, scale, showTraffic = true
         <View style={[styles.headFill, { right: 2 }]} />
       </View>;
     })}
-    {showTraffic && GROUNDS_BRUCE_TRAFFIC_LINES.map(({ id, start, end, bothEnds }) => {
-      const x = start[0] * width / 100, y = start[1] * height / 100;
-      const dx = (end[0] - start[0]) * width / 100, dy = (end[1] - start[1]) * height / 100;
+    {showTraffic && GROUNDS_BRUCE_TRAFFIC_LINES.map(({ id, start, end, points, bothEnds }) => {
+      const route = points || [start, end];
+      const segments = route.slice(0, -1).map((point, index) => [point, route[index + 1]] as const);
+      return <View key={id} pointerEvents="none" testID={id} style={StyleSheet.absoluteFill}>
+      {segments.map(([segmentStart, segmentEnd], segmentIndex) => {
+      const x = segmentStart[0] * width / 100, y = segmentStart[1] * height / 100;
+      const dx = (segmentEnd[0] - segmentStart[0]) * width / 100, dy = (segmentEnd[1] - segmentStart[1]) * height / 100;
       const length = Math.hypot(dx, dy), angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      const terminal = segmentIndex === segments.length - 1;
       // Heads overlap a single unbroken shaft; there are no detached arrows.
-      const heads = bothEnds
+      const heads = terminal && bothEnds
         ? [{ tip: 0, reverse: true }, { tip: length, reverse: false }]
-        : [{ tip: length, reverse: false }];
-      return <View key={id} pointerEvents="none" testID={id} style={{ position: 'absolute', left: x, top: y - 6,
+        : terminal ? [{ tip: length, reverse: false }] : [];
+      return <View key={segmentIndex} pointerEvents="none" testID={`${id}-segment-${segmentIndex}`} style={{ position: 'absolute', left: x, top: y - 6,
         width: length, height: 12, transformOrigin: 'left center', transform: [{ rotate: `${angle}deg` }] }}>
-        <View testID={`${id}-casing`} style={[styles.casing, { left: bothEnds ? 8 : 0, width: Math.max(0, length - (bothEnds ? 16 : 8)) }]} />
+        <View testID={`${id}-casing-${segmentIndex}`} style={[styles.casing, { left: bothEnds && terminal ? 8 : 0, width: Math.max(0, length - (bothEnds && terminal ? 16 : terminal ? 8 : 0)) }]} />
         {heads.map(({ tip, reverse }, i) => <View key={i} testID={`${id}-head-${i}`} style={{ position: 'absolute',
           left: reverse ? tip : tip - 13, top: 0, width: 13, height: 12,
           transform: [{ rotate: reverse ? '180deg' : '0deg' }] }}>
@@ -81,12 +88,14 @@ export function GroundsTrafficOverlay({ width, height, scale, showTraffic = true
         </View>)}
         {/* Paint all dark edging first so a head's base cannot cut a dark seam
             across the yellow shaft. The yellow fills overlap at each join. */}
-        <View testID={`${id}-shaft`} style={[styles.shaft, { left: bothEnds ? 8 : 0, width: Math.max(0, length - (bothEnds ? 16 : 8)) }]} />
+        <View testID={`${id}-shaft-${segmentIndex}`} style={[styles.shaft, { left: bothEnds && terminal ? 8 : 0, width: Math.max(0, length - (bothEnds && terminal ? 16 : terminal ? 8 : 0)) }]} />
         {heads.map(({ tip, reverse }, i) => <View key={i} style={{ position: 'absolute',
           left: reverse ? tip : tip - 13, top: 0, width: 13, height: 12,
           transform: [{ rotate: reverse ? '180deg' : '0deg' }] }}>
           <View style={[styles.headFill, { right: 2 }]} />
         </View>)}
+      </View>;
+      })}
       </View>;
     })}
     <View pointerEvents="none" testID="grounds-no-entry" accessibilityLabel="No entry for incoming traffic south of Bruce Road 3"
