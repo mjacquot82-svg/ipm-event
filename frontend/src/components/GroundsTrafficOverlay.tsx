@@ -10,7 +10,7 @@ export const GROUNDS_TRAFFIC_ARROWS = [
 ] as const;
 
 // Continuous shafts in whole-artwork coordinates. Endpoint heads show the two
-// junction exits; the inline westbound head retains Bruce Rd 3's incoming flow.
+// junction exits, without extra standalone direction markers.
 export const GROUNDS_BRUCE_TRAFFIC_LINES = [
   { id: 'grounds-bruce-3-line', start: [19, 39.1], end: [80, 32.35], bothEnds: true },
   { id: 'grounds-bruce-2-line', start: [32.4, 57], end: [29.1, 41.3], bothEnds: false },
@@ -69,16 +69,22 @@ export function GroundsTrafficOverlay({ width, height, scale, showTraffic = true
       const length = Math.hypot(dx, dy), angle = Math.atan2(dy, dx) * 180 / Math.PI;
       // Heads overlap a single unbroken shaft; there are no detached arrows.
       const heads = bothEnds
-        ? [{ tip: 0, reverse: true }, { tip: length * .86, reverse: true }, { tip: length, reverse: false }]
+        ? [{ tip: 0, reverse: true }, { tip: length, reverse: false }]
         : [{ tip: length, reverse: false }];
       return <View key={id} pointerEvents="none" testID={id} style={{ position: 'absolute', left: x, top: y - 6,
         width: length, height: 12, transformOrigin: 'left center', transform: [{ rotate: `${angle}deg` }] }}>
         <View testID={`${id}-casing`} style={[styles.casing, { left: bothEnds ? 8 : 0, width: Math.max(0, length - (bothEnds ? 16 : 8)) }]} />
-        <View testID={`${id}-shaft`} style={[styles.shaft, { left: bothEnds ? 8 : 0, width: Math.max(0, length - (bothEnds ? 16 : 8)) }]} />
         {heads.map(({ tip, reverse }, i) => <View key={i} testID={`${id}-head-${i}`} style={{ position: 'absolute',
           left: reverse ? tip : tip - 13, top: 0, width: 13, height: 12,
           transform: [{ rotate: reverse ? '180deg' : '0deg' }] }}>
           <View style={[styles.head, { right: 0 }]} />
+        </View>)}
+        {/* Paint all dark edging first so a head's base cannot cut a dark seam
+            across the yellow shaft. The yellow fills overlap at each join. */}
+        <View testID={`${id}-shaft`} style={[styles.shaft, { left: bothEnds ? 8 : 0, width: Math.max(0, length - (bothEnds ? 16 : 8)) }]} />
+        {heads.map(({ tip, reverse }, i) => <View key={i} style={{ position: 'absolute',
+          left: reverse ? tip : tip - 13, top: 0, width: 13, height: 12,
+          transform: [{ rotate: reverse ? '180deg' : '0deg' }] }}>
           <View style={[styles.headFill, { right: 2 }]} />
         </View>)}
       </View>;

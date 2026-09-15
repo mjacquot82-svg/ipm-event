@@ -43,8 +43,8 @@ fs.mkdirSync(out,{recursive:true});
    for (const head of line.heads) assert.ok(head.left<=line.left+line.width&&head.left+head.width>=line.left,'every arrowhead joins the same shaft');
    const end=line.heads.at(-1);assert.ok(Math.abs(end.left+end.width-line.length)<.01,'terminal head at far end');assert.equal(end.reverse,false);
   }
-  assert.equal(lines[0].heads.length,3);assert.equal(lines[0].heads[0].left,0,'west head at far left');
-  assert.equal(lines[0].heads[0].reverse,true);assert.equal(lines[0].heads[1].reverse,true,'east-side traffic stays westbound');
+  assert.equal(lines[0].heads.length,2);assert.equal(lines[0].heads[0].left,0,'west head at far left');
+  assert.equal(lines[0].heads[0].reverse,true);assert.equal(lines[0].heads[1].reverse,false,'east exit at the far end of the same line');
   assert.equal(lines[1].heads.length,1,'Bruce 2 has only a northbound terminal head');
  };
  const checkAccessParking=async()=>{assert.equal(await p.getByTestId('grounds-no-entry').count(),1);assert.equal(await p.getByTestId('grounds-traffic-notice').count(),1);};
