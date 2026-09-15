@@ -1,11 +1,14 @@
 const { spawnSync } = require('node:child_process');
 const { readFileSync, writeFileSync } = require('node:fs');
 
+const { nicolePreviewContent } = require('./nicole-preview');
+
 const BUILD_EPOCH = Date.UTC(2026, 0, 1);
 const buildNumber = String(Math.floor((Date.now() - BUILD_EPOCH) / 60000));
 const appLabel = process.env.CONTEXT === 'production' ? 'production' : 'staging';
 const env = {
   ...process.env,
+  EXPO_PUBLIC_NICOLE_REVIEW_CONTENT: nicolePreviewContent(process.env),
   EXPO_PUBLIC_IPM_BUILD_NUMBER: buildNumber,
   EXPO_PUBLIC_IPM_APP_LABEL: appLabel,
 };
