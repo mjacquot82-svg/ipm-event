@@ -7,6 +7,14 @@ export const GROUNDS_TRAFFIC_ARROWS = [
   { id: 'TRAFFIC-01', start: [24.12, 76.50], end: [37.63, 74.94] },
   { id: 'TRAFFIC-02', start: [36.45, 72.96], end: [34.23, 64.50] },
   { id: 'TRAFFIC-03', start: [90.50, 68.21], end: [41.28, 74.23] },
+  // Bruce Rd 3 east → west; short junction exits use separate road sides.
+  { id: 'TRAFFIC-BR3-EAST', start: [80, 32.35], end: [71.5, 33.35] },
+  { id: 'TRAFFIC-BR3-WEST', start: [53, 35.5], end: [40, 37.0] },
+  // Bruce Rd 2 outbound toward Walkerton / the Bruce Rd 3 junction.
+  { id: 'TRAFFIC-BR2-NORTH', start: [32.4, 57], end: [30.6, 48] },
+  { id: 'TRAFFIC-BR2-APPROACH', start: [30.2, 46], end: [29.1, 41.3] },
+  { id: 'TRAFFIC-TURN-WEST', start: [28.2, 38.0], end: [19, 39.1] },
+  { id: 'TRAFFIC-TURN-EAST', start: [29.4, 38.3], end: [38, 37.3] },
 ] as const;
 export const GROUNDS_TRAFFIC_NOTICE = 'Durham Road is barricaded at Huron Tractor to control traffic arriving from the east.';
 
@@ -23,7 +31,28 @@ function RoadLabel({ text, x, y, rotation, width, height, scale, zoomOnly = fals
 
 /** Passive geometry shares the artwork's camera; never registers gesture handlers or requests artwork. */
 export function GroundsTrafficOverlay({ width, height, scale, showTraffic = true }: { width: number; height: number; scale: SharedValue<number>; showTraffic?: boolean }) {
+  // Start at the notice's actual left edge, including its desktop width cap.
+  // Bend through open artwork north of the bus area to the incoming lane.
+  const noticeWidth = Math.min(180, width * .46);
+  const signX = width * .299, signY = height * .391;
+  const leaderPoints = [
+    [width * .92 - noticeWidth, height * .165 + 18],
+    [width * .31, height * .285],
+    [width * .315, height * .365],
+    [signX, signY],
+  ];
   return <View pointerEvents="none" style={StyleSheet.absoluteFill} testID="grounds-traffic-overlay">
+    <View pointerEvents="none" testID="grounds-notice-leader" style={StyleSheet.absoluteFill}>
+      {leaderPoints.slice(1).map(([endX, endY], i) => {
+        const [x, y] = leaderPoints[i];
+        const dx = endX - x, dy = endY - y;
+        return <View key={i} style={{ position: 'absolute', left: x, top: y - 1.5,
+          width: Math.hypot(dx, dy), height: 3, backgroundColor: '#FFFFFF',
+          transformOrigin: 'left center', transform: [{ rotate: `${Math.atan2(dy, dx) * 180 / Math.PI}deg` }] }}>
+          <View style={{ position: 'absolute', top: .75, left: 0, right: 0, height: 1.5, backgroundColor: '#B91C1C' }} />
+        </View>;
+      })}
+    </View>
     {showTraffic && GROUNDS_TRAFFIC_ARROWS.map(({ id, start, end }) => {
       const x = start[0] * width / 100, y = start[1] * height / 100;
       const dx = (end[0] - start[0]) * width / 100, dy = (end[1] - start[1]) * height / 100;
@@ -35,6 +64,12 @@ export function GroundsTrafficOverlay({ width, height, scale, showTraffic = true
         <View style={[styles.headFill, { right: 2 }]} />
       </View>;
     })}
+    <View pointerEvents="none" testID="grounds-no-entry" accessibilityLabel="No entry for incoming traffic south of Bruce Road 3"
+      style={{ position: 'absolute', left: signX - 9, top: signY - 9, width: 18, height: 18,
+        borderRadius: 9, borderWidth: 1.5, borderColor: '#FFFFFF', backgroundColor: '#DC2626',
+        alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: 11, height: 3, backgroundColor: '#FFFFFF' }} />
+    </View>
     {showTraffic && <View pointerEvents="none" testID="grounds-flow-caption" style={[styles.label, { left: width * .215 - 75, top: height * .73 - 10 }]}>
       <Text style={styles.flowCaption}>Flow of traffic</Text>
     </View>}
