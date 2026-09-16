@@ -541,6 +541,15 @@
       "priority": 99
     },
     {
+      "id": "64319171-ef84-58ee-b1f9-00189522f700",
+      "name": "ENJO Chemical Free Cleaning System",
+      "type": "Indoor",
+      "location": "4A 16–21\n4B 17–22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
       "id": "f610134f-3c59-4bdf-98a9-39da2f155769",
       "name": "Equestrian Elite",
       "type": "Indoor",
@@ -2018,5 +2027,5 @@
     }
   ],
   "last_updated": "2026-09-12T14:28:36.762Z",
-  "total_count": 224
+  "total_count": 225
 }
