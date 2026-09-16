@@ -1,7 +1,7 @@
 """Optional schedule-detail content. No schedule identity or timing fields."""
-from typing import Optional
+from typing import Literal, Optional
 from urllib.parse import urlsplit
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_serializer
 
 
 def https_url(value: str) -> str:
@@ -16,6 +16,14 @@ class EventImage(BaseModel):
     alt: str = Field(min_length=1, max_length=300)
     width: int = Field(gt=0, le=10000)
     height: int = Field(gt=0, le=10000)
+    crop: Optional[Literal['top-square']] = None
+
+    @model_serializer(mode='wrap')
+    def serialize_image(self, handler):
+        data = handler(self)
+        if self.crop is None:
+            data.pop('crop', None)
+        return data
 
     _url = field_validator('url')(https_url)
 
@@ -52,5 +60,5 @@ def content_patch(payload):
     data = {}
     for key in ('event_image', 'external_links'):
         if key in fields:
-            data[key] = payload.model_dump(mode='json')[key]
+            data[key] = payload.model_dump(mode='json', exclude_unset=True)[key]
     return data
