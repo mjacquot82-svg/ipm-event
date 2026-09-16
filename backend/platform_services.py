@@ -684,6 +684,7 @@ class SupabaseScheduleService:
             "id": row["id"],
             "title": row.get("title") or "Untitled Event",
             "description": row.get("description") or "",
+            "event_image": row.get("event_image"),
             "start_date": self._format_date(row.get("starts_at")),
             "start_time": self._format_time(row.get("starts_at")),
             "end_time": self._format_time(row.get("ends_at")),

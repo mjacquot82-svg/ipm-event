@@ -1,4 +1,9 @@
 try:
+    from backend.event_media import EventImage
+except ModuleNotFoundError:
+    from event_media import EventImage
+
+try:
     from announcement_images import (
         AnnouncementImage,
         AnnouncementImageDeletePayload,
@@ -246,6 +251,7 @@ class Event(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class ScheduleEvent(BaseModel):
+    event_image: Optional[EventImage] = None
     id: str
     title: str
     description: Optional[str] = ""
