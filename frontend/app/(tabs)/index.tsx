@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
@@ -577,6 +577,19 @@ export default function HomeScreen() {
               )}
               <Text style={[styles.actionTitle, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionText]}>Announcements</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => openQuickLink('accessibility', 'accessibility')}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Accessibility Information"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
+                <Ionicons name="accessibility" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Accessibility Information</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionCard}
               onPress={onShareIpm}
@@ -602,7 +615,8 @@ export default function HomeScreen() {
             </View>
           )}
 
-          <Text style={[styles.sectionTitle, styles.linksTitle]}>Links</Text>
+          {/* External links */}
+          <View style={styles.linksSpacing} />
             <TouchableOpacity
               style={styles.showGuideCard}
               onPress={() => openQuickLink('show_guide', 'show_guide')}
@@ -846,8 +860,8 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: 16,
   },
-  linksTitle: {
-    marginTop: 20,
+  linksSpacing: {
+    height: 20,
   },
   seeAll: {
     fontSize: 14,

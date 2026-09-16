@@ -6,7 +6,7 @@ const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url),
 const destinations = await readFile(new URL('../src/analytics/trackedLinks.ts', import.meta.url), 'utf8');
 
 const actionsStart = home.indexOf('<Text style={styles.sectionTitle}>Quick Actions</Text>');
-const linksStart = home.indexOf('<Text style={[styles.sectionTitle, styles.linksTitle]}>Links</Text>', actionsStart);
+const linksStart = home.indexOf('{/* External links */}', actionsStart);
 const groupsEnd = home.indexOf('{happeningNow.length > 0', linksStart);
 const actions = home.slice(actionsStart, linksStart);
 const links = home.slice(linksStart, groupsEnd);
@@ -15,9 +15,9 @@ const groupedButtons = home.slice(actionsStart, groupsEnd);
 const allButtons = [
   'Emergency Services', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
   'Camping', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service',
-  'Personal Itinerary', 'Queen of the Furrow', 'Announcements', '2026 Show Guide',
+  'Personal Itinerary', 'Queen of the Furrow', 'Announcements', 'Accessibility Information', 'Share IPM', '2026 Show Guide',
 ];
-const actionButtons = ['Emergency Services', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements'];
+const actionButtons = ['Emergency Services', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements', 'Accessibility Information', 'Share IPM'];
 const linkButtons = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service', '2026 Show Guide'];
 
 function occurrences(source, label) {
@@ -47,7 +47,7 @@ test('Quick Actions reflow naturally without width-specific gaps', () => {
   assert.doesNotMatch(home, /(?:mobile|desktop).*SOS|SOS.*(?:mobile|desktop)/i);
 });
 
-test('internal controls are isolated under Action Buttons', () => {
+test('Quick Action controls are isolated under Action Buttons', () => {
   for (const label of actionButtons) {
     assert.equal(occurrences(actions, label), 1, `${label} missing from actions`);
     assert.equal(occurrences(links, label), 0, `${label} leaked into links`);
@@ -118,4 +118,33 @@ test('Emergency Services replaces Map as the first Home Quick Action', () => {
   assert.match(firstCard, />Emergency Services<\/Text>/);
   assert.doesNotMatch(actions, /quickAction\('map'/);
   assert.doesNotMatch(actions, />Map<\/Text>/);
+});
+
+
+test('production grid preserves all existing cards with Accessibility immediately after Announcements', () => {
+  const grid = actions.match(/<View style=\{styles\.quickActionsGrid\}>([\s\S]*?)\n          <\/View>/)?.[1];
+  assert.ok(grid);
+  const cards = [...grid.matchAll(/<TouchableOpacity\b[\s\S]*?<\/TouchableOpacity>/g)].map(([card]) => card);
+  const labels = cards.map(card => card.match(/>([^<>]+)<\/Text>\s*<\/TouchableOpacity>$/)?.[1]);
+  assert.deepEqual(labels, ['Emergency Services', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements', 'Accessibility Information', 'Share IPM']);
+  assert.match(cards[7], /style=\{styles\.actionCard\}/);
+  assert.match(cards[7], /styles\.actionIcon/);
+  assert.match(cards[7], /<Ionicons name="accessibility" size=\{22\} color="#FFFFFF" \/>/);
+  assert.match(cards[7], /<Text style=\{styles\.actionTitle\}>Accessibility Information<\/Text>/);
+  assert.match(cards[7], /openQuickLink\('accessibility', 'accessibility'\)/);
+  assert.match(cards[8], /onPress=\{onShareIpm\}/);
+  assert.doesNotMatch(home, /accessibilityAction/);
+});
+
+test('Accessibility uses the existing destination and Home has no visible Links heading', () => {
+  assert.ok(destinations.includes("accessibility: { id: 'accessibility', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/visitor-info/accessibility/' }"));
+  assert.doesNotMatch(home, />Links<\/Text>/);
+  assert.match(home, /shareFeedback &&/);
+});
+
+test('About removes only Accessibility navigation and retains production Emergency Services', async () => {
+  const about = await readFile(new URL('../app/(tabs)/about.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(about, /Accessibility Information|openAccessibilityInformation/);
+  assert.match(about, /Emergency Services \/ Need Help/);
+  assert.doesNotMatch(about, /PWAInstallPrompt|NotificationOptIn|AppStatus|appHelp/);
 });

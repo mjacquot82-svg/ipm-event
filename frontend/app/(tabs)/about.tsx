@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import colors from '../../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendeePageLayout';
 import { eventInfo } from '../../src/data/mockData';
@@ -59,10 +59,6 @@ export default function AboutScreen() {
 
   const openFrequentlyAskedQuestions = () => {
     void openTrackedLink('faq', 'about');
-  };
-
-  const openAccessibilityInformation = () => {
-    void openTrackedLink('accessibility', 'about');
   };
 
   return (
@@ -149,18 +145,6 @@ export default function AboutScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.resourceItem}>
-            <TouchableOpacity
-              style={styles.resourceButton}
-              onPress={openAccessibilityInformation}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Accessibility Information"
-            >
-              <Ionicons name="accessibility" size={21} color="#FFFFFF" />
-              <Text style={styles.resourceButtonText}>Accessibility Information</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         <View style={styles.section}>
