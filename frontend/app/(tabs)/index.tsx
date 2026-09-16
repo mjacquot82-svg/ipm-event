@@ -416,7 +416,11 @@ export default function HomeScreen() {
   };
 
   const sectionStyle = [styles.section, attendeeSectionStyle];
-  const isShowingCachedData = dataSource === 'cache' && !loading && events.length > 0;
+  const isShowingCachedData = !loading && (
+    (dataSource === 'cache' && events.length > 0)
+    || (announcementDataSource === 'cache' && announcements.length > 0)
+  );
+  const cachedNoticeTimestamp = dataSource === 'cache' ? lastSuccessfulUpdate : announcementLastUpdate;
   const attendeeAnnouncements = excludeDismissedAnnouncements(announcements, dismissedAnnouncementIds);
   const unreadAnnouncementIds = getUnreadAnnouncementIds(attendeeAnnouncements, readAnnouncementIds, lastReadAnnouncementId);
   const unreadAnnouncementCount = announcementReadStateHydrated ? unreadAnnouncementIds.size : 0;
@@ -440,7 +444,7 @@ export default function HomeScreen() {
 
         {isShowingCachedData && (
           <View style={sectionStyle}>
-            <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
+            <CachedDataBanner lastSuccessfulUpdate={cachedNoticeTimestamp} />
           </View>
         )}
 
@@ -466,10 +470,6 @@ export default function HomeScreen() {
             </View>
             {renderEventCard(nextStarredEvent, 0, true)}
           </View>
-        )}
-
-        {announcementDataSource === 'cache' && announcements.length > 0 && (
-          <View style={sectionStyle}><CachedDataBanner lastSuccessfulUpdate={announcementLastUpdate} /></View>
         )}
 
         <View style={sectionStyle}>

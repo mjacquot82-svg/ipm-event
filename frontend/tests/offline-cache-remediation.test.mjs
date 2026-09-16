@@ -15,6 +15,12 @@ test('Home warms the canonical vendor cache and refreshes mutable data on reconn
   assert.match(home, /fetchAnnouncements\(true\)/);
 });
 
+test('Home renders one saved-data notice directly below the hero', () => {
+  assert.equal((home.match(/<CachedDataBanner\b/g) || []).length, 1);
+  assert.match(home, /<ResponsiveBanner \/>[\s\S]*?<CachedDataBanner lastSuccessfulUpdate=\{cachedNoticeTimestamp\}/);
+  assert.match(home, /announcementDataSource === 'cache' && announcements\.length > 0/);
+});
+
 test('announcement details retain the fetched record for closed-client offline reads', () => {
   assert.match(data, /const cacheKey = `announcement:\$\{id\}`/);
   assert.match(data, /const cached = await readCache<Announcement>\(cacheKey\)/);
