@@ -19,10 +19,17 @@ const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
 const IPM_SHELL_CACHE = `${IPM_CACHE_PREFIX}current-v1`;
 const IPM_RUNTIME_CACHE = `${IPM_CACHE_PREFIX}runtime-v1`;
 const IPM_RUNTIME_MAX_ENTRIES = 40;
+// Approved attendee event media is served from the canonical production host
+// even when the installed preview is hosted on a Netlify origin.
+const IPM_RUNTIME_MEDIA_HOSTS = new Set([
+  self.location.hostname,
+  'theipm.ca',
+  'staging.theipm.ca',
+]);
 
 function runtimeAssetKind(url) {
   const path = url.pathname.toLowerCase();
-  if (path.includes('/event-media/')
+  if ((path.includes('/event-media/') && IPM_RUNTIME_MEDIA_HOSTS.has(url.hostname))
     || (path.includes('/assets/node_modules/@expo/vector-icons/') && path.endsWith('.ttf'))
     || path.includes('grounds-site-map')
     || path.includes('tented-city-map-app-ready')
@@ -36,7 +43,7 @@ async function cacheRuntimeAsset(request) {
   if (cached) return cached;
   try {
     const response = await fetch(request);
-    if (response.ok && response.type !== 'opaque') {
+    if (response.ok || response.type === 'opaque') {
       await cache.put(request, response.clone());
       const keys = await cache.keys();
       while (keys.length > IPM_RUNTIME_MAX_ENTRIES) await cache.delete(keys.shift());
@@ -147,7 +154,7 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/api/')) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(currentLaunch(request));
