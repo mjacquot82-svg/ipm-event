@@ -20,7 +20,7 @@ const api=(fetch,cache=new Map())=>load(new URL('../src/services/spreadsheetData
 const {vendorMatchesSearch}=load(new URL('../src/config/vendorMapCrosswalk.ts',import.meta.url));
 test('absolute backend configuration cannot bypass canonical web vendor catalog; all five searches resolve',async()=>{
  const urls=[];const result=await api(async url=>{urls.push(url);return {ok:true,json:async()=>catalog};}).getVendorsData();
- assert.deepEqual(urls,['/api/vendors']);assert.equal(result.data.vendors.length,224);assert.equal(new Set(result.data.vendors.map(v=>v.id)).size,224);
+ assert.deepEqual(urls,['/api/vendors']);assert.equal(result.data.vendors.length,225);assert.equal(new Set(result.data.vendors.map(v=>v.id)).size,225);
  for(const [q,location] of [['CAN-AM','WEST-02'],['Valard','EAST-06'],['Bambrook','1A-05'],['Cottrill','2A-05'],['Ontario Government','3B-19-24']]){
   const matches=result.data.vendors.filter(v=>vendorMatchesSearch(v,q));assert.equal(matches.length,1,q);assert.equal(matches[0].location,location);
  }
@@ -30,11 +30,11 @@ test('old feed cache cannot finish loading while canonical request is pending',a
  let resolve;const response=new Promise(r=>resolve=r);let complete=false;
  const pending=api(()=>response,cache).getVendorsData({preferCache:true}).then(r=>{complete=true;return r;});
  await new Promise(r=>setImmediate(r));assert.equal(complete,false);
- resolve({ok:true,json:async()=>catalog});assert.equal((await pending).data.vendors.length,224);
+ resolve({ok:true,json:async()=>catalog});assert.equal((await pending).data.vendors.length,225);
 });
 test('offline fallback uses only the canonical cache',async()=>{
  const cache=new Map();await api(async()=>({ok:true,json:async()=>catalog}),cache).getVendorsData();
- const result=await api(async()=>{throw Error('offline');},cache).getVendorsData();assert.equal(result.source,'cache');assert.equal(result.data.vendors.length,224);
+ const result=await api(async()=>{throw Error('offline');},cache).getVendorsData();assert.equal(result.source,'cache');assert.equal(result.data.vendors.length,225);
 });
 test('loading renders before no-results and default category is All',()=>{
  const s=fs.readFileSync(new URL('../app/(tabs)/vendors.tsx',import.meta.url),'utf8');

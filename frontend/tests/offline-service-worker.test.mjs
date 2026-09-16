@@ -36,3 +36,14 @@ test('production launch freshness retains explicit resume activation', async () 
   assert.equal((worker.match(/self\.skipWaiting\(/g) || []).length, 1);
   assert.match(worker, /if \(event\.data\?\.type === 'IPM_ACTIVATE_UPDATE'\) event\.waitUntil\(self\.skipWaiting\(\)\)/);
 });
+
+test('map and attendee media use a bounded durable runtime cache', () => {
+  assert.match(worker, /IPM_RUNTIME_CACHE/);
+  assert.match(worker, /IPM_RUNTIME_MAX_ENTRIES = 40/);
+  assert.match(worker, /grounds-site-map/);
+  assert.match(worker, /tented-city-map-app-ready/);
+  assert.match(worker, /rv-park-detail-map/);
+  assert.match(worker, /\/event-media\//);
+  assert.match(worker, /cache\.put\(request, response\.clone\(\)\)/);
+  assert.match(worker, /key !== IPM_RUNTIME_CACHE/);
+});

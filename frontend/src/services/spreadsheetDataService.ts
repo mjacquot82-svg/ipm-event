@@ -40,6 +40,8 @@ type FetchWithCacheOptions<T> = {
 
 export type SupabaseFetchOptions<T> = {
   preferCache?: boolean;
+  timeoutMs?: number;
+  maxAttempts?: number;
   onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
   onBackgroundRefreshError?: (error: unknown) => void;
 };
@@ -342,12 +344,28 @@ export function getAnnouncementsData(options: SupabaseFetchOptions<Announcements
 }
 
 export async function getAnnouncementById(id: string): Promise<Announcement | null> {
-  const response = await fetch(
-    `${getApiBaseUrl()}/api/announcements/${encodeURIComponent(id)}`
-  );
-  if (response.status === 404) return null;
-  if (!response.ok) {
-    throw new Error(`Announcement request failed with status ${response.status}`);
+  const cacheKey = `announcement:${id}`;
+  const cached = await readCache<Announcement>(cacheKey);
+  try {
+    const response = await fetchWithTimeout(
+      `${getApiBaseUrl()}/api/announcements/${encodeURIComponent(id)}`,
+      12000,
+    );
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      throw new Error(`Announcement request failed with status ${response.status}`);
+    }
+    const data = await response.json() as Announcement;
+    await writeCache(cacheKey, data, new Date().toISOString());
+    return data;
+  } catch (error) {
+    if (cached?.data) return cached.data;
+    throw error;
   }
-  return response.json() as Promise<Announcement>;
+}
+
+/** Warm the canonical vendor catalog during the normal online Home session. */
+export async function prefetchVendorsData() {
+  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.onLine === false) return;
+  return getVendorsData({ preferCache: false, maxAttempts: 1, timeoutMs: 12000 });
 }
