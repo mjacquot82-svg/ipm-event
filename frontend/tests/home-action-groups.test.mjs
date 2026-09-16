@@ -6,7 +6,7 @@ const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url),
 const destinations = await readFile(new URL('../src/analytics/trackedLinks.ts', import.meta.url), 'utf8');
 
 const actionsStart = home.indexOf('<Text style={styles.sectionTitle}>Quick Actions</Text>');
-const linksStart = home.indexOf('<Text style={[styles.sectionTitle, styles.linksTitle]}>Links</Text>', actionsStart);
+const linksStart = home.indexOf('{/* External links */}', actionsStart);
 const groupsEnd = home.indexOf('{happeningNow.length > 0', linksStart);
 const actions = home.slice(actionsStart, linksStart);
 const links = home.slice(linksStart, groupsEnd);
