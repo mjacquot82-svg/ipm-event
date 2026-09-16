@@ -408,20 +408,6 @@ export default function HomeScreen() {
   const attendeeAnnouncements = excludeDismissedAnnouncements(announcements, dismissedAnnouncementIds);
   const unreadAnnouncementIds = getUnreadAnnouncementIds(attendeeAnnouncements, readAnnouncementIds, lastReadAnnouncementId);
   const unreadAnnouncementCount = announcementReadStateHydrated ? unreadAnnouncementIds.size : 0;
-  const newestUnreadAnnouncement = announcementReadStateHydrated
-    ? attendeeAnnouncements
-      .filter((announcement) => unreadAnnouncementIds.has(announcement.id))
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null
-    : null;
-  const impressedAnnouncementId = useRef<string | null>(null);
-  useEffect(() => {
-    if (newestUnreadAnnouncement && impressedAnnouncementId.current !== newestUnreadAnnouncement.id) {
-      impressedAnnouncementId.current = newestUnreadAnnouncement.id;
-      void queueAnalyticsEvent('announcement_impression', {
-        announcement_id: newestUnreadAnnouncement.id, surface: 'home',
-      });
-    }
-  }, [newestUnreadAnnouncement]);
 
   return (
     <View style={styles.container}>
@@ -443,28 +429,6 @@ export default function HomeScreen() {
         {isShowingCachedData && (
           <View style={sectionStyle}>
             <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
-          </View>
-        )}
-
-        {newestUnreadAnnouncement && (
-          <View style={sectionStyle}>
-            <TouchableOpacity
-              style={styles.newAnnouncementCard}
-              onPress={() => {
-                router.push(`/announcements/${newestUnreadAnnouncement.id}?source=home` as never);
-              }}
-              activeOpacity={0.82}
-              accessibilityLabel={`New announcement: ${newestUnreadAnnouncement.title}`}
-            >
-              <View style={styles.newAnnouncementIcon}><Feather name="bell" size={21} color="#735B1B" /></View>
-              <View style={styles.newAnnouncementContent}>
-                <Text style={styles.newAnnouncementEyebrow}>New Announcement</Text>
-                <Text style={styles.newAnnouncementTitle} numberOfLines={2}>{newestUnreadAnnouncement.title}</Text>
-                <Text style={styles.newAnnouncementPreview} numberOfLines={2}>{newestUnreadAnnouncement.message}</Text>
-                <Text style={styles.newAnnouncementAction}>Tap to read</Text>
-              </View>
-              <Feather name="chevron-right" size={21} color="#8A712E" />
-            </TouchableOpacity>
           </View>
         )}
 
@@ -560,22 +524,21 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionCard, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionUnread]}
+              style={styles.actionCard}
               onPress={() => quickAction('announcements', 'internal', () => router.push('/announcements' as never))}
               activeOpacity={0.8}
               accessibilityRole="button"
               accessibilityLabel={unreadAnnouncementCount > 0 ? `Announcements, ${unreadAnnouncementCount} unread` : 'Announcements'}
             >
-              <View style={[styles.actionIcon, styles.announcementBell, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementBellUnread]}>
-                <Feather name="bell" size={22} color={unreadAnnouncementIds.size > 0 && announcementReadStateHydrated ? '#735B1B' : '#FFFFFF'} />
-                {unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && <View style={styles.bellAccent}><Feather name="star" size={9} color="#735B1B" /></View>}
+              <View style={[styles.actionIcon, styles.announcementBell]}>
+                <Feather name="bell" size={22} color="#FFFFFF" />
               </View>
               {unreadAnnouncementCount > 0 && (
                 <View style={styles.announcementBadge} accessibilityElementsHidden>
                   <Text style={styles.announcementBadgeText}>{unreadAnnouncementCount > 9 ? '9+' : unreadAnnouncementCount}</Text>
                 </View>
               )}
-              <Text style={[styles.actionTitle, unreadAnnouncementIds.size > 0 && announcementReadStateHydrated && styles.announcementActionText]}>Announcements</Text>
+              <Text style={styles.actionTitle}>Announcements</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -901,18 +864,7 @@ const styles = StyleSheet.create({
   showGuideMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2, fontWeight: '600' },
   announcementBadge: { alignItems: 'center', backgroundColor: colors.error, borderColor: '#FFFFFF', borderRadius: 12, borderWidth: 2, justifyContent: 'center', minHeight: 24, minWidth: 24, paddingHorizontal: 5, position: 'absolute', right: 7, top: 7 },
   announcementBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', lineHeight: 14 },
-  announcementActionUnread: { backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderWidth: 1 },
   announcementBell: { backgroundColor: '#9E9E9E', position: 'relative' },
-  announcementBellUnread: { backgroundColor: '#F3E5B9', borderColor: '#D8B866', borderWidth: 1 },
-  bellAccent: { alignItems: 'center', backgroundColor: '#FFF8E2', borderColor: '#D8B866', borderRadius: 8, borderWidth: 1, height: 16, justifyContent: 'center', position: 'absolute', right: -3, top: -3, width: 16 },
-  announcementActionText: { color: '#735B1B' },
-  newAnnouncementCard: { alignItems: 'center', backgroundColor: '#FFF9E8', borderColor: '#D8B866', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 12, padding: 16 },
-  newAnnouncementIcon: { alignItems: 'center', backgroundColor: '#F3E5B9', borderRadius: 22, height: 44, justifyContent: 'center', width: 44 },
-  newAnnouncementContent: { flex: 1 },
-  newAnnouncementEyebrow: { color: '#735B1B', fontSize: 12, fontWeight: '900', letterSpacing: 0.3, textTransform: 'uppercase' },
-  newAnnouncementTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '800', marginTop: 4 },
-  newAnnouncementPreview: { color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginTop: 4 },
-  newAnnouncementAction: { color: '#735B1B', fontSize: 12, fontWeight: '800', marginTop: 8 },
   actionIcon: {
     width: 44,
     height: 44,
