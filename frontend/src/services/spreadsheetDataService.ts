@@ -6,6 +6,10 @@ import { Platform } from 'react-native';
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 1500;
+// Cached attendee data is still usable offline, but native clients refresh it
+// at least every 15 minutes when connectivity is available. Web reads refresh
+// immediately so reconnects do not leave a stale schedule or vendor catalog.
+const CACHE_MAX_AGE_MS = 15 * 60 * 1000;
 const CACHE_KEY_PREFIX = 'ipm_supabase_cache:ipm-2026-production';
 const EXISTING_SHARED_CACHE_KEY_PREFIX = 'ipm_supabase_cache:v1';
 const LEGACY_CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
@@ -276,12 +280,15 @@ export async function fetchCachedApiData<T>({
   };
 
   if (cachedData) {
-    void refresh()
-      .then((result) => onBackgroundRefresh?.(result))
-      .catch((error) => {
-        console.warn('Background API refresh failed:', error);
-        onBackgroundRefreshError?.(error);
-      });
+    const shouldRefresh = cachedData.cacheAge >= CACHE_MAX_AGE_MS || Platform.OS === 'web';
+    if (shouldRefresh) {
+      void refresh()
+        .then((result) => onBackgroundRefresh?.(result))
+        .catch((error) => {
+          console.warn('Background API refresh failed:', error);
+          onBackgroundRefreshError?.(error);
+        });
+    }
     return cachedData;
   }
 
