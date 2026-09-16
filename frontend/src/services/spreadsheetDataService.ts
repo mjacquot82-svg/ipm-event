@@ -44,7 +44,7 @@ export type SupabaseFetchOptions<T> = {
   onBackgroundRefreshError?: (error: unknown) => void;
 };
 
-export type EventImage = { url: string; alt: string; width: number; height: number };
+export type EventImage = { url: string; alt: string; width: number; height: number; crop?: 'top-square' };
 export type EventExternalLink = { label: string; url: string };
 
 export type ScheduleEvent = {

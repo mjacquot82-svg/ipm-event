@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "source": "ipm_dirtworks_2026_official_graphics",
+  "timezone": "America/Toronto",
+  "sources": [
+    {
+      "path": "data/IMG_20260915_133702.png",
+      "sha256": "f2e6330bb8190394f0c9068740cd813b56789b643d82209a3da00158374df455"
+    },
+    {
+      "path": "data/IMG_20260915_133655.png",
+      "sha256": "3e899f6a3ab305c183b4d3026e235b85ae6e406cb5d22f5f1a505636f4199be8"
+    }
+  ],
+  "asset": "frontend/public/event-media/dirtworks-demo-field-3e899f6a3ab3.png",
+  "events": [
+    {
+      "external_id": "2026-09-22-dirtworks-mini-ex-rodeo",
+      "date": "2026-09-22",
+      "start_time": "2:00 PM",
+      "end_time": "3:00 PM",
+      "title": "Mini Ex Rodeo",
+      "description": "Dealer Demo: See mini excavators in action at the DirtWorks Demo Field and get an up-close look at what these machines can do. Live equipment demonstrations and operator challenges.",
+      "category": "DirtWorks Demo Field",
+      "location_name": "DirtWorks Demo Field",
+      "days_active": "Tuesday",
+      "event_image": {
+        "url": "https://staging.theipm.ca/event-media/dirtworks-demo-field-3e899f6a3ab3.png",
+        "alt": "Official DirtWorks Demo Field poster: equipment demonstrations and operator challenges, September 22–26, 2026",
+        "width": 1320,
+        "height": 2868
+      },
+      "external_links": [
+        {
+          "label": "View the full DirtWorks poster",
+          "url": "https://staging.theipm.ca/event-media/dirtworks-demo-field-3e899f6a3ab3.png"
+        }
+      ]
+    },
+    {
+      "external_id": "2026-09-23-dirtworks-track-loader-rodeo",
+      "date": "2026-09-23",
+      "start_time": "2:00 PM",
+      "end_time": "3:00 PM",
+      "title": "Track Loader Rodeo",
+      "description": "Dealer Demo: See track loaders in action at the DirtWorks Demo Field and get an up-close look at what these machines can do. Live equipment demonstrations and operator challenges.",
+      "category": "DirtWorks Demo Field",
+      "location_name": "DirtWorks Demo Field",
+      "days_active": "Wednesday",
+      "event_image": {
+        "url": "https://staging.theipm.ca/event-media/dirtworks-demo-field-3e899f6a3ab3.png",
+        "alt": "Official DirtWorks Demo Field poster: equipment demonstrations and operator challenges, September 22–26, 2026",
+        "width": 1320,
+        "height": 2868
+      },
+      "external_links": [
+        {
+          "label": "View the full DirtWorks poster",
+          "url": "https://staging.theipm.ca/event-media/dirtworks-demo-field-3e899f6a3ab3.png"
+        }
+      ]
+    },
+    {
+      "external_id": "2026-09-24-dirtworks-mini-ex-rodeo",
+      "date": "2026-09-24",
+      "start_time": "2:00 PM",
+      "end_time": "3:00 PM",
+      "title": "Mini Ex Rodeo",
+      "description": "Dealer Demo: See mini excavators in action at the DirtWorks Demo Field and get an up-close look at what these machines can do. Live equipment demonstrations and operator challenges.",
+      "category": "DirtWorks Demo Field",
+      "location_name": "DirtWorks Demo Field",
+      "days_active": "Thursday",
+      "event_image": {
+        "url": "https://staging.theipm.ca/event-media/dirtworks-demo-field-3e899f6a3ab3.png",
+        "alt": "Official DirtWorks Demo Field poster: equipment demonstrations and operator challenges, September 22–26, 2026",
+        "width": 1320,
+        "height": 2868
+      },
+      "external_links": [
+        {
+          "label": "View the full DirtWorks poster",
+          "url": "https://staging.theipm.ca/event-media/dirtworks-demo-field-3e899f6a3ab3.png"
+        }
+      ]
+    },
+    {
+      "external_id": "2026-09-25-dirtworks-track-loader-rodeo",
+      "date": "2026-09-25",
+      "start_time": "12:00 PM",
+      "end_time": "1:00 PM",
+      "title": "Track Loader Rodeo",
+      "description": "Dealer Demo: See track loaders in action at the DirtWorks Demo Field and get an up-close look at what these machines can do. Live equipment demonstrations and operator challenges.",
+      "category": "DirtWorks Demo Field",
+      "location_name": "DirtWorks Demo Field",
+      "days_active": "Friday",
+      "event_image": {
+        "url": "https://staging.theipm.ca/event-media/dirtworks-demo-field-3e899f6a3ab3.png",
+        "alt": "Official DirtWorks Demo Field poster: equipment demonstrations and operator challenges, September 22–26, 2026",
+        "width": 1320,
+        "height": 2868
+      },
+      "external_links": [
+        {
+          "label": "View the full DirtWorks poster",
+          "url": "https://staging.theipm.ca/event-media/dirtworks-demo-field-3e899f6a3ab3.png"
+        }
+      ]
+    },
+    {
+      "external_id": "2026-09-26-dirtworks-compact-ride-and-drive",
+      "date": "2026-09-26",
+      "start_time": "12:00 PM",
+      "end_time": "1:00 PM",
+      "title": "Compact Ride & Drive",
+      "description": "Dealer Demo: See compact tractors in action at the DirtWorks Demo Field and get an up-close look at what these machines can do. Part of the DirtWorks live equipment demonstration program.",
+      "category": "DirtWorks Demo Field",
+      "location_name": "DirtWorks Demo Field",
+      "days_active": "Saturday",
+      "event_image": {
+        "url": "https://staging.theipm.ca/event-media/dirtworks-demo-field-3e899f6a3ab3.png",
+        "alt": "Official DirtWorks Demo Field poster: equipment demonstrations and operator challenges, September 22–26, 2026",
+        "width": 1320,
+        "height": 2868
+      },
+      "external_links": [
+        {
+          "label": "View the full DirtWorks poster",
+          "url": "https://staging.theipm.ca/event-media/dirtworks-demo-field-3e899f6a3ab3.png"
+        }
+      ]
+    }
+  ]
+}

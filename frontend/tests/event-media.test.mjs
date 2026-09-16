@@ -36,3 +36,24 @@ test('repeat appearances reference the same approved asset', () => {
   assert.equal(new Set(assets.map(x=>x.asset)).size,3);
   assert.ok(assets.every(x=>x.alt.trim()));
 });
+
+test('Nicole uses the source-identical portrait with an opt-in top-square display crop', () => {
+  const content=JSON.parse(readFileSync(new URL('../../backend/import_manifests/nicole_schneider_20260915.json',import.meta.url)));
+  const html=render({image:content.patch.event_image});
+  assert.match(html,/data-testid="event-image-top-crop"/);
+  assert.match(html,/aspect-ratio:1/);
+  assert.match(html,/overflow-x:hidden/);
+  assert.match(html,/overflow-y:hidden/);
+  assert.match(html,/nicole-schneider-21a20f01ecdd.jpg/);
+  assert.doesNotMatch(render({image}),/event-image-top-crop/);
+  assert.equal(content.external_id,'2026-09-25-quality-homes-m15');
+  assert.deepEqual(Object.keys(content.patch).sort(),['description','event_image','title']);
+  assert.equal(content.before.start_date,'2026-09-25');
+  assert.equal(content.before.start_time,'12:15 PM');
+  assert.equal(content.before.end_time,'1:15 PM');
+  assert.equal(content.before.location_name,'Quality Homes - Stage');
+  assert.equal(content.before.category,'MNP Lifestyles Tent Events');
+  assert.ok(content.patch.description.includes('Porterhouse – Flowers By Usss'));
+  assert.ok(content.patch.description.endsWith('I look forward to seeing everyone!'));
+});
+
