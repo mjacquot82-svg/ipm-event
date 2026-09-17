@@ -390,14 +390,43 @@ export default function AdminDashboardScreen() {
   };
 
   const sendAnnouncementNotification = async (audience: 'test' | 'everyone') => {
-    if (!editingAnnouncement || notificationRequestInFlight.current || announcementSaving) return;
+    if (notificationRequestInFlight.current || announcementSaving) return;
     notificationRequestInFlight.current = true;
     setNotificationAction({ audience, status: 'sending', message: null });
     setAnnouncementsError(null);
     try {
+      // A new form has no ID until it is persisted. Save it as a draft at the
+      // confirmation boundary, then use the returned ID for the publish-and-send
+      // transaction. Never silently return from the final confirmation action.
+      let announcement = editingAnnouncement;
+      if (!announcement) {
+        if (!announcementForm.title.trim() || !announcementForm.message.trim()) {
+          throw new Error('Title and message are required before sending.');
+        }
+        setAnnouncementSaving(true);
+        try {
+          announcement = await createAnnouncement({ ...announcementForm, status: 'draft' });
+          setAnnouncements((current) => [announcement as Announcement, ...current.filter((item) => item.id !== announcement?.id)]);
+          setAnnouncementForm({
+            title: announcement.title,
+            message: announcement.message,
+            priority: announcement.priority,
+            expires_at: announcement.expires_at,
+            status: announcement.status,
+            image: announcement.image || null,
+          });
+          setEditingAnnouncement(announcement);
+          setAnnouncementEditorMode('edit');
+        } finally {
+          setAnnouncementSaving(false);
+        }
+      }
+      if (!announcement?.id) {
+        throw new Error('Announcement could not be saved. Please review the form and try again.');
+      }
       await (audience === 'test'
-        ? sendAnnouncementTestNotification(editingAnnouncement.id)
-        : publishAndSendAnnouncement(editingAnnouncement.id));
+        ? sendAnnouncementTestNotification(announcement.id)
+        : publishAndSendAnnouncement(announcement.id));
       setNotificationAction({
         audience,
         status: 'sent',
