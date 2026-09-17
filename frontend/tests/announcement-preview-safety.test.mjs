@@ -25,6 +25,15 @@ test('preview actions expose the harmless safety message', () => {
   assert.match(admin, /isDeployPreviewRuntime\(\)/);
 });
 
+test('preview allows confirmation review but intercepts final send and publish actions', () => {
+  assert.match(admin, /const hasRequiredContent = Boolean\(form\.title\.trim\(\) && form\.message\.trim\(\)\)/);
+  assert.doesNotMatch(admin, /!editingAnnouncement \|\| notificationDisabled/);
+  assert.match(admin, /setConfirmEveryone\(true\)/);
+  assert.match(admin, /if \(isDeployPreviewRuntime\(\)\)/);
+  assert.match(admin, /onPreviewSendBlocked\(\)/);
+  assert.match(admin, /onPreviewPublishBlocked\(\)/);
+});
+
 test('notification preview preserves image proportions instead of forcing a crop', () => {
   assert.match(admin, /maxWidth: '100%', maxHeight: 180/);
   assert.match(admin, /width: 'auto', height: 'auto'/);

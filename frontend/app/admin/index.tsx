@@ -56,6 +56,7 @@ import {
   logoutOrganizer,
   publishAndSendAnnouncement,
   OrganizerUser,
+  PREVIEW_ONLY_MESSAGE,
   sendAnnouncementTestNotification,
   updateAdminVendor,
   updateAnnouncement,
@@ -725,6 +726,8 @@ export default function AdminDashboardScreen() {
           onSave={saveAnnouncement}
           onSendTest={() => sendAnnouncementNotification('test')}
           onNotifyEveryone={() => sendAnnouncementNotification('everyone')}
+          onPreviewSendBlocked={() => setNotificationAction({ audience: 'everyone', status: 'failed', message: PREVIEW_ONLY_MESSAGE })}
+          onPreviewPublishBlocked={() => setAnnouncementsError(PREVIEW_ONLY_MESSAGE)}
           onUploadImage={uploadEditorImage}
           onRemoveImage={removeEditorImage}
         />
@@ -1601,7 +1604,7 @@ function AnnouncementsPage({
   announcements, totalCount, loading, error, search, editorMode, form, saving,
   saveMessage, notificationAction, deliveryStats,
   editingAnnouncement, showTestAction, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
-  onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone, onUploadImage, onRemoveImage,
+  onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone, onPreviewSendBlocked, onPreviewPublishBlocked, onUploadImage, onRemoveImage,
 }: {
   announcements: Announcement[]; totalCount: number; loading: boolean; error: string | null;
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
@@ -1612,7 +1615,7 @@ function AnnouncementsPage({
   onStatusChange: (item: Announcement, status: AnnouncementStatus) => void;
   onDelete: (item: Announcement) => void; onFormChange: (value: AnnouncementPayload) => void;
   onCloseEditor: () => void; onSave: (status: AnnouncementStatus) => void;
-  onSendTest: () => void; onNotifyEveryone: () => void;
+  onSendTest: () => void; onNotifyEveryone: () => void; onPreviewSendBlocked: () => void; onPreviewPublishBlocked: () => void;
   onUploadImage: (file: Blob, filename: string) => Promise<void>;
   onRemoveImage: () => Promise<void>;
 }) {
@@ -1638,7 +1641,7 @@ function AnnouncementsPage({
           saveMessage={saveMessage} notificationAction={notificationAction}
           showTestAction={showTestAction}
           onChange={onFormChange} onClose={onCloseEditor} onSave={onSave}
-          onSendTest={onSendTest} onNotifyEveryone={onNotifyEveryone}
+          onSendTest={onSendTest} onNotifyEveryone={onNotifyEveryone} onPreviewSendBlocked={onPreviewSendBlocked} onPreviewPublishBlocked={onPreviewPublishBlocked}
           onUploadImage={onUploadImage} onRemoveImage={onRemoveImage}
         />
       )}
@@ -1692,13 +1695,13 @@ function AnnouncementsPage({
 
 function AnnouncementEditor({
   mode, form, saving, saveMessage, notificationAction, editingAnnouncement, showTestAction,
-  onChange, onClose, onSave, onSendTest, onNotifyEveryone, onUploadImage, onRemoveImage,
+  onChange, onClose, onSave, onSendTest, onNotifyEveryone, onPreviewSendBlocked, onPreviewPublishBlocked, onUploadImage, onRemoveImage,
 }: {
   mode: Exclude<AnnouncementEditorMode, 'closed'>; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
   editingAnnouncement: Announcement | null; showTestAction: boolean; onChange: (value: AnnouncementPayload) => void;
   onClose: () => void; onSave: (status: AnnouncementStatus) => void;
-  onSendTest: () => void; onNotifyEveryone: () => void;
+  onSendTest: () => void; onNotifyEveryone: () => void; onPreviewSendBlocked: () => void; onPreviewPublishBlocked: () => void;
   onUploadImage: (file: Blob, filename: string) => Promise<void>;
   onRemoveImage: () => Promise<void>;
 }) {
@@ -1724,6 +1727,7 @@ function AnnouncementEditor({
     || imagePath !== savedImagePath
   ));
   const notificationDisabled = saving || isSending || imageBusy || isExpired || hasUnsavedChanges;
+  const hasRequiredContent = Boolean(form.title.trim() && form.message.trim());
   const notificationTitle = shortenNotificationText(form.title, 100);
   const notificationMessage = shortenNotificationText(form.message, 255);
 
@@ -1853,7 +1857,7 @@ function AnnouncementEditor({
         <Pressable style={[styles.previewButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => setShowPreview(true)} disabled={saving || isSending}>
           <Feather name="eye" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Preview</Text>
         </Pressable>
-        <Pressable style={[styles.saveButton, (saving || isSending || !editingAnnouncement || notificationDisabled) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={saving || isSending || !editingAnnouncement || notificationDisabled}>
+        <Pressable style={[styles.saveButton, (saving || isSending || !hasRequiredContent || notificationDisabled) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={saving || isSending || !hasRequiredContent || notificationDisabled}>
           {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
           <Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Send to Attendees'}</Text>
         </Pressable>
@@ -1888,7 +1892,14 @@ function AnnouncementEditor({
             </View>
             <View style={styles.editorActions}>
               <Pressable style={[styles.cancelButton, isSending && styles.buttonDisabled]} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
-              <Pressable style={[styles.dangerButton, isSending && styles.buttonDisabled]} disabled={isSending} onPress={() => { onNotifyEveryone(); }}>
+              <Pressable style={[styles.dangerButton, isSending && styles.buttonDisabled]} disabled={isSending} onPress={() => {
+                if (isDeployPreviewRuntime()) {
+                  setConfirmEveryone(false);
+                  onPreviewSendBlocked();
+                  return;
+                }
+                onNotifyEveryone();
+              }}>
                 {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Send to Attendees'}</Text>
               </Pressable>
             </View>
@@ -1898,7 +1909,7 @@ function AnnouncementEditor({
       <Modal visible={confirmPublish} transparent animationType="fade" onRequestClose={() => setConfirmPublish(false)}>
         <View style={styles.modalBackdrop}><View style={styles.confirmDialog} accessibilityRole="alert">
           <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Publish this announcement to the app?</Text><Text style={styles.confirmSubtitle}>This will make the announcement and image visible to everyone using the IPM app. No push notification will be sent.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmPublish(false)}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
-          <View style={styles.editorActions}><Pressable style={styles.cancelButton} onPress={() => setConfirmPublish(false)}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable><Pressable style={styles.saveButton} onPress={() => { setConfirmPublish(false); onSave('published'); }}><Feather name="upload" size={17} color="#FFFFFF" /><Text style={styles.saveButtonText}>Publish to App</Text></Pressable></View>
+          <View style={styles.editorActions}><Pressable style={styles.cancelButton} onPress={() => setConfirmPublish(false)}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable><Pressable style={styles.saveButton} onPress={() => { setConfirmPublish(false); if (isDeployPreviewRuntime()) { onPreviewPublishBlocked(); return; } onSave('published'); }}><Feather name="upload" size={17} color="#FFFFFF" /><Text style={styles.saveButtonText}>Publish to App</Text></Pressable></View>
         </View></View>
       </Modal>
       <Modal visible={showPreview} transparent animationType="fade" onRequestClose={() => setShowPreview(false)}>
