@@ -16,7 +16,7 @@ import colors from '../theme/colors';
 import { tentedCityVendors } from '../data/tentedCityVendors';
 import { tentedCityVenues } from '../config/tentedCityVenues';
 import type { Rect, TentedCityPlace } from '../config/tentedCityTypes';
-import { findTentedCityPlace, placeRect, placeTitle } from '../config/tentedCitySearch';
+import { findTentedCityPlace, findTentedCityPlaceByIdentity, placeRect, placeTitle } from '../config/tentedCitySearch';
 import { searchEventMap, type EventMapHit } from '../config/mapSearch';
 import { tentedCityLayerLayout, tentedCityPaintViewport } from '../config/tentedCityLayout';
 import { boothHighlightStyle } from '../config/tentedCityHighlight';
@@ -75,9 +75,9 @@ const FILTERS: { id: FilterId; label: string }[] = [
 ];
 
 export default function TentedCityMap({
-  initialQuery = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds, hideModeSelector = false,
+  initialQuery = '', initialVendorName = '', initialVendorLocation = '', initialVendorType = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds, hideModeSelector = false,
 }: {
-  initialQuery?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: (location?: string) => void; hideModeSelector?: boolean;
+  initialQuery?: string | null; initialVendorName?: string | null; initialVendorLocation?: string | null; initialVendorType?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: (location?: string) => void; hideModeSelector?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
@@ -230,7 +230,9 @@ export default function TentedCityMap({
   useEffect(() => {
     setUnmappedInitialLocation(false);
     if (mapUnavailable || !initialQuery) return;
-    const place = findTentedCityPlace(initialQuery, tentedCityVendors);
+    const place = initialVendorName && initialVendorLocation
+      ? findTentedCityPlaceByIdentity(initialVendorName, initialVendorLocation, tentedCityVendors, initialVendorType?.toLowerCase())
+      : findTentedCityPlace(initialQuery, tentedCityVendors);
     if (!place) {
       const semanticArea = findSemanticAreaForLocation(initialQuery);
       if (semanticArea) selectSemanticArea(semanticArea);
@@ -265,7 +267,7 @@ export default function TentedCityMap({
     }
     selectPlace(place, placeTitle(place));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuery, mapUnavailable, exactInitialPlace, viewport.width]);
+  }, [initialQuery, initialVendorName, initialVendorLocation, initialVendorType, mapUnavailable, exactInitialPlace, viewport.width]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return undefined;

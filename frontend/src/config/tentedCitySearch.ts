@@ -79,6 +79,20 @@ export function findTentedCityPlace(
   return fuzzy ? { kind: 'vendor', vendor: fuzzy } : undefined;
 }
 
+/** Resolve one underlying map record after a specific location was selected. */
+export function findTentedCityPlaceByIdentity(
+  name: string,
+  locationLabel: string,
+  vendors: TentedCityVendor[],
+  category?: string,
+): TentedCityPlace | undefined {
+  const normalizedName = norm(name);
+  const matches = vendors.filter(
+    (vendor) => norm(vendor.name) === normalizedName && vendor.locationLabel === locationLabel && (!category || norm(vendor.category) === norm(category)),
+  );
+  return matches.length === 1 ? { kind: 'vendor', vendor: matches[0] } : undefined;
+}
+
 /**
  * Resolve a usable map rect for a place. Stages with rect:null and a
  * parentVenueId fall back to the parent venue geometry (e.g. MNP Lifestyles
@@ -117,4 +131,3 @@ export function resolveMapTypeForLocation(
   if (query && findSemanticAreaForLocation(query)) return 'tented';
   return 'grounds';
 }
-

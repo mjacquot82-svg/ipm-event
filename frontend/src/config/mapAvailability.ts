@@ -19,3 +19,12 @@ export function vendorHasTrustedMapGeometry(name: string): boolean {
   const vendor = tentedCityVendors.find((item) => item.name === resolved.query);
   return Boolean(vendor && hasTrustedMapGeometry({ kind: 'vendor', vendor }));
 }
+
+/** Resolve a specific vendor destination without guessing between duplicate names. */
+export function vendorHasTrustedMapGeometryAt(name: string, location: string): boolean {
+  const normalizedName = name.trim().toLowerCase().replace(/[’']/g, "'");
+  const match = tentedCityVendors.filter(
+    (item) => item.name.trim().toLowerCase().replace(/[’']/g, "'") === normalizedName && item.locationLabel === location,
+  );
+  return match.length === 1 && hasTrustedMapGeometry({ kind: 'vendor', vendor: match[0] });
+}

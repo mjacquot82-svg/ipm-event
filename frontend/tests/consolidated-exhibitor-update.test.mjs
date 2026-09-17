@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import test from 'node:test';
+import ts from 'typescript';
+
+const require = createRequire(import.meta.url);
 
 const root = new URL('..', import.meta.url);
 const catalog = JSON.parse(fs.readFileSync(new URL('public/api/vendors.json', root))).vendors;
@@ -26,6 +30,16 @@ const artisan = [
   ['Wildflower Designs, Shallow Lake', 'Artisan Tent'],
 ];
 const orange = ['Norfolk Drone Services', 'Iron-Haven Structures', 'Doc MacCheesey', 'Turquesa Mexican Food', 'Chepstow & District Lions Club', "Tilly's Fresh Fair Style Lemonade", 'Little Bowl', 'The Back 40 Smoke Box'];
+
+function loadTypeScript(relative) {
+  const filename = new URL(relative, root);
+  const code = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+  }).outputText;
+  const mod = { exports: {} };
+  new Function('require', 'module', 'exports', code)(require, mod, mod.exports);
+  return mod.exports;
+}
 
 test('live baseline reconciles to the approved 231-record candidate', () => {
   assert.equal(catalog.length, 231);
@@ -68,4 +82,32 @@ test('already-correct, holds, and orange exclusions remain protected', () => {
     assert.equal(catalog.some((v) => v.name === name), false, name);
     assert.equal(mapSource.includes(`"name":"${name}"`), false, name);
   }
+});
+
+test('Beef Farmers is one attendee group with two preserved, friendly locations', () => {
+  const { groupVendorsForAttendees } = loadTypeScript('src/config/vendorPresentation.ts');
+  const beef = catalog.filter((vendor) => vendor.name.includes('Beef Farmers'));
+  const groups = groupVendorsForAttendees(beef);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].locations.length, 2);
+  assert.deepEqual(groups[0].locations.map((location) => [location.record.type, location.displayLocation, location.mapLocation]), [
+    ['Outdoor', '2B-08–09', '2B-08–09'],
+    ['Indoor', 'Hydro One Education Area', 'SOUTH-4'],
+  ]);
+  assert.notEqual(groups[0].locations[0].record.id, groups[0].locations[1].record.id);
+});
+
+test('multi-location navigation is structured while ambiguous free-text remains guarded', () => {
+  const vendorsSource = fs.readFileSync(new URL('../app/(tabs)/vendors.tsx', import.meta.url), 'utf8');
+  const mapSourceFile = fs.readFileSync(new URL('../app/(tabs)/map.tsx', import.meta.url), 'utf8');
+  const mapComponent = fs.readFileSync(new URL('../src/components/TentedCityMap.tsx', import.meta.url), 'utf8');
+  const searchSource = fs.readFileSync(new URL('../src/config/tentedCitySearch.ts', import.meta.url), 'utf8');
+  const resolverSource = fs.readFileSync(new URL('../src/config/vendorMapCrosswalk.ts', import.meta.url), 'utf8');
+  assert.match(vendorsSource, /vendorName: record\.name/);
+  assert.match(vendorsSource, /vendorLocation: mapLocation/);
+  assert.match(vendorsSource, /item\.locations\.length > 1/);
+  assert.match(mapSourceFile, /initialVendorName={vendorName}/);
+  assert.match(mapComponent, /findTentedCityPlaceByIdentity/);
+  assert.match(searchSource, /matches\.length === 1/);
+  assert.match(resolverSource, /if \(exact\.length > 1\) return \{ status: 'unmapped' \}/);
 });
