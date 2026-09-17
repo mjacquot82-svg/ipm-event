@@ -517,7 +517,7 @@
       "id": "4ca16511-186c-5a9b-b737-49f74ae85cad",
       "name": "Eastern Silk Road, Kitchener",
       "type": "Outdoor",
-      "location": "4B-04",
+      "location": "4B-02",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -940,7 +940,7 @@
       "id": "319f7c2d-22e3-4945-8c4d-caa3d9ad7ff4",
       "name": "JW Custom Fab, Cargill",
       "type": "Outdoor",
-      "location": "5A-21",
+      "location": "2A-16",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2011,57 +2011,12 @@
       "id": "079016da-3510-5e2d-a127-c2eb0b5f9810",
       "name": "Your Ultimate Structures Inc., Beachville",
       "type": "Outdoor",
-      "location": "2A-09",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "9ef92046-0bef-557b-9739-8c0a90888010",
-      "name": "National Energy Equipment Inc.",
-      "type": "Outdoor",
-      "location": "2B-15",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "9e597f9a-0607-567e-816e-8f58904a308d",
-      "name": "Weldesign Hardware Inc., Burgessville",
-      "type": "Outdoor",
-      "location": "2B-22",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "bdb80694-dc56-54c3-a75d-e087aa2fe2cc",
-      "name": "Huron-Bruce Provincial Liberal Association",
-      "type": "Outdoor",
-      "location": "3A-06",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "cbc1c263-8e96-508b-9aa2-e6b9508b43b8",
-      "name": "CSN Auto Reset Group",
-      "type": "Outdoor",
-      "location": "4B-02",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "054d5eeb-3c43-5637-8086-0740fa345d33",
-      "name": "Maple Court Retirement",
-      "type": "Outdoor",
-      "location": "4B-08",
+      "location": "2B-09",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
     }
   ],
-  "last_updated": "2026-09-17T00:00:00.000Z",
-  "total_count": 229
+  "last_updated": "2026-09-12T14:28:36.762Z",
+  "total_count": 224
 }
