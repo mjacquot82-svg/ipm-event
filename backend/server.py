@@ -1892,6 +1892,37 @@ async def notify_announcement_everyone(
     return await notify_announcement(announcement_id, "everyone", current_user)
 
 
+@api_router.post(
+    "/admin/announcements/{announcement_id}/send",
+    response_model=NotificationDeliveryResponse,
+)
+async def publish_and_send_announcement(
+    announcement_id: str,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    """Publish the current announcement, then attempt exactly one broad push.
+
+    Publication is deliberately completed before the notification path is entered.
+    A failed publication therefore cannot produce a push request; delivery records
+    retain the existing uniqueness/idempotency protections for duplicate clicks.
+    """
+    require_announcement_manager_role(current_user)
+    service = require_announcement_service()
+    event_id = get_admin_event_id(current_user)
+    current = await service.get(announcement_id, event_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    payload = AnnouncementPayload(
+        title=current["title"], message=current["message"], priority=current["priority"],
+        expires_at=current.get("expires_at"), status="published", image=current.get("image"),
+    )
+    validate_announcement_payload(payload)
+    published = await service.set_status(announcement_id, "published", event_id)
+    if not published:
+        raise HTTPException(status_code=409, detail="Announcement could not be published")
+    return await notify_announcement(announcement_id, "everyone", current_user)
+
+
 def notification_device_headers(request: Request) -> tuple[str, str]:
     installation_id = request.headers.get("X-WonderPush-Installation-Id", "").strip()
     capability = request.headers.get("X-Notification-Device-Capability", "").strip()
