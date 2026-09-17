@@ -9,7 +9,7 @@ export const DESKTOP_MAP_MAX_WIDTH = 1360;
 const HEADER = 120;
 const FOOTER = 64;
 const INSET = 16;
-const ASPECTS = { grounds: GROUNDS_IMAGE_ASPECT, tented: TENTED_CITY_IMAGE_ASPECT, rv: RV_PARK_IMAGE_ASPECT };
+const ASPECTS = { grounds: GROUNDS_IMAGE_ASPECT, tented: TENTED_CITY_IMAGE_ASPECT, rv: RV_PARK_IMAGE_ASPECT, entrances: 2977 / 2105 };
 type MapKind = keyof typeof ASPECTS;
 
 /** A full-artwork desktop frame; mobile and the map engine keep their existing sizing. */

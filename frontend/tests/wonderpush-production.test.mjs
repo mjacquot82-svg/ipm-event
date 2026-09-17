@@ -13,11 +13,11 @@ test('production frontend reads WonderPush configuration from deployment environ
   assert.doesNotMatch(service, /staging\.theipm\.ca|ipm-staging/);
 });
 
-test('normal announcement delivery has TTL and idempotency but no campaignId', () => {
+test('normal announcement delivery has TTL and idempotency; campaign IDs are only recorded after provider delivery', () => {
   const block = backend.slice(backend.indexOf('async def notify_announcement('), backend.indexOf('@api_router.post(\n    "/admin/announcements/{announcement_id}/notify/test"'));
   assert.match(block, /announcement_expiration_time/);
   assert.match(block, /idempotency_key=/);
-  assert.doesNotMatch(block, /campaign_id=/);
+  assert.match(block, /campaign_id=/);
   assert.match(provider, /X-WonderPush-Idempotency-Key/);
 });
 

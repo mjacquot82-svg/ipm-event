@@ -14,6 +14,7 @@ import { mapLocations } from '../../src/config/mapLocations';
 import { findTentedCityPlace, resolveMapTypeForLocation } from '../../src/config/tentedCitySearch';
 import { tentedCityVendors } from '../../src/data/tentedCityVendors';
 import { resolveGroundsZone } from '../../src/config/groundsZones';
+import EntrancesParkingMap from '../../src/components/EntrancesParkingMap';
 
 function paramStr(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
@@ -29,7 +30,7 @@ function resolveInitialMode(args: {
 }): MapMode {
   const { mapType, location, source, unavailable, verify1A } = args;
   // Explicit route param wins — schedule/vendors set this so mode does not depend on remount.
-  if (mapType === 'tented' || mapType === 'grounds' || mapType === 'rv') return mapType;
+  if (mapType === 'tented' || mapType === 'grounds' || mapType === 'rv' || mapType === 'entrances') return mapType;
   const groundsZone = resolveGroundsZone(location || null);
   if (groundsZone?.id === 'rv-park' && source === 'rv-detail') return 'rv';
   if (unavailable || verify1A) return 'tented';
@@ -141,6 +142,7 @@ export default function MapScreen() {
           />
         </View>
       ) : null}
+      {mode === 'entrances' ? <View style={styles.entrances}><EntrancesParkingMap /></View> : null}
       {selector}
     </View>
   );
@@ -152,6 +154,7 @@ const styles = StyleSheet.create({
   tentedHostHidden: { opacity: 0, zIndex: 0 },
   grounds: { ...StyleSheet.absoluteFillObject, zIndex: 2, backgroundColor: colors.background },
   rvHost: { ...StyleSheet.absoluteFillObject, zIndex: 3, backgroundColor: colors.background },
+  entrances: { ...StyleSheet.absoluteFillObject, zIndex: 3, backgroundColor: colors.background },
   selectorHost: {
     position: 'absolute',
     top: 8,

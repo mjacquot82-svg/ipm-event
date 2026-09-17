@@ -4,12 +4,13 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import colors from '../theme/colors';
 
-export type MapMode = 'grounds' | 'tented' | 'rv';
+export type MapMode = 'grounds' | 'tented' | 'rv' | 'entrances';
 
 export const MAP_MODE_OPTIONS: { id: MapMode; label: string; accessibilityLabel: string }[] = [
   { id: 'grounds', label: 'Grounds', accessibilityLabel: 'Show grounds map' },
   { id: 'tented', label: 'Tented City', accessibilityLabel: 'Show tented city map' },
   { id: 'rv', label: 'Camping Map', accessibilityLabel: 'Show camping map' },
+  { id: 'entrances', label: 'Entrances/Parking', accessibilityLabel: 'Show entrances and parking map' },
 ];
 
 export default function MapModeSelector({
