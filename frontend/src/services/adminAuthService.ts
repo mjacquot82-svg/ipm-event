@@ -228,6 +228,25 @@ function getEventId(eventId?: string) {
   return eventId?.trim() || process.env.EXPO_PUBLIC_EVENT_ID || DEFAULT_EVENT_ID;
 }
 
+export const PREVIEW_ONLY_MESSAGE = 'Preview only — nothing was sent or published.';
+
+/** True only for Netlify deploy-preview hosts; production remains fully enabled. */
+export function isDeployPreviewRuntime(): boolean {
+  if (typeof window === 'undefined') return false;
+  const hostname = window.location.hostname.toLowerCase();
+  return hostname.endsWith('.netlify.app') && !hostname.endsWith('.theipm.ca');
+}
+
+function isPreviewProtectedAdminWrite(path: string, method: string): boolean {
+  if (!isDeployPreviewRuntime()) return false;
+  const normalizedMethod = method.toUpperCase();
+  if (normalizedMethod === 'GET' || normalizedMethod === 'HEAD' || normalizedMethod === 'OPTIONS') return false;
+  // Authentication endpoints are retained so reviewers can reach the real admin UI;
+  // every other admin mutation is blocked before it can reach the production API.
+  if (path.startsWith('/api/admin/auth/')) return false;
+  return path.startsWith('/api/admin/');
+}
+
 export class AdminRequestError extends Error {
   status: number;
 
@@ -239,6 +258,9 @@ export class AdminRequestError extends Error {
 }
 
 export async function adminRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  if (isPreviewProtectedAdminWrite(path, String(options.method || 'GET'))) {
+    throw new Error(PREVIEW_ONLY_MESSAGE);
+  }
   const headers = new Headers(options.headers || {});
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   if (!isFormData && !headers.has('Content-Type')) {
@@ -406,6 +428,12 @@ export function notifyEveryoneForAnnouncement(id: string) {
     `/api/admin/announcements/${encodeURIComponent(id)}/notify/everyone`,
     { method: 'POST' }
   );
+}
+
+export function publishAndSendAnnouncement(id: string) {
+  return adminRequest<NotificationDelivery>(`/api/admin/announcements/${encodeURIComponent(id)}/send`, {
+    method: 'POST',
+  });
 }
 
 export function listScheduleEvents() {

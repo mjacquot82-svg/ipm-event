@@ -17,6 +17,43 @@ const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
 // Navigation and installation share a last-known-good shell across worker
 // versions. Activation must not delete a concurrent navigation's cached result.
 const IPM_SHELL_CACHE = `${IPM_CACHE_PREFIX}current-v1`;
+const IPM_RUNTIME_CACHE = `${IPM_CACHE_PREFIX}runtime-v1`;
+const IPM_RUNTIME_MAX_ENTRIES = 40;
+// Approved attendee event media is served from the canonical production host
+// even when the installed preview is hosted on a Netlify origin.
+const IPM_RUNTIME_MEDIA_HOSTS = new Set([
+  self.location.hostname,
+  'theipm.ca',
+  'staging.theipm.ca',
+]);
+
+function runtimeAssetKind(url) {
+  const path = url.pathname.toLowerCase();
+  if ((path.includes('/event-media/') && IPM_RUNTIME_MEDIA_HOSTS.has(url.hostname))
+    || (path.includes('/assets/node_modules/@expo/vector-icons/') && path.endsWith('.ttf'))
+    || path.includes('grounds-site-map')
+    || path.includes('tented-city-map-app-ready')
+    || path.includes('rv-park-detail-map')) return 'media';
+  return null;
+}
+
+async function cacheRuntimeAsset(request) {
+  const cache = await caches.open(IPM_RUNTIME_CACHE);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  try {
+    const response = await fetch(request);
+    if (response.ok || response.type === 'opaque') {
+      await cache.put(request, response.clone());
+      const keys = await cache.keys();
+      while (keys.length > IPM_RUNTIME_MAX_ENTRIES) await cache.delete(keys.shift());
+    }
+    return response;
+  } catch (error) {
+    if (cached) return cached;
+    throw error;
+  }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -55,7 +92,8 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
     await Promise.all(keys
-      .filter((key) => key.startsWith(IPM_CACHE_PREFIX) && key !== IPM_SHELL_CACHE)
+      .filter((key) => key.startsWith(IPM_CACHE_PREFIX)
+        && key !== IPM_SHELL_CACHE && key !== IPM_RUNTIME_CACHE)
       .map((key) => caches.delete(key)));
     await self.clients.claim();
   })());
@@ -116,10 +154,15 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/api/')) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(currentLaunch(request));
+    return;
+  }
+
+  if (runtimeAssetKind(url)) {
+    event.respondWith(cacheRuntimeAsset(request));
     return;
   }
 

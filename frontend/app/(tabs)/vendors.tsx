@@ -31,7 +31,8 @@ import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
 import { resolveVendorMapQuery, vendorMatchesSearch } from '../../src/config/vendorMapCrosswalk';
-import { EXACT_MAP_UNAVAILABLE, vendorHasTrustedMapGeometry } from '../../src/config/mapAvailability';
+import { EXACT_MAP_UNAVAILABLE, vendorHasTrustedMapGeometry, vendorHasTrustedMapGeometryAt } from '../../src/config/mapAvailability';
+import { groupVendorsForAttendees, vendorGroupMatchesSearch, type AttendeeVendorGroup } from '../../src/config/vendorPresentation';
 
 export default function VendorsScreen() {
   usePageAnalytics('vendors', 'home_quick_action', 'vendor_directory_opened');
@@ -88,14 +89,16 @@ export default function VendorsScreen() {
     ).sort((a, b) => a.localeCompare(b));
   }, [vendors]);
 
+  const attendeeGroups = useMemo(() => groupVendorsForAttendees(vendors), [vendors]);
+
   const filteredVendors = useMemo(() => {
-    return vendors.filter((vendor) => {
-      if (selectedType && vendor.type !== selectedType) {
+    return attendeeGroups.filter((group) => {
+      if (selectedType && !group.locations.some(({ record }) => record.type === selectedType)) {
         return false;
       }
-      return vendorMatchesSearch(vendor, searchQuery);
+      return vendorGroupMatchesSearch(group, searchQuery, vendorMatchesSearch);
     });
-  }, [searchQuery, selectedType, vendors]);
+  }, [attendeeGroups, searchQuery, selectedType]);
 
   const hasActiveFilters = Boolean(searchQuery.trim() || selectedType);
 
@@ -155,8 +158,8 @@ export default function VendorsScreen() {
         <Text style={styles.title}>Vendors</Text>
         <Text style={styles.subtitle}>
           {hasActiveFilters
-            ? `${filteredVendors.length} of ${vendors.length} vendors`
-            : `${vendors.length} vendors`}
+            ? `${filteredVendors.length} of ${attendeeGroups.length} exhibitors`
+            : `${attendeeGroups.length} exhibitors`}
         </Text>
       </View>
 
@@ -234,48 +237,55 @@ export default function VendorsScreen() {
       <FlatList
         style={styles.content}
         data={filteredVendors}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.key}
         contentContainerStyle={styles.list}
         ListHeaderComponent={listHeader}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => fetchVendors(true)} />
         }
         ListFooterComponent={<AttendeeAttribution source="vendors_attribution" />}
-        renderItem={({ item }) => (
+        renderItem={({ item }: { item: AttendeeVendorGroup }) => (
           <View style={sectionStyle}>
             <View style={styles.card}>
               <Text style={styles.name}>{item.name}</Text>
-
-              {item.type ? <Text style={styles.meta}>Type: {item.type}</Text> : null}
-              {item.location ? <Text style={styles.meta}>Location: {item.location}</Text> : null}
-              {item.hours_of_operation ? (
-                <Text style={styles.meta}>Hours: {item.hours_of_operation}</Text>
-              ) : null}
-              {item.days_of_operation ? (
-                <Text style={styles.meta}>Days: {item.days_of_operation}</Text>
-              ) : null}
-              {item.location?.trim() && !vendorHasTrustedMapGeometry(item.name) ? (
-                <Text style={styles.meta}>{EXACT_MAP_UNAVAILABLE}</Text>
-              ) : <TouchableOpacity
-                style={styles.mapLink}
-                onPress={() => {
-                  const resolved = resolveVendorMapQuery(item.name, item.location);
-                  if (resolved.status === 'mapped') {
-                    router.push({
-                      pathname: '/(tabs)/map',
-                      params: { location: resolved.query, showOnly: 'true', source: 'vendors', mapType: 'tented' },
-                    });
-                    return;
-                  }
-                  router.push({
-                    pathname: '/(tabs)/map',
-                    params: { mapStatus: 'unavailable', source: 'vendors', mapType: 'tented' },
-                  });
-                }}
-              >
-                <Feather name="map-pin" size={16} color="#8B1538" />
-                <Text style={styles.mapLinkText}>Find on Map</Text>
-              </TouchableOpacity>}
+              {item.locations.length > 1 ? <Text style={styles.meta}>{item.locations.length} locations</Text> : null}
+              {item.locations.map(({ record, displayLocation, mapLocation }) => {
+                const resolved = resolveVendorMapQuery(record.name, mapLocation);
+                const hasMap = Boolean(mapLocation?.trim() && (vendorHasTrustedMapGeometryAt(record.name, mapLocation) || (item.locations.length === 1 && (vendorHasTrustedMapGeometry(record.name) || resolved.status === 'mapped'))));
+                return (
+                  <View key={record.id} style={item.locations.length > 1 ? styles.locationBlock : undefined}>
+                    {item.locations.length > 1 ? <Text style={styles.locationHeading}>{record.type}</Text> : null}
+                    {item.locations.length === 1 && record.type ? <Text style={styles.meta}>Type: {record.type}</Text> : null}
+                    {displayLocation ? <Text style={styles.meta}>{item.locations.length > 1 ? displayLocation : `Location: ${displayLocation}`}</Text> : null}
+                    {record.hours_of_operation ? <Text style={styles.meta}>Hours: {record.hours_of_operation}</Text> : null}
+                    {record.days_of_operation ? <Text style={styles.meta}>Days: {record.days_of_operation}</Text> : null}
+                    {mapLocation?.trim() && !hasMap ? (
+                      <TouchableOpacity
+                        onPress={() => router.push({ pathname: '/(tabs)/map', params: { mapStatus: 'unavailable', source: 'vendors', mapType: 'tented' } })}
+                      >
+                        <Text style={styles.meta}>{EXACT_MAP_UNAVAILABLE}</Text>
+                      </TouchableOpacity>
+                    ) : <TouchableOpacity
+                      style={styles.mapLink}
+                      onPress={() => router.push({
+                        pathname: '/(tabs)/map',
+                        params: {
+                          location: mapLocation,
+                          vendorName: record.name,
+                          vendorLocation: mapLocation,
+                          vendorType: record.type,
+                          showOnly: 'true',
+                          source: 'vendors',
+                          mapType: 'tented',
+                        },
+                      })}
+                    >
+                      <Feather name="map-pin" size={16} color="#8B1538" />
+                      <Text style={styles.mapLinkText}>Find on Map</Text>
+                    </TouchableOpacity>}
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
@@ -447,6 +457,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4B5563',
     marginBottom: 4,
+  },
+  locationBlock: {
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    marginTop: 10,
+    paddingTop: 10,
+  },
+  locationHeading: {
+    color: '#111827',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
   },
   center: {
     flex: 1,

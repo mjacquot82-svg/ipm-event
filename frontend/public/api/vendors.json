@@ -55,15 +55,6 @@
       "priority": 99
     },
     {
-      "id": "a0d0ef38-08bd-47ed-a65f-4e89c44c44e1",
-      "name": "AmSpec Group",
-      "type": "Indoor",
-      "location": "1B-16-22",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "af16cf06-a3fc-442f-89fb-34b7f7c811aa",
       "name": "Armtec",
       "type": "Indoor",
@@ -110,9 +101,9 @@
     },
     {
       "id": "33c808d3-5f23-5ac4-ac19-39c5f525d78a",
-      "name": "Beef Farmers of Ontario & Bruce County Beef Farmer",
+      "name": "Beef Farmers of Ontario & Bruce County Beef Farmers",
       "type": "Outdoor",
-      "location": "2B-08",
+      "location": "2B-08–09",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -121,16 +112,7 @@
       "id": "c3475873-86ab-400c-b963-7b79080cfba0",
       "name": "Beef Farmers of Ontario & Bruce County Beef Farmers",
       "type": "Indoor",
-      "location": "",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "e265cd72-ed26-4073-a6f1-54acf6aa4f3f",
-      "name": "Beef Farmers of Ontario & Bruce County Beef Farmers",
-      "type": "Outdoor",
-      "location": "",
+      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -517,7 +499,7 @@
       "id": "4ca16511-186c-5a9b-b737-49f74ae85cad",
       "name": "Eastern Silk Road, Kitchener",
       "type": "Outdoor",
-      "location": "4B-02",
+      "location": "4B-04",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -541,10 +523,19 @@
       "priority": 99
     },
     {
-      "id": "f610134f-3c59-4bdf-98a9-39da2f155769",
-      "name": "Equestrian Elite",
+      "id": "64319171-ef84-58ee-b1f9-00189522f700",
+      "name": "ENJO Chemical Free Cleaning System",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16–21\n4B 17–22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f610134f-3c59-4bdf-98a9-39da2f155769",
+      "name": "Equestrian Elite, Durham",
+      "type": "Indoor",
+      "location": "Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -605,9 +596,9 @@
     },
     {
       "id": "e173b0f8-0a76-4bc9-9eef-b610dbbfaad8",
-      "name": "Flora and Fae",
+      "name": "Flora and Fae, Tara",
       "type": "Indoor",
-      "location": "",
+      "location": "Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -841,7 +832,7 @@
       "id": "a7971766-a77f-5ce5-9ce4-2f29808a1849",
       "name": "Hometown Street Eats, Drayton",
       "type": "Food",
-      "location": "2B-25",
+      "location": "WEST-3",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -940,7 +931,7 @@
       "id": "319f7c2d-22e3-4945-8c4d-caa3d9ad7ff4",
       "name": "JW Custom Fab, Cargill",
       "type": "Outdoor",
-      "location": "2A-16",
+      "location": "5A-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1172,9 +1163,9 @@
     },
     {
       "id": "b1efb2e2-a52d-485a-93b7-f0e53f0486d7",
-      "name": "Mike's Wood",
+      "name": "Mike's Wood, Elmwood",
       "type": "Indoor",
-      "location": "",
+      "location": "Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1226,27 +1217,27 @@
     },
     {
       "id": "557385b5-4aac-424e-a00b-660800f0c543",
-      "name": "Nana's Sewing Basket",
+      "name": "Nana's Sewing Basket, Walkerton",
       "type": "Indoor",
-      "location": "",
+      "location": "Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
     },
     {
       "id": "f2f40011-8138-4f50-bb92-48e0ce605ed3",
-      "name": "Natural Stitch Designs",
+      "name": "Natural Stitch Designs, Amaranth",
       "type": "Indoor",
-      "location": "",
+      "location": "Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
     },
     {
       "id": "e3b3d8ca-c12b-485e-bf42-bc3ee2f605be",
-      "name": "Northern Flyer Design (Ken Thornburn)",
+      "name": "Northern Flyer Design (Ken Thornburn), Tara",
       "type": "Indoor",
-      "location": "",
+      "location": "Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1388,9 +1379,9 @@
     },
     {
       "id": "421f2f71-ea28-43c1-a7d2-e316b9e45842",
-      "name": "Paisley Drive Designs",
+      "name": "Paisley Drive Designs, Chesley",
       "type": "Indoor",
-      "location": "",
+      "location": "Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1477,15 +1468,6 @@
       "priority": 99
     },
     {
-      "id": "6e77cda5-7713-5ed5-83f5-e2a8b85d69a7",
-      "name": "Real Time Fun and Rentals",
-      "type": "Food",
-      "location": "4B-10",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "3e324cae-84da-45f6-9f2c-b9201d65e86e",
       "name": "Reformed Evangelistic Outreach, Ancaster",
       "type": "Outdoor",
@@ -1526,15 +1508,6 @@
       "name": "Rogers Cell Tower",
       "type": "Outdoor",
       "location": "NORTH",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "2c76a419-cfec-4413-9d8c-e1944dda6add",
-      "name": "RONA Doidge Kincardine, Kincardine",
-      "type": "Outdoor",
-      "location": "2A-36-38",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1676,9 +1649,9 @@
     },
     {
       "id": "12b95efc-6dc2-4794-92a2-0fb3ac1d8c3c",
-      "name": "Susan Seitz",
+      "name": "Susan Seitz, Walkerton",
       "type": "Indoor",
-      "location": "",
+      "location": "Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1891,15 +1864,6 @@
       "priority": 99
     },
     {
-      "id": "e32ebc10-ce2b-5bac-8bb4-c21650a2effb",
-      "name": "WASTE MANAGEMNT",
-      "type": "Outdoor",
-      "location": "4B-29",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "8139913d-6b7a-4eba-bcfa-e2f21ca2f5e8",
       "name": "Water and Wellness, Walkerton",
       "type": "Outdoor",
@@ -1955,9 +1919,9 @@
     },
     {
       "id": "cda2170e-a9ca-4c58-b8ba-75884ec3579e",
-      "name": "Wildflower Designs",
+      "name": "Wildflower Designs, Shallow Lake",
       "type": "Indoor",
-      "location": "",
+      "location": "Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2011,12 +1975,75 @@
       "id": "079016da-3510-5e2d-a127-c2eb0b5f9810",
       "name": "Your Ultimate Structures Inc., Beachville",
       "type": "Outdoor",
-      "location": "2B-09",
+      "location": "2A-09",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9ef92046-0bef-557b-9739-8c0a90888010",
+      "name": "National Energy Equipment Inc.",
+      "type": "Outdoor",
+      "location": "2B-15",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9e597f9a-0607-567e-816e-8f58904a308d",
+      "name": "Weldesign Hardware Inc., Burgessville",
+      "type": "Outdoor",
+      "location": "2B-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "bdb80694-dc56-54c3-a75d-e087aa2fe2cc",
+      "name": "Huron-Bruce Provincial Liberal Association",
+      "type": "Outdoor",
+      "location": "3A-06",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "cbc1c263-8e96-508b-9aa2-e6b9508b43b8",
+      "name": "CSN Auto Reset Group",
+      "type": "Outdoor",
+      "location": "4B-02",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "054d5eeb-3c43-5637-8086-0740fa345d33",
+      "name": "Maple Court Retirement",
+      "type": "Outdoor",
+      "location": "4B-08",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3ae7740c-f1c6-5e2c-b2ec-743f80879a0e",
+      "name": "Amabel Books, Allenford",
+      "type": "Indoor",
+      "location": "Artisan Tent",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a4947094-8c16-5fcb-903f-d0073ae78023",
+      "name": "Rachel Joy Jewellery, Kincardine",
+      "type": "Indoor",
+      "location": "Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
     }
   ],
   "last_updated": "2026-09-12T14:28:36.762Z",
-  "total_count": 224
+  "total_count": 227
 }

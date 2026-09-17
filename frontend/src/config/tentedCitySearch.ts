@@ -79,6 +79,36 @@ export function findTentedCityPlace(
   return fuzzy ? { kind: 'vendor', vendor: fuzzy } : undefined;
 }
 
+/** Resolve one underlying map record after a specific location was selected. */
+export function findTentedCityPlaceByIdentity(
+  name: string,
+  locationLabel: string,
+  vendors: TentedCityVendor[],
+  category?: string,
+): TentedCityPlace | undefined {
+  const normalizedName = norm(name);
+  const matches = vendors.filter(
+    (vendor) => norm(vendor.name) === normalizedName && vendor.locationLabel === locationLabel && (!category || norm(vendor.category) === norm(category)),
+  );
+  if (matches.length === 1) return { kind: 'vendor', vendor: matches[0] };
+
+  // Directory records may carry a friendly location token (for example WEST-3)
+  // while the map catalog retains the audited canonical venue label. Resolve the
+  // token to its semantic area and require one unique same-name/type record whose
+  // canonical location resolves to that same area. Unknown or ambiguous identities
+  // remain unmapped.
+  const requestedArea = findSemanticAreaForLocation(locationLabel);
+  const canonicalMatches = vendors.filter((vendor) =>
+    norm(vendor.name) === normalizedName
+    && (!category || norm(vendor.category) === norm(category))
+    && (
+      (requestedArea && findSemanticAreaForLocation(vendor.locationLabel)?.id === requestedArea.id)
+      || (vendor.tent && norm(locationLabel) === norm(`${vendor.tent} tent`))
+    ),
+  );
+  return canonicalMatches.length === 1 ? { kind: 'vendor', vendor: canonicalMatches[0] } : undefined;
+}
+
 /**
  * Resolve a usable map rect for a place. Stages with rect:null and a
  * parentVenueId fall back to the parent venue geometry (e.g. MNP Lifestyles
@@ -117,4 +147,3 @@ export function resolveMapTypeForLocation(
   if (query && findSemanticAreaForLocation(query)) return 'tented';
   return 'grounds';
 }
-

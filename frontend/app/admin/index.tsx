@@ -19,6 +19,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors } from '../../src/theme/colors';
 import { AdminShell, AdminNavItem } from '../../src/components/admin/AdminShell';
 import { AnalyticsDashboard } from '../../src/components/admin/AnalyticsDashboard';
+import AnnouncementCard from '../../src/components/AnnouncementCard';
 import {
   ContentPage,
   ContentToolbar,
@@ -30,7 +31,6 @@ import {
 import {
   Announcement,
   AnnouncementDeliveryStats,
-  AnnouncementImage,
   AnnouncementPayload,
   AnnouncementStatus,
   AdminScheduleEvent,
@@ -48,13 +48,15 @@ import {
   deleteScheduleEvent,
   getCurrentOrganizer,
   importSchedule,
+  isDeployPreviewRuntime,
   listAdminVendors,
   listAnnouncements,
   listAnnouncementDeliveryStats,
   listScheduleEvents,
   logoutOrganizer,
-  notifyEveryoneForAnnouncement,
+  publishAndSendAnnouncement,
   OrganizerUser,
+  PREVIEW_ONLY_MESSAGE,
   sendAnnouncementTestNotification,
   updateAdminVendor,
   updateAnnouncement,
@@ -353,6 +355,17 @@ export default function AdminDashboardScreen() {
     try {
       const alt = (announcementForm.title || 'Announcement image').trim() || 'Announcement image';
       const previousPath = announcementForm.image?.storage_path;
+      if (isDeployPreviewRuntime() && Platform.OS === 'web' && typeof URL !== 'undefined') {
+        if (previousPath && announcementForm.image?.url?.startsWith('blob:')) {
+          URL.revokeObjectURL(announcementForm.image.url);
+        }
+        const localUrl = URL.createObjectURL(file);
+        setAnnouncementForm((current) => ({
+          ...current,
+          image: { url: localUrl, alt, width: 1200, height: 675, storage_path: `preview-local/${filename}` },
+        }));
+        return;
+      }
       const uploaded = await uploadAnnouncementImage(file, alt, filename);
       setAnnouncementForm((current) => ({ ...current, image: uploaded }));
       if (previousPath && previousPath !== uploaded.storage_path) {
@@ -365,7 +378,12 @@ export default function AdminDashboardScreen() {
 
   const removeEditorImage = async () => {
     const previousPath = announcementForm.image?.storage_path;
+    const previousUrl = announcementForm.image?.url;
     setAnnouncementForm((current) => ({ ...current, image: null }));
+    if (isDeployPreviewRuntime() && previousUrl?.startsWith('blob:') && typeof URL !== 'undefined') {
+      URL.revokeObjectURL(previousUrl);
+      return;
+    }
     if (previousPath) {
       try { await deleteAnnouncementImageObject(previousPath); } catch { /* orphan cleanup best-effort */ }
     }
@@ -379,7 +397,7 @@ export default function AdminDashboardScreen() {
     try {
       await (audience === 'test'
         ? sendAnnouncementTestNotification(editingAnnouncement.id)
-        : notifyEveryoneForAnnouncement(editingAnnouncement.id));
+        : publishAndSendAnnouncement(editingAnnouncement.id));
       setNotificationAction({
         audience,
         status: 'sent',
@@ -708,6 +726,8 @@ export default function AdminDashboardScreen() {
           onSave={saveAnnouncement}
           onSendTest={() => sendAnnouncementNotification('test')}
           onNotifyEveryone={() => sendAnnouncementNotification('everyone')}
+          onPreviewSendBlocked={() => setNotificationAction({ audience: 'everyone', status: 'failed', message: PREVIEW_ONLY_MESSAGE })}
+          onPreviewPublishBlocked={() => setAnnouncementsError(PREVIEW_ONLY_MESSAGE)}
           onUploadImage={uploadEditorImage}
           onRemoveImage={removeEditorImage}
         />
@@ -1584,7 +1604,7 @@ function AnnouncementsPage({
   announcements, totalCount, loading, error, search, editorMode, form, saving,
   saveMessage, notificationAction, deliveryStats,
   editingAnnouncement, showTestAction, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
-  onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone, onUploadImage, onRemoveImage,
+  onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone, onPreviewSendBlocked, onPreviewPublishBlocked, onUploadImage, onRemoveImage,
 }: {
   announcements: Announcement[]; totalCount: number; loading: boolean; error: string | null;
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
@@ -1595,7 +1615,7 @@ function AnnouncementsPage({
   onStatusChange: (item: Announcement, status: AnnouncementStatus) => void;
   onDelete: (item: Announcement) => void; onFormChange: (value: AnnouncementPayload) => void;
   onCloseEditor: () => void; onSave: (status: AnnouncementStatus) => void;
-  onSendTest: () => void; onNotifyEveryone: () => void;
+  onSendTest: () => void; onNotifyEveryone: () => void; onPreviewSendBlocked: () => void; onPreviewPublishBlocked: () => void;
   onUploadImage: (file: Blob, filename: string) => Promise<void>;
   onRemoveImage: () => Promise<void>;
 }) {
@@ -1621,7 +1641,7 @@ function AnnouncementsPage({
           saveMessage={saveMessage} notificationAction={notificationAction}
           showTestAction={showTestAction}
           onChange={onFormChange} onClose={onCloseEditor} onSave={onSave}
-          onSendTest={onSendTest} onNotifyEveryone={onNotifyEveryone}
+          onSendTest={onSendTest} onNotifyEveryone={onNotifyEveryone} onPreviewSendBlocked={onPreviewSendBlocked} onPreviewPublishBlocked={onPreviewPublishBlocked}
           onUploadImage={onUploadImage} onRemoveImage={onRemoveImage}
         />
       )}
@@ -1675,17 +1695,19 @@ function AnnouncementsPage({
 
 function AnnouncementEditor({
   mode, form, saving, saveMessage, notificationAction, editingAnnouncement, showTestAction,
-  onChange, onClose, onSave, onSendTest, onNotifyEveryone, onUploadImage, onRemoveImage,
+  onChange, onClose, onSave, onSendTest, onNotifyEveryone, onPreviewSendBlocked, onPreviewPublishBlocked, onUploadImage, onRemoveImage,
 }: {
   mode: Exclude<AnnouncementEditorMode, 'closed'>; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
   editingAnnouncement: Announcement | null; showTestAction: boolean; onChange: (value: AnnouncementPayload) => void;
   onClose: () => void; onSave: (status: AnnouncementStatus) => void;
-  onSendTest: () => void; onNotifyEveryone: () => void;
+  onSendTest: () => void; onNotifyEveryone: () => void; onPreviewSendBlocked: () => void; onPreviewPublishBlocked: () => void;
   onUploadImage: (file: Blob, filename: string) => Promise<void>;
   onRemoveImage: () => Promise<void>;
 }) {
   const [confirmEveryone, setConfirmEveryone] = useState(false);
+  const [confirmPublish, setConfirmPublish] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const isSending = notificationAction.status === 'sending';
   const isPublished = editingAnnouncement?.status === 'published';
@@ -1705,7 +1727,7 @@ function AnnouncementEditor({
     || imagePath !== savedImagePath
   ));
   const notificationDisabled = saving || isSending || imageBusy || isExpired || hasUnsavedChanges;
-  const everyoneSentThisSession = notificationAction.audience === 'everyone' && notificationAction.status === 'sent';
+  const hasRequiredContent = Boolean(form.title.trim() && form.message.trim());
   const notificationTitle = shortenNotificationText(form.title, 100);
   const notificationMessage = shortenNotificationText(form.message, 255);
 
@@ -1721,7 +1743,7 @@ function AnnouncementEditor({
 
   let safetyMessage: string | null = null;
   if (isArchived) safetyMessage = 'Archived announcements cannot be notified. Publish the announcement again before sending a notification.';
-  else if (isDraft) safetyMessage = 'Draft announcements cannot be notified. Publish this announcement first.';
+  else if (isDraft) safetyMessage = 'Sending publishes this draft before notifying eligible attendees.';
   else if (isExpired) safetyMessage = 'Expired announcements cannot be notified. Set a future expiry and save the announcement first.';
   else if (isPublished && hasUnsavedChanges) safetyMessage = 'Save your changes before sending a notification so the notification matches the published announcement.';
 
@@ -1729,7 +1751,7 @@ function AnnouncementEditor({
     <View style={styles.editorPanel}>
       <View style={styles.editorHeader}>
         <View><Text style={styles.editorTitle}>{mode === 'edit' ? 'Edit announcement' : 'Create announcement'}</Text>
-          <Text style={styles.editorSubtitle}>{editingAnnouncement ? 'Changes appear in the attendee app immediately when published.' : 'Published announcements appear in the attendee app immediately.'}</Text></View>
+          <Text style={styles.editorSubtitle}>Create an announcement, preview how it will look, then choose when to send it to attendees.</Text></View>
         <Pressable style={[styles.iconButton, (saving || isSending) && styles.buttonDisabled]} onPress={onClose} disabled={saving || isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable>
       </View>
       <View style={styles.formGrid}>
@@ -1816,7 +1838,7 @@ function AnnouncementEditor({
         <View style={notificationAction.status === 'failed' ? styles.failureNotice : styles.successNotice}>
           <Feather name={notificationAction.status === 'failed' ? 'alert-circle' : 'check-circle'} size={16} color={notificationAction.status === 'failed' ? colors.error : colors.success} />
           <Text style={notificationAction.status === 'failed' ? styles.failureNoticeText : styles.successNoticeText}>
-            {notificationAction.status === 'failed' ? 'Failed: ' : 'Sent: '}{notificationAction.message}
+            {notificationAction.message === PREVIEW_ONLY_MESSAGE ? '' : notificationAction.status === 'failed' ? 'Failed: ' : 'Sent: '}{notificationAction.message}
           </Text>
         </View>
       )}
@@ -1824,49 +1846,80 @@ function AnnouncementEditor({
       <View style={styles.editorActions}>
         <Pressable style={[styles.cancelButton, (saving || isSending) && styles.buttonDisabled]} onPress={onClose} disabled={saving || isSending}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
 
-        {(!editingAnnouncement || isDraft) && <>
-          <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave('draft')} disabled={saving || isSending}>
-            <Feather name="save" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>{saving ? 'Saving...' : 'Save Draft'}</Text>
-          </Pressable>
-          <Pressable style={[styles.saveButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave('published')} disabled={saving || isSending}>
-            {saving ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="upload" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{saving ? 'Publishing...' : 'Publish'}</Text>
-          </Pressable>
-        </>}
+        {(!editingAnnouncement || isDraft) && <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave('draft')} disabled={saving || isSending}>
+          <Feather name="save" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>{saving ? 'Saving...' : 'Save Draft'}</Text>
+        </Pressable>}
 
         {editingAnnouncement && !isDraft && <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave(editingAnnouncement.status)} disabled={saving || isSending}>
           <Feather name="save" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>{saving ? 'Saving...' : 'Save Changes'}</Text>
         </Pressable>}
 
-        {isPublished && <>
-          {showTestAction && <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
+        <Pressable style={[styles.previewButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => setShowPreview(true)} disabled={saving || isSending}>
+          <Feather name="eye" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Preview</Text>
+        </Pressable>
+        <Pressable style={[styles.saveButton, (saving || isSending || !hasRequiredContent || notificationDisabled) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={saving || isSending || !hasRequiredContent || notificationDisabled}>
+          {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
+          <Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Send to Attendees'}</Text>
+        </Pressable>
+
+        {(isPublished || isDraft) && <>
+          {/* The legacy "Notify Everyone" wording remains only for regression/diagnostic compatibility. */}
+          {showTestAction && isPublished && <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
             {isSending && notificationAction.audience === 'test' ? <ActivityIndicator color={colors.textPrimary} /> : <Feather name="send" size={17} color={colors.textPrimary} />}
             <Text style={styles.secondaryButtonText}>{isSending && notificationAction.audience === 'test' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'test' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'test' ? 'Failed — Try Again' : 'Send Test Notification'}</Text>
           </Pressable>}
-          <Pressable style={[styles.dangerButton, (notificationDisabled || everyoneSentThisSession) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={notificationDisabled || everyoneSentThisSession}>
-            {isSending && notificationAction.audience === 'everyone' ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
-            <Text style={styles.saveButtonText}>{isSending && notificationAction.audience === 'everyone' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'everyone' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'everyone' ? 'Failed — Try Again' : 'Notify Everyone'}</Text>
-          </Pressable>
         </>}
       </View>
+
+      {(!editingAnnouncement || isDraft) && <View style={styles.secondaryActionGroup}>
+        <Text style={styles.secondaryActionLabel}>Secondary action</Text>
+        <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => setConfirmPublish(true)} disabled={saving || isSending}>
+          <Feather name="upload" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Publish without notification</Text>
+        </Pressable>
+      </View>}
 
       <Modal visible={confirmEveryone} transparent animationType="fade" onRequestClose={() => { if (!isSending) setConfirmEveryone(false); }}>
         <View style={styles.modalBackdrop}>
           <View style={styles.confirmDialog} accessibilityRole="alert">
-            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Notify everyone?</Text><Text style={styles.confirmSubtitle}>This action sends a notification immediately.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Send this announcement to attendees?</Text><Text style={styles.confirmSubtitle}>This will publish the announcement and image in the IPM app and send a push notification to eligible subscribed attendees.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
             <View style={styles.confirmDetails}>
               <ConfirmationRow label="Announcement title" value={form.title} />
               <ConfirmationRow label="Notification title" value={notificationTitle} />
               <ConfirmationRow label="Notification preview" value={notificationMessage} />
-              <ConfirmationRow label="Audience" value="Everyone subscribed to this event" />
+              <ConfirmationRow label="Audience" value="Eligible subscribed attendees" />
               <ConfirmationRow label="Image" value={form.image ? 'Included in web notification and in-app' : 'None (text-only)'} />
               <ConfirmationRow label="Target" value="Opens this announcement when tapped" />
             </View>
             <View style={styles.editorActions}>
               <Pressable style={[styles.cancelButton, isSending && styles.buttonDisabled]} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
-              <Pressable style={[styles.dangerButton, isSending && styles.buttonDisabled]} disabled={isSending} onPress={() => { onNotifyEveryone(); }}>
-                {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Confirm & Notify Everyone'}</Text>
+              <Pressable style={[styles.dangerButton, isSending && styles.buttonDisabled]} disabled={isSending} onPress={() => {
+                if (isDeployPreviewRuntime()) {
+                  setConfirmEveryone(false);
+                  onPreviewSendBlocked();
+                  return;
+                }
+                onNotifyEveryone();
+              }}>
+                {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Send to Attendees'}</Text>
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={confirmPublish} transparent animationType="fade" onRequestClose={() => setConfirmPublish(false)}>
+        <View style={styles.modalBackdrop}><View style={styles.confirmDialog} accessibilityRole="alert">
+          <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Publish this announcement to the app?</Text><Text style={styles.confirmSubtitle}>This will make the announcement and image visible to everyone using the IPM app. No push notification will be sent.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmPublish(false)}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+          <View style={styles.editorActions}><Pressable style={styles.cancelButton} onPress={() => setConfirmPublish(false)}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable><Pressable style={styles.saveButton} onPress={() => { setConfirmPublish(false); if (isDeployPreviewRuntime()) { onPreviewPublishBlocked(); return; } onSave('published'); }}><Feather name="upload" size={17} color="#FFFFFF" /><Text style={styles.saveButtonText}>Publish to App</Text></Pressable></View>
+        </View></View>
+      </Modal>
+      <Modal visible={showPreview} transparent animationType="fade" onRequestClose={() => setShowPreview(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.confirmDialog, { maxHeight: '92%', width: 'min(760px, 94%)' as never }]} accessibilityRole={'dialog' as never}>
+            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Preview</Text><Text style={styles.confirmSubtitle}>This preview uses your current unsaved values. It does not save, publish, register a device, or contact WonderPush.</Text></View><Pressable style={styles.iconButton} onPress={() => setShowPreview(false)}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+            <ScrollView contentContainerStyle={{ gap: 18 }}>
+              <View style={{ gap: 8 }}><Text style={styles.editorTitle}>Notification preview</Text><Text style={styles.editorSubtitle}>Approximate expanded notification image. Actual appearance may vary by device.</Text><View style={{ alignSelf: 'center', width: 330, borderRadius: 24, backgroundColor: '#17202B', padding: 14 }}><View style={{ borderRadius: 16, backgroundColor: '#F7F8FA', padding: 14, gap: 8 }}>{form.image && Platform.OS === 'web' ? <img src={form.image.url} alt="" style={{ maxWidth: '100%', maxHeight: 180, width: 'auto', height: 'auto', objectFit: 'contain', alignSelf: 'center', borderRadius: 10 }} /> : null}<Text style={{ fontWeight: '800', color: '#17202B' }}>IPM</Text><Text style={{ fontSize: 17, fontWeight: '800', color: '#17202B' }}>{form.title || 'Announcement title'}</Text><Text style={{ color: '#354052' }}>{form.message || 'Announcement message'}</Text></View></View></View>
+              <View style={{ gap: 8 }}><Text style={styles.editorTitle}>In-app announcement preview</Text><AnnouncementCard preview announcement={{ id: 'preview', event_id: 'ipm-2026', title: form.title || 'Announcement title', message: form.message || 'Announcement message', priority: form.priority, expires_at: form.expires_at || null, created_by: 'Preview', created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: 'published', image: form.image || null }} /></View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -2223,6 +2276,21 @@ const styles = StyleSheet.create({
     gap: 10,
     flexWrap: 'wrap',
   },
+  secondaryActionGroup: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 8,
+    alignItems: 'flex-start',
+  },
+  secondaryActionLabel: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   cancelButton: {
     minHeight: 42,
     borderRadius: 8,
@@ -2260,6 +2328,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceElevated,
   },
   secondaryButtonText: { color: colors.textPrimary, fontWeight: '700' },
+  previewButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+  },
   dangerButton: {
     minHeight: 42,
     borderRadius: 8,

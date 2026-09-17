@@ -1,3 +1,4 @@
+import { EventDetailMedia } from '@/src/components/EventDetailMedia';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -77,6 +78,7 @@ export default function ScheduleScreen() {
   const openedEventParamRef = useRef<string | null>(null);
   const returnToItineraryRef = useRef(returnTo === 'itinerary');
   const isFetchingScheduleRef = useRef(false);
+  const hasUsableScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
   const appliedCategoryQueryRef = useRef<string | string[] | undefined>(undefined);
 
@@ -146,6 +148,7 @@ export default function ScheduleScreen() {
       throw new Error('Invalid schedule response');
     }
     setEvents(result.data.events);
+    hasUsableScheduleRef.current = result.data.events.length > 0;
     setLastUpdated(result.lastSuccessfulUpdate);
     if (result.source === 'network') {
       setDataSource('network');
@@ -181,7 +184,11 @@ export default function ScheduleScreen() {
       applyScheduleResult(result);
     } catch (err) {
       console.error('Error fetching schedule:', err);
-      setError("We couldn't load the schedule. Please check your connection and try again.");
+      // Keep usable saved events visible without presenting a contradictory
+      // load failure. A genuine failure with no events still gets the retry UI.
+      if (!hasUsableScheduleRef.current) {
+        setError("We couldn't load the schedule. Please check your connection and try again.");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -1011,6 +1018,8 @@ export default function ScheduleScreen() {
                       </View>
                     </View>
                   )}
+
+                  <EventDetailMedia key={selectedEvent.id} image={selectedEvent.event_image} />
 
                   {/* Description */}
                   {selectedEvent.description && (

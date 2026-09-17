@@ -43,6 +43,9 @@ function resolveInitialMode(args: {
 export default function MapScreen() {
   const params = useLocalSearchParams<{
     location?: string | string[];
+    vendorName?: string | string[];
+    vendorLocation?: string | string[];
+    vendorType?: string | string[];
     showOnly?: string | string[];
     source?: string | string[];
     mapStatus?: string | string[];
@@ -50,6 +53,8 @@ export default function MapScreen() {
     mapType?: string | string[];
   }>();
   const location = paramStr(params.location);
+  const vendorName = paramStr(params.vendorName);
+  const vendorLocation = paramStr(params.vendorLocation);
   const source = paramStr(params.source);
   const mapStatus = paramStr(params.mapStatus);
   const verify1a = paramStr(params.verify1a);
@@ -103,8 +108,11 @@ export default function MapScreen() {
       >
         <TentedCityMap
           initialQuery={unavailable ? '' : (overrideLocation || (typeof location === 'string' ? location : '') || '')}
+          initialVendorName={vendorName}
+          initialVendorLocation={vendorLocation}
+          initialVendorType={paramStr(params.vendorType)}
           mapUnavailable={unavailable}
-          exactInitialPlace={source === 'vendors' && !overrideLocation}
+          exactInitialPlace={source === 'vendors' && !overrideLocation && !vendorName}
           verify1A={verify1A}
           onSwitchToGrounds={(loc) => {
             if (loc) setOverrideLocation(loc);
