@@ -1,4 +1,9 @@
 try:
+    from backend.event_media import EventImage
+except ModuleNotFoundError:
+    from event_media import EventImage
+
+try:
     from announcement_images import (
         AnnouncementImage,
         AnnouncementImageDeletePayload,
@@ -177,6 +182,7 @@ WONDERPUSH_TEST_INSTALLATION_IDS = [
     for installation_id in os.environ.get("WONDERPUSH_TEST_INSTALLATION_IDS", "").split(",")
     if installation_id.strip()
 ]
+WONDERPUSH_TEST_CAMPAIGN_ID = os.environ.get("WONDERPUSH_TEST_CAMPAIGN_ID", "").strip()
 # T-30 delivery is deliberately unavailable during the announcement cutover.
 ITINERARY_REMINDER_DELIVERY_ENABLED = False
 ITINERARY_REMINDER_SCHEDULER_ENABLED = False
@@ -245,6 +251,7 @@ class Event(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class ScheduleEvent(BaseModel):
+    event_image: Optional[EventImage] = None
     id: str
     title: str
     description: Optional[str] = ""
@@ -1052,6 +1059,14 @@ def announcement_expiration_time(announcement: dict, *, now: datetime | None = N
     return f"{ttl_seconds} seconds"
 
 
+def require_owner_role(user: dict):
+    if user.get("role") != "Owner":
+        raise HTTPException(
+            status_code=403,
+            detail="Your organizer role cannot manage organizer users",
+        )
+
+
 def require_schedule_manager_role(user: dict):
     if user.get("role") not in ("Owner", "Schedule"):
         raise HTTPException(
@@ -1473,9 +1488,11 @@ async def bootstrap_organizer_owner(data: OrganizerBootstrapRequest, response: R
     if len(data.password) < 10:
         raise HTTPException(status_code=400, detail="Password must be at least 10 characters")
 
-    existing_count = await database.organizer_users.count_documents({"event_id": event_id})
+    # Bootstrap is only for a pristine organizer database. Event-scoped checks
+    # let a caller mint an Owner in a new event and bypass account-management guards.
+    existing_count = await database.organizer_users.count_documents({})
     if existing_count > 0:
-        raise HTTPException(status_code=409, detail="Organizer users already exist for this event")
+        raise HTTPException(status_code=409, detail="Organizer users already exist; an Owner must create additional accounts")
 
     now = datetime.utcnow()
     user = {
@@ -1530,6 +1547,7 @@ async def get_organizer_me(current_user: dict = Depends(get_current_organizer_us
 
 @api_router.get("/admin/users", response_model=OrganizerUsersResponse)
 async def list_organizer_users(current_user: dict = Depends(get_current_organizer_user)):
+    require_owner_role(current_user)
     database = require_mongodb()
     users = await database.organizer_users.find({
         "event_id": get_admin_event_id(current_user)
@@ -1543,6 +1561,7 @@ async def create_organizer_user(
     data: OrganizerCreateUserRequest,
     current_user: dict = Depends(get_current_organizer_user),
 ):
+    require_owner_role(current_user)
     database = require_mongodb()
     event_id = get_admin_event_id(current_user, data.event_id)
     username = normalize_username(data.username)
@@ -1783,8 +1802,23 @@ async def notify_announcement(
             status_code=409,
             detail="Only published, unexpired announcements can be notified",
         )
-    if audience == "test" and not WONDERPUSH_TEST_INSTALLATION_IDS:
-        raise HTTPException(status_code=503, detail="No controlled test installation is configured")
+    if audience == "test":
+        # Controlled Send Test: exactly one concrete installation — never empty, @ALL, or multi-target.
+        if (
+            len(WONDERPUSH_TEST_INSTALLATION_IDS) != 1
+            or not WONDERPUSH_TEST_INSTALLATION_IDS[0]
+            or "," in WONDERPUSH_TEST_INSTALLATION_IDS[0]
+            or WONDERPUSH_TEST_INSTALLATION_IDS[0].upper() == "@ALL"
+        ):
+            raise HTTPException(
+                status_code=503,
+                detail="Controlled test requires exactly one WonderPush installation ID",
+            )
+        if not WONDERPUSH_TEST_CAMPAIGN_ID:
+            raise HTTPException(
+                status_code=503,
+                detail="No controlled test WonderPush campaign is configured",
+            )
 
     expiration_time = announcement_expiration_time(announcement)
 
@@ -1818,6 +1852,7 @@ async def notify_announcement(
             campaign_id = await provider.send_test(
                 **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS,
                 idempotency_key=f"announcement-test-{delivery['id']}",
+                campaign_id=WONDERPUSH_TEST_CAMPAIGN_ID,
                 expiration_time=expiration_time,
             )
         else:
@@ -1854,6 +1889,37 @@ async def notify_announcement_everyone(
     announcement_id: str,
     current_user: dict = Depends(get_current_organizer_user),
 ):
+    return await notify_announcement(announcement_id, "everyone", current_user)
+
+
+@api_router.post(
+    "/admin/announcements/{announcement_id}/send",
+    response_model=NotificationDeliveryResponse,
+)
+async def publish_and_send_announcement(
+    announcement_id: str,
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    """Publish the current announcement, then attempt exactly one broad push.
+
+    Publication is deliberately completed before the notification path is entered.
+    A failed publication therefore cannot produce a push request; delivery records
+    retain the existing uniqueness/idempotency protections for duplicate clicks.
+    """
+    require_announcement_manager_role(current_user)
+    service = require_announcement_service()
+    event_id = get_admin_event_id(current_user)
+    current = await service.get(announcement_id, event_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    payload = AnnouncementPayload(
+        title=current["title"], message=current["message"], priority=current["priority"],
+        expires_at=current.get("expires_at"), status="published", image=current.get("image"),
+    )
+    validate_announcement_payload(payload)
+    published = await service.set_status(announcement_id, "published", event_id)
+    if not published:
+        raise HTTPException(status_code=409, detail="Announcement could not be published")
     return await notify_announcement(announcement_id, "everyone", current_user)
 
 
@@ -1964,6 +2030,7 @@ async def notification_registration_operations():
     return {
         "provider_configured": wonderpush_client is not None,
         "controlled_test_allowlist_count": len(WONDERPUSH_TEST_INSTALLATION_IDS),
+        "controlled_test_campaign_configured": bool(WONDERPUSH_TEST_CAMPAIGN_ID),
         "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
         "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
     }
