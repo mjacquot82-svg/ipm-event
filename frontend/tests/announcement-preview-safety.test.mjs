@@ -33,7 +33,7 @@ test('notification preview preserves image proportions instead of forcing a crop
 });
 
 test('in-app preview uses the attendee AnnouncementCard image presentation for local images', () => {
-  assert.match(admin, /<AnnouncementCard announcement=\{\{/);
+  assert.match(admin, /<AnnouncementCard preview announcement=\{\{/);
   assert.match(admin, /image: form\.image \|\| null/);
   assert.match(card, /allowLocal && image\.url\.startsWith\('blob:'\)/);
   assert.match(card, /AnnouncementImageView image=\{announcement\.image\} allowLocal=\{preview\}/);
