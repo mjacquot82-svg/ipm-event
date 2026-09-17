@@ -30,6 +30,8 @@ const LOCATION_ALIASES: Record<string, string> = {
   'EVENT CENTRE': 'dancing-tractors-combine-derby-west-2',
   WEST2: 'dancing-tractors-combine-derby-west-2',
   'WEST 2': 'dancing-tractors-combine-derby-west-2',
+  WEST3: 'cknx-centennial-pavilion-lounge-west-3',
+  'WEST 3': 'cknx-centennial-pavilion-lounge-west-3',
   'ACCESSIBLE PARKING': 'accessible-parking',
   // Trusted parent-only ranges (no individual stalls).
   '3A 39 44': 'quilt-tent-3a-39-44-g2',

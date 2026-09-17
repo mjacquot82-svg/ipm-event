@@ -37,13 +37,21 @@ const cancellations = [
   { directory: 'AmSpec Group', id: 'a0d0ef38-08bd-47ed-a65f-4e89c44c44e1', type: 'Indoor', location: '1B-16-22', map: 'AmSpec Group, Hamilton' },
 ];
 
-function loadTypeScript(relative) {
-  const filename = new URL(relative, root);
+const moduleCache = new Map();
+function loadTypeScript(relative, parent = root) {
+  const filename = new URL(relative, parent);
+  if (moduleCache.has(filename.href)) return moduleCache.get(filename.href).exports;
   const code = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true },
   }).outputText;
   const mod = { exports: {} };
-  new Function('require', 'module', 'exports', code)(require, mod, mod.exports);
+  moduleCache.set(filename.href, mod);
+  const localRequire = (name) => {
+    if (name.endsWith('.json')) return JSON.parse(fs.readFileSync(new URL(name, filename), 'utf8'));
+    if (name.startsWith('.')) return loadTypeScript(`${name}.ts`, new URL('.', filename));
+    return require(name);
+  };
+  new Function('require', 'module', 'exports', code)(localRequire, mod, mod.exports);
   return mod.exports;
 }
 
@@ -129,4 +137,21 @@ test('multi-location navigation is structured while ambiguous free-text remains 
   assert.match(mapComponent, /findTentedCityPlaceByIdentity/);
   assert.match(searchSource, /matches\.length === 1/);
   assert.match(resolverSource, /if \(exact\.length > 1\) return \{ status: 'unmapped' \}/);
+});
+
+test('Hometown canonical identity resolves WEST-3 to the existing CKNX Lounge map record', () => {
+  const { findTentedCityPlaceByIdentity } = loadTypeScript('src/config/tentedCitySearch.ts');
+  const tentedCityVendors = [{
+    name: 'Hometown Street Eats, Drayton', category: 'food',
+    locationLabel: 'CKNX Centennial Pavilion (Lounge), West 3', booths: ['WEST-3'],
+  }];
+  const place = findTentedCityPlaceByIdentity(
+    'Hometown Street Eats, Drayton',
+    'WEST-3',
+    tentedCityVendors,
+    'food',
+  );
+  assert.equal(place?.kind, 'vendor');
+  assert.equal(place?.vendor.locationLabel, 'CKNX Centennial Pavilion (Lounge), West 3');
+  assert.deepEqual(place?.vendor.booths, ['WEST-3']);
 });

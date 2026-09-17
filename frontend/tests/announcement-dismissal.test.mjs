@@ -22,7 +22,8 @@ test('dismissal filters attendee list and Home independently for each ID', () =>
   assert.match(list, /excludeDismissedAnnouncements\(announcements, dismissedAnnouncementIds\)/);
   assert.match(list, /visibleAnnouncements\.map/);
   assert.match(home, /excludeDismissedAnnouncements\(announcements, dismissedAnnouncementIds\)/);
-  assert.match(home, /attendeeAnnouncements[\s\S]*newestUnreadAnnouncement/);
+  assert.match(home, /attendeeAnnouncements/);
+  assert.doesNotMatch(home, /Tap to read|newestUnreadAnnouncement/);
 });
 
 test('dismiss action makes no backend request and organizer views are unchanged', () => {
