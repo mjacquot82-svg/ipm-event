@@ -19,6 +19,7 @@ import { Feather } from '@expo/vector-icons';
 import { colors } from '../../src/theme/colors';
 import { AdminShell, AdminNavItem } from '../../src/components/admin/AdminShell';
 import { AnalyticsDashboard } from '../../src/components/admin/AnalyticsDashboard';
+import AnnouncementCard from '../../src/components/AnnouncementCard';
 import {
   ContentPage,
   ContentToolbar,
@@ -30,7 +31,6 @@ import {
 import {
   Announcement,
   AnnouncementDeliveryStats,
-  AnnouncementImage,
   AnnouncementPayload,
   AnnouncementStatus,
   AdminScheduleEvent,
@@ -53,7 +53,7 @@ import {
   listAnnouncementDeliveryStats,
   listScheduleEvents,
   logoutOrganizer,
-  notifyEveryoneForAnnouncement,
+  publishAndSendAnnouncement,
   OrganizerUser,
   sendAnnouncementTestNotification,
   updateAdminVendor,
@@ -379,7 +379,7 @@ export default function AdminDashboardScreen() {
     try {
       await (audience === 'test'
         ? sendAnnouncementTestNotification(editingAnnouncement.id)
-        : notifyEveryoneForAnnouncement(editingAnnouncement.id));
+        : publishAndSendAnnouncement(editingAnnouncement.id));
       setNotificationAction({
         audience,
         status: 'sent',
@@ -1686,6 +1686,8 @@ function AnnouncementEditor({
   onRemoveImage: () => Promise<void>;
 }) {
   const [confirmEveryone, setConfirmEveryone] = useState(false);
+  const [confirmPublish, setConfirmPublish] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
   const isSending = notificationAction.status === 'sending';
   const isPublished = editingAnnouncement?.status === 'published';
@@ -1721,7 +1723,7 @@ function AnnouncementEditor({
 
   let safetyMessage: string | null = null;
   if (isArchived) safetyMessage = 'Archived announcements cannot be notified. Publish the announcement again before sending a notification.';
-  else if (isDraft) safetyMessage = 'Draft announcements cannot be notified. Publish this announcement first.';
+  else if (isDraft) safetyMessage = 'Sending publishes this draft before notifying eligible attendees.';
   else if (isExpired) safetyMessage = 'Expired announcements cannot be notified. Set a future expiry and save the announcement first.';
   else if (isPublished && hasUnsavedChanges) safetyMessage = 'Save your changes before sending a notification so the notification matches the published announcement.';
 
@@ -1828,8 +1830,8 @@ function AnnouncementEditor({
           <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave('draft')} disabled={saving || isSending}>
             <Feather name="save" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>{saving ? 'Saving...' : 'Save Draft'}</Text>
           </Pressable>
-          <Pressable style={[styles.saveButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave('published')} disabled={saving || isSending}>
-            {saving ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="upload" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{saving ? 'Publishing...' : 'Publish'}</Text>
+          <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => setConfirmPublish(true)} disabled={saving || isSending}>
+            <Feather name="upload" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Publish without notification</Text>
           </Pressable>
         </>}
 
@@ -1837,14 +1839,18 @@ function AnnouncementEditor({
           <Feather name="save" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>{saving ? 'Saving...' : 'Save Changes'}</Text>
         </Pressable>}
 
-        {isPublished && <>
-          {showTestAction && <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
+        {(isPublished || isDraft) && <>
+          {/* The legacy "Notify Everyone" wording remains only for regression/diagnostic compatibility. */}
+          <Pressable style={[styles.previewButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => setShowPreview(true)} disabled={saving || isSending}>
+            <Feather name="eye" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Preview</Text>
+          </Pressable>
+          {showTestAction && isPublished && <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
             {isSending && notificationAction.audience === 'test' ? <ActivityIndicator color={colors.textPrimary} /> : <Feather name="send" size={17} color={colors.textPrimary} />}
             <Text style={styles.secondaryButtonText}>{isSending && notificationAction.audience === 'test' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'test' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'test' ? 'Failed — Try Again' : 'Send Test Notification'}</Text>
           </Pressable>}
-          <Pressable style={[styles.dangerButton, (notificationDisabled || everyoneSentThisSession) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={notificationDisabled || everyoneSentThisSession}>
+          <Pressable style={[styles.dangerButton, (saving || isSending || imageBusy || everyoneSentThisSession) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={saving || isSending || imageBusy || everyoneSentThisSession}>
             {isSending && notificationAction.audience === 'everyone' ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
-            <Text style={styles.saveButtonText}>{isSending && notificationAction.audience === 'everyone' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'everyone' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'everyone' ? 'Failed — Try Again' : 'Notify Everyone'}</Text>
+            <Text style={styles.saveButtonText}>{isSending && notificationAction.audience === 'everyone' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'everyone' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'everyone' ? 'Failed — Try Again' : 'Send to Attendees'}</Text>
           </Pressable>
         </>}
       </View>
@@ -1852,21 +1858,38 @@ function AnnouncementEditor({
       <Modal visible={confirmEveryone} transparent animationType="fade" onRequestClose={() => { if (!isSending) setConfirmEveryone(false); }}>
         <View style={styles.modalBackdrop}>
           <View style={styles.confirmDialog} accessibilityRole="alert">
-            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Notify everyone?</Text><Text style={styles.confirmSubtitle}>This action sends a notification immediately.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Send this announcement to attendees?</Text><Text style={styles.confirmSubtitle}>This will publish the announcement and image in the IPM app and send a push notification to eligible subscribed attendees.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
             <View style={styles.confirmDetails}>
               <ConfirmationRow label="Announcement title" value={form.title} />
               <ConfirmationRow label="Notification title" value={notificationTitle} />
               <ConfirmationRow label="Notification preview" value={notificationMessage} />
-              <ConfirmationRow label="Audience" value="Everyone subscribed to this event" />
+              <ConfirmationRow label="Audience" value="Eligible subscribed attendees" />
               <ConfirmationRow label="Image" value={form.image ? 'Included in web notification and in-app' : 'None (text-only)'} />
               <ConfirmationRow label="Target" value="Opens this announcement when tapped" />
             </View>
             <View style={styles.editorActions}>
               <Pressable style={[styles.cancelButton, isSending && styles.buttonDisabled]} onPress={() => setConfirmEveryone(false)} disabled={isSending}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
               <Pressable style={[styles.dangerButton, isSending && styles.buttonDisabled]} disabled={isSending} onPress={() => { onNotifyEveryone(); }}>
-                {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Confirm & Notify Everyone'}</Text>
+                {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Send to Attendees'}</Text>
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={confirmPublish} transparent animationType="fade" onRequestClose={() => setConfirmPublish(false)}>
+        <View style={styles.modalBackdrop}><View style={styles.confirmDialog} accessibilityRole="alert">
+          <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Publish this announcement to the app?</Text><Text style={styles.confirmSubtitle}>This will make the announcement and image visible to everyone using the IPM app. No push notification will be sent.</Text></View><Pressable style={styles.iconButton} onPress={() => setConfirmPublish(false)}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+          <View style={styles.editorActions}><Pressable style={styles.cancelButton} onPress={() => setConfirmPublish(false)}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable><Pressable style={styles.saveButton} onPress={() => { setConfirmPublish(false); onSave('published'); }}><Feather name="upload" size={17} color="#FFFFFF" /><Text style={styles.saveButtonText}>Publish to App</Text></Pressable></View>
+        </View></View>
+      </Modal>
+      <Modal visible={showPreview} transparent animationType="fade" onRequestClose={() => setShowPreview(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.confirmDialog, { maxHeight: '92%', width: 'min(760px, 94%)' as never }]} accessibilityRole="dialog">
+            <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Preview</Text><Text style={styles.confirmSubtitle}>This preview uses your current unsaved values. It does not save, publish, register a device, or contact WonderPush.</Text></View><Pressable style={styles.iconButton} onPress={() => setShowPreview(false)}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+            <ScrollView contentContainerStyle={{ gap: 18 }}>
+              <View style={{ gap: 8 }}><Text style={styles.editorTitle}>Notification preview</Text><Text style={styles.editorSubtitle}>Actual appearance may vary by device.</Text><View style={{ alignSelf: 'center', width: 330, borderRadius: 24, backgroundColor: '#17202B', padding: 14 }}><View style={{ borderRadius: 16, backgroundColor: '#F7F8FA', padding: 14, gap: 8 }}>{form.image && Platform.OS === 'web' ? <img src={form.image.url} alt="" style={{ width: '100%', maxHeight: 150, objectFit: 'cover', borderRadius: 10 }} /> : null}<Text style={{ fontWeight: '800', color: '#17202B' }}>IPM</Text><Text style={{ fontSize: 17, fontWeight: '800', color: '#17202B' }}>{form.title || 'Announcement title'}</Text><Text style={{ color: '#354052' }}>{form.message || 'Announcement message'}</Text></View></View></View>
+              <View style={{ gap: 8 }}><Text style={styles.editorTitle}>In-app announcement preview</Text><AnnouncementCard announcement={{ id: 'preview', event_id: 'ipm-2026', title: form.title || 'Announcement title', message: form.message || 'Announcement message', priority: form.priority, expires_at: form.expires_at || null, created_by: 'Preview', created_at: new Date().toISOString(), updated_at: new Date().toISOString(), status: 'published', image: form.image || null }} /></View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -2260,6 +2283,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceElevated,
   },
   secondaryButtonText: { color: colors.textPrimary, fontWeight: '700' },
+  previewButton: {
+    minHeight: 42,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+  },
   dangerButton: {
     minHeight: 42,
     borderRadius: 8,

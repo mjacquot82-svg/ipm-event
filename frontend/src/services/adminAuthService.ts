@@ -408,6 +408,12 @@ export function notifyEveryoneForAnnouncement(id: string) {
   );
 }
 
+export function publishAndSendAnnouncement(id: string) {
+  return adminRequest<NotificationDelivery>(`/api/admin/announcements/${encodeURIComponent(id)}/send`, {
+    method: 'POST',
+  });
+}
+
 export function listScheduleEvents() {
   return adminRequest<AdminScheduleResponse>('/api/admin/schedule');
 }
