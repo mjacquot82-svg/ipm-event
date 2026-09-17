@@ -1838,7 +1838,7 @@ function AnnouncementEditor({
         <View style={notificationAction.status === 'failed' ? styles.failureNotice : styles.successNotice}>
           <Feather name={notificationAction.status === 'failed' ? 'alert-circle' : 'check-circle'} size={16} color={notificationAction.status === 'failed' ? colors.error : colors.success} />
           <Text style={notificationAction.status === 'failed' ? styles.failureNoticeText : styles.successNoticeText}>
-            {notificationAction.status === 'failed' ? 'Failed: ' : 'Sent: '}{notificationAction.message}
+            {notificationAction.message === PREVIEW_ONLY_MESSAGE ? '' : notificationAction.status === 'failed' ? 'Failed: ' : 'Sent: '}{notificationAction.message}
           </Text>
         </View>
       )}

@@ -32,6 +32,7 @@ test('preview allows confirmation review but intercepts final send and publish a
   assert.match(admin, /if \(isDeployPreviewRuntime\(\)\)/);
   assert.match(admin, /onPreviewSendBlocked\(\)/);
   assert.match(admin, /onPreviewPublishBlocked\(\)/);
+  assert.match(admin, /notificationAction\.message === PREVIEW_ONLY_MESSAGE \? ''/);
 });
 
 test('notification preview preserves image proportions instead of forcing a crop', () => {
