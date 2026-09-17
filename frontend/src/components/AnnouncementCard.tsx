@@ -55,12 +55,12 @@ export function formatAnnouncementTime(value: string, includeDate = false) {
   return `Posted ${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
 }
 
-function AnnouncementImageView({ image }: { image: NonNullable<Announcement['image']> }) {
+function AnnouncementImageView({ image, allowLocal = false }: { image: NonNullable<Announcement['image']>; allowLocal?: boolean }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const show =
     image
     && image.url !== failedUrl
-    && safeExternalUrl(image.url)
+    && (safeExternalUrl(image.url) || (allowLocal && image.url.startsWith('blob:')))
     && Boolean(image.alt?.trim())
     && image.width > 0
     && image.height > 0;
@@ -136,10 +136,7 @@ export default function AnnouncementCard({
       </View>
       <Text style={[styles.title, onDismiss && styles.dismissSpacing]}>{announcement.title}</Text>
       <Text style={styles.message} numberOfLines={preview ? 3 : undefined}>{announcement.message}</Text>
-      {!preview && announcement.image ? <AnnouncementImageView image={announcement.image} /> : null}
-      {preview && announcement.image ? (
-        <Text style={styles.imageHint}>Includes image</Text>
-      ) : null}
+      {announcement.image ? <AnnouncementImageView image={announcement.image} allowLocal={preview} /> : null}
       {preview && <Feather name="chevron-right" size={20} color={colors.textMuted} style={styles.chevron} />}
     </>
   );
