@@ -1724,7 +1724,6 @@ function AnnouncementEditor({
     || imagePath !== savedImagePath
   ));
   const notificationDisabled = saving || isSending || imageBusy || isExpired || hasUnsavedChanges;
-  const everyoneSentThisSession = notificationAction.audience === 'everyone' && notificationAction.status === 'sent';
   const notificationTitle = shortenNotificationText(form.title, 100);
   const notificationMessage = shortenNotificationText(form.message, 255);
 
@@ -1748,7 +1747,7 @@ function AnnouncementEditor({
     <View style={styles.editorPanel}>
       <View style={styles.editorHeader}>
         <View><Text style={styles.editorTitle}>{mode === 'edit' ? 'Edit announcement' : 'Create announcement'}</Text>
-          <Text style={styles.editorSubtitle}>{editingAnnouncement ? 'Changes appear in the attendee app immediately when published.' : 'Published announcements appear in the attendee app immediately.'}</Text></View>
+          <Text style={styles.editorSubtitle}>Create an announcement, preview how it will look, then choose when to send it to attendees.</Text></View>
         <Pressable style={[styles.iconButton, (saving || isSending) && styles.buttonDisabled]} onPress={onClose} disabled={saving || isSending}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable>
       </View>
       <View style={styles.formGrid}>
@@ -1843,34 +1842,37 @@ function AnnouncementEditor({
       <View style={styles.editorActions}>
         <Pressable style={[styles.cancelButton, (saving || isSending) && styles.buttonDisabled]} onPress={onClose} disabled={saving || isSending}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
 
-        {(!editingAnnouncement || isDraft) && <>
-          <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave('draft')} disabled={saving || isSending}>
-            <Feather name="save" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>{saving ? 'Saving...' : 'Save Draft'}</Text>
-          </Pressable>
-          <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => setConfirmPublish(true)} disabled={saving || isSending}>
-            <Feather name="upload" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Publish without notification</Text>
-          </Pressable>
-        </>}
+        {(!editingAnnouncement || isDraft) && <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave('draft')} disabled={saving || isSending}>
+          <Feather name="save" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>{saving ? 'Saving...' : 'Save Draft'}</Text>
+        </Pressable>}
 
         {editingAnnouncement && !isDraft && <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => onSave(editingAnnouncement.status)} disabled={saving || isSending}>
           <Feather name="save" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>{saving ? 'Saving...' : 'Save Changes'}</Text>
         </Pressable>}
 
+        <Pressable style={[styles.previewButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => setShowPreview(true)} disabled={saving || isSending}>
+          <Feather name="eye" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Preview</Text>
+        </Pressable>
+        <Pressable style={[styles.saveButton, (saving || isSending || !editingAnnouncement || notificationDisabled) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={saving || isSending || !editingAnnouncement || notificationDisabled}>
+          {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
+          <Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Send to Attendees'}</Text>
+        </Pressable>
+
         {(isPublished || isDraft) && <>
           {/* The legacy "Notify Everyone" wording remains only for regression/diagnostic compatibility. */}
-          <Pressable style={[styles.previewButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => setShowPreview(true)} disabled={saving || isSending}>
-            <Feather name="eye" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Preview</Text>
-          </Pressable>
           {showTestAction && isPublished && <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
             {isSending && notificationAction.audience === 'test' ? <ActivityIndicator color={colors.textPrimary} /> : <Feather name="send" size={17} color={colors.textPrimary} />}
             <Text style={styles.secondaryButtonText}>{isSending && notificationAction.audience === 'test' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'test' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'test' ? 'Failed — Try Again' : 'Send Test Notification'}</Text>
           </Pressable>}
-          <Pressable style={[styles.dangerButton, (saving || isSending || imageBusy || everyoneSentThisSession) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={saving || isSending || imageBusy || everyoneSentThisSession}>
-            {isSending && notificationAction.audience === 'everyone' ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
-            <Text style={styles.saveButtonText}>{isSending && notificationAction.audience === 'everyone' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'everyone' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'everyone' ? 'Failed — Try Again' : 'Send to Attendees'}</Text>
-          </Pressable>
         </>}
       </View>
+
+      {(!editingAnnouncement || isDraft) && <View style={styles.secondaryActionGroup}>
+        <Text style={styles.secondaryActionLabel}>Secondary action</Text>
+        <Pressable style={[styles.secondaryButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => setConfirmPublish(true)} disabled={saving || isSending}>
+          <Feather name="upload" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Publish without notification</Text>
+        </Pressable>
+      </View>}
 
       <Modal visible={confirmEveryone} transparent animationType="fade" onRequestClose={() => { if (!isSending) setConfirmEveryone(false); }}>
         <View style={styles.modalBackdrop}>
@@ -2262,6 +2264,21 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 10,
     flexWrap: 'wrap',
+  },
+  secondaryActionGroup: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 8,
+    alignItems: 'flex-start',
+  },
+  secondaryActionLabel: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   cancelButton: {
     minHeight: 42,

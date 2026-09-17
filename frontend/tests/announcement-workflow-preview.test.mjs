@@ -18,3 +18,11 @@ test('normal editorial actions use explicit terminology and confirmations', () =
   assert.match(source, /Publish without notification/);
   assert.match(source, /Publish this announcement to the app\?/);
 });
+
+test('create and edit forms expose the complete normal workflow before saving', () => {
+  assert.match(source, /onPress=\{\(\) => setShowPreview\(true\)\}/);
+  assert.match(source, /Send to Attendees/);
+  assert.match(source, /Secondary action/);
+  assert.match(source, /Create an announcement, preview how it will look, then choose when to send it to attendees\./);
+  assert.doesNotMatch(source, /Published announcements appear in the attendee app immediately\./);
+});
