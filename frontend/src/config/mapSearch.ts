@@ -47,8 +47,6 @@ const GROUNDS_SEARCH: Array<{
   aliases: string[];
 }> = [
   { zoneId: 'rv-park', title: 'RV Park', subtitle: 'Grounds · camping', aliases: ['rv park', 'rv', 'camping', 'rv camping', 'campground'] },
-  { zoneId: 'west-parking', title: 'West Parking Lot', subtitle: 'Grounds · parking', aliases: ['west parking', 'west parking lot', 'parking'] },
-  { zoneId: 'north-parking', title: 'North Parking Lot', subtitle: 'Grounds · parking', aliases: ['north parking', 'north parking lot', 'parking'] },
   { zoneId: 'horse-plowing', title: 'Horse Plowing', subtitle: 'Grounds · plowing', aliases: ['horse plowing', 'plowing', 'plowing fields', 'plowing field'] },
   { zoneId: 'tractor-plowing', title: 'Tractor Plowing', subtitle: 'Grounds · plowing', aliases: ['tractor plowing', 'plowing', 'plowing fields', 'plowing field'] },
   { zoneId: 'bus-stop', title: 'Bus Stop', subtitle: 'Grounds · shuttle', aliases: ['bus stop', 'shuttle', 'shuttle stop', 'shuttle stops', 'shuttle pickup', 'shuttle dropoff'] },
@@ -188,4 +186,3 @@ export function eventMapHitQuery(hit: EventMapHit): string {
 export function resolveHitMapType(hit: EventMapHit): MapTypeParam {
   return hit.mapType;
 }
-

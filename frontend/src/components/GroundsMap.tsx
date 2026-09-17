@@ -1,4 +1,5 @@
 import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
+import { GroundsTrafficOverlay } from './GroundsTrafficOverlay';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Keyboard, LayoutChangeEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
@@ -181,6 +182,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
         <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />
+        <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
       </Animated.View>
     </Animated.View>

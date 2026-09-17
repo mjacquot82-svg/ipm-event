@@ -211,6 +211,8 @@ test('Maps shows Grounds, Tented City, and Camping Map selectors', () => {
   assert.match(selectorSrc, /id: 'grounds'/);
   assert.match(selectorSrc, /id: 'tented'/);
   assert.match(selectorSrc, /id: 'rv'/);
+  assert.match(selectorSrc, /label: 'Entrances\/Parking'/);
+  assert.match(selectorSrc, /id: 'entrances'/);
 });
 
 test('Camping Map selector opens RV detail directly via shared RvParkDetailMap', () => {

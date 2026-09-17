@@ -127,8 +127,7 @@ test('unified search returns owning mapType and switches destinations', () => {
   const camp = searchEventMap('camping', vendors);
   assert.ok(camp.some((h) => h.mapType === 'grounds' && h.zoneId === 'rv-park'));
   const west = searchEventMap('West Parking', vendors);
-  assert.ok(west.some((h) => h.mapType === 'grounds' && h.zoneId === 'west-parking'));
-  assert.ok(!west.some((h) => h.zoneId === 'north-parking'));
+  assert.deepEqual(west.filter((h) => h.mapType === 'grounds'), []);
   const shuttle = searchEventMap('shuttle', vendors);
   assert.ok(shuttle.some((h) => h.mapType === 'grounds' && h.zoneId === 'bus-stop'));
   const plow = searchEventMap('plowing', vendors);
