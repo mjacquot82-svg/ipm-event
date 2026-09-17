@@ -48,6 +48,7 @@ import {
   deleteScheduleEvent,
   getCurrentOrganizer,
   importSchedule,
+  isDeployPreviewRuntime,
   listAdminVendors,
   listAnnouncements,
   listAnnouncementDeliveryStats,
@@ -353,6 +354,17 @@ export default function AdminDashboardScreen() {
     try {
       const alt = (announcementForm.title || 'Announcement image').trim() || 'Announcement image';
       const previousPath = announcementForm.image?.storage_path;
+      if (isDeployPreviewRuntime() && Platform.OS === 'web' && typeof URL !== 'undefined') {
+        if (previousPath && announcementForm.image?.url?.startsWith('blob:')) {
+          URL.revokeObjectURL(announcementForm.image.url);
+        }
+        const localUrl = URL.createObjectURL(file);
+        setAnnouncementForm((current) => ({
+          ...current,
+          image: { url: localUrl, alt, width: 1200, height: 675, storage_path: `preview-local/${filename}` },
+        }));
+        return;
+      }
       const uploaded = await uploadAnnouncementImage(file, alt, filename);
       setAnnouncementForm((current) => ({ ...current, image: uploaded }));
       if (previousPath && previousPath !== uploaded.storage_path) {
@@ -365,7 +377,12 @@ export default function AdminDashboardScreen() {
 
   const removeEditorImage = async () => {
     const previousPath = announcementForm.image?.storage_path;
+    const previousUrl = announcementForm.image?.url;
     setAnnouncementForm((current) => ({ ...current, image: null }));
+    if (isDeployPreviewRuntime() && previousUrl?.startsWith('blob:') && typeof URL !== 'undefined') {
+      URL.revokeObjectURL(previousUrl);
+      return;
+    }
     if (previousPath) {
       try { await deleteAnnouncementImageObject(previousPath); } catch { /* orphan cleanup best-effort */ }
     }
