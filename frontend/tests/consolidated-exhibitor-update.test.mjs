@@ -30,6 +30,12 @@ const artisan = [
   ['Wildflower Designs, Shallow Lake', 'Artisan Tent'],
 ];
 const orange = ['Norfolk Drone Services', 'Iron-Haven Structures', 'Doc MacCheesey', 'Turquesa Mexican Food', 'Chepstow & District Lions Club', "Tilly's Fresh Fair Style Lemonade", 'Little Bowl', 'The Back 40 Smoke Box'];
+const cancellations = [
+  { directory: 'RONA Doidge Kincardine, Kincardine', id: '2c76a419-cfec-4413-9d8c-e1944dda6add', type: 'Outdoor', location: '2A-36-38', map: 'RONA Doidge Kincardine' },
+  { directory: 'WASTE MANAGEMNT', id: 'e32ebc10-ce2b-5bac-8bb4-c21650a2effb', type: 'Outdoor', location: '4B-29', map: 'WASTE MANAGEMNT' },
+  { directory: 'Real Time Fun and Rentals', id: '6e77cda5-7713-5ed5-83f5-e2a8b85d69a7', type: 'Food', location: '4B-10', map: 'Real Time Fun and Rentals' },
+  { directory: 'AmSpec Group', id: 'a0d0ef38-08bd-47ed-a65f-4e89c44c44e1', type: 'Indoor', location: '1B-16-22', map: 'AmSpec Group, Hamilton' },
+];
 
 function loadTypeScript(relative) {
   const filename = new URL(relative, root);
@@ -41,8 +47,8 @@ function loadTypeScript(relative) {
   return mod.exports;
 }
 
-test('live baseline reconciles to the approved 231-record candidate', () => {
-  assert.equal(catalog.length, 231);
+test('candidate preserves consolidated data after four confirmed cancellations', () => {
+  assert.equal(catalog.length, 227);
   for (const [name, location] of yellow) {
     const hits = catalog.filter((vendor) => vendor.name === name);
     assert.equal(hits.length, 1, name);
@@ -59,6 +65,19 @@ test('live baseline reconciles to the approved 231-record candidate', () => {
     assert.equal(hits[0].type, 'Indoor');
     assert.equal(hits[0].location, location);
   }
+});
+
+test('Sharon-confirmed cancellations are absent from directory and runtime map catalogs', () => {
+  for (const cancelled of cancellations) {
+    assert.equal(catalog.some((vendor) => vendor.id === cancelled.id), false, cancelled.id);
+    assert.equal(catalog.some((vendor) => vendor.name === cancelled.directory), false, cancelled.directory);
+    assert.equal(mapSource.includes(`"name":"${cancelled.map}"`), false, cancelled.map);
+  }
+  assert.equal(mapSource.includes('Route 66'), false);
+  assert.equal(mapSource.includes('RONA Doidge Kincardine'), false);
+  assert.equal(mapSource.includes('WASTE MANAGEMNT'), false);
+  assert.equal(mapSource.includes('Real Time Fun and Rentals'), false);
+  assert.equal(mapSource.includes('AmSpec Group, Hamilton'), false);
 });
 
 test('map updater preserves destinations and Artisan Tent representation', () => {

@@ -65,11 +65,8 @@ test('types are attendee filter chips Outdoor/Indoor/Food only', () => {
   }
 });
 
-test('AmSpec HOLD preserved at 1B-16-22 and not remapped away', () => {
-  const am = find(/amspec/i);
-  assert.equal(am.length, 1);
-  assert.equal(am[0].location, '1B-16-22');
-  assert.equal(am[0].type, 'Indoor');
+test('Sharon-confirmed AmSpec cancellation is absent from the public catalog', () => {
+  assert.equal(find(/amspec/i).length, 0);
 });
 
 test('NOT_ON_SEPT8 preservations exist (catalog > sept8 non-parent 153)', () => {

@@ -55,15 +55,6 @@
       "priority": 99
     },
     {
-      "id": "a0d0ef38-08bd-47ed-a65f-4e89c44c44e1",
-      "name": "AmSpec Group",
-      "type": "Indoor",
-      "location": "1B-16-22",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "af16cf06-a3fc-442f-89fb-34b7f7c811aa",
       "name": "Armtec",
       "type": "Indoor",
@@ -1477,15 +1468,6 @@
       "priority": 99
     },
     {
-      "id": "6e77cda5-7713-5ed5-83f5-e2a8b85d69a7",
-      "name": "Real Time Fun and Rentals",
-      "type": "Food",
-      "location": "4B-10",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "3e324cae-84da-45f6-9f2c-b9201d65e86e",
       "name": "Reformed Evangelistic Outreach, Ancaster",
       "type": "Outdoor",
@@ -1526,15 +1508,6 @@
       "name": "Rogers Cell Tower",
       "type": "Outdoor",
       "location": "NORTH",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "2c76a419-cfec-4413-9d8c-e1944dda6add",
-      "name": "RONA Doidge Kincardine, Kincardine",
-      "type": "Outdoor",
-      "location": "2A-36-38",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1891,15 +1864,6 @@
       "priority": 99
     },
     {
-      "id": "e32ebc10-ce2b-5bac-8bb4-c21650a2effb",
-      "name": "WASTE MANAGEMNT",
-      "type": "Outdoor",
-      "location": "4B-29",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "8139913d-6b7a-4eba-bcfa-e2f21ca2f5e8",
       "name": "Water and Wellness, Walkerton",
       "type": "Outdoor",
@@ -2081,5 +2045,5 @@
     }
   ],
   "last_updated": "2026-09-12T14:28:36.762Z",
-  "total_count": 231
+  "total_count": 227
 }

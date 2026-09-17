@@ -157,7 +157,7 @@ function findTentedCityPlace(query, vendors) {
 }
 
 const vendors = loadExhibitors();
-assert.equal(vendors.length, 326);
+assert.equal(vendors.length, 322);
 
 test('short queries use word boundaries so ACE does not match Wallaceburg', () => {
   assert.equal(tokensMatch('ACE / JCB, Harriston', 'ACE'), true);
