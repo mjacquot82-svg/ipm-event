@@ -186,26 +186,26 @@ class SupabaseItineraryReminderRepository:
         })
         return rows or []
 
-    async def due_registrations(self, now: datetime, *, synthetic: bool = False,
+    async def due_registrations(self, now: datetime,
         limit: int = 1000) -> list[dict[str, Any]]:
-        name = "list_due_synthetic_itinerary_reminder_registrations" if synthetic else "list_due_itinerary_reminder_registrations"
+        name = "list_due_itinerary_reminder_registrations"
         event_id = await self._event_id()
         return await self.client.request("POST", f"/rpc/{name}", json={
             "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id, "p_limit": limit,
         }) or []
 
-    async def claim_due_batch(self, now: datetime, *, synthetic: bool = False,
+    async def claim_due_batch(self, now: datetime,
         limit: int = 250) -> list[dict[str, Any]]:
-        name = "claim_due_synthetic_itinerary_reminders" if synthetic else "claim_due_itinerary_reminders"
+        name = "claim_due_itinerary_reminders"
         event_id = await self._event_id()
         return await self.client.request("POST", f"/rpc/{name}", json={
             "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id, "p_limit": limit,
         }) or []
 
-    async def finish_delivery(self, delivery_id: str, *, status: str, synthetic: bool = False,
+    async def finish_delivery(self, delivery_id: str, *, status: str,
         provider_delivery_id: str | None = None, error_message: str | None = None,
         retry_at: datetime | None = None) -> None:
-        table = "/itinerary_reminder_synthetic_deliveries" if synthetic else "/itinerary_reminder_deliveries"
+        table = "/itinerary_reminder_deliveries"
         now = datetime.now(timezone.utc).isoformat()
         body: dict[str, Any] = {"status": status, "updated_at": now,
             "provider_delivery_id": provider_delivery_id,
@@ -243,32 +243,14 @@ class SupabaseItineraryReminderRepository:
             "p_retry_after_seconds": _safe_int(rate.get("retry-after")),
         })
 
-    async def close_stale_claims(self, now: datetime, *, synthetic: bool = False) -> None:
-        table = "/itinerary_reminder_synthetic_deliveries" if synthetic else "/itinerary_reminder_deliveries"
+    async def close_stale_claims(self, now: datetime) -> None:
+        table = "/itinerary_reminder_deliveries"
         cutoff = (now - timedelta(minutes=2)).astimezone(timezone.utc).isoformat()
         await self.client.request("PATCH", table, params={"status": "eq.claimed", "claimed_at": f"lt.{cutoff}"},
             json={"status": "delivery_unknown", "updated_at": now.astimezone(timezone.utc).isoformat(),
                 "error_message": "Worker claim expired before a provider outcome was recorded"},
             headers={"Prefer": "return=minimal"})
 
-    async def prepare_synthetic_fixture(self, registration_id: str, *, starts_at: datetime,
-        starred_at: datetime, starred: bool = True, fixture_key: str = "device_isolation_t30",
-        title: str = "IPM Reminder Demo Event") -> dict[str, Any]:
-        event_id = await self._event_id()
-        rows = await self.client.request("POST", "/itinerary_reminder_synthetic_events", json={
-            "event_id": event_id, "fixture_key": fixture_key, "title": title,
-            "location_name": None, "starts_at": starts_at.astimezone(timezone.utc).isoformat(), "status": "published",
-        }, params={"on_conflict": "event_id,fixture_key"},
-            headers={"Prefer": "resolution=merge-duplicates,return=representation"})
-        fixture = rows[0]
-        await self.client.request("DELETE", "/itinerary_reminder_synthetic_stars", params={
-            "synthetic_event_id": f"eq.{fixture['id']}", "registration_id": f"eq.{registration_id}"})
-        if starred:
-            await self.client.request("POST", "/itinerary_reminder_synthetic_stars", json={
-                "registration_id": registration_id, "synthetic_event_id": fixture["id"],
-                "starred_at": starred_at.astimezone(timezone.utc).isoformat(),
-            }, headers={"Prefer": "return=minimal"})
-        return fixture
 
     async def operational_metrics(self, now: datetime) -> dict[str, int]:
         event_id = await self._event_id()
@@ -339,58 +321,10 @@ class SupabaseItineraryReminderRepository:
 
     async def benchmark_results(self) -> list[dict[str, Any]]:
         return await self.client.request("GET", "/itinerary_reminder_benchmark_results", params={
-            "select": "run_key,worker_count,registration_count,candidate_query_ms,claim_ms,batching_ms,claimed_count,duplicate_count,batch_count,waiting_locks,schedule_count_before,schedule_count_after,real_registration_count_before,real_registration_count_after,synthetic_cleanup_verified,created_at",
+            "select": "run_key,worker_count,registration_count,candidate_query_ms,claim_ms,batching_ms,claimed_count,duplicate_count,batch_count,waiting_locks,schedule_count_before,schedule_count_after,real_registration_count_before,real_registration_count_after,cleanup_verified,created_at",
             "order": "created_at.desc", "limit": "3"}) or []
 
-    async def synthetic_fixture_status(self, fixture_key: str) -> dict[str, Any] | None:
-        event_id = await self._event_id()
-        events = await self.client.request("GET", "/itinerary_reminder_synthetic_events", params={
-            "select": "id,fixture_key,title,starts_at,status,created_at,updated_at",
-            "event_id": f"eq.{event_id}", "fixture_key": f"eq.{fixture_key}", "limit": "1",
-        })
-        if not events: return None
-        fixture = events[0]
-        stars = await self.client.request("GET", "/itinerary_reminder_synthetic_stars", params={
-            "select": "registration_id,starred_at",
-            "synthetic_event_id": f"eq.{fixture['id']}",
-        }) or []
-        registrations = {row["id"]: row.get("test_device_label") for row in
-            await self.client.request("GET", "/itinerary_reminder_installations", params={
-                "select": "id,test_device_label", "event_id": f"eq.{event_id}"}) or []}
-        deliveries = await self.client.request("GET", "/itinerary_reminder_synthetic_deliveries", params={
-            "select": "registration_id,status,claimed_at,provider_accepted_at,provider_delivery_id,attempt_count",
-            "synthetic_event_id": f"eq.{fixture['id']}",
-        }) or []
-        authorizations = await self.client.request("GET", "/itinerary_reminder_synthetic_authorizations", params={
-            "select": "registration_id,created_at,expires_at,consumed_at,reminder_type",
-            "synthetic_event_id": f"eq.{fixture['id']}",
-        }) or []
-        by_label = {"A": [], "B": []}
-        for star in stars:
-            label = registrations.get(star["registration_id"])
-            if label in by_label: by_label[label].append(star["starred_at"])
-        return {key: fixture[key] for key in ("fixture_key", "title", "starts_at", "status", "created_at", "updated_at")} | {
-            "device_a_association_count": len(by_label["A"]),
-            "device_a_associated_at": min(by_label["A"]) if by_label["A"] else None,
-            "device_b_association_count": len(by_label["B"]),
-            "delivery_count": len(deliveries),
-            "delivery_statuses": sorted({row["status"] for row in deliveries}),
-            "provider_call_recorded": any(row.get("provider_delivery_id") for row in deliveries),
-            "provider_call_count": sum(int(row.get("attempt_count") or 0) for row in deliveries
-                if row.get("status") != "claimed"),
-            "authorization_count": len(authorizations),
-            "authorization_status": ("consumed" if authorizations and authorizations[0].get("consumed_at")
-                else "unused") if authorizations else "none",
-            "authorization_created_at": authorizations[0].get("created_at") if authorizations else None,
-            "authorization_expires_at": authorizations[0].get("expires_at") if authorizations else None,
-            "authorization_consumed_at": authorizations[0].get("consumed_at") if authorizations else None,
-        }
 
-    async def synthetic_fixture_by_key(self, fixture_key: str) -> dict[str, Any] | None:
-        event_id = await self._event_id()
-        rows = await self.client.request("GET", "/itinerary_reminder_synthetic_events", params={
-            "select": "*", "event_id": f"eq.{event_id}", "fixture_key": f"eq.{fixture_key}", "limit": "1"})
-        return rows[0] if rows else None
 
     async def registration_by_id(self, registration_id: str) -> dict[str, Any] | None:
         event_id = await self._event_id()
@@ -398,24 +332,7 @@ class SupabaseItineraryReminderRepository:
             "select": "*", "event_id": f"eq.{event_id}", "id": f"eq.{registration_id}", "limit": "1"})
         return rows[0] if rows else None
 
-    async def authorize_synthetic_fixture(self, *, fixture_id: str, registration_id: str,
-        authorized_by: str, now: datetime) -> dict[str, Any]:
-        event_id = await self._event_id()
-        rows = await self.client.request("POST", "/itinerary_reminder_synthetic_authorizations", json={
-            "event_id": event_id, "synthetic_event_id": fixture_id, "registration_id": registration_id,
-            "reminder_type": REMINDER_TYPE, "created_at": now.astimezone(timezone.utc).isoformat(),
-            "expires_at": (now + timedelta(minutes=15)).astimezone(timezone.utc).isoformat(),
-            "authorized_by": authorized_by[:200],
-        }, headers={"Prefer": "return=representation"})
-        return rows[0]
 
-    async def claim_authorized_synthetic(self, *, now: datetime, fixture_id: str,
-        registration_id: str) -> list[dict[str, Any]]:
-        event_id = await self._event_id()
-        return await self.client.request("POST", "/rpc/claim_authorized_synthetic_itinerary_reminder", json={
-            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id,
-            "p_synthetic_event_id": fixture_id, "p_registration_id": registration_id,
-        }) or []
 
 
 def public_status(registration: dict[str, Any]) -> dict[str, Any]:
@@ -508,9 +425,9 @@ class ItineraryReminderEngine:
         for offset in range(0, len(rows), self.concurrency):
             await asyncio.gather(*(operation(row) for row in rows[offset:offset + self.concurrency]))
 
-    async def run(self, *, now: datetime, synthetic: bool = False) -> dict[str, Any]:
-        await self.repository.close_stale_claims(now, synthetic=synthetic)
-        candidates = await self.repository.due_registrations(now, synthetic=synthetic,
+    async def run(self, *, now: datetime) -> dict[str, Any]:
+        await self.repository.close_stale_claims(now)
+        candidates = await self.repository.due_registrations(now,
             limit=self.batch_size * 4)
         semaphore = asyncio.Semaphore(self.concurrency)
         unreachable = 0
@@ -528,7 +445,7 @@ class ItineraryReminderEngine:
                 if reachability != "optIn" or not has_token: unreachable += 1
 
         await self._bounded(candidates, refresh)
-        result = {"synthetic": synthetic, "kill_switch_enabled": not self.delivery_enabled,
+        result = {"kill_switch_enabled": not self.delivery_enabled,
             "candidate_registrations": len(candidates), "suppressed_installation_unreachable": unreachable,
             "claimed": 0, "provider_accepted": 0, "provider_failed": 0, "delivery_unknown": 0,
             "provider_429": 0, "provider_5xx": 0, "send_rate_limit": self.max_sends_per_second,
@@ -536,17 +453,15 @@ class ItineraryReminderEngine:
             "provider_requests": 0, "exact_target_batches": 0}
         if not self.delivery_enabled:
             return result
-        recovered_rows: list[dict[str, Any]] = []
-        if not synthetic:
-            recovery = await self.repository.recover_expired_batches(now)
-            result.update({f"recovery_{key}": value for key, value in recovery.items()})
-            recovered_rows = await self.repository.lease_assigned_batches(now,
-                worker_id="scheduler", limit=100, lease_seconds=90)
-        claims = await self.repository.claim_due_batch(now, synthetic=synthetic, limit=self.batch_size)
+        recovery = await self.repository.recover_expired_batches(now)
+        result.update({f"recovery_{key}": value for key, value in recovery.items()})
+        recovered_rows = await self.repository.lease_assigned_batches(now,
+            worker_id="scheduler", limit=100, lease_seconds=90)
+        claims = await self.repository.claim_due_batch(now, limit=self.batch_size)
         result["claimed"] = len(claims)
         targeter = InstallationTargetedWonderPush(self.repository, self.provider)
 
-        if not synthetic and (claims or recovered_rows):
+        if claims or recovered_rows:
             groups: dict[tuple[str, str, str, str], list[dict[str, Any]]] = {}
             for claim in claims:
                 key = (claim["schedule_item_id"], claim["title"],
@@ -631,7 +546,7 @@ class ItineraryReminderEngine:
             async with semaphore:
                 if not self.circuit_breaker.allow():
                     await self.repository.finish_delivery(claim["delivery_id"], status="provider_failed",
-                        synthetic=synthetic, error_message="Provider circuit breaker is open",
+                        error_message="Provider circuit breaker is open",
                         retry_at=now + timedelta(minutes=1))
                     result["provider_failed"] += 1
                     return
@@ -649,14 +564,14 @@ class ItineraryReminderEngine:
                     status, failure_kind = classify_provider_failure(exc)
                     retry_at = now + timedelta(minutes=1) if status == "provider_failed" else None
                     await self.repository.finish_delivery(claim["delivery_id"], status=status,
-                        synthetic=synthetic, error_message=text, retry_at=retry_at)
+                        error_message=text, retry_at=retry_at)
                     result[status] += 1
                     if failure_kind == "429": result["provider_429"] += 1
                     if failure_kind == "5xx": result["provider_5xx"] += 1
                     self.circuit_breaker.record(False)
                     return
                 await self.repository.finish_delivery(claim["delivery_id"], status="provider_accepted",
-                    synthetic=synthetic, provider_delivery_id=provider_id)
+                    provider_delivery_id=provider_id)
                 result["provider_accepted"] += 1
                 self.circuit_breaker.record(True)
 
@@ -664,52 +579,3 @@ class ItineraryReminderEngine:
         result["circuit_breaker"] = self.circuit_breaker.state
         return result
 
-    async def run_authorized_synthetic(self, *, now: datetime, fixture_id: str,
-        registration_id: str) -> dict[str, Any]:
-        """One authorization can admit one synthetic claim while the global kill switch stays on."""
-        result = {"synthetic": True, "fixture_scoped_authorization": True,
-            "global_kill_switch_enabled": not self.delivery_enabled, "claimed": 0,
-            "provider_accepted": 0, "provider_failed": 0, "delivery_unknown": 0,
-            "provider_call_count": 0}
-        registration = await self.repository.registration_by_id(registration_id)
-        if not registration or registration.get("test_device_label") != "A": return result
-        try:
-            installation = await self.provider.get_installation(registration["wonderpush_installation_id"])
-            reachability, has_token = provider_readiness(installation)
-        except Exception:
-            reachability, has_token = "unknown", False
-        await self.repository.set_readiness(registration_id, reachability=reachability,
-            has_push_token=has_token, checked_at=now)
-        if not self.circuit_breaker.allow():
-            result["circuit_breaker"] = "open"
-            return result
-        claims = await self.repository.claim_authorized_synthetic(now=now,
-            fixture_id=fixture_id, registration_id=registration_id)
-        result["claimed"] = len(claims)
-        if not claims: return result
-        # The atomic RPC can return at most one exact fixture/registration claim.
-        claim = claims[0]
-        targeter = InstallationTargetedWonderPush(self.repository, self.provider)
-        location = (claim.get("location_name") or "").strip()
-        message = f"{claim['title']} starts in 30 minutes"
-        if location: message += f" at {location}"
-        message += "."
-        result["provider_call_count"] = 1
-        await self.rate_limiter.acquire()
-        try:
-            provider_id = await targeter.send(installation_id=claim["wonderpush_installation_id"],
-                title="IPM — Starting Soon", message=message, target_url=self.target_url)
-        except Exception as exc:
-            text = str(exc)
-            status, _failure_kind = classify_provider_failure(exc)
-            await self.repository.finish_delivery(claim["delivery_id"], status=status,
-                synthetic=True, error_message=text, retry_at=None)
-            self.circuit_breaker.record(False)
-            result[status] = 1
-            return result
-        await self.repository.finish_delivery(claim["delivery_id"], status="provider_accepted",
-            synthetic=True, provider_delivery_id=provider_id)
-        result["provider_accepted"] = 1
-        self.circuit_breaker.record(True)
-        result["provider_delivery_id"] = provider_id
-        return result
