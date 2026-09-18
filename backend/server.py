@@ -2106,6 +2106,18 @@ async def register_itinerary_reminder_device(request: Request):
     return public_itinerary_reminder_status(registration)
 
 
+@api_router.post("/itinerary-reminders/readiness/verify")
+async def verify_itinerary_reminder_readiness(request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    try:
+        verified = await repository.reconcile_readiness(
+            registration, require_wonderpush_client(), checked_at=datetime.now(timezone.utc))
+    except WonderPushError as exc:
+        raise HTTPException(status_code=503,
+            detail="Notification readiness is temporarily unavailable") from exc
+    return public_itinerary_reminder_status(verified)
+
+
 @api_router.get("/itinerary-reminders/status")
 async def itinerary_reminder_status(request: Request):
     _, registration = await authorize_itinerary_device(request)

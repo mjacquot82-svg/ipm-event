@@ -76,8 +76,10 @@ export async function getItineraryReminderReadiness() {
 export async function configureItineraryReminderSync(starredScheduleIds: string[]): Promise<void> {
   const client = await getWonderPushClientReadiness();
   if (!client.clientReady) throw new Error('The current browser is not notification-ready.');
-  const existing = await statusByCapability();
-  if (!existing) await request('/register', 'POST');
+  // Re-register is idempotent and refreshes this exact itinerary registration
+  // after the generic notification registration has reconciled WonderPush.
+  await request('/register', 'POST');
+  await request('/readiness/verify', 'POST');
   const readiness = await getItineraryReminderReadiness();
   if (readiness.currentInstallationMatch !== 'match') throw new Error('The current installation does not match its registration.');
   if (!readiness.registration?.provider_deliverable) throw new Error('The current installation is not provider-reachable.');
