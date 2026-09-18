@@ -486,6 +486,7 @@ class NotificationDeliveryResponse(BaseModel):
     notification_message: str
 
 class NotificationAnalyticsResponse(BaseModel):
+    """Provider event counts and attributed visits; missing metrics are unavailable, not zero."""
     audience: str
     requested_at: Optional[datetime] = None
     requested: bool

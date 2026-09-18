@@ -21,6 +21,16 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+
+class _StatisticsRequestLogFilter(logging.Filter):
+    def filter(self, record):
+        # WonderPush requires query authentication. HTTPX otherwise logs that
+        # URL at INFO, including the credential. Keep only our sanitized status.
+        return "management-api.wonderpush.com/v1/stats/reports" not in record.getMessage()
+
+
+logging.getLogger("httpx").addFilter(_StatisticsRequestLogFilter())
+
 class WonderPushError(Exception):
     """Normalized provider error safe to expose through the admin API."""
 

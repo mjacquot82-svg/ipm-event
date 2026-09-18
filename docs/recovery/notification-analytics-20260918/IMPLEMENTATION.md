@@ -47,7 +47,7 @@ Automatic refresh is observational, only for accepted sends with usable identiti
 | 24 hours to under 7 days | 6 hours |
 | 7 days or older | No automatic refresh |
 
-No provider final-state marker is asserted; the seven-day age cutoff bounds automatic work. Owner-only explicit diagnostics can refresh older rows, at most once per minute. Any unavailable/rate-limited attempt imposes at least one hour backoff; older age intervals still apply. A 429 stops that load. At most five deliveries are queried per load, within a 12-second overall deadline and 8-second provider request timeout. Conditional PostgreSQL leases prevent simultaneous refreshes of the same row; abandoned leases expire after at least five minutes. Final writes compare the lease timestamp so stale workers cannot replace newer results. Errors are sanitized and do not erase existing metrics.
+No provider final-state marker is asserted; the seven-day age cutoff bounds automatic work. Owner-only explicit diagnostics can refresh older rows, at most once per minute. Any unavailable/rate-limited attempt imposes at least one hour backoff; older age intervals still apply. A 429 stops that load. At most five deliveries are queried per load, within a 12-second overall deadline and 8-second provider request timeout. Conditional PostgreSQL leases prevent simultaneous refreshes of the same row; abandoned leases expire after at least five minutes. Final writes compare the lease timestamp so stale workers cannot replace newer results. Errors are sanitized and do not erase existing metrics. HTTPX request logs for the statistics endpoint are suppressed because query authentication would otherwise expose the provider credential; a MockTransport/captured-log test verifies this.
 
 Opening Announcements loads statistics. While that section is visible, the UI checks the backend at most once per minute; the backend policy prevents unnecessary provider calls. No provider call occurs on a React render. Historical/aged rows stop automatic provider polling. `Statistics last checked` makes a frozen snapshot explicit.
 
@@ -79,7 +79,7 @@ Working source path: `alerts.image.url` → `notify_announcement(image_url)` →
 
 ## Validation and pre-existing failures
 
-Backend requested coverage: 229 passed, 0 failed (16 selected files), including 48 completion cases, 13 T-30 analytics cases, 7 original-migration cases and a real disposable Mongo deduplication test. Disposable PostgreSQL/Mongo services never use live staging or production databases. Provider HTTP is mocked in tests.
+Backend requested coverage: 230 passed, 0 failed (16 selected files), including 49 completion cases, 13 T-30 analytics cases, 7 original-migration cases and a real disposable Mongo deduplication test. Disposable PostgreSQL/Mongo services never use live staging or production databases. Provider HTTP is mocked in tests.
 
 Frontend analytics/admin targeted suite: 47 passed, 0 failed. Broader notification/announcement/admin-auth run: 71 passed, 5 failed. These five also fail in an isolated copy of recovered SHA e517d32c:
 - admin-auth-network: assumes Content-Type on a bodyless request;

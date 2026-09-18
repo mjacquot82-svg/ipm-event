@@ -305,3 +305,18 @@ def test_definitively_rejected_broadcast_retry_is_a_distinct_actual_attempt(monk
     assert first['campaign_id']!=provider.everyone_options['campaign_id']
     assert first['idempotency_key']!=provider.everyone_options['idempotency_key']
     assert campaign_identity(ledger.rows[1]['id'],'everyone')==provider.everyone_options['campaign_id']
+
+
+def test_statistics_http_logging_never_exposes_credentials(monkeypatch,caplog):
+    import logging
+    original=httpx.AsyncClient
+    def handler(request):
+        assert request.url.path=='/v1/stats/reports'
+        return httpx.Response(200,json={'success':True,'hasErrors':False,'bulkValues':[
+            {'groups':[{'dimensions':{},'value':{'int':2}}]}]*4})
+    monkeypatch.setattr(httpx,'AsyncClient',lambda **kw:original(transport=httpx.MockTransport(handler),**kw))
+    with caplog.at_level(logging.INFO,logger='httpx'):
+        values=asyncio.run(WonderPushClient(access_token='fixture-SECRET').get_campaign_statistics(
+            'fixture-campaign',requested_at=NOW.isoformat()))
+    assert values['provider_confirmed_receipt_count']==2
+    assert 'fixture-SECRET' not in caplog.text and 'accessToken=' not in caplog.text
