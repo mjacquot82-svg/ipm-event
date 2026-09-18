@@ -2322,6 +2322,15 @@ async def set_itinerary_reminders_enabled(data: ItineraryEnabledPayload, request
 async def sync_itinerary_reminder_stars(data: ItineraryStarsPayload, request: Request):
     repository, registration = await authorize_itinerary_device(request)
     try:
+        # A star sync is not provider verification. Refresh the exact bound
+        # installation before recording the attendee interest so stale readiness
+        # can never be used by a controlled or normal reminder claim.
+        registration = await repository.reconcile_readiness(
+            registration, require_wonderpush_client(), checked_at=datetime.now(timezone.utc))
+    except WonderPushError as exc:
+        raise HTTPException(status_code=503,
+            detail="Notification readiness is temporarily unavailable") from exc
+    try:
         result = await repository.sync_full_set(registration, [str(value) for value in data.schedule_ids])
     except httpx.HTTPStatusError as exc:
         raise HTTPException(status_code=400, detail="Unknown or cross-event Schedule event") from exc

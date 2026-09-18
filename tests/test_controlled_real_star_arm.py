@@ -37,3 +37,9 @@ def test_normal_t30_lead_is_unchanged():
         "supabase/migrations/20260823000600_real_itinerary_reminder_engine.sql"
     ).read_text()
     assert "fixture_record.test_lead_minutes" in MIGRATION
+
+
+def test_real_star_sync_refreshes_bound_provider_readiness_first():
+    assert "repository.reconcile_readiness" in SERVER
+    assert "require_wonderpush_client()" in SERVER
+    assert "stale readiness" in SERVER
