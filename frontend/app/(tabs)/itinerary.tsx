@@ -73,6 +73,7 @@ export default function ItineraryScreen() {
   const [showReminderDiagnostics, setShowReminderDiagnostics] = useState(false);
   const [diagnosticsCopyMessage, setDiagnosticsCopyMessage] = useState<string | null>(null);
   const reminderRefreshSequence = useRef(0);
+  const scheduleFetchInFlight = useRef(false);
 
   const refreshReminderStatus = useCallback(async () => {
     const sequence = ++reminderRefreshSequence.current;
@@ -99,20 +100,26 @@ export default function ItineraryScreen() {
     return storedFavorites;
   }, []);
 
-  const fetchSchedule = useCallback(async () => {
+  const fetchSchedule = useCallback(async (forceNetwork = false) => {
+    if (scheduleFetchInFlight.current) return;
+    scheduleFetchInFlight.current = true;
+
     try {
-      setLoading(true);
+      if (!forceNetwork) setLoading(true);
       setError(null);
 
       const result = await getScheduleData({
+        preferCache: !forceNetwork,
         onBackgroundRefresh: applyScheduleResult,
         onBackgroundRefreshError: () => setDataSource('cache'),
       });
       applyScheduleResult(result);
     } catch {
-      setError('Unable to load itinerary.');
+      // Keep the last known Schedule data visible when a focus/reconnect refresh fails.
+      if (!forceNetwork) setError('Unable to load itinerary.');
     } finally {
-      setLoading(false);
+      if (!forceNetwork) setLoading(false);
+      scheduleFetchInFlight.current = false;
     }
   }, [applyScheduleResult]);
 
@@ -121,12 +128,15 @@ export default function ItineraryScreen() {
     fetchSchedule();
   }, [fetchSchedule, loadFavorites, refreshReminderStatus]);
 
-  useEffect(() => addConnectivityRefreshListener(() => void fetchSchedule()), [fetchSchedule]);
+  useEffect(() => addConnectivityRefreshListener(() => void fetchSchedule(true)), [fetchSchedule]);
 
   useFocusEffect(
     useCallback(() => {
-      void loadFavorites().then(() => refreshReminderStatus());
-    }, [loadFavorites, refreshReminderStatus])
+      void Promise.all([
+        loadFavorites().then(() => refreshReminderStatus()),
+        fetchSchedule(true),
+      ]);
+    }, [fetchSchedule, loadFavorites, refreshReminderStatus])
   );
 
   const changeReminderStatus = async () => {
