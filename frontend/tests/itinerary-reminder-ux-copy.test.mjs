@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const schedule = fs.readFileSync(new URL('../app/(tabs)/schedule.tsx', import.meta.url), 'utf8');
 const itinerary = fs.readFileSync(new URL('../app/(tabs)/itinerary.tsx', import.meta.url), 'utf8');
 const notificationOptIn = fs.readFileSync(new URL('../src/components/NotificationOptIn.tsx', import.meta.url), 'utf8');
+const syncWeb = fs.readFileSync(new URL('../src/services/itineraryReminderSync.web.ts', import.meta.url), 'utf8');
 const reminderUx = fs.readFileSync(new URL('../src/services/reminderUxService.web.ts', import.meta.url), 'utf8');
 
 test('Schedule explains starring, My Itinerary, and approximate reminder timing', () => {
@@ -47,4 +48,11 @@ test('the prominent opt-in remains behind the existing explicit action', () => {
   assert.match(component, /onPress=\{updateSubscription\}/);
   assert.match(component, /expanded && !verificationDeferred && canAct && !working/);
   assert.doesNotMatch(component, /requestPermission\(\)/);
+});
+
+test('staging check-in is explicit, short-identifier-only, and reuses the registered installation', () => {
+  assert.match(notificationOptIn, /Confirm this staging test device/);
+  assert.match(notificationOptIn, /registerControlledTestDevice\('A'\)/);
+  assert.match(syncWeb, /request\('\/test-device', 'PUT', \{ label \}\)/);
+  assert.doesNotMatch(notificationOptIn, /wonderpush_installation_id|capability_hash|WONDERPUSH_ACCESS_TOKEN/);
 });
