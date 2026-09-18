@@ -3,6 +3,11 @@ import { getSubscribedInstallationId, getWonderPushClientReadiness } from './won
 
 const CAPABILITY_KEY = '@ipm_itinerary_reminder_capability_v1';
 const ENABLED_KEY = '@ipm_itinerary_reminders_enabled_v1';
+const READINESS_VERIFIED_AT_KEY = '@ipm_itinerary_reminder_readiness_verified_at_v1';
+// An enabled attendee may revisit My Itinerary often. Keep the explicit
+// reconciliation idempotent without performing a provider lookup on every
+// render or favourite change.
+const READINESS_FRESHNESS_MS = 5 * 60 * 1000;
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
 
 class ApiSyncError extends Error {
@@ -46,6 +51,16 @@ async function request(path: string, method: string, body?: unknown) {
   return response.json();
 }
 
+async function verifyReadinessIfStale(force = false): Promise<void> {
+  const stored = await AsyncStorage.getItem(READINESS_VERIFIED_AT_KEY);
+  const verifiedAt = stored ? Number(stored) : 0;
+  if (!force && Number.isFinite(verifiedAt) && Date.now() - verifiedAt < READINESS_FRESHNESS_MS) return;
+  // Only record freshness after the backend has completed the real,
+  // exact-registration provider verification successfully.
+  await request('/readiness/verify', 'POST');
+  await AsyncStorage.setItem(READINESS_VERIFIED_AT_KEY, String(Date.now()));
+}
+
 async function statusByCapability() {
   const capability = await AsyncStorage.getItem(CAPABILITY_KEY);
   if (!capability) return null;
@@ -79,7 +94,7 @@ export async function configureItineraryReminderSync(starredScheduleIds: string[
   // Re-register is idempotent and refreshes this exact itinerary registration
   // after the generic notification registration has reconciled WonderPush.
   await request('/register', 'POST');
-  await request('/readiness/verify', 'POST');
+  await verifyReadinessIfStale(true);
   const readiness = await getItineraryReminderReadiness();
   if (readiness.currentInstallationMatch !== 'match') throw new Error('The current installation does not match its registration.');
   if (!readiness.registration?.provider_deliverable) throw new Error('The current installation is not provider-reachable.');
@@ -105,6 +120,13 @@ export async function disableItineraryReminderSync(): Promise<void> {
   await AsyncStorage.setItem(ENABLED_KEY, 'false');
 }
 
+/** Explicitly refresh an already-enabled attendee's exact provider readiness. */
+export async function refreshEnabledItineraryReminderReadiness() {
+  if (await AsyncStorage.getItem(ENABLED_KEY) !== 'true') return getItineraryReminderReadiness();
+  await verifyReadinessIfStale(true);
+  return getItineraryReminderReadiness();
+}
+
 export async function disableItineraryRemindersForTesting() {
   await disableItineraryReminderSync();
   return getItineraryReminderReadiness();
@@ -118,6 +140,7 @@ export async function reconcileItineraryReminderStars(starredScheduleIds: string
       await configureItineraryReminderSync(starredScheduleIds);
       return;
     }
+    await verifyReadinessIfStale();
     await request('/stars', 'PUT', { schedule_ids: [...new Set(starredScheduleIds)] });
   } catch {
     // Local favorites remain authoritative for UX; the next focus/toggle retries the full set.
