@@ -26,6 +26,6 @@ test('persistent options are independent of promotional dismissal', () => {
   assert.match(source, /persistent = false/);
   assert.match(source, /initiallyExpanded \|\| persistent/);
   assert.match(source, /onPress=\{updateSubscription\}/);
-  assert.match(source, /persistent \? 'Notification options' : 'Get important IPM updates'/);
+  assert.match(source, /persistent \? \(state === 'subscribed' \? 'Event reminders ✓' : 'Event reminders'\) : 'Get important IPM updates'/);
   assert.match(source, /Notification options/);
 });
