@@ -68,6 +68,15 @@ export default function ItineraryScreen() {
     setArmState(clock >= armWindowOpensAt && clock <= armExpiry ? 'waiting' : 'hidden');
   }, [armDueAt, armExpiry, armState, armWindowOpensAt, clock, stagingArmEnabled, stagingArmEventVisible]);
 
+  const refreshControlledReminder = useCallback(async () => {
+    if (!stagingArmEnabled) return;
+    try {
+      setActiveControlledReminder(await getActiveControlledReminder());
+    } catch {
+      setActiveControlledReminder(null);
+    }
+  }, [stagingArmEnabled]);
+
   const armStagingReminder = async () => {
     setArmState('working');
     try {
@@ -89,8 +98,11 @@ export default function ItineraryScreen() {
   const loadFavorites = useCallback(async () => {
     const storedFavorites = await getFavorites();
     setFavorites(storedFavorites);
-    void reconcileAttendeeItineraryReminders(storedFavorites);
-  }, []);
+    await reconcileAttendeeItineraryReminders(storedFavorites);
+    // Refresh after star synchronization so a newly eligible fixture renders
+    // its arm card without a reload or second physical action.
+    await refreshControlledReminder();
+  }, [refreshControlledReminder]);
 
   const fetchSchedule = useCallback(async () => {
     try {
@@ -110,19 +122,13 @@ export default function ItineraryScreen() {
   }, [applyScheduleResult]);
 
   useEffect(() => {
-    loadFavorites();
+    void loadFavorites();
     fetchSchedule();
-    if (stagingArmEnabled) {
-      void getActiveControlledReminder().then(setActiveControlledReminder).catch(() => setActiveControlledReminder(null));
-    }
   }, [fetchSchedule, loadFavorites]);
 
   useFocusEffect(
     useCallback(() => {
-      loadFavorites();
-      if (stagingArmEnabled) {
-        void getActiveControlledReminder().then(setActiveControlledReminder).catch(() => setActiveControlledReminder(null));
-      }
+      void loadFavorites();
     }, [loadFavorites])
   );
 
@@ -131,7 +137,8 @@ export default function ItineraryScreen() {
   const handleRemove = async (eventId: string) => {
     const result = await toggleFavorite(eventId);
     setFavorites(result.favorites);
-    void reconcileAttendeeItineraryReminders(result.favorites);
+    await reconcileAttendeeItineraryReminders(result.favorites);
+    await refreshControlledReminder();
     void queueAnalyticsEvent('favorite_changed', { schedule_item_id: eventId, action: 'removed' });
     if (!result.isFavorite && !result.favorites.includes(eventId)) {
       setRemovalNotice(true);

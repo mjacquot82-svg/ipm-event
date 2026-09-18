@@ -86,6 +86,12 @@ test('successful star confirms itinerary addition and unstar remains unchanged',
   assert.match(itinerary, /events\.filter\(\(event\) => favorites\.includes\(event\.id\)\)/);
 });
 
+test('itinerary refreshes controlled-test discovery after star reconciliation', () => {
+  assert.match(itinerary, /await reconcileAttendeeItineraryReminders\(storedFavorites\);[\s\S]*await refreshControlledReminder\(\);/);
+  assert.match(itinerary, /await reconcileAttendeeItineraryReminders\(result\.favorites\);[\s\S]*await refreshControlledReminder\(\);/);
+  assert.match(itinerary, /const refreshControlledReminder = useCallback/);
+});
+
 test('Schedule stars are outlined when unselected and solid yellow when selected', () => {
   assert.match(schedule, /name=\{isFavorite \? 'star' : 'star-o'\}/);
   assert.match(schedule, /name=\{favorites\.includes\(selectedEvent\.id\) \? 'star' : 'star-o'\}/);
