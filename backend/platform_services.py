@@ -1248,7 +1248,7 @@ class SupabaseNotificationDeliveryService:
         return await self.client.request(
             "GET", "/notification_deliveries", params={
                 "select": (
-                    "announcement_id,status,sent_at,audience_device_count,"
+                    "id,announcement_id,status,sent_at,audience_device_count,"
                     "audience_count_basis,audience_snapshot_at,audience_stale_device_count,"
                     "provider_campaign_id,provider_delivery_id,provider_targeted_device_count,"
                     "provider_sent_count,provider_confirmed_receipt_count,provider_failure_count,"

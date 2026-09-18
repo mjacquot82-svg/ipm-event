@@ -1808,9 +1808,28 @@ async def list_announcement_delivery_stats(
     current_user: dict = Depends(get_current_organizer_user),
 ):
     require_announcement_manager_role(current_user)
-    rows = await require_notification_delivery_service().list_announcement_stats(
+    deliveries = require_notification_delivery_service()
+    rows = await deliveries.list_announcement_stats(
         event_id=get_admin_event_id(current_user)
     )
+    # One bounded read-only provider refresh per stored delivery. Provider
+    # failures are recorded as analytics state and never affect sending.
+    provider = None
+    for row in rows:
+        campaign_id = row.get("provider_campaign_id")
+        if not campaign_id or campaign_id.startswith("wonderpush:"):
+            continue
+        if provider is None:
+            provider = require_wonderpush_client()
+        try:
+            values = normalize_wonderpush_statistics(await provider.get_campaign_statistics(campaign_id))
+            values.update({"provider_statistics_refreshed_at": datetime.now(timezone.utc).isoformat(),
+                "provider_statistics_status": "available", "provider_statistics_error": None})
+        except WonderPushError as exc:
+            values = {"provider_statistics_refreshed_at": datetime.now(timezone.utc).isoformat(),
+                "provider_statistics_status": "unavailable", "provider_statistics_error": str(exc)[:500]}
+        updated = await deliveries.update_provider_statistics(row["id"], values)
+        row.update(updated)
     return AnnouncementDeliveryStatsResponse(deliveries=[
         AnnouncementDeliveryStats(
             **row,
