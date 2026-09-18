@@ -112,10 +112,13 @@ export type ActiveControlledReminder = {
   location_name?: string | null;
   event_start?: string;
   reminder_target?: string;
+  server_now?: string;
   arm_available_at?: string;
+  arm_expires_at?: string;
   authorization_expires_at?: string;
   real_star_exists?: boolean;
   already_armed?: boolean;
+  can_arm?: boolean;
   expired?: boolean;
 };
 

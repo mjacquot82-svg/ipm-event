@@ -48,14 +48,16 @@ export default function ItineraryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
-  const [armState, setArmState] = useState<'hidden' | 'waiting' | 'working' | 'armed' | 'failed'>('hidden');
+  const [armState, setArmState] = useState<'hidden' | 'early' | 'waiting' | 'working' | 'armed' | 'failed' | 'expired'>('hidden');
   const [clock, setClock] = useState(() => Date.now());
   const [activeControlledReminder, setActiveControlledReminder] = useState<ActiveControlledReminder | null>(null);
   const stagingArmEnabled = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname === 'staging.theipm.ca';
   const stagingArmEventVisible = Boolean(activeControlledReminder?.has_active_test);
   const armDueAt = activeControlledReminder?.arm_available_at ? new Date(activeControlledReminder.arm_available_at).getTime() : 0;
-  const armExpiry = activeControlledReminder?.authorization_expires_at ? new Date(activeControlledReminder.authorization_expires_at).getTime() : 0;
-  const armWindowOpensAt = armDueAt - 60 * 1000;
+  const armExpiry = activeControlledReminder?.arm_expires_at ? new Date(activeControlledReminder.arm_expires_at).getTime() : 0;
+  const armAuthorizationExpiry = activeControlledReminder?.authorization_expires_at ? new Date(activeControlledReminder.authorization_expires_at).getTime() : 0;
+  const serverClockOffset = activeControlledReminder?.server_now ? new Date(activeControlledReminder.server_now).getTime() - clock : 0;
+  const effectiveServerNow = clock + serverClockOffset;
 
   useEffect(() => {
     if (!stagingArmEnabled) return undefined;
@@ -64,9 +66,15 @@ export default function ItineraryScreen() {
   }, [stagingArmEnabled]);
 
   useEffect(() => {
-    if (!stagingArmEnabled || !stagingArmEventVisible || armState === 'armed' || armState === 'working') return;
-    setArmState(clock >= armWindowOpensAt && clock <= armExpiry ? 'waiting' : 'hidden');
-  }, [armDueAt, armExpiry, armState, armWindowOpensAt, clock, stagingArmEnabled, stagingArmEventVisible]);
+    if (!stagingArmEnabled || !stagingArmEventVisible || !activeControlledReminder?.real_star_exists || armState === 'armed' || armState === 'working') return;
+    if (activeControlledReminder.can_arm && effectiveServerNow >= armDueAt && effectiveServerNow < armExpiry && effectiveServerNow < armAuthorizationExpiry) {
+      setArmState('waiting');
+    } else if (effectiveServerNow < armDueAt) {
+      setArmState('early');
+    } else {
+      setArmState('expired');
+    }
+  }, [activeControlledReminder, armDueAt, armExpiry, armAuthorizationExpiry, armState, effectiveServerNow, stagingArmEnabled, stagingArmEventVisible]);
 
   const refreshControlledReminder = useCallback(async () => {
     if (!stagingArmEnabled) return;
@@ -206,6 +214,10 @@ export default function ItineraryScreen() {
             <Text style={styles.controlledArmStatus}>Armed for the exact Device A target. No notification has been sent.</Text>
           ) : armState === 'failed' ? (
             <Text style={styles.controlledArmStatus}>The controlled arm did not complete. Do not retry from another device.</Text>
+          ) : armState === 'early' ? (
+            <Text style={styles.controlledArmStatus}>Arm available at {activeControlledReminder.arm_available_at ? new Date(activeControlledReminder.arm_available_at).toLocaleTimeString() : 'the reminder target'}.</Text>
+          ) : armState === 'expired' ? (
+            <Text style={styles.controlledArmStatus}>Test arm window expired.</Text>
           ) : (
             <TouchableOpacity
               accessibilityRole="button"

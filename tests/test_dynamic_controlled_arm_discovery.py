@@ -33,3 +33,17 @@ def test_arm_payload_is_server_selected():
     assert 'schedule_item_id: uuid.UUID | None = None' in SERVER
     assert 'No single active controlled reminder fixture is available' in SERVER
     assert 'Controlled fixture target does not match' in SERVER
+
+
+def test_discovery_exposes_authoritative_server_timing():
+    assert '"server_now"' in REPOSITORY
+    assert '"arm_expires_at"' in REPOSITORY
+    assert '"can_arm"' in REPOSITORY
+
+
+def test_frontend_shows_early_status_and_uses_server_timing():
+    assert "armState, setArmState" in ITINERARY
+    assert "'early'" in ITINERARY
+    assert 'serverClockOffset' in ITINERARY
+    assert 'Arm available at' in ITINERARY
+    assert "armState !== 'waiting'" in ITINERARY
