@@ -424,6 +424,54 @@ class SupabaseItineraryReminderRepository:
             "select": "*", "event_id": f"eq.{event_id}", "id": f"eq.{registration_id}", "limit": "1"})
         return rows[0] if rows else None
 
+    async def active_controlled_fixture(self, registration_id: str, *, now: datetime) -> dict[str, Any] | None:
+        """Discover exactly one active fixture for the authenticated registration."""
+        event_id = await self._event_id()
+        auths = await self.client.request("GET", "/itinerary_reminder_synthetic_authorizations", params={
+            "select": "id,event_id,synthetic_event_id,expires_at,consumed_at,reminder_type",
+            "event_id": f"eq.{event_id}", "registration_id": f"eq.{registration_id}",
+            "reminder_type": f"eq.{REMINDER_TYPE}", "consumed_at": "is.null",
+            "expires_at": f"gt.{now.astimezone(timezone.utc).isoformat()}",
+        }) or []
+        if len(auths) != 1:
+            return None
+        auth = auths[0]
+        fixtures = await self.client.request("GET", "/itinerary_reminder_synthetic_events", params={
+            "select": "id,event_id,title,location_name,starts_at,status,test_lead_minutes",
+            "id": f"eq.{auth['synthetic_event_id']}", "event_id": f"eq.{event_id}",
+            "status": "eq.published", "limit": "2",
+        }) or []
+        if len(fixtures) != 1:
+            return None
+        fixture = fixtures[0]
+        schedules = await self.client.request("GET", "/schedule_items", params={
+            "select": "id,title,starts_at,location_name,status", "event_id": f"eq.{event_id}",
+            "title": f"eq.{fixture['title']}", "starts_at": f"eq.{fixture['starts_at']}",
+            "status": "eq.published", "limit": "2",
+        }) or []
+        if len(schedules) != 1:
+            return None
+        schedule = schedules[0]
+        stars = await self.client.request("GET", "/itinerary_reminder_stars", params={
+            "select": "starred_at", "registration_id": f"eq.{registration_id}",
+            "schedule_item_id": f"eq.{schedule['id']}", "limit": "1",
+        }) or []
+        deliveries = await self.client.request("GET", "/itinerary_reminder_deliveries", params={
+            "select": "id,status", "registration_id": f"eq.{registration_id}",
+            "schedule_item_id": f"eq.{schedule['id']}", "controlled_fixture_id": f"eq.{fixture['id']}",
+            "reminder_type": f"eq.{REMINDER_TYPE}", "limit": "1",
+        }) or []
+        starts_at = datetime.fromisoformat(fixture['starts_at'].replace('Z', '+00:00'))
+        lead = int(fixture.get('test_lead_minutes') or 2)
+        return {
+            "has_active_test": True, "fixture_id": fixture["id"], "schedule_item_id": schedule["id"],
+            "title": schedule["title"], "location_name": schedule.get("location_name"),
+            "event_start": starts_at.isoformat(), "reminder_target": (starts_at - timedelta(minutes=lead)).isoformat(),
+            "arm_available_at": (starts_at - timedelta(minutes=lead)).isoformat(),
+            "authorization_expires_at": auth["expires_at"], "real_star_exists": bool(stars),
+            "already_armed": bool(deliveries), "expired": False,
+        }
+
     async def authorize_synthetic_fixture(self, *, fixture_id: str, registration_id: str,
         authorized_by: str, now: datetime) -> dict[str, Any]:
         event_id = await self._event_id()
