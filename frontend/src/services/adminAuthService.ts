@@ -94,6 +94,7 @@ export type NotificationDelivery = {
   audience: 'test' | 'everyone';
   provider: 'webpushr' | 'wonderpush';
   provider_campaign_id: string | null;
+  provider_delivery_id?: string | null;
   status: 'requested' | 'sent' | 'failed';
   requested_by: string;
   requested_at: string;
@@ -113,6 +114,15 @@ export type AnnouncementDeliveryStats = {
   audience_snapshot_at: string | null;
   audience_stale_device_count: number | null;
   provider_accepted: boolean;
+  provider_campaign_id?: string | null;
+  provider_delivery_id?: string | null;
+  provider_targeted_device_count?: number | null;
+  provider_sent_count?: number | null;
+  provider_confirmed_receipt_count?: number | null;
+  provider_failure_count?: number | null;
+  provider_open_count?: number | null;
+  provider_statistics_status?: string | null;
+  provider_statistics_refreshed_at?: string | null;
 };
 
 export type AnnouncementDeliveryStatsResponse = { deliveries: AnnouncementDeliveryStats[] };

@@ -1648,13 +1648,22 @@ function AnnouncementsPage({
                   {item.expires_at ? ` · Expires ${new Date(item.expires_at).toLocaleString()}` : ''}
                 </Text>
                 {deliveryStats[item.id] ? <Text style={styles.deliveryMeta}>
-                  {deliveryStats[item.id].sent_at
-                    ? `Provider accepted ${new Date(deliveryStats[item.id].sent_at as string).toLocaleString()}`
-                    : `Notification ${deliveryStats[item.id].status}`}
-                  {deliveryStats[item.id].audience_device_count === null
-                    ? ' · Audience at send: Not available'
-                    : ` · Provider-ready registrations at send: ${deliveryStats[item.id].audience_device_count}`}
-                  {deliveryStats[item.id].provider_accepted ? ' · Provider accepted: Yes' : ''}
+                  {deliveryStats[item.id].provider_accepted ? 'Provider accepted' : deliveryStats[item.id].status === 'failed' ? 'Provider not accepted' : 'Notification requested'}
+                  {deliveryStats[item.id].provider_targeted_device_count == null
+                    ? ' · Targeted devices: Not available'
+                    : ` · Targeted devices: ${deliveryStats[item.id].provider_targeted_device_count}`}
+                  {deliveryStats[item.id].audience_device_count == null
+                    ? ''
+                    : ` · Known deliverable devices at send: ${deliveryStats[item.id].audience_device_count}`}
+                  {deliveryStats[item.id].provider_sent_count == null
+                    ? ' · Sent to push service: Not available'
+                    : ` · Sent to push service: ${deliveryStats[item.id].provider_sent_count}`}
+                  {deliveryStats[item.id].provider_confirmed_receipt_count == null
+                    ? ' · Provider-confirmed receipts: Not available'
+                    : ` · Provider-confirmed receipts: ${deliveryStats[item.id].provider_confirmed_receipt_count}`}
+                  {deliveryStats[item.id].provider_open_count == null
+                    ? ' · Notification opens: Not available'
+                    : ` · Notification opens: ${deliveryStats[item.id].provider_open_count}`}
                 </Text> : null}
               </View>
               <View style={[styles.announcementActions, isMobile && styles.announcementActionsMobile]}>

@@ -321,6 +321,26 @@ class WonderPushClient:
             )
         return result
 
+    async def get_campaign_statistics(self, campaign_id: str) -> dict[str, Any]:
+        """Read-only statistics lookup for one stable campaign identity."""
+        if not campaign_id or campaign_id.startswith("wonderpush:"):
+            raise WonderPushError("A stable WonderPush campaign identity is required")
+        url = "https://management-api.wonderpush.com/v1/stats/events"
+        params = {"accessToken": self.access_token, "campaignIds": campaign_id,
+                  "resolution": "hour", "interval": 24}
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url, params=params)
+        except httpx.TimeoutException as exc:
+            raise WonderPushError("WonderPush statistics lookup timed out") from exc
+        except httpx.RequestError as exc:
+            raise WonderPushError("WonderPush statistics lookup could not be reached") from exc
+        if response.status_code != 200:
+            raise WonderPushError(f"WonderPush statistics lookup failed (HTTP {response.status_code})",
+                status_code=response.status_code)
+        payload = response.json()
+        return payload if isinstance(payload, dict) else {"data": []}
+
     async def list_installations(self, *, updated_since: datetime | None = None,
         page_size: int = 1000) -> tuple[list[dict[str, Any]], int]:
         """Page through installations without exposing cursor URLs or credentials."""
@@ -1186,6 +1206,7 @@ class SupabaseNotificationDeliveryService:
         notification_title: str,
         notification_message: str,
         provider: str = "wonderpush",
+        provider_campaign_id: str | None = None,
         audience_device_count: int | None = None,
         audience_stale_device_count: int | None = None,
         audience_snapshot_at: str | None = None,
@@ -1201,6 +1222,8 @@ class SupabaseNotificationDeliveryService:
             "target_url": target_url,
             "notification_title": notification_title,
             "notification_message": notification_message,
+            "provider_requested_at": datetime.now(timezone.utc).isoformat(),
+            **({"provider_campaign_id": provider_campaign_id} if provider_campaign_id else {}),
         }
         # Older staging schemas predate the optional broadcast-audience snapshot
         # columns. Controlled test sends have no snapshot, so do not require
@@ -1226,7 +1249,10 @@ class SupabaseNotificationDeliveryService:
             "GET", "/notification_deliveries", params={
                 "select": (
                     "announcement_id,status,sent_at,audience_device_count,"
-                    "audience_count_basis,audience_snapshot_at,audience_stale_device_count"
+                    "audience_count_basis,audience_snapshot_at,audience_stale_device_count,"
+                    "provider_campaign_id,provider_delivery_id,provider_targeted_device_count,"
+                    "provider_sent_count,provider_confirmed_receipt_count,provider_failure_count,"
+                    "provider_open_count,provider_statistics_status,provider_statistics_refreshed_at"
                 ),
                 "event_id": f"eq.{resolved_event_id}",
                 "audience": "eq.everyone",
@@ -1234,20 +1260,45 @@ class SupabaseNotificationDeliveryService:
             },
         )
 
-    async def mark_sent(self, delivery_id: str, provider_campaign_id: str) -> dict[str, Any]:
+    async def mark_sent(self, delivery_id: str, provider_delivery_id: str) -> dict[str, Any]:
         rows = await self.client.request(
             "PATCH",
             "/notification_deliveries",
             params={"id": f"eq.{delivery_id}"},
             json={
                 "status": "sent",
-                "provider_campaign_id": provider_campaign_id,
+                "provider_delivery_id": provider_delivery_id,
+                "provider_accepted_at": datetime.now(timezone.utc).isoformat(),
                 "sent_at": datetime.now(timezone.utc).isoformat(),
                 "error_message": None,
             },
             headers={"Prefer": "return=representation"},
         )
         return rows[0]
+
+    async def update_target_url(self, delivery_id: str, target_url: str) -> dict[str, Any]:
+        rows = await self.client.request("PATCH", "/notification_deliveries",
+            params={"id": f"eq.{delivery_id}"}, json={"target_url": target_url},
+            headers={"Prefer": "return=representation"})
+        return rows[0]
+
+    async def update_campaign_id(self, delivery_id: str, campaign_id: str) -> dict[str, Any]:
+        rows = await self.client.request("PATCH", "/notification_deliveries",
+            params={"id": f"eq.{delivery_id}"}, json={"provider_campaign_id": campaign_id},
+            headers={"Prefer": "return=representation"})
+        return rows[0]
+
+    async def update_provider_statistics(self, delivery_id: str, values: dict[str, Any]) -> dict[str, Any]:
+        rows = await self.client.request("PATCH", "/notification_deliveries",
+            params={"id": f"eq.{delivery_id}"}, json=values,
+            headers={"Prefer": "return=representation"})
+        return rows[0]
+
+    async def list_deliveries(self, *, announcement_id: str, event_id: str) -> list[dict[str, Any]]:
+        resolved_event_id = await self._get_event_id(event_id)
+        return await self.client.request("GET", "/notification_deliveries", params={
+            "select": "*", "announcement_id": f"eq.{announcement_id}",
+            "event_id": f"eq.{resolved_event_id}", "order": "requested_at.desc"})
 
     async def mark_failed(self, delivery_id: str, error_message: str) -> dict[str, Any]:
         rows = await self.client.request(
@@ -1258,3 +1309,22 @@ class SupabaseNotificationDeliveryService:
             headers={"Prefer": "return=representation"},
         )
         return rows[0]
+
+
+def normalize_wonderpush_statistics(payload: dict[str, Any]) -> dict[str, int | None]:
+    """Normalize documented event counters without inventing missing values."""
+    counters: dict[str, int] = {}
+    for bucket in payload.get("data", []) if isinstance(payload, dict) else []:
+        for counter in bucket.get("counters", []) if isinstance(bucket, dict) else []:
+            if not isinstance(counter, dict) or not isinstance(counter.get("type"), str):
+                continue
+            counters[counter["type"]] = counters.get(counter["type"], 0) + int(counter.get("count") or 0)
+    def value(*names: str) -> int | None:
+        found = [counters[name] for name in names if name in counters]
+        return sum(found) if found else None
+    return {
+        "provider_sent_count": value("@NOTIFICATION_SENT"),
+        "provider_confirmed_receipt_count": value("@NOTIFICATION_RECEIVED", "@NOTIFICATION_CONFIRMED_RECEIPT"),
+        "provider_failure_count": value("@NOTIFICATION_FAILED", "@NOTIFICATION_ERROR"),
+        "provider_open_count": value("@NOTIFICATION_OPENED"),
+    }
