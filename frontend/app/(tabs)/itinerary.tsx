@@ -32,12 +32,8 @@ import {
 import { formatScheduleDate } from '../../src/utils/scheduleDate';
 import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
 import { reconcileAttendeeItineraryReminders } from '../../src/services/reminderUxService';
-import { armControlledReminderTest } from '../../src/services/itineraryReminderSync.web';
+import { ActiveControlledReminder, armControlledReminderTest, getActiveControlledReminder } from '../../src/services/itineraryReminderSync.web';
 import NotificationOptIn from '../../src/components/NotificationOptIn';
-
-const STAGING_ARM_EVENT_ID = '565f651e-c898-4dba-bc31-7832cfa684e6';
-const STAGING_ARM_FIXTURE_ID = 'b1d515d0-5d41-479b-bd77-09947af33f36';
-const STAGING_ARM_STARTS_AT = '2026-09-18T14:48:12.41327Z';
 
 export default function ItineraryScreen() {
   usePageAnalytics('itinerary', 'home_quick_action');
@@ -54,9 +50,11 @@ export default function ItineraryScreen() {
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
   const [armState, setArmState] = useState<'hidden' | 'waiting' | 'working' | 'armed' | 'failed'>('hidden');
   const [clock, setClock] = useState(() => Date.now());
+  const [activeControlledReminder, setActiveControlledReminder] = useState<ActiveControlledReminder | null>(null);
   const stagingArmEnabled = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname === 'staging.theipm.ca';
-  const stagingArmEventVisible = events.some((event) => event.id === STAGING_ARM_EVENT_ID);
-  const armDueAt = new Date(STAGING_ARM_STARTS_AT).getTime() - 2 * 60 * 1000;
+  const stagingArmEventVisible = Boolean(activeControlledReminder?.has_active_test);
+  const armDueAt = activeControlledReminder?.arm_available_at ? new Date(activeControlledReminder.arm_available_at).getTime() : 0;
+  const armExpiry = activeControlledReminder?.authorization_expires_at ? new Date(activeControlledReminder.authorization_expires_at).getTime() : 0;
   const armWindowOpensAt = armDueAt - 60 * 1000;
 
   useEffect(() => {
@@ -67,13 +65,13 @@ export default function ItineraryScreen() {
 
   useEffect(() => {
     if (!stagingArmEnabled || !stagingArmEventVisible || armState === 'armed' || armState === 'working') return;
-    setArmState(clock >= armWindowOpensAt && clock <= armDueAt + 60 * 1000 ? 'waiting' : 'hidden');
-  }, [armDueAt, armState, armWindowOpensAt, clock, stagingArmEnabled, stagingArmEventVisible]);
+    setArmState(clock >= armWindowOpensAt && clock <= armExpiry ? 'waiting' : 'hidden');
+  }, [armDueAt, armExpiry, armState, armWindowOpensAt, clock, stagingArmEnabled, stagingArmEventVisible]);
 
   const armStagingReminder = async () => {
     setArmState('working');
     try {
-      const result = await armControlledReminderTest(STAGING_ARM_FIXTURE_ID, STAGING_ARM_EVENT_ID);
+      const result = await armControlledReminderTest();
       setArmState(result?.armed ? 'armed' : 'failed');
     } catch {
       setArmState('failed');
@@ -114,11 +112,17 @@ export default function ItineraryScreen() {
   useEffect(() => {
     loadFavorites();
     fetchSchedule();
+    if (stagingArmEnabled) {
+      void getActiveControlledReminder().then(setActiveControlledReminder).catch(() => setActiveControlledReminder(null));
+    }
   }, [fetchSchedule, loadFavorites]);
 
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
+      if (stagingArmEnabled) {
+        void getActiveControlledReminder().then(setActiveControlledReminder).catch(() => setActiveControlledReminder(null));
+      }
     }, [loadFavorites])
   );
 
@@ -188,7 +192,7 @@ export default function ItineraryScreen() {
         <NotificationOptIn persistent containerStyle={styles.notificationOptions} />
       </View>
 
-      {stagingArmEnabled && stagingArmEventVisible && armState !== 'hidden' ? (
+      {stagingArmEnabled && stagingArmEventVisible && activeControlledReminder?.real_star_exists && armState !== 'hidden' ? (
         <View style={styles.controlledArmCard} accessibilityLabel="Controlled reminder test">
           <Text style={styles.controlledArmTitle}>Controlled reminder test</Text>
           {armState === 'armed' ? (
