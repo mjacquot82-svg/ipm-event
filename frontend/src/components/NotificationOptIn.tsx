@@ -233,7 +233,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
         <View style={styles.actions}>
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel={state === 'subscribed' ? 'Disable IPM notifications' : 'Enable IPM notifications'}
+            accessibilityLabel={state === 'subscribed' ? 'Disable IPM notifications' : persistent ? 'Turn on event reminders' : 'Enable IPM notifications'}
             onPress={updateSubscription}
             style={[styles.button, state === 'subscribed' && styles.disableButton]}
           >
