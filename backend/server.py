@@ -2092,9 +2092,17 @@ async def notification_registration_operations():
 
 # Temporary diagnostic is mounted only on the actual staging resources.
 try:
-    from backend.staging_provider_diagnostic import enabled as provider_diagnostic_enabled, read_current as read_current_provider_diagnostic
+    from backend.staging_provider_diagnostic import (
+        enabled as provider_diagnostic_enabled,
+        read_current as read_current_provider_diagnostic,
+        read_authorized as read_authorized_provider_diagnostic,
+    )
 except ModuleNotFoundError:
-    from staging_provider_diagnostic import enabled as provider_diagnostic_enabled, read_current as read_current_provider_diagnostic
+    from staging_provider_diagnostic import (
+        enabled as provider_diagnostic_enabled,
+        read_current as read_current_provider_diagnostic,
+        read_authorized as read_authorized_provider_diagnostic,
+    )
 
 if provider_diagnostic_enabled(
     render_hostname=os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""),
@@ -2111,6 +2119,18 @@ if provider_diagnostic_enabled(
             public_app_url=PUBLIC_APP_URL, supabase_url=SUPABASE_URL,
             repository=notification_registration_repository,
             credential=WONDERPUSH_ACCESS_TOKEN,
+        )
+        return JSONResponse(result, headers={"Cache-Control": "no-store"})
+
+    @api_router.get("/staging-diagnostics/provider-installation/authorized", include_in_schema=False)
+    async def staging_authorized_provider_installation_diagnostic(request: Request):
+        # Capability authorization establishes the registration first; the
+        # provider target is then read only from that bound registration row.
+        _, registration = await authorize_itinerary_device(request)
+        result = await read_authorized_provider_diagnostic(
+            render_hostname=os.environ.get("RENDER_EXTERNAL_HOSTNAME", ""),
+            public_app_url=PUBLIC_APP_URL, supabase_url=SUPABASE_URL,
+            registration=registration, credential=WONDERPUSH_ACCESS_TOKEN,
         )
         return JSONResponse(result, headers={"Cache-Control": "no-store"})
 
@@ -2229,6 +2249,18 @@ async def register_itinerary_reminder_device(request: Request):
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail="Invalid itinerary device credentials") from exc
     return public_itinerary_reminder_status(registration)
+
+
+@api_router.post("/itinerary-reminders/readiness/verify")
+async def verify_itinerary_reminder_readiness(request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    try:
+        verified = await repository.reconcile_readiness(
+            registration, require_wonderpush_client(), checked_at=datetime.now(timezone.utc))
+    except WonderPushError as exc:
+        raise HTTPException(status_code=503,
+            detail="Notification readiness is temporarily unavailable") from exc
+    return public_itinerary_reminder_status(verified)
 
 
 @api_router.get("/itinerary-reminders/status")

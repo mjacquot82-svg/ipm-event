@@ -1,6 +1,11 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 
-from backend.itinerary_reminders import is_t30_eligible, provider_readiness
+from backend.itinerary_reminders import (
+    SupabaseItineraryReminderRepository,
+    is_t30_eligible,
+    provider_readiness,
+)
 
 
 def test_t30_uses_current_start_and_rejects_late_or_started_events():
@@ -19,3 +24,26 @@ def test_provider_readiness_requires_push_token_and_opt_in():
     assert provider_readiness({"preferences": {"subscriptionStatus": "optIn"}}) == ("optOut", False)
     assert provider_readiness({"pushToken": {"data": "token"}, "preferences": {"subscriptionStatus": "optIn"}}) == ("optIn", True)
     assert provider_readiness({"pushToken": {"data": "token"}, "preferences": {"subscriptionStatus": "optOut"}}) == ("softOptOut", True)
+
+
+def test_reconcile_readiness_uses_the_registration_bound_installation_only():
+    class Storage:
+        async def request(self, method, path, params=None, json=None, headers=None):
+            assert method == "PATCH"
+            assert path == "/itinerary_reminder_installations"
+            assert params == {"id": "eq.registration-a"}
+            assert json["provider_reachability"] == "optIn"
+            assert json["provider_has_push_token"] is True
+            assert json["provider_deliverable"] is True
+            return [{"id": "registration-a", **json}]
+
+    class Provider:
+        async def get_installation(self, installation_id):
+            assert installation_id == "A" * 40
+            return {"preferences": {"subscriptionStatus": "optIn"},
+                    "pushToken": {"data": "provider-token"}}
+
+    registration = {"id": "registration-a", "wonderpush_installation_id": "A" * 40}
+    result = asyncio.run(SupabaseItineraryReminderRepository(Storage(), "event").reconcile_readiness(
+        registration, Provider(), checked_at=datetime.now(timezone.utc)))
+    assert result["provider_deliverable"] is True

@@ -120,6 +120,18 @@ class SupabaseItineraryReminderRepository:
             }, headers={"Prefer": "return=representation"})
         return rows[0]
 
+    async def reconcile_readiness(self, registration: dict[str, Any], provider: Any,
+        *, checked_at: datetime) -> dict[str, Any]:
+        """Refresh one already-authorized registration from its bound installation."""
+        installation_id = registration.get("wonderpush_installation_id")
+        if not installation_id:
+            raise ValueError("Reminder registration has no provider installation")
+        installation = await provider.get_installation(installation_id)
+        reachability, has_push_token = provider_readiness(installation)
+        return await self.set_readiness(registration["id"],
+            reachability=reachability, has_push_token=has_push_token,
+            checked_at=checked_at)
+
     async def set_test_label(self, registration_id: str, label: str) -> dict[str, Any]:
         """Atomically make this explicitly authorized registration the labeled test device.
 

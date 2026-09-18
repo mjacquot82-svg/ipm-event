@@ -40,6 +40,29 @@ def run_read(database):
     return asyncio.run(diagnostic.read_current(**CONFIG, repository=SimpleNamespace(client=database), credential=SECRET))
 
 
+def test_authorized_read_uses_only_bound_installation(monkeypatch):
+    calls = []
+    monkeypatch.setattr(diagnostic, "provider_get",
+        lambda installation, credential: calls.append((installation, credential)) or diagnostic.sanitize(SAFE_BODY))
+    result = asyncio.run(diagnostic.read_authorized(
+        **CONFIG,
+        registration={"id": "authorized-registration", "wonderpush_installation_id": TARGET},
+        credential=SECRET,
+    ))
+    assert result["provider_installation_read"] == "SUCCESS"
+    assert calls == [(TARGET, SECRET)]
+
+
+def test_authorized_read_rejects_unbound_or_malformed_target(monkeypatch):
+    provider = Mock(side_effect=AssertionError("No provider call permitted"))
+    monkeypatch.setattr(diagnostic, "provider_get", provider)
+    for registration in ({"id": "wrong"}, {"id": "wrong", "wonderpush_installation_id": "bad"}):
+        result = asyncio.run(diagnostic.read_authorized(
+            **CONFIG, registration=registration, credential=SECRET))
+        assert result["error_classification"] == "REGISTRATION_TARGET_INVALID"
+    provider.assert_not_called()
+
+
 @pytest.mark.parametrize("field,value", [
     ("render_hostname", "ipm-backend-eoiw.onrender.com"),
     ("render_hostname", ""),

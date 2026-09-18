@@ -121,6 +121,20 @@ def provider_get(installation_id, credential):
         return failed("PROVIDER_READ_ERROR")
 
 
+async def read_authorized(*, render_hostname, public_app_url, supabase_url,
+    registration, credential):
+    """Read only the provider installation bound to an authenticated registration."""
+    if not enabled(render_hostname=render_hostname, public_app_url=public_app_url,
+        supabase_url=supabase_url):
+        raise HTTPException(status_code=404, detail="Not found")
+    if not registration or not credential:
+        return failed("STAGING_CONFIGURATION_UNAVAILABLE")
+    target = registration.get("wonderpush_installation_id")
+    if not isinstance(target, str) or not re.fullmatch(r"[A-Za-z0-9]{40}", target):
+        return failed("REGISTRATION_TARGET_INVALID")
+    return await asyncio.to_thread(provider_get, target, credential)
+
+
 async def read_current(*, render_hostname, public_app_url, supabase_url, repository, credential):
     if not enabled(render_hostname=render_hostname, public_app_url=public_app_url, supabase_url=supabase_url):
         raise HTTPException(status_code=404, detail="Not found")
