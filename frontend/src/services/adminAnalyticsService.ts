@@ -142,3 +142,17 @@ export function getNotificationSummary() {
 export function getReminderSummary() {
   return adminRequest<ReminderSummaryResponse>('/api/admin/analytics/reminders');
 }
+
+export type NotificationHealthSummary = {
+  ready_devices: number; readiness_outdated: boolean;
+  status: 'healthy' | 'attention' | 'incomplete' | 'empty'; message: string; snapshot_at: string;
+};
+export function getNotificationHealthSummary() {
+  return adminRequest<NotificationHealthSummary>('/api/admin/analytics/notification-health?view=summary').then((result) => {
+    // During a staggered rollout an older backend may ignore the summary selector.
+    if (!Number.isInteger(result?.ready_devices) || result.ready_devices < 0 || typeof result.message !== 'string') {
+      throw new Error('Notification health summary is temporarily unavailable.');
+    }
+    return result;
+  });
+}

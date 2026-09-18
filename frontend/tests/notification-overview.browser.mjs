@@ -26,6 +26,7 @@ await page.route('**/*',async route=>{
   else if(url.pathname.endsWith('/analytics/live'))body={live:{activeSessions:0,activityLastMinute:0,activityLastFiveMinutes:0,mostRecentActivityAt:null,activityWindowMinutes:30,topActivePages:[]}};
   else if(url.pathname.endsWith('/analytics/traffic'))body={traffic:{todayByHour:[],byDay:[]}};
   else if(url.pathname.endsWith('/analytics/content'))body={content:{pages:[],vendors:{filters:[]},map:{sources:[],locations:[]},schedule:{filters:[],mostOpenedEvents:[]},announcements:{openSources:[],ranking:[]},queenOfTheFurrow:{},quickActions:{actions:[],destinationTypes:[],sources:[]},outboundLinks:{destinations:[],destinationTypes:[]},featureAdoption:[],eventDayComparisons:[]}};
+  else if(url.pathname.endsWith('/notification-health') && url.searchParams.get('view')==='summary')body={ready_devices:0,readiness_outdated:false,status:'empty',message:'No notification devices registered yet.',snapshot_at:'2026-09-18T23:00:00Z'};
   else if(url.pathname.endsWith('/notification-health'))body={registrations:0,checked:0,not_yet_checked:0,verified:0,repairable_mismatch:0,key_mismatch:0,other_ineligible:0,other_checked:0,uncertain:0,active_leases:0,expired_leases:0,retries_due:0,retries_scheduled:0,provider_ready:0,provider_ready_stale:0,verified_expired:0,current_check_failures:0,circuit:'CLOSED',snapshot_at:null,latest_activity_at:null};
   else body={announcements:[],deliveries:[],vendors:[],events:[],total_count:0};
   return route.fulfill({json:body});

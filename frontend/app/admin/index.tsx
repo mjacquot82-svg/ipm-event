@@ -630,7 +630,7 @@ export default function AdminDashboardScreen() {
       )}
 
       {activeSection === 'analytics' && (
-        <AnalyticsDashboard onAuthenticationExpired={() => {
+        <AnalyticsDashboard canViewNotificationDiagnostics={currentUser?.role === 'Owner'} onAuthenticationExpired={() => {
           setIsAuthenticated(false);
           setCurrentUser(null);
           router.replace('/admin/login');
