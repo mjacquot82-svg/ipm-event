@@ -73,37 +73,6 @@ export async function getItineraryReminderReadiness() {
     staleReason: match ? (current.provider_deliverable ? null : 'provider_unreachable') : 'installation_mismatch' };
 }
 
-export type TestDeviceLabel = 'A' | 'B';
-
-export async function registerControlledTestDevice(label: TestDeviceLabel) {
-  await request('/register', 'POST');
-  return request('/test-device', 'PUT', { label });
-}
-
-export async function getControlledTestDeviceStatus() {
-  return request('/test-device', 'GET');
-}
-
-export async function diagnoseControlledTestRegistration(label: TestDeviceLabel) {
-  const wonderPush = await getWonderPushClientReadiness();
-  const diagnostic = { ...wonderPush, capability: 'unavailable', registrationApi: 'not-attempted',
-    labelApi: 'not-attempted', backendStatus: null as number | null, failureStage: wonderPush.failureStage };
-  if (wonderPush.installation !== 'available') return diagnostic;
-  try { await getOrCreateDeviceCapability(); diagnostic.capability = 'available'; }
-  catch { diagnostic.failureStage = 'device_capability_storage'; return diagnostic; }
-  try { await request('/register', 'POST'); diagnostic.registrationApi = 'success'; }
-  catch (error) {
-    diagnostic.registrationApi = 'failure'; diagnostic.failureStage = 'registration_api';
-    diagnostic.backendStatus = error instanceof ApiSyncError ? error.status : null; return diagnostic;
-  }
-  try { await request('/test-device', 'PUT', { label }); diagnostic.labelApi = 'success'; diagnostic.failureStage = null; }
-  catch (error) {
-    diagnostic.labelApi = 'failure'; diagnostic.failureStage = 'test_device_label_api';
-    diagnostic.backendStatus = error instanceof ApiSyncError ? error.status : null;
-  }
-  return diagnostic;
-}
-
 export async function configureItineraryReminderSync(starredScheduleIds: string[]): Promise<void> {
   const client = await getWonderPushClientReadiness();
   if (!client.clientReady) throw new Error('The current browser is not notification-ready.');
@@ -137,10 +106,6 @@ export async function disableItineraryReminderSync(): Promise<void> {
 export async function disableItineraryRemindersForTesting() {
   await disableItineraryReminderSync();
   return getItineraryReminderReadiness();
-}
-
-export async function setSyntheticReminderFixtureStarred(starred: boolean) {
-  return request('/synthetic-fixture', 'PUT', { starred });
 }
 
 export async function reconcileItineraryReminderStars(starredScheduleIds: string[]): Promise<void> {
