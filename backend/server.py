@@ -2036,6 +2036,66 @@ async def notification_registration_operations():
     }
 
 
+@api_router.post("/itinerary-reminders/register")
+async def register_itinerary_reminder_device(request: Request):
+    repository = require_itinerary_reminder_repository()
+    installation_id, capability = itinerary_device_headers(request)
+    try:
+        registration = await repository.register(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid itinerary device credentials") from exc
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.get("/itinerary-reminders/status")
+async def itinerary_reminder_status(request: Request):
+    _, registration = await authorize_itinerary_device(request)
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.get("/itinerary-reminders/status-by-capability")
+async def itinerary_reminder_status_by_capability(request: Request):
+    repository = require_itinerary_reminder_repository()
+    capability = request.headers.get("X-Itinerary-Device-Capability", "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    registration = await repository.get_by_capability(capability)
+    if not registration:
+        raise HTTPException(status_code=404, detail="No itinerary reminder registration exists for this device")
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.put("/itinerary-reminders/enabled")
+async def set_itinerary_reminders_enabled(data: ItineraryEnabledPayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    updated = await repository.set_enabled(registration["id"], data.enabled)
+    return public_itinerary_reminder_status(updated)
+
+
+@api_router.put("/itinerary-reminders/stars")
+async def sync_itinerary_reminder_stars(data: ItineraryStarsPayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    try:
+        result = await repository.sync_full_set(registration, [str(value) for value in data.schedule_ids])
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=400, detail="Unknown or cross-event Schedule event") from exc
+    return {"status": "ok", **result}
+
+
+@api_router.get("/itinerary-reminders/operations")
+async def itinerary_reminder_operations():
+    return {
+        "provider_configured": wonderpush_client is not None,
+        "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
+        "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
+        "lead_time_minutes": 30,
+        "timezone": "America/Toronto",
+    }
+
+
+
+
+
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)
 async def list_admin_schedule(current_user: dict = Depends(get_current_organizer_user)):
     require_schedule_manager_role(current_user)
