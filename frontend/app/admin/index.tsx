@@ -46,6 +46,8 @@ import {
   importSchedule,
   listAdminVendors,
   listAnnouncements,
+  listAnnouncementAnalytics,
+  NotificationAnalytics,
   listScheduleEvents,
   logoutOrganizer,
   notifyEveryoneForAnnouncement,
@@ -160,6 +162,7 @@ export default function AdminDashboardScreen() {
   const [importBusy, setImportBusy] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcementAnalytics, setAnnouncementAnalytics] = useState<Record<string, NotificationAnalytics[]>>({});
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
   const [announcementsError, setAnnouncementsError] = useState<string | null>(null);
   const [announcementSearch, setAnnouncementSearch] = useState('');
@@ -206,6 +209,11 @@ export default function AdminDashboardScreen() {
     try {
       const result = await listAnnouncements();
       setAnnouncements(result.announcements);
+      const analytics = await Promise.all(result.announcements.map(async (item) => {
+        try { return [item.id, await listAnnouncementAnalytics(item.id)] as const; }
+        catch { return [item.id, []] as const; }
+      }));
+      setAnnouncementAnalytics(Object.fromEntries(analytics));
     } catch (err) {
       setAnnouncementsError(err instanceof Error ? err.message : 'Unable to load announcements');
     } finally {
@@ -646,6 +654,7 @@ export default function AdminDashboardScreen() {
       {activeSection === 'communications' && (
         <AnnouncementsPage
           announcements={visibleAnnouncements}
+          announcementAnalytics={announcementAnalytics}
           totalCount={announcements.length}
           loading={announcementsLoading}
           error={announcementsError}
@@ -1541,12 +1550,12 @@ function VendorEditor({
 }
 
 function AnnouncementsPage({
-  announcements, totalCount, loading, error, search, editorMode, form, saving,
+  announcements, announcementAnalytics, totalCount, loading, error, search, editorMode, form, saving,
   saveMessage, notificationAction,
   editingAnnouncement, showTestAction, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
   onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone,
 }: {
-  announcements: Announcement[]; totalCount: number; loading: boolean; error: string | null;
+  announcements: Announcement[]; announcementAnalytics: Record<string, NotificationAnalytics[]>; totalCount: number; loading: boolean; error: string | null;
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
   editingAnnouncement: Announcement | null; showTestAction: boolean; onSearchChange: (value: string) => void;
@@ -1590,7 +1599,7 @@ function AnnouncementsPage({
         />
       ) : (
         <View style={styles.table}>
-          {announcements.map((item) => (
+            {announcements.map((item) => (
             <View key={item.id} style={[styles.announcementRow, isMobile && styles.announcementRowMobile]}>
               <View style={styles.announcementBody}>
                 <View style={styles.announcementHeading}>
@@ -1603,6 +1612,15 @@ function AnnouncementsPage({
                   {`Created by ${item.created_by} · ${new Date(item.created_at).toLocaleString()}`}
                   {item.expires_at ? ` · Expires ${new Date(item.expires_at).toLocaleString()}` : ''}
                 </Text>
+                {(announcementAnalytics[item.id] || []).map((metric) => (
+                  <Text key={metric.delivery_id} style={styles.deliveryMeta}>
+                    {metric.provider_accepted === true ? 'Provider accepted' : metric.provider_accepted === false ? 'Provider not accepted' : 'Provider status unavailable'}
+                    {metric.targeted_devices == null ? ' · Targeted devices: Not available' : ` · Targeted devices: ${metric.targeted_devices}`}
+                    {metric.known_deliverable_devices == null ? '' : ` · Known deliverable devices at send: ${metric.known_deliverable_devices}`}
+                    {metric.provider_confirmed_receipts == null ? ' · Provider-confirmed receipts: Not available' : ` · Provider-confirmed receipts: ${metric.provider_confirmed_receipts}`}
+                    {metric.notification_opens == null ? ' · Notification opens: Not available' : ` · Notification opens: ${metric.notification_opens}`}
+                  </Text>
+                ))}
               </View>
               <View style={[styles.announcementActions, isMobile && styles.announcementActionsMobile]}>
                 <Pressable style={styles.iconButton} onPress={() => onEdit(item)}><Feather name="edit-2" size={16} color={colors.textSecondary} /></Pressable>
@@ -1916,6 +1934,11 @@ const styles = StyleSheet.create({
     marginTop: 3,
     fontSize: 12,
     color: colors.textMuted,
+  },
+  deliveryMeta: {
+    marginTop: 4,
+    fontSize: 12,
+    color: colors.textSecondary,
   },
   iconButton: {
     width: 36,

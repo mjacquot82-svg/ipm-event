@@ -7,7 +7,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Literal
+from typing import Any, List, Optional, Dict, Literal
 import uuid
 from datetime import datetime, timedelta, timezone
 import httpx
@@ -89,6 +89,7 @@ try:
         VendorService,
         WonderPushClient,
         WonderPushError,
+        normalize_wonderpush_statistics,
     )
 except ImportError:
     from backend.platform_services import (
@@ -101,6 +102,7 @@ except ImportError:
         VendorService,
         WonderPushClient,
         WonderPushError,
+        normalize_wonderpush_statistics,
     )
 
 
@@ -460,6 +462,7 @@ class NotificationDeliveryResponse(BaseModel):
     audience: Literal["test", "everyone"]
     provider: Literal["webpushr", "wonderpush"]
     provider_campaign_id: Optional[str] = None
+    provider_delivery_id: Optional[str] = None
     status: Literal["requested", "sent", "failed"]
     requested_by: str
     requested_at: datetime
@@ -468,6 +471,22 @@ class NotificationDeliveryResponse(BaseModel):
     target_url: str
     notification_title: str
     notification_message: str
+
+class NotificationAnalyticsResponse(BaseModel):
+    delivery_id: str
+    provider_campaign_id: Optional[str] = None
+    provider_delivery_id: Optional[str] = None
+    requested: bool
+    provider_accepted: Optional[bool] = None
+    targeted_devices: Optional[int] = None
+    sent_to_push_service: Optional[int] = None
+    provider_confirmed_receipts: Optional[int] = None
+    provider_failures: Optional[int] = None
+    notification_opens: Optional[int] = None
+    notification_origin_visits: Optional[int] = None
+    statistics_status: Optional[str] = None
+    statistics_refreshed_at: Optional[datetime] = None
+    known_deliverable_devices: Optional[int] = None
 
 SCHEDULE_TITLE_FIELDS = ("Name", "Title", "Event Title", "Event Name", "Activity", "Program")
 SCHEDULE_FIELD_ALIASES = {
@@ -1670,6 +1689,58 @@ async def list_admin_announcements(current_user: dict = Depends(get_current_orga
     return AnnouncementsResponse(announcements=announcements, total_count=len(announcements))
 
 
+def notification_analytics_response(row: dict[str, Any]) -> NotificationAnalyticsResponse:
+    return NotificationAnalyticsResponse(
+        delivery_id=row["id"], provider_campaign_id=row.get("provider_campaign_id"),
+        provider_delivery_id=row.get("provider_delivery_id"), requested=True,
+        provider_accepted=True if row.get("status") == "sent" else None,
+        targeted_devices=row.get("provider_targeted_device_count"),
+        known_deliverable_devices=row.get("audience_device_count"),
+        sent_to_push_service=row.get("provider_sent_count"),
+        provider_confirmed_receipts=row.get("provider_confirmed_receipt_count"),
+        provider_failures=row.get("provider_failure_count"),
+        notification_opens=row.get("provider_open_count"),
+        notification_origin_visits=row.get("notification_origin_visit_count"),
+        statistics_status=row.get("provider_statistics_status"),
+        statistics_refreshed_at=row.get("provider_statistics_refreshed_at"),
+    )
+
+
+@api_router.get("/admin/announcements/{announcement_id}/analytics", response_model=List[NotificationAnalyticsResponse])
+async def list_announcement_analytics(announcement_id: str,
+    current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    rows = await require_notification_delivery_service().list_deliveries(
+        announcement_id=announcement_id, event_id=get_admin_event_id(current_user))
+    return [notification_analytics_response(row) for row in rows]
+
+
+@api_router.post("/admin/announcements/{announcement_id}/analytics/refresh",
+    response_model=List[NotificationAnalyticsResponse])
+async def refresh_announcement_analytics(announcement_id: str,
+    current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    deliveries = require_notification_delivery_service()
+    provider = require_wonderpush_client()
+    rows = await deliveries.list_deliveries(announcement_id=announcement_id,
+        event_id=get_admin_event_id(current_user))
+    refreshed = []
+    for row in rows:
+        campaign_id = row.get("provider_campaign_id")
+        if not campaign_id or campaign_id.startswith("wonderpush:"):
+            refreshed.append(row)
+            continue
+        try:
+            values = normalize_wonderpush_statistics(await provider.get_campaign_statistics(campaign_id))
+            values.update({"provider_statistics_refreshed_at": datetime.now(timezone.utc).isoformat(),
+                "provider_statistics_status": "available", "provider_statistics_error": None})
+        except WonderPushError as exc:
+            values = {"provider_statistics_refreshed_at": datetime.now(timezone.utc).isoformat(),
+                "provider_statistics_status": "unavailable", "provider_statistics_error": str(exc)[:500]}
+        refreshed.append(await deliveries.update_provider_statistics(row["id"], values))
+    return [notification_analytics_response(row) for row in refreshed]
+
+
 @api_router.post("/admin/announcements", response_model=AnnouncementResponse, status_code=201)
 async def create_admin_announcement(
     data: AnnouncementPayload,
@@ -1766,9 +1837,12 @@ async def notify_announcement(
 
     expiration_time = announcement_expiration_time(announcement)
 
-    target_url = f"{PUBLIC_APP_URL}/announcements/{quote(announcement_id, safe='')}"
+    base_target_url = f"{PUBLIC_APP_URL}/announcements/{quote(announcement_id, safe='')}"
+    # The alert UUID is stable for this logical send, so retries reuse one
+    # provider analytics identity rather than creating unrelated campaigns.
+    campaign_id = f"ipm-announcement-{audience}-{announcement_id}"
     content = provider.notification_content(
-        announcement["title"], announcement["message"], target_url
+        announcement["title"], announcement["message"], base_target_url
     )
     try:
         delivery = await deliveries.create_requested(
@@ -1780,6 +1854,7 @@ async def notify_announcement(
             notification_title=content["title"],
             notification_message=content["message"],
             provider="wonderpush",
+            provider_campaign_id=campaign_id,
         )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 409 and audience == "everyone":
@@ -1789,17 +1864,23 @@ async def notify_announcement(
             ) from exc
         raise
 
+    target_url = f"{base_target_url}?notification_ref={quote(delivery['id'], safe='')}"
+    content = provider.notification_content(announcement["title"], announcement["message"], target_url)
+    if hasattr(deliveries, "update_target_url"):
+        await deliveries.update_target_url(delivery["id"], content["target_url"])
     try:
         if audience == "test":
             campaign_id = await provider.send_test(
                 **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS,
                 idempotency_key=f"announcement-test-{delivery['id']}",
+                campaign_id=campaign_id,
                 expiration_time=expiration_time,
             )
         else:
             campaign_id = await provider.send_everyone(
                 **content,
                 idempotency_key=f"announcement-{event_id}-{announcement_id}"[:64],
+                campaign_id=campaign_id,
                 expiration_time=expiration_time,
             )
     except WonderPushError as exc:

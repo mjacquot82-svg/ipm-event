@@ -220,6 +220,12 @@ EVENT_CATALOG: dict[str, dict[str, PropertyRule]] = {
         **COMMON_NAVIGATION,
         **COMMON_LOAD,
     },
+    "notification_origin_visit": {
+        "delivery_id": ID,
+        "announcement_id": ID,
+        "destination": rule(str, required=True, max_length=160),
+        **COMMON_NAVIGATION,
+    },
     "announcement_link_clicked": {
         "announcement_id": ID,
         "destination_id": ID,

@@ -14,8 +14,9 @@ import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 
 export default function AnnouncementDetailScreen() {
   const router = useRouter();
-  const { announcement_id: rawAnnouncementId, source } = useLocalSearchParams<{ announcement_id?: string | string[]; source?: string }>();
+  const { announcement_id: rawAnnouncementId, source, notification_ref: rawNotificationRef } = useLocalSearchParams<{ announcement_id?: string | string[]; source?: string; notification_ref?: string | string[] }>();
   const announcementId = Array.isArray(rawAnnouncementId) ? rawAnnouncementId[0] : rawAnnouncementId;
+  const notificationRef = Array.isArray(rawNotificationRef) ? rawNotificationRef[0] : rawNotificationRef;
   const { frameStyle, sectionStyle } = useAttendeeLayout();
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,8 +49,15 @@ export default function AnnouncementDetailScreen() {
         if (trackedOpenId.current !== result.id) {
           trackedOpenId.current = result.id;
           void queueAnalyticsEvent('announcement_opened', {
-            announcement_id: result.id, source: source || 'other', load_status: 'success',
+            announcement_id: result.id, source: source || (notificationRef ? 'notification' : 'other'), load_status: 'success',
           });
+          if (notificationRef) {
+            void queueAnalyticsEvent('notification_origin_visit', {
+              delivery_id: notificationRef, announcement_id: result.id,
+              destination: `/announcements/${result.id}`, source: 'notification',
+              path: `/announcements/${result.id}`, navigation_type: 'deep_link',
+            });
+          }
         }
       }
     } catch {

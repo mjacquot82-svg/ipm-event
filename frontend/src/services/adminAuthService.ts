@@ -81,6 +81,7 @@ export type NotificationDelivery = {
   audience: 'test' | 'everyone';
   provider: 'webpushr' | 'wonderpush';
   provider_campaign_id: string | null;
+  provider_delivery_id?: string | null;
   status: 'requested' | 'sent' | 'failed';
   requested_by: string;
   requested_at: string;
@@ -89,6 +90,23 @@ export type NotificationDelivery = {
   target_url: string;
   notification_title: string;
   notification_message: string;
+};
+
+export type NotificationAnalytics = {
+  delivery_id: string;
+  provider_campaign_id: string | null;
+  provider_delivery_id: string | null;
+  requested: boolean;
+  provider_accepted: boolean | null;
+  targeted_devices: number | null;
+  known_deliverable_devices: number | null;
+  sent_to_push_service: number | null;
+  provider_confirmed_receipts: number | null;
+  provider_failures: number | null;
+  notification_opens: number | null;
+  notification_origin_visits: number | null;
+  statistics_status: string | null;
+  statistics_refreshed_at: string | null;
 };
 
 export type AdminScheduleEvent = {
@@ -352,6 +370,10 @@ export function createBroadcast(payload: CreateBroadcastPayload) {
 
 export function listAnnouncements() {
   return adminRequest<AnnouncementsResponse>('/api/admin/announcements');
+}
+
+export function listAnnouncementAnalytics(id: string) {
+  return adminRequest<NotificationAnalytics[]>(`/api/admin/announcements/${encodeURIComponent(id)}/analytics`);
 }
 
 export function createAnnouncement(payload: AnnouncementPayload) {
