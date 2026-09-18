@@ -32,14 +32,14 @@ const STATE_COPY: Record<NotificationState, string> = {
   error: 'Notifications are temporarily unavailable. The IPM app will continue to work.',
 };
 
-export default function NotificationOptIn({ containerStyle, initiallyExpanded = false, homePresentation = false }: { containerStyle?: StyleProp<ViewStyle>; initiallyExpanded?: boolean; homePresentation?: boolean }) {
+export default function NotificationOptIn({ containerStyle, initiallyExpanded = false, homePresentation = false, persistent = false }: { containerStyle?: StyleProp<ViewStyle>; initiallyExpanded?: boolean; homePresentation?: boolean; persistent?: boolean }) {
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
   const [verificationDeferred, setVerificationDeferred] = useState(false);
   const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'failed'>('idle');
   const [failureStage, setFailureStage] = useState<NotificationRegistrationStage | null>(null);
   const [failureClassification, setFailureClassification] = useState<NotificationRegistrationFailure | null>(null);
-  const [expanded, setExpanded] = useState(initiallyExpanded);
+  const [expanded, setExpanded] = useState(initiallyExpanded || persistent);
   const triggerRef = useRef<any>(null);
   const actionInFlightRef = useRef(false);
   const hasFocusedRef = useRef(false);
@@ -228,7 +228,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
         ? `${failureStage}-${failureClassification}` : setupState}`}
     >
       <View style={styles.copy}>
-        <Text accessibilityRole="header" style={styles.title}>Get important IPM updates</Text>
+        <Text accessibilityRole="header" style={styles.title}>{persistent ? 'Notification options' : 'Get important IPM updates'}</Text>
         <Text accessibilityLiveRegion="polite" style={styles.message}>{stateMessage}</Text>
         <TouchableOpacity ref={triggerRef} accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={styles.retryButton}>
           <Text style={styles.retryButtonText}>{expanded ? 'Hide notification options' : 'Notification options'}</Text>
