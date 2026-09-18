@@ -466,10 +466,14 @@ class SupabaseItineraryReminderRepository:
         return {
             "has_active_test": True, "fixture_id": fixture["id"], "schedule_item_id": schedule["id"],
             "title": schedule["title"], "location_name": schedule.get("location_name"),
+            "server_now": now.astimezone(timezone.utc).isoformat(),
             "event_start": starts_at.isoformat(), "reminder_target": (starts_at - timedelta(minutes=lead)).isoformat(),
             "arm_available_at": (starts_at - timedelta(minutes=lead)).isoformat(),
+            "arm_expires_at": (starts_at - timedelta(minutes=lead - 1)).isoformat(),
             "authorization_expires_at": auth["expires_at"], "real_star_exists": bool(stars),
-            "already_armed": bool(deliveries), "expired": False,
+            "already_armed": bool(deliveries),
+            "can_arm": bool(stars and not deliveries and starts_at - timedelta(minutes=lead) <= now < starts_at - timedelta(minutes=lead - 1)),
+            "expired": False,
         }
 
     async def authorize_synthetic_fixture(self, *, fixture_id: str, registration_id: str,

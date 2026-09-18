@@ -43,3 +43,8 @@ def test_real_star_sync_refreshes_bound_provider_readiness_first():
     assert "repository.reconcile_readiness" in SERVER
     assert "require_wonderpush_client()" in SERVER
     assert "stale readiness" in SERVER
+
+
+def test_arm_window_matches_due_through_one_minute_after_due():
+    assert 'item_record.starts_at > p_now + make_interval(mins => fixture_record.test_lead_minutes)' in MIGRATION
+    assert 'item_record.starts_at <= p_now + make_interval(mins => fixture_record.test_lead_minutes - 1)' in MIGRATION
