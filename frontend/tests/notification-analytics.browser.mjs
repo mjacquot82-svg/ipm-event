@@ -75,8 +75,8 @@ try {
  await page.setViewportSize({width:1440,height:1000});
  await page.getByText('Analytics',{exact:true}).first().click();
  const reminders=page.getByLabel('T-30 reminder analytics');
- await reminders.getByText('Active reminder interests: 7',{exact:true}).waitFor();
- assert.ok((await reminders.innerText()).includes('Duplicate attempts suppressed: Not available'));
+ await reminders.getByLabel('Active reminder interests',{exact:true}).getByText('7',{exact:true}).waitFor();
+ assert.ok(!(await reminders.innerText()).includes('Duplicate attempts'));
  assert.doesNotMatch(await reminders.innerText(),/installation_id|capability_hash|push_token/);
  await reminders.screenshot({path:artifacts+'/t30-analytics.png'});
  assert.deepEqual(errors,[]);assert.deepEqual(mutations,[]);

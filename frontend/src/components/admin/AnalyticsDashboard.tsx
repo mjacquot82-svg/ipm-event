@@ -1,4 +1,4 @@
-import { ReminderAnalytics } from './ReminderAnalytics';
+import { NotificationOverview } from './NotificationOverview';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -8,7 +8,8 @@ import {
   AnalyticsContentResponse, AnalyticsLiveResponse, AnalyticsRange,
   AnalyticsSummaryResponse, AnalyticsTrafficResponse, RankedMetric,
   NotificationHealthResponse, getAnalyticsContent, getAnalyticsLive, getAnalyticsSummary,
-  getAnalyticsTraffic, getNotificationHealth,
+  getAnalyticsTraffic, getNotificationHealth, getNotificationSummary, getReminderSummary,
+  NotificationSummaryResponse, ReminderSummaryResponse,
 } from '../../services/adminAnalyticsService';
 import { ContentPage, EmptyState, ErrorState, LoadingState } from './ContentScaffold';
 
@@ -38,7 +39,7 @@ const DESTINATION_LABELS: Record<string, string> = {
   show_guide: '2026 Show Guide',
 };
 
-type Props = { onAuthenticationExpired: () => void };
+type Props = { onAuthenticationExpired: () => void; onOpenAnnouncements?: () => void };
 type SectionProps = { title: string; subtitle: string; children: React.ReactNode; initiallyOpen?: boolean };
 type MetricProps = { label: string; value: number | string; help?: string; icon: keyof typeof Feather.glyphMap };
 type RankRow = { label: string; value: number; detail?: string };
@@ -126,7 +127,7 @@ function ranked<T extends RankedMetric>(items: T[], key: keyof T, labels: Record
   return items.map((item) => ({ label: friendly(String(item[key]), labels), value: item.count, detail: `${item.share.toFixed(1)}% share` }));
 }
 
-export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
+export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncements }: Props) {
   const { width } = useWindowDimensions();
   const compact = width < 720;
   const [range, setRange] = useState<AnalyticsRange>('7d');
@@ -135,6 +136,8 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
   const [content, setContent] = useState<AnalyticsContentResponse | null>(null);
   const [live, setLive] = useState<AnalyticsLiveResponse | null>(null);
   const [notifications, setNotifications] = useState<NotificationHealthResponse | null>(null);
+  const [notificationSummary, setNotificationSummary] = useState<NotificationSummaryResponse | null>(null);
+  const [reminderSummary, setReminderSummary] = useState<ReminderSummaryResponse | null>(null);
   const [aggregateLoading, setAggregateLoading] = useState(true);
   const [aggregateErrors, setAggregateErrors] = useState<string[]>([]);
   const [liveError, setLiveError] = useState<string | null>(null);
@@ -152,7 +155,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
     if (manual) setRefreshing(true); else setAggregateLoading(true);
     const results = await Promise.allSettled([
       getAnalyticsSummary(selectedRange), getAnalyticsTraffic(selectedRange), getAnalyticsContent(selectedRange),
-      getNotificationHealth(),
+      getNotificationHealth(), getNotificationSummary(), getReminderSummary(),
     ]);
     if (request !== aggregateRequest.current) return;
     const errors: string[] = [];
@@ -164,6 +167,10 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
       setNotifications(null);
       errors.push(`Notification health: ${handleError(results[3].reason)}`);
     }
+    if (results[4].status === 'fulfilled') setNotificationSummary(results[4].value);
+    else { setNotificationSummary(null); errors.push(`Notifications: ${handleError(results[4].reason)}`); }
+    if (results[5].status === 'fulfilled') setReminderSummary(results[5].value);
+    else { setReminderSummary(null); errors.push(`Reminders: ${handleError(results[5].reason)}`); }
     setAggregateErrors(errors); setAggregateLoading(false); setRefreshing(false);
   }, [handleError]);
 
@@ -221,7 +228,9 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
       </MetricGrid>
     </Section> : null}
 
-    <ReminderAnalytics />
+    <Section title="Notifications" subtitle="All-time notification performance for this event; independent of the engagement date filter." initiallyOpen>
+      <NotificationOverview announcements={notificationSummary} reminders={reminderSummary} loading={aggregateLoading} onOpenAnnouncements={onOpenAnnouncements} />
+    </Section>
     {notifications ? <Section title="Notification Health" subtitle="Current registration health across all time; independent of the date filter." initiallyOpen>
       <Text style={styles.collectionStart}>A registration is a browser/device notification record. It does not necessarily represent a unique attendee or guarantee delivery.</Text>
       <MetricGrid>
@@ -251,7 +260,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
       </MetricGrid>
       {notifications.circuit !== 'CLOSED' || notifications.uncertain > 0 || notifications.key_mismatch > 0 || notifications.current_check_failures > 0 ? <Text accessibilityRole="alert" style={styles.healthWarning}>Needs attention: {notifications.key_mismatch} key mismatches, {notifications.uncertain} uncertain outcomes, {notifications.current_check_failures} current check failures. Circuit: {notifications.circuit.toLowerCase()}.{notifications.circuit_open_until ? ` Paused until ${formatTime(notifications.circuit_open_until)}.` : ''}</Text> : null}
       <Text style={styles.collectionStart}>Latest notification-health activity: {formatTime(notifications.latest_activity_at)}. Loaded {formatTime(notifications.snapshot_at)}. Use Refresh for a new read-only snapshot.</Text>
-      <Text style={styles.collectionStart}>Send acceptance and audience snapshots are shown with announcements. “Sent” means accepted by the provider, not delivered to a device. Visible device display is not measured; per-announcement provider statistics appear under Announcements. Announcement views and tracked notification deep-link opens are engagement events, not delivery receipts.</Text>
+      <Text style={styles.collectionStart}>Send acceptance and audience snapshots are shown with announcements. “Sent” means accepted by the provider, not delivered to a device. Visible device display is not measured. The Notifications section summarizes sends; Announcements has per-announcement details. Announcement views and tracked notification deep-link opens are engagement events, not delivery receipts.</Text>
     </Section> : null}
 
     <Section title="Live Activity" subtitle="Aggregate recent activity; refreshes every 30 seconds." initiallyOpen>

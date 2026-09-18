@@ -1900,6 +1900,20 @@ async def notification_analytics_diagnostics(announcement_id: str, current_user:
             "provider_http_status_note": "Historical exact HTTP status was not stored; sent means provider accepted, not displayed."}
 
 
+@api_router.get("/admin/analytics/notification-summary")
+async def notification_summary(current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    if get_admin_event_id(current_user) != event_service.get_public_event_id():
+        raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")
+    from backend.notification_overview import read_overview
+    try:
+        async with asyncio.timeout(12):
+            return await read_overview(require_notification_delivery_service(), analytics_repository,
+                                       get_admin_event_id(current_user), datetime.now(timezone.utc))
+    except Exception:
+        raise HTTPException(status_code=503, detail="Notification summary is temporarily unavailable") from None
+
+
 @api_router.get("/admin/analytics/reminders")
 async def notification_reminder_analytics(current_user: dict = Depends(get_current_organizer_user)):
     require_announcement_manager_role(current_user)

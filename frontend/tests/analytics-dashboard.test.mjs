@@ -100,3 +100,16 @@ test('responsive-safe layouts use wrapping, compact stacking, collapsible sectio
   assert.match(dashboardSource, /accessibilityState=\{\{ expanded: open \}\}/);
   assert.match(dashboardSource, /<ScrollView horizontal[^>]*><View style=\{styles\.comparisonTable\}/);
 });
+
+test('notification overview reads separate aggregate-only endpoints, without provider refresh', async () => {
+ const ts=await import('typescript');
+ const compiled=ts.transpileModule(serviceSource.replace("'./adminAuthService'",JSON.stringify(new URL('../src/services/adminAuthService.ts',import.meta.url).href)),{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText;
+ const {getNotificationSummary,getReminderSummary}=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
+ const calls=[];globalThis.fetch=async(url,init)=>{calls.push({url:String(url),init});return response({});};
+ await getNotificationSummary();await getReminderSummary();
+ assert.ok(calls[0].url.endsWith('/api/admin/analytics/notification-summary'));
+ assert.ok(calls[1].url.endsWith('/api/admin/analytics/reminders'));
+ assert.ok(calls.every(({init})=>!init.method || init.method==='GET'));
+ assert.match(dashboardSource,/independent of the engagement date filter/);
+ assert.match(dashboardSource,/<NotificationOverview/);
+});

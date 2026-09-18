@@ -634,7 +634,7 @@ export default function AdminDashboardScreen() {
           setIsAuthenticated(false);
           setCurrentUser(null);
           router.replace('/admin/login');
-        }} />
+        }} onOpenAnnouncements={() => setActiveSection('communications')} />
       )}
 
       {activeSection === 'vendors' && (
