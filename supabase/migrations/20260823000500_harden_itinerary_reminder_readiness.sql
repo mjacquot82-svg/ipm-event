@@ -1,4 +1,4 @@
--- Additive staging-only readiness and honest provider-outcome semantics (after the controlled-test tables).
+-- Provider readiness and honest provider-outcome semantics.
 alter table public.itinerary_reminder_installations
   add column if not exists provider_reachability text not null default 'unknown'
     check (provider_reachability in ('unknown', 'optIn', 'softOptOut', 'optOut')),

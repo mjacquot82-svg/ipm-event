@@ -1,4 +1,4 @@
--- Additive, staging-deployed foundation for device-specific itinerary reminders.
+-- Device-specific itinerary reminder foundation.
 -- Service-role backend access only: RLS is enabled and no browser-facing policy exists.
 
 create table if not exists public.itinerary_reminder_installations (
@@ -111,4 +111,4 @@ $$;
 revoke all on function public.claim_due_itinerary_reminders(timestamptz) from public, anon, authenticated;
 grant execute on function public.claim_due_itinerary_reminders(timestamptz) to service_role;
 
--- Rollback (staging only): drop both functions, then deliveries, stars, and installations in that order.
+-- Rollback: drop both functions, then deliveries, stars, and installations in that order.
