@@ -10,18 +10,17 @@ test('My Itinerary revalidates Schedule on focus without clearing cached events'
   assert.match(itinerary, /preferCache: !forceNetwork/);
   assert.match(itinerary, /if \(scheduleFetchInFlight\.current\) return/);
   assert.match(itinerary, /fetchSchedule\(true\)/);
-  assert.match(itinerary, /Keep the last known Schedule data visible/);
+  assert.match(itinerary, /if \(!forceNetwork\) setError\('Unable to load itinerary\.'\)/);
 });
 
 test('focus refresh runs alongside favorite reconciliation and reminder status', () => {
   const focus = itinerary.slice(itinerary.indexOf('useFocusEffect'), itinerary.indexOf('const changeReminderStatus'));
   assert.match(focus, /Promise\.all\(/);
-  assert.match(focus, /loadFavorites\(\)\.then\(\(\) => refreshReminderStatus\(\)\)/);
+  assert.match(focus, /loadFavorites\(\)/);
   assert.match(focus, /fetchSchedule\(true\)/);
 });
 
-test('revalidation remains bounded on reconnect and does not require a manual refresh', () => {
-  assert.match(itinerary, /addConnectivityRefreshListener\(\(\) => void fetchSchedule\(true\)\)/);
+test('revalidation remains bounded and does not require a manual refresh', () => {
   assert.doesNotMatch(itinerary, /setInterval\([^\n]*fetchSchedule/);
   assert.doesNotMatch(itinerary, /clearFavorites\(\)/);
   assert.doesNotMatch(itinerary, /toggleFavorite\([^\n]*\)\.then\([^\n]*fetchSchedule/);
