@@ -172,6 +172,9 @@ ITINERARY_REMINDER_SCHEDULER_ENABLED = os.environ.get(
 ITINERARY_REMINDER_DELIVERY_ENABLED = os.environ.get(
     "ITINERARY_REMINDER_DELIVERY_ENABLED", "false"
 ).lower() == "true"
+# Fixture-scoped arm is available only in the isolated staging deployment. It
+# does not enable the general scheduler or delivery gate.
+CONTROLLED_T30_ARM_ENABLED = IS_STAGING_DEPLOYMENT and ITINERARY_REMINDER_FOUNDATION_ENABLED
 ITINERARY_REMINDER_INTERVAL_SECONDS = max(30, int(os.environ.get("ITINERARY_REMINDER_INTERVAL_SECONDS", "60")))
 ITINERARY_REMINDER_CLAIM_BATCH_SIZE = max(1, min(10000, int(
     os.environ.get("ITINERARY_REMINDER_CLAIM_BATCH_SIZE", "10000"))))
@@ -295,6 +298,10 @@ class ItineraryStarsPayload(BaseModel):
 
 class ItineraryEnabledPayload(BaseModel):
     enabled: bool
+
+class ControlledReminderArmPayload(BaseModel):
+    fixture_id: uuid.UUID
+    schedule_item_id: uuid.UUID
 
 class TestDevicePayload(BaseModel):
     label: Literal["A", "B"]
@@ -2151,6 +2158,22 @@ async def sync_itinerary_reminder_stars(data: ItineraryStarsPayload, request: Re
             raise HTTPException(status_code=404, detail="Unknown or cross-event Schedule UUID")
     result = await repository.sync_full_set(registration, schedule_ids)
     return {"synced": True, "starred_count": int(result.get("starred_count", len(schedule_ids)))}
+
+
+@api_router.post("/itinerary-reminders/controlled-test/arm")
+async def arm_controlled_t30_reminder(data: ControlledReminderArmPayload, request: Request):
+    """Arm one real attendee star through one authorized staging fixture."""
+    if not CONTROLLED_T30_ARM_ENABLED:
+        raise HTTPException(status_code=404, detail="Controlled reminder arm is unavailable")
+    _, registration = await authorize_itinerary_device(request)
+    try:
+        return await itinerary_reminder_engine().arm_controlled_real(
+            now=datetime.now(timezone.utc), fixture_id=str(data.fixture_id),
+            registration_id=registration["id"], schedule_item_id=str(data.schedule_item_id))
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=409, detail="Controlled reminder could not be armed") from exc
 
 @api_router.get("/itinerary-reminders/operations")
 async def itinerary_reminder_operations():
