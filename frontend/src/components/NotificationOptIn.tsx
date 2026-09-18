@@ -207,8 +207,18 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
       testID={`notification-settings-${state}`}
     >
       <View style={styles.copy}>
-        <Text accessibilityRole="header" style={styles.title}>{persistent ? 'Notification options' : 'Get important IPM updates'}</Text>
-        <Text accessibilityLiveRegion="polite" style={styles.message}>{stateMessage}</Text>
+        <Text accessibilityRole="header" style={styles.title}>
+          {persistent ? (state === 'subscribed' ? 'Event reminders ✓' : 'Event reminders') : 'Get important IPM updates'}
+        </Text>
+        <Text accessibilityLiveRegion="polite" style={styles.message}>
+          {persistent && state === 'subscribed'
+            ? 'You’ll receive reminders for your starred events.'
+            : persistent && (state === 'default' || state === 'unsubscribed')
+            ? 'Get a reminder approximately 30 minutes before your starred events.'
+            : persistent && state === 'denied'
+            ? 'Notifications are blocked on this device.'
+            : stateMessage}
+        </Text>
         <TouchableOpacity ref={triggerRef} accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={styles.retryButton}>
           <Text style={styles.retryButtonText}>{expanded ? 'Hide notification options' : 'Notification options'}</Text>
         </TouchableOpacity>
@@ -228,7 +238,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
             style={[styles.button, state === 'subscribed' && styles.disableButton]}
           >
             <Text style={[styles.buttonText, state === 'subscribed' && styles.disableButtonText]}>
-              {state === 'subscribed' ? 'Turn off notifications' : 'Enable notifications'}
+              {state === 'subscribed' ? 'Turn off notifications' : persistent ? 'Turn on event reminders' : 'Enable notifications'}
             </Text>
           </TouchableOpacity>
           {(state === 'default' || state === 'unsubscribed') ? (
