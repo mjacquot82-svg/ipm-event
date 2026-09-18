@@ -6,6 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { colors } from '../../src/theme/colors';
 import { Feather } from '@expo/vector-icons';
@@ -31,7 +32,12 @@ import {
 import { formatScheduleDate } from '../../src/utils/scheduleDate';
 import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
 import { reconcileAttendeeItineraryReminders } from '../../src/services/reminderUxService';
+import { armControlledReminderTest } from '../../src/services/itineraryReminderSync.web';
 import NotificationOptIn from '../../src/components/NotificationOptIn';
+
+const STAGING_ARM_EVENT_ID = '565f651e-c898-4dba-bc31-7832cfa684e6';
+const STAGING_ARM_FIXTURE_ID = 'b1d515d0-5d41-479b-bd77-09947af33f36';
+const STAGING_ARM_STARTS_AT = '2026-09-18T14:48:12.41327Z';
 
 export default function ItineraryScreen() {
   usePageAnalytics('itinerary', 'home_quick_action');
@@ -46,6 +52,33 @@ export default function ItineraryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
+  const [armState, setArmState] = useState<'hidden' | 'waiting' | 'working' | 'armed' | 'failed'>('hidden');
+  const [clock, setClock] = useState(() => Date.now());
+  const stagingArmEnabled = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.hostname === 'staging.theipm.ca';
+  const stagingArmEventVisible = events.some((event) => event.id === STAGING_ARM_EVENT_ID);
+  const armDueAt = new Date(STAGING_ARM_STARTS_AT).getTime() - 2 * 60 * 1000;
+  const armWindowOpensAt = armDueAt - 60 * 1000;
+
+  useEffect(() => {
+    if (!stagingArmEnabled) return undefined;
+    const timer = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [stagingArmEnabled]);
+
+  useEffect(() => {
+    if (!stagingArmEnabled || !stagingArmEventVisible || armState === 'armed' || armState === 'working') return;
+    setArmState(clock >= armWindowOpensAt && clock <= armDueAt + 60 * 1000 ? 'waiting' : 'hidden');
+  }, [armDueAt, armState, armWindowOpensAt, clock, stagingArmEnabled, stagingArmEventVisible]);
+
+  const armStagingReminder = async () => {
+    setArmState('working');
+    try {
+      const result = await armControlledReminderTest(STAGING_ARM_FIXTURE_ID, STAGING_ARM_EVENT_ID);
+      setArmState(result?.armed ? 'armed' : 'failed');
+    } catch {
+      setArmState('failed');
+    }
+  };
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
@@ -155,6 +188,27 @@ export default function ItineraryScreen() {
         <NotificationOptIn persistent containerStyle={styles.notificationOptions} />
       </View>
 
+      {stagingArmEnabled && stagingArmEventVisible && armState !== 'hidden' ? (
+        <View style={styles.controlledArmCard} accessibilityLabel="Controlled reminder test">
+          <Text style={styles.controlledArmTitle}>Controlled reminder test</Text>
+          {armState === 'armed' ? (
+            <Text style={styles.controlledArmStatus}>Armed for the exact Device A target. No notification has been sent.</Text>
+          ) : armState === 'failed' ? (
+            <Text style={styles.controlledArmStatus}>The controlled arm did not complete. Do not retry from another device.</Text>
+          ) : (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Arm reminder test"
+              disabled={armState !== 'waiting' || armState === 'working'}
+              onPress={armStagingReminder}
+              style={[styles.controlledArmButton, armState !== 'waiting' && styles.controlledArmButtonDisabled]}
+            >
+              <Text style={styles.controlledArmButtonText}>{armState === 'working' ? 'Arming…' : 'Arm reminder test'}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : null}
+
       {dataSource === 'cache' && (
         <CachedDataBanner lastSuccessfulUpdate={lastSuccessfulUpdate} />
       )}
@@ -262,6 +316,20 @@ const styles = StyleSheet.create({
   reminderHintText: { color: '#4B5563', fontSize: 13, lineHeight: 18 },
   reminderHintLink: { color: '#8B1538', fontSize: 13, lineHeight: 18, fontWeight: '700', marginTop: 4 },
   notificationOptions: { marginTop: 10 },
+  controlledArmCard: {
+    marginHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#FFF4D6',
+    borderWidth: 1,
+    borderColor: '#D6B656',
+  },
+  controlledArmTitle: { color: '#5C4310', fontSize: 15, fontWeight: '800', marginBottom: 6 },
+  controlledArmStatus: { color: '#5C4310', fontSize: 13, lineHeight: 18 },
+  controlledArmButton: { alignSelf: 'flex-start', backgroundColor: '#8B1538', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
+  controlledArmButtonDisabled: { opacity: 0.45 },
+  controlledArmButtonText: { color: '#FFFFFF', fontWeight: '700' },
   title: {
     fontSize: 28,
     fontWeight: '700',

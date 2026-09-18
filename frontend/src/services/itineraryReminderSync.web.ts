@@ -99,6 +99,11 @@ export async function getControlledTestDeviceStatus() {
   return request('/test-device', 'GET');
 }
 
+/** Invoke the existing staging-only arm endpoint with this browser's capability. */
+export async function armControlledReminderTest(fixtureId: string, scheduleItemId: string) {
+  return request('/controlled-test/arm', 'POST', { fixture_id: fixtureId, schedule_item_id: scheduleItemId });
+}
+
 export async function diagnoseControlledTestRegistration(label: TestDeviceLabel) {
   const wonderPush = await getWonderPushClientReadiness();
   const diagnostic = { ...wonderPush, capability: 'unavailable', registrationApi: 'not-attempted',
