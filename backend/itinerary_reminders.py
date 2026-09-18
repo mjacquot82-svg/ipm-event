@@ -121,9 +121,23 @@ class SupabaseItineraryReminderRepository:
         return rows[0]
 
     async def set_test_label(self, registration_id: str, label: str) -> dict[str, Any]:
+        """Atomically make this explicitly authorized registration the labeled test device.
+
+        Historical staging registrations may still carry the same label.  The partial
+        unique index is intentionally retained, so an explicit check-in first clears
+        that label for this event, then assigns it to the already-authorized current
+        registration.  No provider operation is performed.
+        """
+        event_id = await self._event_id()
+        await self.client.request("PATCH", "/itinerary_reminder_installations", params={
+            "event_id": f"eq.{event_id}", "test_device_label": f"eq.{label}",
+        }, json={"test_device_label": None}, headers={"Prefer": "return=minimal"})
         rows = await self.client.request("PATCH", "/itinerary_reminder_installations",
-            params={"id": f"eq.{registration_id}"}, json={"test_device_label": label},
+            params={"id": f"eq.{registration_id}", "event_id": f"eq.{event_id}"},
+            json={"test_device_label": label},
             headers={"Prefer": "return=representation"})
+        if not rows:
+            raise LookupError("Authorized itinerary registration disappeared during test-device check-in")
         return rows[0]
 
     async def test_registrations(self) -> list[dict[str, Any]]:
