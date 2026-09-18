@@ -10,6 +10,7 @@ import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendee
 import colors from '../../src/theme/colors';
 import { useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import { notificationNavigationId } from '../../src/analytics/notificationAttribution';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 
 export default function AnnouncementDetailScreen() {
@@ -58,12 +59,13 @@ export default function AnnouncementDetailScreen() {
             announcement_id: result.id, source: deliveryRef ? 'notification' : source || 'other',
             ...(deliveryRef ? { notification_id: deliveryRef } : {}), load_status: 'success',
           });
-          if (deliveryRef) {
-            void queueAnalyticsEvent('notification_origin_visit', {
-              delivery_id: deliveryRef, announcement_id: result.id,
-              destination: 'announcement_detail', source: 'notification', navigation_type: 'deep_link',
-            });
-          }
+        }
+        const navigationId = notificationNavigationId(deliveryRef);
+        if (deliveryRef && navigationId) {
+          void queueAnalyticsEvent('notification_origin_visit', {
+            delivery_id: deliveryRef, announcement_id: result.id, navigation_id: navigationId,
+            destination: 'announcement_detail', source: 'notification', navigation_type: 'deep_link',
+          });
         }
       }
     } catch {
@@ -71,7 +73,7 @@ export default function AnnouncementDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [announcementId, markAnnouncementRead, source]);
+  }, [announcementId, markAnnouncementRead, source, deliveryRef]);
 
   useEffect(() => { void load(); }, [load]);
 

@@ -57,7 +57,7 @@ VALID_PROPERTIES = {
     "announcement_list_viewed": {"unread_count": 2, "load_status": "success"},
     "announcement_impression": {"announcement_id": "notice-1", "surface": "home"},
     "announcement_opened": {"announcement_id": "notice-1", "source": "notification", "campaign_id": "campaign-1"},
-    "notification_origin_visit": {"delivery_id": "delivery-1", "announcement_id": "notice-1", "destination": "announcement_detail", "source": "notification", "navigation_type": "deep_link"},
+    "notification_origin_visit": {"navigation_id": "00000000-0000-4000-8000-000000000001", "delivery_id": "delivery-1", "announcement_id": "notice-1", "destination": "announcement_detail", "source": "notification", "navigation_type": "deep_link"},
     "announcement_link_clicked": {"announcement_id": "notice-1", "destination_id": "tickets", "destination_type": "tickets"},
     "outbound_link_clicked": {"destination_id": "camping", "destination_type": "registration", "source": "home"},
     "favorite_changed": {"schedule_item_id": "event-1", "action": "added"},
@@ -139,6 +139,7 @@ class IndexCollection:
 
 class IndexDatabase:
     def __init__(self):
+        self.notification_origin_visits = IndexCollection()
         self.analytics_visitors = IndexCollection()
         self.analytics_sessions = IndexCollection()
         self.analytics_events = IndexCollection()

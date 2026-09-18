@@ -1,3 +1,4 @@
+import { ReminderAnalytics } from './ReminderAnalytics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -220,6 +221,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
       </MetricGrid>
     </Section> : null}
 
+    <ReminderAnalytics />
     {notifications ? <Section title="Notification Health" subtitle="Current registration health across all time; independent of the date filter." initiallyOpen>
       <Text style={styles.collectionStart}>A registration is a browser/device notification record. It does not necessarily represent a unique attendee or guarantee delivery.</Text>
       <MetricGrid>
@@ -249,7 +251,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired }: Props) {
       </MetricGrid>
       {notifications.circuit !== 'CLOSED' || notifications.uncertain > 0 || notifications.key_mismatch > 0 || notifications.current_check_failures > 0 ? <Text accessibilityRole="alert" style={styles.healthWarning}>Needs attention: {notifications.key_mismatch} key mismatches, {notifications.uncertain} uncertain outcomes, {notifications.current_check_failures} current check failures. Circuit: {notifications.circuit.toLowerCase()}.{notifications.circuit_open_until ? ` Paused until ${formatTime(notifications.circuit_open_until)}.` : ''}</Text> : null}
       <Text style={styles.collectionStart}>Latest notification-health activity: {formatTime(notifications.latest_activity_at)}. Loaded {formatTime(notifications.snapshot_at)}. Use Refresh for a new read-only snapshot.</Text>
-      <Text style={styles.collectionStart}>Send acceptance and audience snapshots are shown with announcements. “Sent” means accepted by the provider, not delivered to a device. True device delivery and provider click totals are not available. Announcement views and tracked notification deep-link opens are engagement events, not delivery receipts.</Text>
+      <Text style={styles.collectionStart}>Send acceptance and audience snapshots are shown with announcements. “Sent” means accepted by the provider, not delivered to a device. Visible device display is not measured; per-announcement provider statistics appear under Announcements. Announcement views and tracked notification deep-link opens are engagement events, not delivery receipts.</Text>
     </Section> : null}
 
     <Section title="Live Activity" subtitle="Aggregate recent activity; refreshes every 30 seconds." initiallyOpen>

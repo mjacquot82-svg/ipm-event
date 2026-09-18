@@ -8,6 +8,7 @@ def test_provider_202_is_acceptance_not_delivery():
         "provider_sent_count": None,
         "provider_confirmed_receipt_count": None,
         "provider_failure_count": None,
+        "provider_targeted_device_count": None, "provider_unique_open_count": None,
         "provider_open_count": None,
     }
 
@@ -20,9 +21,9 @@ def test_statistics_normalization_preserves_unknowns_and_maps_provider_events():
     ]}]})
     assert result["provider_sent_count"] == 3
     assert result["provider_open_count"] == 2
-    assert result["provider_confirmed_receipt_count"] == 1
+    assert result["provider_confirmed_receipt_count"] is None
     assert result["provider_failure_count"] is None
 
 
 def test_historical_delivery_without_campaign_identity_is_not_queryable():
-    assert normalize_wonderpush_statistics({})["provider_sent_count"] is None
+    assert normalize_wonderpush_statistics({"data": []})["provider_sent_count"] is None

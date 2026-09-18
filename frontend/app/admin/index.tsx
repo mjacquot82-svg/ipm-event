@@ -1,3 +1,4 @@
+import { NotificationMetrics } from '../../src/components/admin/NotificationMetrics';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -211,7 +212,7 @@ export default function AdminDashboardScreen() {
       setAnnouncements(result.announcements);
       try {
         const stats = await listAnnouncementDeliveryStats();
-        setAnnouncementDeliveryStats(Object.fromEntries(stats.deliveries.map((delivery) => [delivery.announcement_id, delivery])));
+        setAnnouncementDeliveryStats(Object.fromEntries([...stats.deliveries].reverse().map((delivery) => [delivery.announcement_id, delivery])));
       } catch {
         // Delivery analytics is additive; an older backend must not block Announcements.
         setAnnouncementDeliveryStats({});
@@ -222,6 +223,21 @@ export default function AdminDashboardScreen() {
       setAnnouncementsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || activeSection !== 'communications') return;
+    let busy = false;
+    const timer = setInterval(async () => {
+      if (busy || (typeof document !== 'undefined' && document.visibilityState !== 'visible')) return;
+      busy = true;
+      try {
+        const stats = await listAnnouncementDeliveryStats();
+        setAnnouncementDeliveryStats(Object.fromEntries([...stats.deliveries].reverse().map((row) => [row.announcement_id, row])));
+      } catch { /* Keep the last known aggregate; sending is independent. */ }
+      finally { busy = false; }
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [isAuthenticated, activeSection]);
 
   useEffect(() => {
     let isMounted = true;
@@ -384,7 +400,7 @@ export default function AdminDashboardScreen() {
         audience,
         status: 'sent',
         message: audience === 'test'
-          ? 'Test notification sent to configured test subscribers.'
+          ? 'Provider accepted the test notification request.'
           : 'Notification accepted by WonderPush.',
       });
       if (audience === 'everyone') await loadAnnouncements();
@@ -1647,24 +1663,7 @@ function AnnouncementsPage({
                   {`Created by ${item.created_by} · ${new Date(item.created_at).toLocaleString()}`}
                   {item.expires_at ? ` · Expires ${new Date(item.expires_at).toLocaleString()}` : ''}
                 </Text>
-                {deliveryStats[item.id] ? <Text style={styles.deliveryMeta}>
-                  {deliveryStats[item.id].provider_accepted ? 'Provider accepted' : deliveryStats[item.id].status === 'failed' ? 'Provider not accepted' : 'Notification requested'}
-                  {deliveryStats[item.id].provider_targeted_device_count == null
-                    ? ' · Targeted devices: Not available'
-                    : ` · Targeted devices: ${deliveryStats[item.id].provider_targeted_device_count}`}
-                  {deliveryStats[item.id].audience_device_count == null
-                    ? ''
-                    : ` · Known deliverable devices at send: ${deliveryStats[item.id].audience_device_count}`}
-                  {deliveryStats[item.id].provider_sent_count == null
-                    ? ' · Sent to push service: Not available'
-                    : ` · Sent to push service: ${deliveryStats[item.id].provider_sent_count}`}
-                  {deliveryStats[item.id].provider_confirmed_receipt_count == null
-                    ? ' · Provider-confirmed receipts: Not available'
-                    : ` · Provider-confirmed receipts: ${deliveryStats[item.id].provider_confirmed_receipt_count}`}
-                  {deliveryStats[item.id].provider_open_count == null
-                    ? ' · Notification opens: Not available'
-                    : ` · Notification opens: ${deliveryStats[item.id].provider_open_count}`}
-                </Text> : null}
+                <NotificationMetrics stats={deliveryStats[item.id]} image={!!item.image?.url} />
               </View>
               <View style={[styles.announcementActions, isMobile && styles.announcementActionsMobile]}>
                 <Pressable style={styles.iconButton} onPress={() => onEdit(item)}><Feather name="edit-2" size={16} color={colors.textSecondary} /></Pressable>
@@ -1849,11 +1848,11 @@ function AnnouncementEditor({
         {isPublished && <>
           {showTestAction && <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
             {isSending && notificationAction.audience === 'test' ? <ActivityIndicator color={colors.textPrimary} /> : <Feather name="send" size={17} color={colors.textPrimary} />}
-            <Text style={styles.secondaryButtonText}>{isSending && notificationAction.audience === 'test' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'test' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'test' ? 'Failed — Try Again' : 'Send Test Notification'}</Text>
+            <Text style={styles.secondaryButtonText}>{isSending && notificationAction.audience === 'test' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'test' ? 'Provider accepted' : notificationAction.status === 'failed' && notificationAction.audience === 'test' ? 'Failed — Try Again' : 'Send Test Notification'}</Text>
           </Pressable>}
           <Pressable style={[styles.dangerButton, (notificationDisabled || everyoneSentThisSession) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={notificationDisabled || everyoneSentThisSession}>
             {isSending && notificationAction.audience === 'everyone' ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
-            <Text style={styles.saveButtonText}>{isSending && notificationAction.audience === 'everyone' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'everyone' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'everyone' ? 'Failed — Try Again' : 'Notify Everyone'}</Text>
+            <Text style={styles.saveButtonText}>{isSending && notificationAction.audience === 'everyone' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'everyone' ? 'Provider accepted' : notificationAction.status === 'failed' && notificationAction.audience === 'everyone' ? 'Failed — Try Again' : 'Notify Everyone'}</Text>
           </Pressable>
         </>}
       </View>

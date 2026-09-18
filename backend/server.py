@@ -1,3 +1,4 @@
+from backend.notification_analytics import (campaign_identity, refresh_statistics, has_attribution, valid_uuid, reminder_summary, read_reminder_ledger)
 from backend.event_media import EventDetailContent
 from backend.announcement_images import (
     AnnouncementImage,
@@ -485,9 +486,8 @@ class NotificationDeliveryResponse(BaseModel):
     notification_message: str
 
 class NotificationAnalyticsResponse(BaseModel):
-    delivery_id: str
-    provider_campaign_id: Optional[str] = None
-    provider_delivery_id: Optional[str] = None
+    audience: str
+    requested_at: Optional[datetime] = None
     requested: bool
     provider_accepted: Optional[bool] = None
     targeted_devices: Optional[int] = None
@@ -511,6 +511,8 @@ class NotificationAdoptionResponse(BaseModel):
     snapshot_at: datetime
 
 class AnnouncementDeliveryStats(BaseModel):
+    requested_at: Optional[datetime] = None
+    notification_origin_visit_count: Optional[int] = None
     announcement_id: str
     status: Literal["requested", "sent", "failed"]
     sent_at: Optional[datetime] = None
@@ -519,8 +521,6 @@ class AnnouncementDeliveryStats(BaseModel):
     audience_snapshot_at: Optional[datetime] = None
     audience_stale_device_count: Optional[int] = None
     provider_accepted: bool
-    provider_campaign_id: Optional[str] = None
-    provider_delivery_id: Optional[str] = None
     provider_targeted_device_count: Optional[int] = None
     provider_sent_count: Optional[int] = None
     provider_confirmed_receipt_count: Optional[int] = None
@@ -1552,7 +1552,20 @@ async def analytics_session_end(data: AnalyticsSessionEndRequest):
 async def analytics_events(data: AnalyticsEventsRequest):
     """Validate and ingest a bounded batch of allowlisted attendee events."""
     try:
-        result = await ingest_analytics_events(require_analytics_repository(), data)
+        accepted_events = []
+        for event in data.events:
+            if event.eventName == "notification_origin_visit":
+                props = event.properties
+                if not all(valid_uuid(props.get(key)) for key in ("delivery_id", "announcement_id", "navigation_id")):
+                    continue
+                row = await require_notification_delivery_service().get_delivery(
+                    props["delivery_id"], event_id=event_service.get_public_event_id())
+                if not row or row.get("status") != "sent" or row.get("announcement_id") != props["announcement_id"] or not has_attribution(row):
+                    continue
+            accepted_events.append(event)
+        if not accepted_events:
+            return {"eventScope": ANALYTICS_EVENT_SCOPE, "accepted": 0, "duplicates": 0}
+        result = await ingest_analytics_events(require_analytics_repository(), data.model_copy(update={"events": accepted_events}))
         return {"eventScope": ANALYTICS_EVENT_SCOPE, **result}
     except AnalyticsValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -1812,24 +1825,9 @@ async def list_announcement_delivery_stats(
     rows = await deliveries.list_announcement_stats(
         event_id=get_admin_event_id(current_user)
     )
-    # One bounded read-only provider refresh per stored delivery. Provider
-    # failures are recorded as analytics state and never affect sending.
-    provider = None
-    for row in rows:
-        campaign_id = row.get("provider_campaign_id")
-        if not campaign_id or campaign_id.startswith("wonderpush:"):
-            continue
-        if provider is None:
-            provider = require_wonderpush_client()
-        try:
-            values = normalize_wonderpush_statistics(await provider.get_campaign_statistics(campaign_id))
-            values.update({"provider_statistics_refreshed_at": datetime.now(timezone.utc).isoformat(),
-                "provider_statistics_status": "available", "provider_statistics_error": None})
-        except WonderPushError as exc:
-            values = {"provider_statistics_refreshed_at": datetime.now(timezone.utc).isoformat(),
-                "provider_statistics_status": "unavailable", "provider_statistics_error": str(exc)[:500]}
-        updated = await deliveries.update_provider_statistics(row["id"], values)
-        row.update(updated)
+    if wonderpush_client:
+        await refresh_statistics(rows, deliveries, wonderpush_client, datetime.now(timezone.utc))
+    await attach_notification_visit_counts(rows, deliveries)
     return AnnouncementDeliveryStatsResponse(deliveries=[
         AnnouncementDeliveryStats(
             **row,
@@ -1838,57 +1836,93 @@ async def list_announcement_delivery_stats(
     ])
 
 
-def notification_analytics_response(row: dict[str, Any]) -> NotificationAnalyticsResponse:
+async def attach_notification_visit_counts(rows, deliveries):
+    attributable = [row for row in rows if has_attribution(row)]
+    if not attributable or analytics_repository is None:
+        return
+    try:
+        counts = await analytics_repository.notification_visit_counts([row["id"] for row in attributable])
+        for row in attributable:
+            count = counts.get(row["id"], 0)
+            row["notification_origin_visit_count"] = count
+            # Cached aggregate only; the idempotent Mongo visit ledger is authoritative.
+            await deliveries.update_provider_statistics(row["id"], {"notification_origin_visit_count": count})
+    except Exception:
+        logger.warning("Notification visit aggregation unavailable")
+
+
+def notification_analytics_response(row):
     return NotificationAnalyticsResponse(
-        delivery_id=row["id"], provider_campaign_id=row.get("provider_campaign_id"),
-        provider_delivery_id=row.get("provider_delivery_id"), requested=True,
-        provider_accepted=True if row.get("status") == "sent" else None,
+        audience=row.get("audience", "everyone"), requested_at=row.get("requested_at"), requested=True,
+        provider_accepted=True if row.get("status") == "sent" else False if row.get("status") == "failed" else None,
         targeted_devices=row.get("provider_targeted_device_count"),
         known_deliverable_devices=row.get("audience_device_count"),
         sent_to_push_service=row.get("provider_sent_count"),
         provider_confirmed_receipts=row.get("provider_confirmed_receipt_count"),
-        provider_failures=row.get("provider_failure_count"),
-        notification_opens=row.get("provider_open_count"),
+        provider_failures=row.get("provider_failure_count"), notification_opens=row.get("provider_open_count"),
         notification_origin_visits=row.get("notification_origin_visit_count"),
         statistics_status=row.get("provider_statistics_status"),
-        statistics_refreshed_at=row.get("provider_statistics_refreshed_at"),
-    )
+        statistics_refreshed_at=row.get("provider_statistics_refreshed_at"))
 
 
-@api_router.get("/admin/announcements/{announcement_id}/analytics",
-    response_model=List[NotificationAnalyticsResponse])
-async def list_announcement_analytics(announcement_id: str,
-    current_user: dict = Depends(get_current_organizer_user)):
+@api_router.get("/admin/announcements/{announcement_id}/analytics", response_model=List[NotificationAnalyticsResponse])
+async def list_announcement_analytics(announcement_id: str, current_user: dict = Depends(get_current_organizer_user)):
     require_announcement_manager_role(current_user)
-    rows = await require_notification_delivery_service().list_deliveries(
-        announcement_id=announcement_id, event_id=get_admin_event_id(current_user))
+    deliveries = require_notification_delivery_service()
+    rows = await deliveries.list_deliveries(announcement_id=announcement_id, event_id=get_admin_event_id(current_user))
+    if wonderpush_client:
+        await refresh_statistics(rows, deliveries, wonderpush_client, datetime.now(timezone.utc))
+    await attach_notification_visit_counts(rows, deliveries)
     return [notification_analytics_response(row) for row in rows]
 
 
-@api_router.post("/admin/announcements/{announcement_id}/analytics/refresh",
-    response_model=List[NotificationAnalyticsResponse])
-async def refresh_announcement_analytics(announcement_id: str,
-    current_user: dict = Depends(get_current_organizer_user)):
-    require_announcement_manager_role(current_user)
+@api_router.post("/admin/announcements/{announcement_id}/analytics/refresh", response_model=List[NotificationAnalyticsResponse])
+async def refresh_announcement_analytics(announcement_id: str, current_user: dict = Depends(get_current_organizer_user)):
+    require_owner_role(current_user)
     deliveries = require_notification_delivery_service()
-    provider = require_wonderpush_client()
-    rows = await deliveries.list_deliveries(announcement_id=announcement_id,
-        event_id=get_admin_event_id(current_user))
-    refreshed = []
-    for row in rows:
-        campaign_id = row.get("provider_campaign_id")
-        if not campaign_id or campaign_id.startswith("wonderpush:"):
-            refreshed.append(row)
-            continue
-        try:
-            values = normalize_wonderpush_statistics(await provider.get_campaign_statistics(campaign_id))
-            values.update({"provider_statistics_refreshed_at": datetime.now(timezone.utc).isoformat(),
-                "provider_statistics_status": "available", "provider_statistics_error": None})
-        except WonderPushError as exc:
-            values = {"provider_statistics_refreshed_at": datetime.now(timezone.utc).isoformat(),
-                "provider_statistics_status": "unavailable", "provider_statistics_error": str(exc)[:500]}
-        refreshed.append(await deliveries.update_provider_statistics(row["id"], values))
-    return [notification_analytics_response(row) for row in refreshed]
+    rows = await deliveries.list_deliveries(announcement_id=announcement_id, event_id=get_admin_event_id(current_user))
+    if wonderpush_client:
+        await refresh_statistics(rows, deliveries, wonderpush_client, datetime.now(timezone.utc), diagnostic=True)
+    await attach_notification_visit_counts(rows, deliveries)
+    return [notification_analytics_response(row) for row in rows]
+
+
+@api_router.get("/admin/announcements/{announcement_id}/analytics/diagnostics")
+async def notification_analytics_diagnostics(announcement_id: str, current_user: dict = Depends(get_current_organizer_user)):
+    require_owner_role(current_user)
+    rows = await require_notification_delivery_service().list_deliveries(
+        announcement_id=announcement_id, event_id=get_admin_event_id(current_user))
+    keys = ("id", "announcement_id", "audience", "status", "provider_campaign_id", "provider_delivery_id",
+            "requested_at", "provider_accepted_at", "provider_statistics_status", "provider_statistics_refreshed_at")
+    return {"deliveries": [{**{key: row.get(key) for key in keys},
+            "provider_http_status": None} for row in rows],
+            "provider_http_status_note": "Historical exact HTTP status was not stored; sent means provider accepted, not displayed."}
+
+
+@api_router.get("/admin/analytics/reminders")
+async def notification_reminder_analytics(current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    if get_admin_event_id(current_user) != event_service.get_public_event_id():
+        raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")
+    now = datetime.now(timezone.utc)
+    metrics = await require_itinerary_reminder_repository().operational_metrics(now)
+    return {"snapshot_at": now, **reminder_summary(metrics),
+            **await read_reminder_ledger(require_itinerary_reminder_repository(), now)}
+
+
+@api_router.get("/admin/analytics/reminders/diagnostics")
+async def notification_reminder_diagnostics(current_user: dict = Depends(get_current_organizer_user)):
+    require_owner_role(current_user)
+    summary = await notification_reminder_analytics(current_user)
+    repo = require_itinerary_reminder_repository()
+    now = datetime.now(timezone.utc)
+    # Allowlist; no raw registrations, targets, claims, tokens, or hashes.
+    batch = await repo.batch_metrics(now)
+    durable = await repo.durable_metrics(now)
+    keys = ("assigned_batches", "provider_accepted_batches", "provider_failed_batches", "delivery_unknown_batches",
+            "targeted_installations", "provider_429_batches", "current_backlog", "oldest_pending_seconds",
+            "provider_5xx_batches", "open_operational_alerts", "average_batch_processing_ms", "p95_batch_processing_ms")
+    return {**summary, "batch_diagnostics": {key: {**batch, **durable}.get(key) for key in keys}}
 
 
 @api_router.post(
@@ -2052,7 +2086,6 @@ async def notify_announcement(
     expiration_time = announcement_expiration_time(announcement)
 
     base_target_url = f"{PUBLIC_APP_URL}/announcements/{quote(announcement_id, safe='')}"
-    provider_campaign_id = f"ipm-announcement-{audience}-{announcement_id}"
     image = announcement.get("image") if isinstance(announcement.get("image"), dict) else None
     image_url = image.get("url") if image and image.get("url") else None
     content = provider.notification_content(
@@ -2078,7 +2111,6 @@ async def notify_announcement(
             audience_device_count=(adoption["deliverable_devices"] if adoption else None),
             audience_stale_device_count=(adoption["stale_deliverable_devices"] if adoption else None),
             audience_snapshot_at=(adoption["snapshot_at"] if adoption else None),
-            provider_campaign_id=provider_campaign_id,
         )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 409 and audience == "everyone":
@@ -2088,6 +2120,8 @@ async def notify_announcement(
             ) from exc
         raise
 
+    provider_campaign_id = campaign_identity(delivery['id'], audience)
+    await deliveries.update_campaign_id(delivery['id'], provider_campaign_id)
     target_url = f"{base_target_url}?notification_ref={quote(delivery['id'], safe='')}"
     content = provider.notification_content(
         announcement["title"], announcement["message"], target_url, image_url=image_url
@@ -2105,13 +2139,17 @@ async def notify_announcement(
         else:
             campaign_id = await provider.send_everyone(
                 **content,
-                idempotency_key=f"announcement-{event_id}-{announcement_id}"[:64],
+                idempotency_key=f"announcement-{delivery['id']}",
                 campaign_id=provider_campaign_id,
                 expiration_time=expiration_time,
             )
     except WonderPushError as exc:
-        await deliveries.mark_failed(delivery["id"], str(exc))
-        detail = str(exc) if audience == "test" else "Notification could not be sent."
+        if exc.status_code is None or exc.status_code == 408 or exc.status_code >= 500:
+            await deliveries.mark_unknown(delivery["id"])
+            detail = "Provider outcome is unknown. Do not repeat the broadcast; contact an administrator."
+        else:
+            await deliveries.mark_failed(delivery["id"], str(exc))
+            detail = str(exc) if audience == "test" else "Notification could not be sent."
         raise HTTPException(status_code=502, detail=detail) from exc
 
     sent = await deliveries.mark_sent(delivery["id"], campaign_id)

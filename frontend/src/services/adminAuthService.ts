@@ -107,6 +107,8 @@ export type NotificationDelivery = {
 
 export type AnnouncementDeliveryStats = {
   announcement_id: string;
+  requested_at?: string | null;
+  notification_origin_visit_count?: number | null;
   status: 'requested' | 'sent' | 'failed';
   sent_at: string | null;
   audience_device_count: number | null;
@@ -114,8 +116,6 @@ export type AnnouncementDeliveryStats = {
   audience_snapshot_at: string | null;
   audience_stale_device_count: number | null;
   provider_accepted: boolean;
-  provider_campaign_id?: string | null;
-  provider_delivery_id?: string | null;
   provider_targeted_device_count?: number | null;
   provider_sent_count?: number | null;
   provider_confirmed_receipt_count?: number | null;
