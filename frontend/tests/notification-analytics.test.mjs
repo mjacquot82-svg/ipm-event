@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { notificationMetricRows, metricValue } from '../src/analytics/notificationMetrics.ts';
+import { notificationMetricRows, notificationMissingDetail, metricValue } from '../src/analytics/notificationMetrics.ts';
 import { notificationNavigationId } from '../src/analytics/notificationAttribution.ts';
 const ref = '00000000-0000-4000-8000-000000000001';
 const nav1 = '00000000-0000-4000-8000-000000000002';
@@ -12,19 +12,25 @@ test('provider fixture maps every count and acceptance to precise UI labels', ()
  const rows = Object.fromEntries(notificationMetricRows({status:'sent', provider_accepted:true,
   audience_device_count:13, provider_targeted_device_count:12, provider_sent_count:11,
   provider_confirmed_receipt_count:9, provider_open_count:3, notification_origin_visit_count:2, provider_failure_count:1}));
- assert.equal(rows['Notification requested'],'Yes');
- assert.equal(rows['Provider accepted'],'Yes');
  for(const [label,n] of [['Known deliverable devices at send',13],['Targeted devices',12],['Sent to push service',11],['Provider-confirmed receipts',9],['Notification opens',3],['Notification-origin app visits',2],['Provider failures',1]]) assert.equal(rows[label],String(n));
  assert.ok(!Object.keys(rows).some(x=>/delivered|people/i.test(x)));
 });
-test('historical nulls and missing provider counts stay Not available, measured zero stays zero', () => {
+test('absent sends are compact; historical missing telemetry is summarized, never zero', () => {
  for(const value of [null,undefined]) assert.equal(metricValue(value),'Not available');
  assert.equal(metricValue(0),'0');
- const rows=Object.fromEntries(notificationMetricRows({status:'sent',provider_accepted:true,provider_sent_count:null}));
- assert.equal(rows['Sent to push service'],'Not available');
- assert.equal(rows['Provider-confirmed receipts'],'Not available');
- assert.equal(rows['Notification-origin app visits'],'Not available');
- assert.equal(Object.fromEntries(notificationMetricRows())['Provider accepted'],'Not available');
+ assert.deepEqual(notificationMetricRows(),[]);
+ const historical={status:'sent',provider_accepted:true,provider_sent_count:null};
+ assert.deepEqual(notificationMetricRows(historical),[]);
+ assert.equal(notificationMissingDetail(historical),'Detailed delivery analytics are not available for this send.');
+});
+test('partial statistics retain explicit zero and collapse missing counts', () => {
+ const stats={status:'sent',provider_accepted:true,provider_open_count:0,provider_sent_count:11};
+ assert.deepEqual(notificationMetricRows(stats),[['Notification opens','0'],['Sent to push service','11']]);
+ assert.equal(notificationMissingDetail(stats),'Additional delivery analytics are not available.');
+});
+test('complete statistics need no unavailable explanation', () => {
+ assert.equal(notificationMissingDetail({provider_targeted_device_count:12,provider_confirmed_receipt_count:9,
+ provider_open_count:3,notification_origin_visit_count:2,provider_failure_count:0,provider_sent_count:11}),null);
 });
 test('notification navigation reload/back remains one visit and preserves router state', () => {
  const h=history();

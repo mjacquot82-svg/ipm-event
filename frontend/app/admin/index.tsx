@@ -1,4 +1,4 @@
-import { NotificationMetrics } from '../../src/components/admin/NotificationMetrics';
+import { NotificationMetrics, NotificationAnalyticsDetails } from '../../src/components/admin/NotificationMetrics';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -169,6 +169,7 @@ export default function AdminDashboardScreen() {
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
   const [announcementsError, setAnnouncementsError] = useState<string | null>(null);
   const [announcementDeliveryStats, setAnnouncementDeliveryStats] = useState<Record<string, AnnouncementDeliveryStats>>({});
+  const [announcementStatsAvailable, setAnnouncementStatsAvailable] = useState(false);
   const [announcementSearch, setAnnouncementSearch] = useState('');
   const [announcementEditorMode, setAnnouncementEditorMode] = useState<AnnouncementEditorMode>('closed');
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
@@ -213,9 +214,11 @@ export default function AdminDashboardScreen() {
       try {
         const stats = await listAnnouncementDeliveryStats();
         setAnnouncementDeliveryStats(Object.fromEntries([...stats.deliveries].reverse().map((delivery) => [delivery.announcement_id, delivery])));
+        setAnnouncementStatsAvailable(true);
       } catch {
         // Delivery analytics is additive; an older backend must not block Announcements.
         setAnnouncementDeliveryStats({});
+        setAnnouncementStatsAvailable(false);
       }
     } catch (err) {
       setAnnouncementsError(err instanceof Error ? err.message : 'Unable to load announcements');
@@ -233,6 +236,7 @@ export default function AdminDashboardScreen() {
       try {
         const stats = await listAnnouncementDeliveryStats();
         setAnnouncementDeliveryStats(Object.fromEntries([...stats.deliveries].reverse().map((row) => [row.announcement_id, row])));
+        setAnnouncementStatsAvailable(true);
       } catch { /* Keep the last known aggregate; sending is independent. */ }
       finally { busy = false; }
     }, 60_000);
@@ -709,6 +713,7 @@ export default function AdminDashboardScreen() {
           saveMessage={announcementSaveMessage}
           notificationAction={notificationAction}
           deliveryStats={announcementDeliveryStats}
+          deliveryStatsAvailable={announcementStatsAvailable}
           editingAnnouncement={editingAnnouncement}
           showTestAction={currentUser?.role === 'Owner'}
           onSearchChange={setAnnouncementSearch}
@@ -1598,7 +1603,7 @@ function VendorEditor({
 
 function AnnouncementsPage({
   announcements, totalCount, loading, error, search, editorMode, form, saving,
-  saveMessage, notificationAction, deliveryStats,
+  saveMessage, notificationAction, deliveryStats, deliveryStatsAvailable,
   editingAnnouncement, showTestAction, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
   onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone, onUploadImage, onRemoveImage,
 }: {
@@ -1606,6 +1611,7 @@ function AnnouncementsPage({
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
   deliveryStats: Record<string, AnnouncementDeliveryStats>;
+  deliveryStatsAvailable: boolean;
   editingAnnouncement: Announcement | null; showTestAction: boolean; onSearchChange: (value: string) => void;
   onRefresh: () => void; onCreate: () => void; onEdit: (item: Announcement) => void;
   onStatusChange: (item: Announcement, status: AnnouncementStatus) => void;
@@ -1630,6 +1636,7 @@ function AnnouncementsPage({
         onSearchChange={onSearchChange}
         secondaryAction={{ label: 'Refresh', icon: 'refresh-cw', onPress: onRefresh, disabled: loading }}
       />
+      <NotificationAnalyticsDetails />
       {error && <ErrorState message={error} onRetry={onRefresh} />}
       {editorMode !== 'closed' && (
         <AnnouncementEditor
@@ -1663,7 +1670,7 @@ function AnnouncementsPage({
                   {`Created by ${item.created_by} · ${new Date(item.created_at).toLocaleString()}`}
                   {item.expires_at ? ` · Expires ${new Date(item.expires_at).toLocaleString()}` : ''}
                 </Text>
-                <NotificationMetrics stats={deliveryStats[item.id]} image={!!item.image?.url} />
+                <NotificationMetrics stats={deliveryStats[item.id]} available={deliveryStatsAvailable} />
               </View>
               <View style={[styles.announcementActions, isMobile && styles.announcementActionsMobile]}>
                 <Pressable style={styles.iconButton} onPress={() => onEdit(item)}><Feather name="edit-2" size={16} color={colors.textSecondary} /></Pressable>
