@@ -57,12 +57,13 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
   }), []);
 
   const completeSetup = useCallback(async () => {
+    const allowEnrollment = true;
     recordNotificationWorkflowDiagnostic('PENDING');
     setSetupState('pending');
     setFailureStage(null);
     setFailureClassification(null);
     try {
-      await ensureNotificationRegistration();
+      await ensureNotificationRegistration({allowEnrollment});
       recordNotificationWorkflowDiagnostic('SUCCESS');
       setSetupState('ready');
     } catch (error) {
@@ -74,7 +75,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
           // not a completed failure. Stay pending until the SDK reports that its
           // session is ready, then rerun the existing idempotent setup path.
           await waitForWonderPushSessionReady();
-          await ensureNotificationRegistration();
+          await ensureNotificationRegistration({allowEnrollment});
           recordNotificationWorkflowDiagnostic('SUCCESS');
           setSetupState('ready');
           return;
