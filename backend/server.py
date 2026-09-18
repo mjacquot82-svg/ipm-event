@@ -127,6 +127,19 @@ except ImportError:
         public_status as public_notification_registration,
     )
 
+try:
+    from backend.itinerary_reminders import (
+        ItineraryReminderEngine,
+        SupabaseItineraryReminderRepository,
+        public_status as public_itinerary_reminder_status,
+    )
+except ModuleNotFoundError:
+    from itinerary_reminders import (
+        ItineraryReminderEngine,
+        SupabaseItineraryReminderRepository,
+        public_status as public_itinerary_reminder_status,
+    )
+
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -297,6 +310,12 @@ class ScheduleImportProblem(BaseModel):
     row_number: int
     errors: List[str]
     values: Dict[str, str] = Field(default_factory=dict)
+
+class ItineraryStarsPayload(BaseModel):
+    schedule_ids: List[uuid.UUID]
+
+class ItineraryEnabledPayload(BaseModel):
+    enabled: bool
 
 class ScheduleImportRequest(BaseModel):
     rows: List[ScheduleImportRow]
@@ -690,6 +709,17 @@ async def append_schedule_event(payload: ScheduleEventPayload) -> AdminScheduleR
 
 
 async def update_schedule_event_row(event_id: str, payload: ScheduleEventPayload) -> AdminScheduleResponse:
+    # Legacy Google Sheets IDs include the title. A title edit would silently
+    # change the identity attendees use for My Itinerary, so require an
+    # explicit migration instead of writing an unsafe update.
+    if event_id.startswith("gs_"):
+        current = await get_admin_schedule_events()
+        existing = next((event for event in current.events if event.id == event_id), None)
+        if existing and existing.title != payload.title:
+            raise HTTPException(
+                status_code=409,
+                detail="Changing a Google Sheets event title would change its legacy ID; use an ID-preserving migration.",
+            )
     row_number = get_schedule_row_number(event_id)
     sheet_title = await get_schedule_sheet_title()
     encoded_range = quote(f"{sheet_title}!A{row_number}:J{row_number}", safe="")
@@ -851,6 +881,9 @@ if CONTENT_SOURCE == "supabase":
         event_slug=event_service.get_public_event_id(),
     )
     notification_registration_repository = SupabaseNotificationRegistrationRepository(
+        schedule_service.client, event_service.get_public_event_id()
+    )
+    itinerary_reminder_repository = SupabaseItineraryReminderRepository(
         schedule_service.client, event_service.get_public_event_id()
     )
 
@@ -1038,6 +1071,32 @@ def require_notification_registration_repository():
     if notification_registration_repository is None:
         raise HTTPException(status_code=503, detail="Notification registration is unavailable")
     return notification_registration_repository
+
+
+def require_itinerary_reminder_repository():
+    if itinerary_reminder_repository is None:
+        raise HTTPException(status_code=503, detail="Itinerary reminders require the Supabase content source")
+    return itinerary_reminder_repository
+
+
+def itinerary_device_headers(request: Request) -> tuple[str, str]:
+    installation_id = request.headers.get("X-WonderPush-Installation-Id", "").strip()
+    capability = (request.headers.get("X-Itinerary-Device-Capability", "") or request.headers.get("X-Notification-Device-Capability", "")).strip()
+    if not installation_id or len(installation_id) > 500:
+        raise HTTPException(status_code=400, detail="A WonderPush installation ID is required")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    return installation_id, capability
+
+
+async def authorize_itinerary_device(request: Request):
+    repository = require_itinerary_reminder_repository()
+    installation_id, capability = itinerary_device_headers(request)
+    try:
+        registration = await repository.authorize(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid itinerary device credentials") from exc
+    return repository, registration
 
 
 ANNOUNCEMENT_MAX_TTL_SECONDS = 72 * 60 * 60
@@ -2036,6 +2095,86 @@ async def notification_registration_operations():
     }
 
 
+@api_router.post("/itinerary-reminders/register")
+async def register_itinerary_reminder_device(request: Request):
+    repository = require_itinerary_reminder_repository()
+    installation_id, capability = itinerary_device_headers(request)
+    try:
+        registration = await repository.register(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid itinerary device credentials") from exc
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.post("/itinerary-reminders/readiness/verify")
+async def verify_itinerary_reminder_readiness(request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    try:
+        verified = await repository.reconcile_readiness(
+            registration, require_wonderpush_client(), checked_at=datetime.now(timezone.utc))
+    except WonderPushError as exc:
+        raise HTTPException(status_code=503,
+            detail="Notification readiness is temporarily unavailable") from exc
+    return public_itinerary_reminder_status(verified)
+
+
+@api_router.get("/itinerary-reminders/status")
+async def itinerary_reminder_status(request: Request):
+    _, registration = await authorize_itinerary_device(request)
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.get("/itinerary-reminders/status-by-capability")
+async def itinerary_reminder_status_by_capability(request: Request):
+    repository = require_itinerary_reminder_repository()
+    capability = request.headers.get("X-Itinerary-Device-Capability", "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    registration = await repository.get_by_capability(capability)
+    if not registration:
+        raise HTTPException(status_code=404, detail="No itinerary reminder registration exists for this device")
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.put("/itinerary-reminders/enabled")
+async def set_itinerary_reminders_enabled(data: ItineraryEnabledPayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    updated = await repository.set_enabled(registration["id"], data.enabled)
+    return public_itinerary_reminder_status(updated)
+
+
+@api_router.put("/itinerary-reminders/stars")
+async def sync_itinerary_reminder_stars(data: ItineraryStarsPayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    try:
+        # Star synchronization must not leave provider readiness stale. Refresh
+        # the exact installation bound to this authenticated registration first.
+        registration = await repository.reconcile_readiness(
+            registration, require_wonderpush_client(), checked_at=datetime.now(timezone.utc))
+    except WonderPushError as exc:
+        raise HTTPException(status_code=503,
+            detail="Notification readiness is temporarily unavailable") from exc
+    try:
+        result = await repository.sync_full_set(registration, [str(value) for value in data.schedule_ids])
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=400, detail="Unknown or cross-event Schedule event") from exc
+    return {"status": "ok", **result}
+
+
+@api_router.get("/itinerary-reminders/operations")
+async def itinerary_reminder_operations():
+    return {
+        "provider_configured": wonderpush_client is not None,
+        "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
+        "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
+        "lead_time_minutes": 30,
+        "timezone": "America/Toronto",
+    }
+
+
+
+
+
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)
 async def list_admin_schedule(current_user: dict = Depends(get_current_organizer_user)):
     require_schedule_manager_role(current_user)
@@ -2054,6 +2193,10 @@ async def import_admin_schedule(
 ):
     require_schedule_manager_role(current_user)
     admin_event_id = get_admin_event_id(current_user)
+    raise HTTPException(
+        status_code=409,
+        detail="Full Schedule replacement is disabled because it would replace event IDs; edit events individually.",
+    )
     schedule = await schedule_service.replace_schedule(data.rows, admin_event_id)
     return ScheduleImportResponse(
         imported_count=len(data.rows),

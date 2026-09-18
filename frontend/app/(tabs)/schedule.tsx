@@ -67,7 +67,7 @@ export default function ScheduleScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showStarConfirmation, setShowStarConfirmation] = useState(false);
   const [successfulAddition, setSuccessfulAddition] = useState(0);
-  const [confirmationText, setConfirmationText] = useState('Added to Personal Itinerary');
+  const [confirmationText, setConfirmationText] = useState('Added to your itinerary');
   const starConfirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current); }, []);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -230,7 +230,7 @@ export default function ScheduleScreen() {
     syncStarredEventsWithBackend(result.favorites);
     const starSucceeded = result.isFavorite && result.favorites.includes(eventId);
     if (starSucceeded || (!result.isFavorite && !result.favorites.includes(eventId))) {
-      setConfirmationText(starSucceeded ? 'Added to Personal Itinerary' : 'Removed from your itinerary');
+      setConfirmationText(starSucceeded ? 'Added to your itinerary' : 'Removed from your itinerary');
       if (starSucceeded) setSuccessfulAddition(value => value + 1);
       if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current);
       setShowStarConfirmation(true);
@@ -1064,7 +1064,7 @@ export default function ScheduleScreen() {
       {showStarConfirmation ? (
         <View style={styles.starConfirmation} accessibilityLiveRegion="polite" accessibilityRole="alert">
           <Feather name="check-circle" size={20} color="#FFFFFF" />
-          <Text style={styles.starConfirmationText}>{confirmationText}</Text>
+          <View style={styles.starConfirmationCopy}><Text style={styles.starConfirmationText}>{confirmationText}</Text><Text style={styles.starConfirmationDetail}>Star events to add them to your itinerary. Reminder approximately 30 minutes before the event when notifications are enabled; approximately 30 minutes before each event starts.</Text></View>
         </View>
       ) : null}
     </View>
@@ -1079,7 +1079,9 @@ const styles = StyleSheet.create({
     borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 }, elevation: 8,
   },
+  starConfirmationCopy: { flex: 1, gap: 2 },
   starConfirmationText: { color: '#FFFFFF', fontSize: 15, lineHeight: 20, fontWeight: '800' },
+  starConfirmationDetail: { color: '#E5E7EB', fontSize: 12, lineHeight: 16 },
   container: {
     flex: 1,
     backgroundColor: colors.background,
