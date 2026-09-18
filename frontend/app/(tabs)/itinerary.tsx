@@ -46,7 +46,6 @@ export default function ItineraryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
-  const [showNotificationOptions, setShowNotificationOptions] = useState(false);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
@@ -153,18 +152,7 @@ export default function ItineraryScreen() {
       </View>
 
       <View style={styles.reminderHint} accessibilityLabel="Event reminders">
-        <Text style={styles.reminderHintTitle}>Event reminders</Text>
-        <Text style={styles.reminderHintText}>
-          Get a reminder approximately 30 minutes before starred events when notifications are enabled.
-        </Text>
-        <TouchableOpacity
-          onPress={() => setShowNotificationOptions((visible) => !visible)}
-          accessibilityRole="button"
-          accessibilityLabel="Notification options"
-        >
-          <Text style={styles.reminderHintLink}>{showNotificationOptions ? 'Hide notification options' : 'Notification options'}</Text>
-        </TouchableOpacity>
-        {showNotificationOptions ? <NotificationOptIn persistent containerStyle={styles.notificationOptions} /> : null}
+        <NotificationOptIn persistent containerStyle={styles.notificationOptions} />
       </View>
 
       {dataSource === 'cache' && (

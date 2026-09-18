@@ -7,7 +7,7 @@ const source = fs.readFileSync(new URL('../src/components/NotificationOptIn.tsx'
 test('notification options are explicit and IPM-branded', () => {
   assert.match(source, /Get important IPM updates/);
   assert.match(source, /Notification options/);
-  assert.match(source, /accessibilityLabel=\{state === 'subscribed' \? 'Disable IPM notifications' : 'Enable IPM notifications'\}/);
+  assert.match(source, /accessibilityLabel=\{state === 'subscribed' \? 'Disable IPM notifications' : persistent \? 'Turn on event reminders' : 'Enable IPM notifications'\}/);
 });
 
 test('onboarding reuses the existing enrollment action and local dismissal policy', () => {
