@@ -214,15 +214,18 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
           {persistent && state === 'subscribed'
             ? 'You’ll receive reminders for your starred events.'
             : persistent && (state === 'default' || state === 'unsubscribed')
-            ? 'Get a reminder approximately 30 minutes before your starred events.'
+            ? 'Get notified before your starred events.'
             : persistent && state === 'denied'
             ? 'Notifications are blocked on this device.'
             : stateMessage}
         </Text>
-        <TouchableOpacity ref={triggerRef} accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={styles.retryButton}>
-          <Text style={styles.retryButtonText}>{expanded ? 'Hide notification options' : 'Notification options'}</Text>
-        </TouchableOpacity>
-        {expanded ? <Text style={styles.hint}>Notifications are optional. Get important IPM announcements on this device. You can keep using IPM without them.</Text> : null}
+        {persistent && (state === 'default' || state === 'unsubscribed') ? <Text style={styles.hint}>We’ll remind you approximately 30 minutes before each event starts.</Text> : null}
+        {(!persistent || state === 'subscribed' || state === 'denied' || state === 'unsupported' || verificationDeferred) ? (
+          <TouchableOpacity ref={triggerRef} accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={styles.retryButton}>
+            <Text style={styles.retryButtonText}>{expanded ? 'Hide notification options' : 'Notification options'}</Text>
+          </TouchableOpacity>
+        ) : null}
+        {expanded && !persistent ? <Text style={styles.hint}>Notifications are optional. Get important IPM announcements on this device. You can keep using IPM without them.</Text> : null}
         {expanded && !verificationDeferred && (state === 'denied' || state === 'error') ? <TouchableOpacity accessibilityRole="button" onPress={() => { void refresh(); }} style={styles.retryButton}><Text style={styles.retryButtonText}>Check notification status again</Text></TouchableOpacity> : null}
         {expanded && state === 'unsupported' ? <Text style={styles.hint}>{help}</Text> : null}
         {expanded && state === 'denied' ? <Text style={styles.hint}>{help}</Text> : null}

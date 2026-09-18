@@ -24,7 +24,8 @@ test('itinerary keeps persistent Event reminders and Notification options discov
   assert.match(itinerary, /<NotificationOptIn persistent/);
   assert.doesNotMatch(itinerary, /Enable notifications on Home/);
   assert.doesNotMatch(itinerary, /requestPermission|subscribeToNotifications|ensureNotificationRegistration/);
-  assert.match(notificationOptIn, /approximately 30 minutes before your starred events/);
+  assert.match(notificationOptIn, /Get notified before your starred events/);
+  assert.match(notificationOptIn, /We’ll remind you approximately 30 minutes before each event starts/);
   assert.match(notificationOptIn, /Notification options/);
   assert.match(schedule, /const result = await toggleFavorite\(eventId\)/);
   assert.match(reminderUx, /MAX_PROMPT_SHOWS = 2/);
@@ -32,7 +33,7 @@ test('itinerary keeps persistent Event reminders and Notification options discov
 
 test('persistent reminder panel makes the available opt-in benefit and action prominent', () => {
   const component = fs.readFileSync(new URL('../src/components/NotificationOptIn.tsx', import.meta.url), 'utf8');
-  assert.match(component, /Get a reminder approximately 30 minutes before your starred events/);
+  assert.match(component, /Get notified before your starred events/);
   assert.match(component, /Turn on event reminders/);
   assert.match(component, /accessibilityLabel=\{state === 'subscribed' \? 'Disable IPM notifications' : persistent \? 'Turn on event reminders'/);
   assert.match(component, /Event reminders ✓/);
