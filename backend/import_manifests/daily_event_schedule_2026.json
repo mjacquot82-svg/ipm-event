@@ -1,0 +1,36 @@
+{
+  "source": "organizer_daily_event_schedule_2026-09-22_to_2026-09-26",
+  "timezone": "America/Toronto",
+  "canonical_locations": {
+    "Event Center #1": {"category": "Event Centre #1", "location_name": "Event Centre #1 — West 2"},
+    "Dirt Works Demo Field": {"category": "DirtWorks Demo Field", "location_name": "Equipment Demo Area"}
+  },
+  "existing_updates": [
+    {"id":"3253333a-c7ca-5c95-b5e4-984d46f268f3","title":"Foxton Fuels Square Dancing Tractors","date":"2026-09-22","start_time":"11:00 AM","end_time":"11:45 AM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Tuesday"},
+    {"id":"1fbfe760-b509-585d-b9e9-dd0bf0832885","title":"Foxton Fuels Square Dancing Tractors","date":"2026-09-23","start_time":"12:00 PM","end_time":"12:45 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Wednesday"},
+    {"id":"d1171356-351d-5c79-9577-aa6a554a114c","title":"Foxton Fuels Square Dancing Tractors","date":"2026-09-23","start_time":"1:30 PM","end_time":"2:00 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Wednesday"},
+    {"id":"3428301c-510e-5ac3-a5e1-40d76191485d","title":"Foxton Fuels Square Dancing Tractors","date":"2026-09-24","start_time":"12:00 PM","end_time":"12:45 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Thursday"},
+    {"id":"0677e072-0b0e-560e-a316-7feb7e73c048","title":"Foxton Fuels Square Dancing Tractors","date":"2026-09-24","start_time":"1:30 PM","end_time":"2:00 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Thursday"},
+    {"id":"8877dd83-c420-5581-94dc-97b45e31bac4","title":"Foxton Fuels Square Dancing Tractors","date":"2026-09-25","start_time":"11:30 AM","end_time":"12:00 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Friday"},
+    {"id":"cdb0efc4-577f-5e6e-87e3-f03d8ebe2c9a","title":"Teeswater Agro Parts Combine Demolition Derby","date":"2026-09-25","start_time":"1:30 PM","end_time":"4:30 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Friday"},
+    {"id":"e6086439-51e1-56c1-a109-9be94e796b06","title":"Foxton Fuels Square Dancing Tractors","date":"2026-09-26","start_time":"11:30 AM","end_time":"12:00 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Saturday"},
+    {"id":"1311b728-2ea6-5619-abca-d6ad5d630e04","title":"Teeswater Agro Parts Combine Demolition Derby Finals","date":"2026-09-26","start_time":"1:30 PM","end_time":"4:30 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Saturday"}
+  ],
+  "existing_exact_ids": [
+    "f60a9238-7dd1-5afb-bb1b-b33f3df49ea0",
+    "7d26849c-341e-5b71-8787-d5fce3197a09",
+    "38f88f85-4ae8-5bf4-9d2c-443ec3124d80",
+    "a9f5ec5f-0322-5a29-b2b7-308da7d4eb4b",
+    "417a8b6f-aa60-59ce-aca8-593a4cd7ab2f"
+  ],
+  "additions": [
+    {"title":"Foxton Fuels Square Dancing Tractors","date":"2026-09-22","start_time":"1:00 PM","end_time":"1:45 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Tuesday"},
+    {"title":"Lawn Mower Races","date":"2026-09-22","start_time":"3:30 PM","end_time":"4:15 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Tuesday"},
+    {"title":"Lawn Mower Races","date":"2026-09-23","start_time":"9:30 AM","end_time":"10:15 AM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Wednesday"},
+    {"title":"Lawn Mower Races","date":"2026-09-23","start_time":"3:30 PM","end_time":"4:15 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Wednesday"},
+    {"title":"Lawn Mower Races","date":"2026-09-24","start_time":"9:30 AM","end_time":"10:15 AM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Thursday"},
+    {"title":"Lawn Mower Races","date":"2026-09-24","start_time":"3:30 PM","end_time":"4:15 PM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Thursday"},
+    {"title":"Lawn Mower Races","date":"2026-09-25","start_time":"9:30 AM","end_time":"10:15 AM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Friday"},
+    {"title":"Lawn Mower Races","date":"2026-09-26","start_time":"9:30 AM","end_time":"10:15 AM","category":"Event Centre #1","location_name":"Event Centre #1 — West 2","days_active":"Saturday"}
+  ]
+}
