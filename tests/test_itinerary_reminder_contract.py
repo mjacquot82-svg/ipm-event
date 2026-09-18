@@ -19,3 +19,23 @@ def test_google_legacy_title_edit_is_blocked_when_it_would_change_the_id():
     source = Path("backend/server.py").read_text()
     section = source[source.index("async def update_schedule_event_row"):source.index("async def clear_schedule_event_row")]
     assert "Changing a Google Sheets event title would change its legacy ID" in section
+
+
+def test_staging_check_in_reassigns_label_without_provider_send():
+    source = Path("backend/itinerary_reminders.py").read_text()
+    start = source.index("    async def set_test_label")
+    section = source[start:source.index("    async def test_registrations", start)]
+    assert '"test_device_label": f"eq.{label}"' in section
+    assert '"test_device_label": None' in section
+    assert '"event_id": f"eq.{event_id}"' in section
+    assert "send_wonderpush" not in section
+    assert "if not rows" in section
+
+
+def test_staging_check_in_route_is_gated_and_explicitly_authorized():
+    source = Path("backend/server.py").read_text()
+    start = source.index('@api_router.put("/itinerary-reminders/test-device")')
+    section = source[start:source.index('@api_router.get("/itinerary-reminders/test-device")', start)]
+    assert "controlled_test_identification_enabled" in section
+    assert "authorize_itinerary_device" in section
+    assert "set_test_label" in section
