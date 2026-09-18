@@ -100,4 +100,3 @@ revoke all on function public.claim_controlled_real_itinerary_reminder(timestamp
   from public, anon, authenticated;
 grant execute on function public.claim_controlled_real_itinerary_reminder(timestamptz,uuid,uuid,uuid,uuid,boolean)
   to service_role;
-
