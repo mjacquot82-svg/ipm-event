@@ -1,4 +1,4 @@
-"""Staging-gated, device-scoped itinerary reminder targeting foundation."""
+"""Device-scoped itinerary reminder targeting foundation."""
 
 from __future__ import annotations
 
