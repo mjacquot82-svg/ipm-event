@@ -443,6 +443,17 @@ class SupabaseItineraryReminderRepository:
             "p_synthetic_event_id": fixture_id, "p_registration_id": registration_id,
         }) or []
 
+    async def claim_controlled_real(self, *, now: datetime, fixture_id: str,
+        registration_id: str, schedule_item_id: str) -> list[dict[str, Any]]:
+        """Claim one real attendee star through a staging-only fixture window."""
+        event_id = await self._event_id()
+        return await self.client.request("POST", "/rpc/claim_controlled_real_itinerary_reminder", json={
+            "p_now": now.astimezone(timezone.utc).isoformat(),
+            "p_event_id": event_id, "p_fixture_id": fixture_id,
+            "p_registration_id": registration_id, "p_schedule_item_id": schedule_item_id,
+            "p_staging_guard": True,
+        }) or []
+
 
 def public_status(registration: dict[str, Any]) -> dict[str, Any]:
     reachability = registration.get("provider_reachability") or "unknown"
@@ -739,3 +750,16 @@ class ItineraryReminderEngine:
         self.circuit_breaker.record(True)
         result["provider_delivery_id"] = provider_id
         return result
+
+    async def arm_controlled_real(self, *, now: datetime, fixture_id: str,
+        registration_id: str, schedule_item_id: str) -> dict[str, Any]:
+        """Arm one real star without enabling the general scheduler or sending."""
+        registration = await self.repository.registration_by_id(registration_id)
+        if not registration or registration.get("test_device_label") != "A":
+            raise PermissionError("Controlled test registration is not device A")
+        claims = await self.repository.claim_controlled_real(
+            now=now, fixture_id=fixture_id, registration_id=registration_id,
+            schedule_item_id=schedule_item_id)
+        return {"armed": bool(claims), "provider_send_performed": False,
+            "scheduler_required": False, "delivery_kill_switch_unchanged": True,
+            "claim": claims[0] if claims else None}
