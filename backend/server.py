@@ -127,6 +127,19 @@ except ImportError:
         public_status as public_notification_registration,
     )
 
+try:
+    from backend.itinerary_reminders import (
+        ItineraryReminderEngine,
+        SupabaseItineraryReminderRepository,
+        public_status as public_itinerary_reminder_status,
+    )
+except ModuleNotFoundError:
+    from itinerary_reminders import (
+        ItineraryReminderEngine,
+        SupabaseItineraryReminderRepository,
+        public_status as public_itinerary_reminder_status,
+    )
+
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -297,6 +310,12 @@ class ScheduleImportProblem(BaseModel):
     row_number: int
     errors: List[str]
     values: Dict[str, str] = Field(default_factory=dict)
+
+class ItineraryStarsPayload(BaseModel):
+    schedule_ids: List[uuid.UUID]
+
+class ItineraryEnabledPayload(BaseModel):
+    enabled: bool
 
 class ScheduleImportRequest(BaseModel):
     rows: List[ScheduleImportRow]
@@ -864,6 +883,9 @@ if CONTENT_SOURCE == "supabase":
     notification_registration_repository = SupabaseNotificationRegistrationRepository(
         schedule_service.client, event_service.get_public_event_id()
     )
+    itinerary_reminder_repository = SupabaseItineraryReminderRepository(
+        schedule_service.client, event_service.get_public_event_id()
+    )
 
 webpushr_client = None
 if WEBPUSHR_API_KEY and WEBPUSHR_AUTH_TOKEN:
@@ -1049,6 +1071,32 @@ def require_notification_registration_repository():
     if notification_registration_repository is None:
         raise HTTPException(status_code=503, detail="Notification registration is unavailable")
     return notification_registration_repository
+
+
+def require_itinerary_reminder_repository():
+    if itinerary_reminder_repository is None:
+        raise HTTPException(status_code=503, detail="Itinerary reminders require the Supabase content source")
+    return itinerary_reminder_repository
+
+
+def itinerary_device_headers(request: Request) -> tuple[str, str]:
+    installation_id = request.headers.get("X-WonderPush-Installation-Id", "").strip()
+    capability = (request.headers.get("X-Itinerary-Device-Capability", "") or request.headers.get("X-Notification-Device-Capability", "")).strip()
+    if not installation_id or len(installation_id) > 500:
+        raise HTTPException(status_code=400, detail="A WonderPush installation ID is required")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    return installation_id, capability
+
+
+async def authorize_itinerary_device(request: Request):
+    repository = require_itinerary_reminder_repository()
+    installation_id, capability = itinerary_device_headers(request)
+    try:
+        registration = await repository.authorize(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid itinerary device credentials") from exc
+    return repository, registration
 
 
 ANNOUNCEMENT_MAX_TTL_SECONDS = 72 * 60 * 60
