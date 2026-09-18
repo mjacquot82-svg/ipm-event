@@ -30,6 +30,8 @@ import {
 } from '../../src/services/spreadsheetDataService';
 import { formatScheduleDate } from '../../src/utils/scheduleDate';
 import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
+import { reconcileAttendeeItineraryReminders } from '../../src/services/reminderUxService';
+import NotificationOptIn from '../../src/components/NotificationOptIn';
 
 export default function ItineraryScreen() {
   usePageAnalytics('itinerary', 'home_quick_action');
@@ -44,6 +46,7 @@ export default function ItineraryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
+  const [showNotificationOptions, setShowNotificationOptions] = useState(false);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
@@ -56,6 +59,7 @@ export default function ItineraryScreen() {
   const loadFavorites = useCallback(async () => {
     const storedFavorites = await getFavorites();
     setFavorites(storedFavorites);
+    void reconcileAttendeeItineraryReminders(storedFavorites);
   }, []);
 
   const fetchSchedule = useCallback(async () => {
@@ -91,6 +95,7 @@ export default function ItineraryScreen() {
   const handleRemove = async (eventId: string) => {
     const result = await toggleFavorite(eventId);
     setFavorites(result.favorites);
+    void reconcileAttendeeItineraryReminders(result.favorites);
     void queueAnalyticsEvent('favorite_changed', { schedule_item_id: eventId, action: 'removed' });
     if (!result.isFavorite && !result.favorites.includes(eventId)) {
       setRemovalNotice(true);
@@ -145,6 +150,21 @@ export default function ItineraryScreen() {
         <Text style={styles.subtitle}>
           {starredEvents.length} starred event{starredEvents.length === 1 ? '' : 's'}
         </Text>
+      </View>
+
+      <View style={styles.reminderHint} accessibilityLabel="Event reminders">
+        <Text style={styles.reminderHintTitle}>Event reminders</Text>
+        <Text style={styles.reminderHintText}>
+          Get a reminder approximately 30 minutes before starred events when notifications are enabled.
+        </Text>
+        <TouchableOpacity
+          onPress={() => setShowNotificationOptions((visible) => !visible)}
+          accessibilityRole="button"
+          accessibilityLabel="Notification options"
+        >
+          <Text style={styles.reminderHintLink}>{showNotificationOptions ? 'Hide notification options' : 'Notification options'}</Text>
+        </TouchableOpacity>
+        {showNotificationOptions ? <NotificationOptIn persistent containerStyle={styles.notificationOptions} /> : null}
       </View>
 
       {dataSource === 'cache' && (
@@ -243,6 +263,17 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 12,
   },
+  reminderHint: {
+    marginHorizontal: ATTENDEE_HORIZONTAL_MARGIN,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#EEE9DD',
+  },
+  reminderHintTitle: { color: '#1F2937', fontSize: 15, lineHeight: 20, fontWeight: '800', marginBottom: 3 },
+  reminderHintText: { color: '#4B5563', fontSize: 13, lineHeight: 18 },
+  reminderHintLink: { color: '#8B1538', fontSize: 13, lineHeight: 18, fontWeight: '700', marginTop: 4 },
+  notificationOptions: { marginTop: 10 },
   title: {
     fontSize: 28,
     fontWeight: '700',

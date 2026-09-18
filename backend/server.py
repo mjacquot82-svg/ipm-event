@@ -121,6 +121,19 @@ except ImportError:
         public_status as public_notification_registration,
     )
 
+try:
+    from backend.itinerary_reminders import (
+        ItineraryReminderEngine,
+        SupabaseItineraryReminderRepository,
+        public_status as public_itinerary_reminder_status,
+    )
+except ModuleNotFoundError:
+    from itinerary_reminders import (
+        ItineraryReminderEngine,
+        SupabaseItineraryReminderRepository,
+        public_status as public_itinerary_reminder_status,
+    )
+
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -177,9 +190,14 @@ WONDERPUSH_TEST_INSTALLATION_IDS = [
     if installation_id.strip()
 ]
 WONDERPUSH_TEST_CAMPAIGN_ID = os.environ.get("WONDERPUSH_TEST_CAMPAIGN_ID", "").strip()
-# T-30 delivery is deliberately unavailable during the announcement cutover.
+# Delivery remains an explicit release gate. A later controlled rollout may set the
+# requested flag after migration/provider validation; it cannot be enabled by a
+# stray production environment variable.
 ITINERARY_REMINDER_DELIVERY_ENABLED = False
+ITINERARY_REMINDER_DELIVERY_REQUESTED = os.environ.get("ITINERARY_REMINDER_DELIVERY_ENABLED", "false").lower() == "true"
 ITINERARY_REMINDER_SCHEDULER_ENABLED = False
+ITINERARY_REMINDER_SCHEDULER_REQUESTED = os.environ.get("ITINERARY_REMINDER_SCHEDULER_ENABLED", "false").lower() == "true"
+ITINERARY_REMINDER_INTERVAL_SECONDS = max(30, int(os.environ.get("ITINERARY_REMINDER_INTERVAL_SECONDS", "60")))
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
 ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
 ADMIN_SESSION_DAYS = int(os.environ.get("ADMIN_SESSION_DAYS", "7"))
@@ -289,6 +307,12 @@ class ScheduleImportProblem(BaseModel):
 class ScheduleImportRequest(BaseModel):
     rows: List[ScheduleImportRow]
     problems: List[ScheduleImportProblem] = Field(default_factory=list)
+
+class ItineraryStarsPayload(BaseModel):
+    schedule_ids: List[uuid.UUID]
+
+class ItineraryEnabledPayload(BaseModel):
+    enabled: bool
 
 class ScheduleImportResponse(BaseModel):
     imported_count: int
@@ -702,6 +726,15 @@ async def append_schedule_event(payload: ScheduleEventPayload) -> AdminScheduleR
 
 async def update_schedule_event_row(event_id: str, payload: ScheduleEventPayload) -> AdminScheduleResponse:
     row_number = get_schedule_row_number(event_id)
+    current = await get_admin_schedule_events()
+    existing = next((event for event in current.events if event.id == event_id), None)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Schedule event not found")
+    if existing.title.strip() != payload.title.strip():
+        raise HTTPException(
+            status_code=409,
+            detail="Changing a Google Sheets event title would change its legacy ID; use the stable-ID Schedule source.",
+        )
     sheet_title = await get_schedule_sheet_title()
     encoded_range = quote(f"{sheet_title}!A{row_number}:J{row_number}", safe="")
     await google_sheets_request(
@@ -846,6 +879,7 @@ announcement_service = None
 announcement_image_storage = None
 notification_delivery_service = None
 notification_registration_repository = None
+itinerary_reminder_repository = None
 if CONTENT_SOURCE == "supabase":
     announcement_service = SupabaseAnnouncementService(
         supabase_url=SUPABASE_URL,
@@ -864,6 +898,9 @@ if CONTENT_SOURCE == "supabase":
     notification_registration_repository = SupabaseNotificationRegistrationRepository(
         schedule_service.client, event_service.get_public_event_id()
     )
+    itinerary_reminder_repository = SupabaseItineraryReminderRepository(
+        schedule_service.client, event_service.get_public_event_id()
+    )
 
 webpushr_client = None
 if WEBPUSHR_API_KEY and WEBPUSHR_AUTH_TOKEN:
@@ -875,6 +912,21 @@ if WEBPUSHR_API_KEY and WEBPUSHR_AUTH_TOKEN:
 wonderpush_client = WonderPushClient(
     access_token=WONDERPUSH_ACCESS_TOKEN
 ) if WONDERPUSH_ACCESS_TOKEN else None
+
+_itinerary_reminder_engine: Optional[ItineraryReminderEngine] = None
+
+
+def itinerary_reminder_engine() -> ItineraryReminderEngine:
+    global _itinerary_reminder_engine
+    if _itinerary_reminder_engine is None:
+        repository = require_itinerary_reminder_repository()
+        _itinerary_reminder_engine = ItineraryReminderEngine(
+            repository,
+            require_wonderpush_client(),
+            delivery_enabled=ITINERARY_REMINDER_DELIVERY_ENABLED,
+            target_url=f"{PUBLIC_APP_URL}/itinerary",
+        )
+    return _itinerary_reminder_engine
 
 
 def normalize_username(username: str) -> str:
@@ -1057,6 +1109,33 @@ def require_notification_registration_repository():
     if notification_registration_repository is None:
         raise HTTPException(status_code=503, detail="Notification registration is unavailable")
     return notification_registration_repository
+
+
+def require_itinerary_reminder_repository():
+    if itinerary_reminder_repository is None:
+        raise HTTPException(status_code=503, detail="Itinerary reminders require the Supabase content source")
+    return itinerary_reminder_repository
+
+
+def itinerary_device_headers(request: Request) -> tuple[str, str]:
+    installation_id = request.headers.get("X-WonderPush-Installation-Id", "").strip()
+    capability = (request.headers.get("X-Itinerary-Device-Capability", "") or
+                  request.headers.get("X-Notification-Device-Capability", "")).strip()
+    if not installation_id or len(installation_id) > 500:
+        raise HTTPException(status_code=400, detail="A WonderPush installation ID is required")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    return installation_id, capability
+
+
+async def authorize_itinerary_device(request: Request):
+    repository = require_itinerary_reminder_repository()
+    installation_id, capability = itinerary_device_headers(request)
+    try:
+        registration = await repository.authorize(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid itinerary device credentials") from exc
+    return repository, registration
 
 
 ANNOUNCEMENT_MAX_TTL_SECONDS = 72 * 60 * 60
@@ -2004,6 +2083,7 @@ async def notification_registration_operations():
     }
 
 
+
 # Temporary diagnostic is mounted only on the actual staging resources.
 try:
     from backend.staging_provider_diagnostic import enabled as provider_diagnostic_enabled, read_current as read_current_provider_diagnostic
@@ -2134,6 +2214,63 @@ if provider_diagnostic_enabled(
             result = safe({'status':'DEFERRED'})
         return JSONResponse(result,headers={'Cache-Control':'no-store'})
 
+@api_router.post("/itinerary-reminders/register")
+async def register_itinerary_reminder_device(request: Request):
+    repository = require_itinerary_reminder_repository()
+    installation_id, capability = itinerary_device_headers(request)
+    try:
+        registration = await repository.register(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid itinerary device credentials") from exc
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.get("/itinerary-reminders/status")
+async def itinerary_reminder_status(request: Request):
+    _, registration = await authorize_itinerary_device(request)
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.get("/itinerary-reminders/status-by-capability")
+async def itinerary_reminder_status_by_capability(request: Request):
+    repository = require_itinerary_reminder_repository()
+    capability = request.headers.get("X-Itinerary-Device-Capability", "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    registration = await repository.get_by_capability(capability)
+    if not registration:
+        raise HTTPException(status_code=404, detail="No itinerary reminder registration exists for this device")
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.put("/itinerary-reminders/enabled")
+async def set_itinerary_reminders_enabled(data: ItineraryEnabledPayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    updated = await repository.set_enabled(registration["id"], data.enabled)
+    return public_itinerary_reminder_status(updated)
+
+
+@api_router.put("/itinerary-reminders/stars")
+async def sync_itinerary_reminder_stars(data: ItineraryStarsPayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    try:
+        result = await repository.sync_full_set(registration, [str(value) for value in data.schedule_ids])
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=400, detail="Unknown or cross-event Schedule event") from exc
+    return {"status": "ok", **result}
+
+
+@api_router.get("/itinerary-reminders/operations")
+async def itinerary_reminder_operations():
+    return {
+        "provider_configured": wonderpush_client is not None,
+        "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
+        "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
+        "lead_time_minutes": 30,
+        "timezone": "America/Toronto",
+    }
+
+
 
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)
 async def list_admin_schedule(current_user: dict = Depends(get_current_organizer_user)):
@@ -2153,6 +2290,10 @@ async def import_admin_schedule(
 ):
     require_schedule_manager_role(current_user)
     admin_event_id = get_admin_event_id(current_user)
+    raise HTTPException(
+        status_code=409,
+        detail="Full Schedule replacement is disabled because it would replace event IDs; edit events individually.",
+    )
     schedule = await schedule_service.replace_schedule(data.rows, admin_event_id)
     return ScheduleImportResponse(
         imported_count=len(data.rows),
@@ -2887,6 +3028,23 @@ async def cron_scheduler():
             logger.error(f"Cron scheduler error: {e}")
         
         await asyncio.sleep(CHECK_INTERVAL_SECONDS)
+
+
+async def itinerary_reminder_scheduler():
+    while True:
+        try:
+            result = await itinerary_reminder_engine().run(now=datetime.now(timezone.utc))
+            logger.info("Itinerary reminder scheduler result=%s", result)
+        except Exception as exc:
+            logger.error("Itinerary reminder scheduler error: %s", exc)
+        await asyncio.sleep(ITINERARY_REMINDER_INTERVAL_SECONDS)
+
+
+@app.on_event("startup")
+async def start_itinerary_reminder_scheduler():
+    if ITINERARY_REMINDER_SCHEDULER_ENABLED and itinerary_reminder_repository and wonderpush_client:
+        logger.info("Starting itinerary reminder scheduler (delivery_enabled=%s)", ITINERARY_REMINDER_DELIVERY_ENABLED)
+        asyncio.create_task(itinerary_reminder_scheduler())
 
 @app.on_event("startup")
 async def startup_event():

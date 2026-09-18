@@ -32,6 +32,7 @@ import {
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
 import ItineraryNotificationSuggestion from '../../src/components/ItineraryNotificationSuggestion';
+import { reconcileAttendeeItineraryReminders } from '../../src/services/reminderUxService';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
@@ -239,6 +240,7 @@ export default function ScheduleScreen() {
     setFavorites(storedFavorites);
     // Sync with backend for notifications
     syncStarredEventsWithBackend(storedFavorites);
+    void reconcileAttendeeItineraryReminders(storedFavorites);
   }, []);
 
   // Refresh on focus
@@ -261,6 +263,7 @@ export default function ScheduleScreen() {
     });
     // Sync with backend for notifications
     syncStarredEventsWithBackend(result.favorites);
+    void reconcileAttendeeItineraryReminders(result.favorites);
     const starSucceeded = result.isFavorite && result.favorites.includes(eventId);
     if (starSucceeded || (!result.isFavorite && !result.favorites.includes(eventId))) {
       setConfirmationText(starSucceeded ? 'Added to Personal Itinerary' : 'Removed from your itinerary');
@@ -894,10 +897,10 @@ export default function ScheduleScreen() {
                 Plan your day
               </Text>
               <Text style={styles.onboardingModalText}>
-                Tap the ⭐ on events you don&apos;t want to miss. They&apos;ll be added to your Personal Itinerary.
+                Star events to add them to your itinerary.
               </Text>
               <Text style={styles.onboardingModalSecondaryText}>
-                Event reminders about 30 minutes before eligible events will also be available with notifications enabled.
+                If notifications are enabled, we&apos;ll remind you approximately 30 minutes before each event starts.
               </Text>
               <TouchableOpacity
                 ref={onboardingDismissRef}
@@ -1157,7 +1160,12 @@ export default function ScheduleScreen() {
       {showStarConfirmation ? (
         <View style={styles.starConfirmation} accessibilityLiveRegion="polite" accessibilityRole="alert">
           <Feather name="check-circle" size={20} color="#FFFFFF" />
-          <Text style={styles.starConfirmationText}>{confirmationText}</Text>
+<View style={styles.starConfirmationCopy}>
+            <Text style={styles.starConfirmationText}>Added to your itinerary</Text>
+            <Text style={styles.starConfirmationDetail}>
+              Reminder approximately 30 minutes before the event when notifications are enabled.
+            </Text>
+          </View>
         </View>
       ) : null}
     </View>
@@ -1807,5 +1815,7 @@ const styles = StyleSheet.create({
     borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 }, elevation: 8,
   },
+  starConfirmationCopy: { flex: 1, gap: 2 },
   starConfirmationText: { color: '#FFFFFF', fontSize: 15, lineHeight: 20, fontWeight: '800' },
+  starConfirmationDetail: { color: '#E5E7EB', fontSize: 12, lineHeight: 16 },
 });
