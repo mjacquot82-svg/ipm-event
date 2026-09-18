@@ -47,6 +47,7 @@ export default function ItineraryScreen() {
   const [dataSource, setDataSource] = useState<CachedApiSource>('network');
   const [lastSuccessfulUpdate, setLastSuccessfulUpdate] = useState<string | null>(null);
   const [showNotificationOptions, setShowNotificationOptions] = useState(false);
+  const scheduleFetchInFlight = useRef(false);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     setEvents(result.data.events || []);
@@ -62,20 +63,25 @@ export default function ItineraryScreen() {
     void reconcileAttendeeItineraryReminders(storedFavorites);
   }, []);
 
-  const fetchSchedule = useCallback(async () => {
+  const fetchSchedule = useCallback(async (forceNetwork = false) => {
+    if (scheduleFetchInFlight.current) return;
+    scheduleFetchInFlight.current = true;
+
     try {
-      setLoading(true);
+      if (!forceNetwork) setLoading(true);
       setError(null);
 
       const result = await getScheduleData({
+        preferCache: !forceNetwork,
         onBackgroundRefresh: applyScheduleResult,
         onBackgroundRefreshError: () => setDataSource('cache'),
       });
       applyScheduleResult(result);
     } catch {
-      setError('Unable to load itinerary.');
+      if (!forceNetwork) setError('Unable to load itinerary.');
     } finally {
-      setLoading(false);
+      if (!forceNetwork) setLoading(false);
+      scheduleFetchInFlight.current = false;
     }
   }, [applyScheduleResult]);
 
@@ -86,8 +92,8 @@ export default function ItineraryScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      loadFavorites();
-    }, [loadFavorites])
+      void Promise.all([loadFavorites(), fetchSchedule(true)]);
+    }, [fetchSchedule, loadFavorites])
   );
 
   const starredEvents = events.filter((event) => favorites.includes(event.id));
