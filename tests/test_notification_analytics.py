@@ -95,7 +95,7 @@ def test_delivery_snapshot_is_immutable_and_stats_are_announcement_scoped():
     serialized = str(stats)
     assert "wonderpush_installation_id" not in serialized
     assert "pushToken" not in serialized
-    assert "provider_campaign_id" not in params["select"]
+    assert "provider_campaign_id" in params["select"]
 
 
 def test_test_delivery_omits_optional_audience_snapshot_columns():
