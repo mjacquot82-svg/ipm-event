@@ -326,8 +326,8 @@ class ItineraryEnabledPayload(BaseModel):
     enabled: bool
 
 class ControlledReminderArmPayload(BaseModel):
-    fixture_id: uuid.UUID
-    schedule_item_id: uuid.UUID
+    fixture_id: uuid.UUID | None = None
+    schedule_item_id: uuid.UUID | None = None
 
 class ScheduleImportResponse(BaseModel):
     imported_count: int
@@ -2342,15 +2342,30 @@ async def arm_controlled_t30_reminder(data: ControlledReminderArmPayload, reques
     """Arm one real attendee star through one authorized staging fixture."""
     if not CONTROLLED_T30_ARM_ENABLED:
         raise HTTPException(status_code=404, detail="Controlled reminder arm is unavailable")
-    _, registration = await authorize_itinerary_device(request)
+    repository, registration = await authorize_itinerary_device(request)
+    active = await repository.active_controlled_fixture(registration["id"], now=datetime.now(timezone.utc))
+    if not active:
+        raise HTTPException(status_code=409, detail="No single active controlled reminder fixture is available")
+    if ((data.fixture_id and str(data.fixture_id) != active["fixture_id"]) or
+        (data.schedule_item_id and str(data.schedule_item_id) != active["schedule_item_id"])):
+        raise HTTPException(status_code=409, detail="Controlled fixture target does not match the authenticated active fixture")
     try:
         return await itinerary_reminder_engine().arm_controlled_real(
-            now=datetime.now(timezone.utc), fixture_id=str(data.fixture_id),
-            registration_id=registration["id"], schedule_item_id=str(data.schedule_item_id))
+            now=datetime.now(timezone.utc), fixture_id=active["fixture_id"],
+            registration_id=registration["id"], schedule_item_id=active["schedule_item_id"])
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except httpx.HTTPStatusError as exc:
         raise HTTPException(status_code=409, detail="Controlled reminder could not be armed") from exc
+
+@api_router.get("/itinerary-reminders/controlled-test/active")
+async def active_controlled_t30_reminder(request: Request):
+    """Discover the single active fixture for this authenticated staging device."""
+    if not CONTROLLED_T30_ARM_ENABLED:
+        raise HTTPException(status_code=404, detail="Controlled reminder discovery is unavailable")
+    repository, registration = await authorize_itinerary_device(request)
+    active = await repository.active_controlled_fixture(registration["id"], now=datetime.now(timezone.utc))
+    return active or {"has_active_test": False}
 
 
 @api_router.get("/itinerary-reminders/operations")

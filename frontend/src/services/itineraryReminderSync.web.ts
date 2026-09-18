@@ -100,8 +100,27 @@ export async function getControlledTestDeviceStatus() {
 }
 
 /** Invoke the existing staging-only arm endpoint with this browser's capability. */
-export async function armControlledReminderTest(fixtureId: string, scheduleItemId: string) {
-  return request('/controlled-test/arm', 'POST', { fixture_id: fixtureId, schedule_item_id: scheduleItemId });
+export async function armControlledReminderTest() {
+  return request('/controlled-test/arm', 'POST', {});
+}
+
+export type ActiveControlledReminder = {
+  has_active_test: boolean;
+  fixture_id?: string;
+  schedule_item_id?: string;
+  title?: string;
+  location_name?: string | null;
+  event_start?: string;
+  reminder_target?: string;
+  arm_available_at?: string;
+  authorization_expires_at?: string;
+  real_star_exists?: boolean;
+  already_armed?: boolean;
+  expired?: boolean;
+};
+
+export async function getActiveControlledReminder(): Promise<ActiveControlledReminder> {
+  return request('/controlled-test/active', 'GET');
 }
 
 export async function diagnoseControlledTestRegistration(label: TestDeviceLabel) {
