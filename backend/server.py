@@ -13,7 +13,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Literal
+from typing import Any, List, Optional, Dict, Literal
 import uuid
 from datetime import datetime, timedelta, timezone
 import httpx
@@ -126,12 +126,14 @@ try:
         ItineraryReminderEngine,
         SupabaseItineraryReminderRepository,
         public_status as public_itinerary_reminder_status,
+        test_device_status as itinerary_test_device_status,
     )
 except ModuleNotFoundError:
     from itinerary_reminders import (
         ItineraryReminderEngine,
         SupabaseItineraryReminderRepository,
         public_status as public_itinerary_reminder_status,
+        test_device_status as itinerary_test_device_status,
     )
 
 
@@ -199,6 +201,10 @@ ITINERARY_REMINDER_SCHEDULER_ENABLED = False
 ITINERARY_REMINDER_SCHEDULER_REQUESTED = os.environ.get("ITINERARY_REMINDER_SCHEDULER_ENABLED", "false").lower() == "true"
 ITINERARY_REMINDER_INTERVAL_SECONDS = max(30, int(os.environ.get("ITINERARY_REMINDER_INTERVAL_SECONDS", "60")))
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
+
+def controlled_test_identification_enabled() -> bool:
+    """Keep the explicit test-device check-in inert outside isolated staging."""
+    return PUBLIC_APP_URL == "https://staging.theipm.ca" and "hooiqjcbcbwzjjvnwyxf" in SUPABASE_URL
 ADMIN_SESSION_COOKIE_NAME = os.environ.get("ADMIN_SESSION_COOKIE_NAME", "ipm_admin_session")
 ADMIN_SESSION_DAYS = int(os.environ.get("ADMIN_SESSION_DAYS", "7"))
 ADMIN_COOKIE_SECURE = os.environ.get("ADMIN_COOKIE_SECURE", "true").lower() == "true"
@@ -2241,6 +2247,27 @@ async def itinerary_reminder_status_by_capability(request: Request):
     if not registration:
         raise HTTPException(status_code=404, detail="No itinerary reminder registration exists for this device")
     return public_itinerary_reminder_status(registration)
+
+
+@api_router.put("/itinerary-reminders/test-device")
+async def set_itinerary_test_device(data: dict[str, Any], request: Request):
+    """Explicit, non-sending staging check-in for the one-device test."""
+    if not controlled_test_identification_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
+    label = str(data.get("label", "")).strip()
+    if label not in {"A", "B"}:
+        raise HTTPException(status_code=400, detail="A controlled test label is required")
+    repository, registration = await authorize_itinerary_device(request)
+    updated = await repository.set_test_label(registration["id"], label)
+    return itinerary_test_device_status(updated)
+
+
+@api_router.get("/itinerary-reminders/test-device")
+async def get_itinerary_test_device(request: Request):
+    if not controlled_test_identification_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
+    _, registration = await authorize_itinerary_device(request)
+    return itinerary_test_device_status(registration)
 
 
 @api_router.put("/itinerary-reminders/enabled")

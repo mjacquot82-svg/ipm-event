@@ -19,6 +19,7 @@ import { holdPwaUpdate } from '../services/pwaUpdateService';
 import { colors } from '../theme/colors';
 import { detectInstallEnvironment } from '../utils/installEnvironment';
 import { notificationHelp } from '../utils/notificationHelp';
+import { registerControlledTestDevice } from '../services/itineraryReminderSync.web';
 
 const STATE_COPY: Record<NotificationState, string> = {
   loading: 'Checking notification status…',
@@ -41,6 +42,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
   const actionInFlightRef = useRef(false);
   const hasFocusedRef = useRef(false);
   const statusCheckInFlightRef = useRef(false);
+  const [testDeviceState, setTestDeviceState] = useState<'idle' | 'working' | 'confirmed' | 'error'>('idle');
   useEffect(() => {
     if (expanded || working || setupState === 'pending') return holdPwaUpdate();
   }, [expanded, working, setupState]);
@@ -169,6 +171,17 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
     standalone: window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true });
   const help = notificationHelp(environment, state);
   const canAct = state === 'default' || state === 'unsubscribed' || state === 'subscribed';
+  const stagingTestCheckIn = persistent && window.location.hostname === 'staging.theipm.ca';
+  const confirmStagingTestDevice = async () => {
+    if (testDeviceState === 'working' || state !== 'subscribed') return;
+    setTestDeviceState('working');
+    try {
+      await registerControlledTestDevice('A');
+      setTestDeviceState('confirmed');
+    } catch {
+      setTestDeviceState('error');
+    }
+  };
   // Browser/provider enrollment determines attendee success. Background health
   // remains recorded above, but never downgrades an enabled subscription here.
   const stateMessage = state === 'subscribed'
@@ -229,6 +242,23 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
         {expanded && !verificationDeferred && (state === 'denied' || state === 'error') ? <TouchableOpacity accessibilityRole="button" onPress={() => { void refresh(); }} style={styles.retryButton}><Text style={styles.retryButtonText}>Check notification status again</Text></TouchableOpacity> : null}
         {expanded && state === 'unsupported' ? <Text style={styles.hint}>{help}</Text> : null}
         {expanded && state === 'denied' ? <Text style={styles.hint}>{help}</Text> : null}
+        {stagingTestCheckIn && state === 'subscribed' ? (
+          <View style={styles.stagingTestCheckIn}>
+            <Text style={styles.hint}>Staging-only controlled test device check-in.</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Confirm this staging test device"
+              disabled={testDeviceState === 'working' || testDeviceState === 'confirmed'}
+              onPress={() => { void confirmStagingTestDevice(); }}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>
+                {testDeviceState === 'confirmed' ? 'Test device confirmed' : testDeviceState === 'working' ? 'Confirming…' : 'Confirm this test device'}
+              </Text>
+            </TouchableOpacity>
+            {testDeviceState === 'error' ? <Text style={styles.hint}>Check-in could not be verified. No notification was sent.</Text> : null}
+          </View>
+        ) : null}
 
       </View>
       {!verificationDeferred && working ? <ActivityIndicator color={colors.primary} /> : null}
@@ -281,6 +311,7 @@ const styles = StyleSheet.create({
   disableButtonText: { color: colors.primary },
   notNowButton: { alignItems: 'center', justifyContent: 'center', minHeight: 44, minWidth: 76, paddingHorizontal: 8 },
   notNowButtonText: { color: colors.textSecondary, fontSize: 16, fontWeight: '700' },
+  stagingTestCheckIn: { marginTop: 10, gap: 6 },
   retryButton: { alignSelf: 'flex-start', marginTop: 6, minHeight: 44, justifyContent: 'center' },
   retryButtonText: { color: colors.primary, fontSize: 16, fontWeight: '800' },
 });
