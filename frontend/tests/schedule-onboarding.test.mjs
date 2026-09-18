@@ -39,7 +39,7 @@ test('first meaningful Schedule visit overlays the already-loaded Schedule with 
   assert.match(schedule, /role="dialog"/);
   assert.match(schedule, /accessibilityViewIsModal=\{true\}/);
   assert.doesNotMatch(schedule, /onboardingCard/);
-  assert.match(schedule, /Tap the ⭐ on events you don&apos;t want to miss\. They&apos;ll be added to your Personal Itinerary\./);
+  assert.match(schedule, /Star events to add them to your itinerary\./);
   assert.match(schedule, />Got it</);
   assert.match(schedule, /onboardingModalCard:[\s\S]*maxWidth: 440[\s\S]*borderRadius: 22/);
   assert.match(schedule, /onboardingModalScrollContent:[\s\S]*flexGrow: 1[\s\S]*paddingVertical: 28/);
@@ -70,18 +70,18 @@ test('onboarding acknowledgement persists, suppresses reopening, and has a versi
 });
 
 test('pre-cutover reminder wording is future-facing, approximate, and eligibility-qualified', () => {
-  assert.match(schedule, /Event reminders about 30 minutes before eligible events will also be available with notifications enabled\./);
-  assert.doesNotMatch(schedule, /we(?:'|’)ll remind you|we will remind you|exactly 30 minutes/i);
+  assert.match(schedule, /If notifications are enabled, we&apos;ll remind you approximately 30 minutes before each event starts\./);
+  assert.doesNotMatch(schedule, /exactly 30 minutes/i);
   assert.doesNotMatch(schedule, /WonderPush|kill switch|T-30|installation ID|provider readiness/i);
   assert.doesNotMatch(itinerary, /You'll receive a reminder|We'll remind you before/);
-  assert.doesNotMatch(itinerary, /enableAttendeeItineraryReminders|disableAttendeeItineraryReminders|reminderUxService/);
+  assert.match(itinerary, /reconcileAttendeeItineraryReminders/);
 });
 
 test('successful star confirms itinerary addition and unstar remains unchanged', () => {
   const handler = schedule.match(/const handleToggleFavorite[\s\S]*?^  \};/m)?.[0] || '';
   assert.match(handler, /toggleFavorite\(eventId\)/);
   assert.match(handler, /starSucceeded[\s\S]*setShowStarConfirmation\(true\)/);
-  assert.match(schedule, /Added to Personal Itinerary/);
+  assert.match(schedule, /Added to your itinerary/);
   assert.match(favorites, /isFavorite[\s\S]*removeFavorite\(sessionId\)[\s\S]*addFavorite\(sessionId\)/);
   assert.match(itinerary, /events\.filter\(\(event\) => favorites\.includes\(event\.id\)\)/);
 });
