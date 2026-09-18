@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 import unittest
-from backend.apply_daily_event_schedule_update import load_manifest, patch_for
+from backend.apply_daily_event_schedule_update import load_manifest, db_patch
 class DailyEventScheduleTests(unittest.TestCase):
  def test_audited_counts_and_ids(self):
   m=load_manifest(); self.assertEqual(9,len(m['existing_updates'])); self.assertEqual(5,len(m['existing_exact_ids'])); self.assertEqual(8,len(m['additions']))
@@ -9,7 +9,7 @@ class DailyEventScheduleTests(unittest.TestCase):
  def test_existing_patches_never_change_ids(self):
   m=load_manifest()
   for row in m['existing_updates']:
-   self.assertNotIn('id',patch_for(row)); self.assertNotIn('event_id',patch_for(row))
+   self.assertNotIn('id',db_patch(row)); self.assertNotIn('event_id',db_patch(row))
  def test_no_vendor_or_reminder_scope(self):
   text=Path('backend/apply_daily_event_schedule_update.py').read_text()
   self.assertNotIn('replace_schedule(',text)
