@@ -195,9 +195,16 @@ WONDERPUSH_TEST_CAMPAIGN_ID = os.environ.get("WONDERPUSH_TEST_CAMPAIGN_ID", "").
 # Delivery remains an explicit release gate. A later controlled rollout may set the
 # requested flag after migration/provider validation; it cannot be enabled by a
 # stray production environment variable.
-ITINERARY_REMINDER_DELIVERY_ENABLED = False
+STAGING_T30_ALLOWLIST_ENABLED = (
+    ENVIRONMENT == "staging"
+    and "hooiqjcbcbwzjjvnwyxf" in SUPABASE_URL
+    and os.environ.get("STAGING_T30_ALLOWLIST_ENABLED", "true").lower() == "true"
+)
+# Production remains hard-disabled. Staging delivery is still fail-closed by the
+# database allowlist; without exactly one active row the worker sends nothing.
+ITINERARY_REMINDER_DELIVERY_ENABLED = STAGING_T30_ALLOWLIST_ENABLED and os.environ.get("ITINERARY_REMINDER_DELIVERY_ENABLED", "true").lower() == "true"
 ITINERARY_REMINDER_DELIVERY_REQUESTED = os.environ.get("ITINERARY_REMINDER_DELIVERY_ENABLED", "false").lower() == "true"
-ITINERARY_REMINDER_SCHEDULER_ENABLED = False
+ITINERARY_REMINDER_SCHEDULER_ENABLED = STAGING_T30_ALLOWLIST_ENABLED and os.environ.get("ITINERARY_REMINDER_SCHEDULER_ENABLED", "true").lower() == "true"
 ITINERARY_REMINDER_SCHEDULER_REQUESTED = os.environ.get("ITINERARY_REMINDER_SCHEDULER_ENABLED", "false").lower() == "true"
 ITINERARY_REMINDER_INTERVAL_SECONDS = max(30, int(os.environ.get("ITINERARY_REMINDER_INTERVAL_SECONDS", "60")))
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
@@ -3141,7 +3148,10 @@ async def cron_scheduler():
 async def itinerary_reminder_scheduler():
     while True:
         try:
-            result = await itinerary_reminder_engine().run(now=datetime.now(timezone.utc))
+            now = datetime.now(timezone.utc)
+            allowlist = await itinerary_reminder_repository.active_staging_allowlist(now)
+            result = await itinerary_reminder_engine().run(
+                now=now, staging_allowlist=allowlist, require_staging_allowlist=True)
             logger.info("Itinerary reminder scheduler result=%s", result)
         except Exception as exc:
             logger.error("Itinerary reminder scheduler error: %s", exc)

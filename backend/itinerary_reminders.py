@@ -220,6 +220,30 @@ class SupabaseItineraryReminderRepository:
             "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id, "p_limit": limit,
         }) or []
 
+    async def active_staging_allowlist(self, now: datetime) -> dict[str, Any] | None:
+        event_id = await self._event_id()
+        rows = await self.client.request("GET", "/staging_t30_allowlists", params={
+            "select": "*", "event_id": f"eq.{event_id}", "enabled": "eq.true",
+            "expires_at": f"gt.{now.astimezone(timezone.utc).isoformat()}",
+        }) or []
+        # Any missing, malformed, or multiple gate rows fails closed.
+        if len(rows) != 1:
+            return None
+        row = rows[0]
+        required = ("registration_id", "schedule_item_id", "event_id", "reminder_type", "expires_at")
+        if any(not row.get(key) for key in required) or row.get("reminder_type") != REMINDER_TYPE:
+            return None
+        return row
+
+    async def claim_staging_allowlisted(self, now: datetime, *, registration_id: str,
+        schedule_item_id: str) -> list[dict[str, Any]]:
+        """Claim only the exact staging acceptance target through the normal ledger."""
+        event_id = await self._event_id()
+        return await self.client.request("POST", "/rpc/claim_staging_allowlisted_itinerary_reminder", json={
+            "p_now": now.astimezone(timezone.utc).isoformat(), "p_event_id": event_id,
+            "p_registration_id": registration_id, "p_schedule_item_id": schedule_item_id, "p_limit": 1,
+        }) or []
+
     async def claim_due_batch(self, now: datetime, *, synthetic: bool = False,
         limit: int = 250) -> list[dict[str, Any]]:
         name = "claim_due_synthetic_itinerary_reminders" if synthetic else "claim_due_itinerary_reminders"
@@ -597,7 +621,9 @@ class ItineraryReminderEngine:
         for offset in range(0, len(rows), self.concurrency):
             await asyncio.gather(*(operation(row) for row in rows[offset:offset + self.concurrency]))
 
-    async def run(self, *, now: datetime, synthetic: bool = False) -> dict[str, Any]:
+    async def run(self, *, now: datetime, synthetic: bool = False,
+        staging_allowlist: dict[str, Any] | None = None,
+        require_staging_allowlist: bool = False) -> dict[str, Any]:
         await self.repository.close_stale_claims(now, synthetic=synthetic)
         candidates = await self.repository.due_registrations(now, synthetic=synthetic,
             limit=self.batch_size * 4)
@@ -623,7 +649,9 @@ class ItineraryReminderEngine:
             "provider_429": 0, "provider_5xx": 0, "send_rate_limit": self.max_sends_per_second,
             "concurrency": self.concurrency, "circuit_breaker": self.circuit_breaker.state,
             "provider_requests": 0, "exact_target_batches": 0}
-        if not self.delivery_enabled:
+        if not self.delivery_enabled or (require_staging_allowlist and not staging_allowlist):
+            result["staging_allowlist_active"] = bool(staging_allowlist)
+            result["staging_allowlist_fail_closed"] = bool(require_staging_allowlist and not staging_allowlist)
             return result
         recovered_rows: list[dict[str, Any]] = []
         if not synthetic:
@@ -631,7 +659,12 @@ class ItineraryReminderEngine:
             result.update({f"recovery_{key}": value for key, value in recovery.items()})
             recovered_rows = await self.repository.lease_assigned_batches(now,
                 worker_id="scheduler", limit=100, lease_seconds=90)
-        claims = await self.repository.claim_due_batch(now, synthetic=synthetic, limit=self.batch_size)
+        if staging_allowlist and not synthetic:
+            claims = await self.repository.claim_staging_allowlisted(
+                now, registration_id=staging_allowlist["registration_id"],
+                schedule_item_id=staging_allowlist["schedule_item_id"])
+        else:
+            claims = await self.repository.claim_due_batch(now, synthetic=synthetic, limit=self.batch_size)
         result["claimed"] = len(claims)
         targeter = InstallationTargetedWonderPush(self.repository, self.provider)
 
