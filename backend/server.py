@@ -690,6 +690,17 @@ async def append_schedule_event(payload: ScheduleEventPayload) -> AdminScheduleR
 
 
 async def update_schedule_event_row(event_id: str, payload: ScheduleEventPayload) -> AdminScheduleResponse:
+    # Legacy Google Sheets IDs include the title. A title edit would silently
+    # change the identity attendees use for My Itinerary, so require an
+    # explicit migration instead of writing an unsafe update.
+    if event_id.startswith("gs_"):
+        current = await get_admin_schedule_events()
+        existing = next((event for event in current.events if event.id == event_id), None)
+        if existing and existing.title != payload.title:
+            raise HTTPException(
+                status_code=409,
+                detail="Changing a Google Sheets event title would change its legacy ID; use an ID-preserving migration.",
+            )
     row_number = get_schedule_row_number(event_id)
     sheet_title = await get_schedule_sheet_title()
     encoded_range = quote(f"{sheet_title}!A{row_number}:J{row_number}", safe="")
@@ -2114,6 +2125,10 @@ async def import_admin_schedule(
 ):
     require_schedule_manager_role(current_user)
     admin_event_id = get_admin_event_id(current_user)
+    raise HTTPException(
+        status_code=409,
+        detail="Full Schedule replacement is disabled because it would replace event IDs; edit events individually.",
+    )
     schedule = await schedule_service.replace_schedule(data.rows, admin_event_id)
     return ScheduleImportResponse(
         imported_count=len(data.rows),
