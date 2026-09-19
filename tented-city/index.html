@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>IPM 2026 Tented City</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div>
+      <h1>IPM 2026</h1>
+      <p>Tented City · Walkerton · Sept 22–26</p>
+    </div>
+    <input id="q" type="search" placeholder="Search vendor or booth — ACE, 1A-09, Mutual…"/>
+  </header>
+  <div class="body">
+    <aside>
+      <div id="count" class="count"></div>
+      <ul id="list"></ul>
+    </aside>
+    <div class="map-pane" id="mapPane">
+      <div class="map-stage" id="stage">
+        <img src="map.png" alt="IPM Tented City map" id="mapImg" draggable="false"/>
+        <div id="overlays"></div>
+      </div>
+    </div>
+  </div>
+  <div id="card" class="card hidden"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
