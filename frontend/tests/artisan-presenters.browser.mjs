@@ -39,7 +39,7 @@ try {
    await p.waitForFunction(id=>JSON.parse(localStorage.getItem('@event_navigator_favorites')).sessionIds.includes(id),event.id);
    assert((await p.evaluate(()=>JSON.parse(localStorage.getItem('@event_navigator_favorites')).sessionIds)).includes('0d13e978-8a65-401e-b4ee-c6a6feb5331b'));
   }
-  console.log(`PASS ${width}: all eight presenters searchable, day-filtered, exact details, stable favorites; existing favorite preserved`);
+  console.log(`PASS ${width}: all ${expected.length} presenters searchable, day-filtered, exact details, stable favorites; existing favorite preserved`);
   await c.close();
  }
 } finally {await b.close();}

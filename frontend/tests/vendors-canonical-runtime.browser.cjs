@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const expectedCount = require('../public/api/vendors.json').vendors.length;
 const { chromium } = require(process.env.IPM_PLAYWRIGHT_MODULE || 'playwright');
 (async () => {
   const origin = process.env.IPM_VENDOR_PREVIEW_URL;
@@ -31,8 +32,8 @@ const { chromium } = require(process.env.IPM_PLAYWRIGHT_MODULE || 'playwright');
     await page.getByText('Loading vendors…', { exact: true }).waitFor();
     assert.equal(await page.getByText('No Matching Vendors', { exact: true }).count(), 0);
     releaseRequest();
-    await page.getByText('224 vendors', { exact: true }).waitFor({ timeout: 60000 });
-    assert.equal(rawCount, 224);
+    await page.getByText(`${expectedCount} vendors`, { exact: true }).waitFor({ timeout: 60000 });
+    assert.equal(rawCount, expectedCount);
     assert.deepEqual(vendorUrls, [`${origin}/api/vendors`]);
     for (const [query, name, location] of [
       ['CAN-AM', 'Can-Am Demo Area, Montreal, QC', 'WEST-02'],
@@ -45,11 +46,11 @@ const { chromium } = require(process.env.IPM_PLAYWRIGHT_MODULE || 'playwright');
       await page.getByPlaceholder('Search vendors').fill(query);
       await page.getByText(name, { exact: true }).waitFor();
       assert.ok((await page.locator('body').innerText()).includes(location), `${query} location`);
-      await page.getByText('1 of 224 vendors', { exact: true }).waitFor();
+      await page.getByText(`1 of ${expectedCount} vendors`, { exact: true }).waitFor();
       console.log('PASS', query, location);
     }
     await page.getByPlaceholder('Search vendors').fill('no-such-vendor-xyz');
     await page.getByText('No Matching Vendors', { exact: true }).waitFor();
-    console.log('PASS canonical request, raw/UI count 224, pending loading, searched no-results');
+    console.log(`PASS canonical request, raw/UI count ${expectedCount}, pending loading, searched no-results`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

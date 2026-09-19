@@ -7,6 +7,7 @@
  * Staging only — does not mutate production / Supabase / WonderPush.
  */
 import { createHash } from 'node:crypto';
+import { applyArtisanVendorUpdates } from './artisan-vendor-updates.mjs';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -305,6 +306,11 @@ function build() {
     });
     report.preserves.push({ name: pv.name, id: pv.id, type: pv.type, location, amspec_hold: isAmSpec });
   }
+
+  // Later explicit Artisan-only authority; keep the original master dataset intact.
+  const artisan = applyArtisanVendorUpdates(catalog);
+  catalog.splice(0, catalog.length, ...artisan.vendors);
+  report.artisan_updates = artisan.results;
 
   // Stable sort by name then id
   catalog.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));

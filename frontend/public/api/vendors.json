@@ -55,6 +55,15 @@
       "priority": 99
     },
     {
+      "id": "90e8b829-0dba-5964-bc5e-a7eef0f62275",
+      "name": "Amabel Books",
+      "type": "Indoor",
+      "location": "Indoors at the Artisan Tent",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
       "id": "a0d0ef38-08bd-47ed-a65f-4e89c44c44e1",
       "name": "AmSpec Group",
       "type": "Indoor",
@@ -544,7 +553,7 @@
       "id": "f610134f-3c59-4bdf-98a9-39da2f155769",
       "name": "Equestrian Elite",
       "type": "Indoor",
-      "location": "",
+      "location": "Indoors at the Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -607,7 +616,7 @@
       "id": "e173b0f8-0a76-4bc9-9eef-b610dbbfaad8",
       "name": "Flora and Fae",
       "type": "Indoor",
-      "location": "",
+      "location": "Indoors at the Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1174,7 +1183,7 @@
       "id": "b1efb2e2-a52d-485a-93b7-f0e53f0486d7",
       "name": "Mike's Wood",
       "type": "Indoor",
-      "location": "",
+      "location": "Indoors at the Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1228,7 +1237,7 @@
       "id": "557385b5-4aac-424e-a00b-660800f0c543",
       "name": "Nana's Sewing Basket",
       "type": "Indoor",
-      "location": "",
+      "location": "Indoors at the Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1237,7 +1246,7 @@
       "id": "f2f40011-8138-4f50-bb92-48e0ce605ed3",
       "name": "Natural Stitch Designs",
       "type": "Indoor",
-      "location": "",
+      "location": "Indoors at the Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1246,7 +1255,7 @@
       "id": "e3b3d8ca-c12b-485e-bf42-bc3ee2f605be",
       "name": "Northern Flyer Design (Ken Thornburn)",
       "type": "Indoor",
-      "location": "",
+      "location": "Indoors at the Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1390,7 +1399,7 @@
       "id": "421f2f71-ea28-43c1-a7d2-e316b9e45842",
       "name": "Paisley Drive Designs",
       "type": "Indoor",
-      "location": "",
+      "location": "Indoors at the Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1472,6 +1481,15 @@
       "name": "Quality Homes, Kenilworth",
       "type": "Outdoor",
       "location": "3A-09-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "31fc109b-e393-5bab-9894-59946f217154",
+      "name": "Rachel Joy Jewellery",
+      "type": "Indoor",
+      "location": "Indoors at the Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1678,7 +1696,7 @@
       "id": "12b95efc-6dc2-4794-92a2-0fb3ac1d8c3c",
       "name": "Susan Seitz",
       "type": "Indoor",
-      "location": "",
+      "location": "Indoors at the Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1957,7 +1975,7 @@
       "id": "cda2170e-a9ca-4c58-b8ba-75884ec3579e",
       "name": "Wildflower Designs",
       "type": "Indoor",
-      "location": "",
+      "location": "Indoors at the Artisan Tent",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2017,6 +2035,6 @@
       "priority": 99
     }
   ],
-  "last_updated": "2026-09-12T14:28:36.762Z",
-  "total_count": 224
+  "last_updated": "2026-09-19T01:06:07.613Z",
+  "total_count": 226
 }
