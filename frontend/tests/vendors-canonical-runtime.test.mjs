@@ -14,7 +14,7 @@ function load(url,overrides={}) {
   if(name==='@react-native-async-storage/async-storage') return {getItem:async k=>overrides.cache.get(k)??null,setItem:async(k,v)=>overrides.cache.set(k,v),removeItem:async k=>overrides.cache.delete(k)};
   if(name.endsWith('.json'))return JSON.parse(fs.readFileSync(new URL(name,url)));
   return name.startsWith('.')?load(new URL(name.endsWith('.ts')?name:name+'.ts',url),overrides):require(name);
- },mod,mod.exports,overrides.fetch,{env:{EXPO_PUBLIC_BACKEND_URL:'https://ipm-backend-eoiw.onrender.com'}},(fn,ms)=>setTimeout(fn,ms===1500?0:ms));
+ },mod,mod.exports,overrides.fetch,{env:{EXPO_PUBLIC_BACKEND_URL:overrides.backendUrl||'https://ipm-backend-eoiw.onrender.com'}},(fn,ms)=>setTimeout(fn,ms===1500?0:ms));
  return mod.exports;
 }
 const api=(fetch,cache=new Map())=>load(new URL('../src/services/spreadsheetDataService.ts',import.meta.url),{fetch,cache});
@@ -26,12 +26,44 @@ test('absolute backend configuration cannot bypass canonical web vendor catalog;
   const matches=result.data.vendors.filter(v=>vendorMatchesSearch(v,q));assert.equal(matches.length,1,q);assert.equal(matches[0].location,location);
  }
 });
-test('old feed cache cannot finish loading while canonical request is pending',async()=>{
- const cache=new Map([['ipm_supabase_cache:ipm-2026-production:vendors',JSON.stringify({data:{vendors:[]},lastSuccessfulUpdate:new Date().toISOString()})]]);
+test('environment-scoped cache cannot finish loading while canonical request is pending',async()=>{
+ const cache=new Map([['ipm_supabase_cache:v2:https_ipm_backend_eoiw_onrender_com:vendors:canonical-v2',JSON.stringify({data:{vendors:[]},lastSuccessfulUpdate:new Date().toISOString()})]]);
  let resolve;const response=new Promise(r=>resolve=r);let complete=false;
  const pending=api(()=>response,cache).getVendorsData({preferCache:true}).then(r=>{complete=true;return r;});
  await new Promise(r=>setImmediate(r));assert.equal(complete,false);
  resolve({ok:true,json:async()=>catalog});assert.equal((await pending).data.vendors.length,EXPECTED_VENDOR_COUNT);
+});
+test('staging and production content caches use different namespaces',async()=>{
+ const stagingCache=new Map();
+ const productionCache=new Map();
+ const production=api(async()=>({ok:true,json:async()=>catalog}),productionCache);
+ const staging=load(new URL('../src/services/spreadsheetDataService.ts',import.meta.url),{fetch:async()=>({ok:true,json:async()=>catalog}),cache:stagingCache,backendUrl:'https://staging-ipm-backend.example'});
+ await production.getVendorsData();
+ await staging.getVendorsData();
+ const stagingKeys=[...stagingCache.keys()];
+ const productionKeys=[...productionCache.keys()];
+ assert.equal(stagingKeys.length,1);
+ assert.equal(productionKeys.length,1);
+ assert.notEqual(stagingKeys[0],productionKeys[0]);
+ assert.match(productionKeys[0],/ipm_supabase_cache:v2:https_ipm_backend_eoiw_onrender_com/);
+ assert.match(stagingKeys[0],/ipm_supabase_cache:v2:https_staging_ipm_backend_example/);
+});
+test('legacy environment-ambiguous cache is ignored',async()=>{
+ const cache=new Map([['ipm_supabase_cache:v1:schedule',JSON.stringify({data:{events:[{id:'11111111-1111-4111-8111-111111111111'}]},lastSuccessfulUpdate:new Date().toISOString()})]]);
+ const result=await api(async()=>({ok:true,json:async()=>({events:[],last_updated:'now',total_count:0})}),cache).getScheduleData();
+ assert.equal(result.source,'network');
+ assert.equal(result.data.events.length,0);
+});
+test('staging Schedule cache is not rendered by production offline',async()=>{
+ const stagingEvents={events:[{id:'11111111-1111-4111-8111-111111111111',title:'Staging T-30 fixture'}],last_updated:'staging',total_count:1};
+ const cache=new Map([['ipm_supabase_cache:v2:https_staging_ipm_backend_example:schedule',JSON.stringify({data:stagingEvents,lastSuccessfulUpdate:new Date().toISOString()})]]);
+ await assert.rejects(() => api(async()=>{throw Error('offline');},cache).getScheduleData(),/offline/);
+});
+test('environment-scoped namespace also protects announcement content',async()=>{
+ const productionCache=new Map();
+ const production=api(async()=>({ok:true,json:async()=>({announcements:[],total_count:0})}),productionCache);
+ await production.getAnnouncementsData();
+ assert.match([...productionCache.keys()][0],/ipm_supabase_cache:v2:https_ipm_backend_eoiw_onrender_com:announcements/);
 });
 test('offline fallback uses only the canonical cache',async()=>{
  const cache=new Map();await api(async()=>({ok:true,json:async()=>catalog}),cache).getVendorsData();
