@@ -5,15 +5,16 @@ import ts from 'typescript';
 const source = fs.readFileSync(new URL('../src/config/tentedCityParadeRoutes.ts', import.meta.url),'utf8');
 const mod = { exports: {} };
 new Function('exports', ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(mod.exports);
-const {PARADE_ROUTES: routes, PARADE_VIEWBOX, PENDING_MUTUAL_SQUARE_SEGMENT: pending, paradePath} = mod.exports;
+const {PARADE_ROUTES: routes, PARADE_VIEWBOX, PARADE_ROAD_EDGES: edges, PARADE_ROAD_CENTERS: centers, PENDING_MUTUAL_SQUARE_SEGMENT: pending, paradePath} = mod.exports;
+const {dodge:D,brucePower:B,grainFarmers:G,hydroOne:H,first:F,second:S,fifth:V}=centers;
 test('both routes use base map points, assembly entry and approved First Street return', () => {
   assert.equal(PARADE_VIEWBOX,'0 0 774 603');
   for (const route of Object.values(routes)) {
     assert.deepEqual(route.paths[0][0],[503,139]);
     const loop = route.paths[1];
-    assert.deepEqual(loop[0],[444,192]);
+    assert.deepEqual(loop[0],[H,F]);
     assert.deepEqual(loop.at(-1),loop[0]);
-    assert.deepEqual(loop[1],[142,192]); // west onto First Street
+    assert.deepEqual(loop[1],[D,F]); // west onto First Street
     for (const path of route.paths) for (const [i,[x,y]] of path.entries()) {
       assert(x>=0 && x<=774 && y>=0 && y<=603);
       if (i) assert(x===path[i-1][0] || y===path[i-1][1]);
@@ -30,9 +31,26 @@ test('both routes use base map points, assembly entry and approved First Street 
   }
 });
 test('Tuesday inner loop preserved; Mutual Square is excluded, not silently interpreted',()=>{
-  assert.deepEqual(routes.tuesday.paths[1],[[444,192],[142,192],[142,437],[241,437],[241,247.5],[344,247.5],[344,437],[444,437],[444,192]]);
-  assert.deepEqual(routes['wed-sat'].paths[1],[[444,192],[142,192],[142,437],[444,437],[444,192]]);
-  assert.deepEqual(pending,[[344,313],[444,313]]);
+  assert.deepEqual(routes.tuesday.paths[1],[[H,F],[D,F],[D,V],[B,V],[B,S],[G,S],[G,V],[H,V],[H,F]]);
+  assert.deepEqual(routes['wed-sat'].paths[1],[[H,F],[D,F],[D,V],[H,V],[H,F]]);
+  assert.deepEqual(pending,[[G,313],[H,313]]);
   assert(source.includes('PENDING ORGANIZER CLARIFICATION — CURRENTLY EXCLUDED'));
   assert.equal(paradePath([[1,2],[3,2]]),'M 1 2 L 3 2');
+});
+
+test('road centers bisect actual SVG boundary pairs; arrows remain inside corridors', () => {
+  const svg=fs.readFileSync(new URL('../assets/images/tented-city-map-app-ready.svg',import.meta.url),'utf8');
+  for(const [name,[a,b]] of Object.entries(edges)) {
+    assert(svg.includes(String(a)) && svg.includes(String(b)), `${name} boundaries exist in original artwork`);
+    assert(Math.abs((centers[name]-a)-(b-centers[name])) < 1e-9);
+    assert(b-a>8, `${name} accommodates outlined arrows`);
+  }
+  for(const route of Object.values(routes)) for(const {at:[x,y],direction} of route.arrows) {
+    const vertical=direction==='north'||direction==='south';
+    const names=vertical?['dodge','brucePower','grainFarmers','hydroOne']:['first','second','fifth','bruceCountyNorth'];
+    const road=names.find(name=>centers[name]===(vertical?x:y));
+    assert(road, 'arrow is on measured centerline');
+    // Chevron extends 3 points across the road, plus half its 3.8pt outline.
+    assert((edges[road][1]-edges[road][0])/2 + 0.1 >= 4.9);
+  }
 });

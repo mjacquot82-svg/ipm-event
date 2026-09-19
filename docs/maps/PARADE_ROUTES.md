@@ -21,7 +21,7 @@ Tuesday: east on Fifth Street, north on Bruce Power Avenue, east on Second Stree
 
 Wednesday–Saturday: east on Fifth Street, north on Hydro One Avenue, west on First Street.
 
-`tentedCityParadeRoutes.ts` holds identities, source names, road sequences, path points, arrow directions, assembly-area polygon and the excluded segment. All points use the unchanged base SVG's `0 0 774 603` viewBox. Paths follow road lanes offset from street-name text. They are constructed from intersections, not traced highlighter pixels.
+`tentedCityParadeRoutes.ts` holds identities, source names, road sequences, path points, arrow directions, assembly-area polygon and the excluded segment. All points use the unchanged base SVG's `0 0 774 603` viewBox. Paths follow individually measured road centerlines. They are constructed from intersections, not traced highlighter pixels.
 
 `ParadeRouteOverlay.tsx` renders an SVG image with white-outlined blue paths and direction chevrons. Like the existing base artwork, it uses React Native Image. It shares the base image's transformed layer and has no pointer events. The temporary assembly-area polygon and label appear only with a selected route. No map artwork, geometry, vendor catalog, notification or reminder files are changed.
 
@@ -39,3 +39,10 @@ The controls start off, allow one route at a time, show a checkmark and label fo
 91 relevant map unit/regression tests passed, including the two route-geometry tests. Production-style frontend export passed. Browser scenarios passed at phone (390), tablet (768) and desktop (1440) widths; touch pinch is exercised on phone/tablet. The route's bounding box is checked against both the transformed map layer and the base artwork during camera changes. Radio controls expose their selected state to assistive technology.
 
 TypeScript retains the unrelated pre-existing `app/(tabs)/itinerary.tsx:225` TS2367 error. The broader frontend baseline suite is not claimed clean. The authoritative vendor catalog, all three map vendor arrays, official SVG, semantic manifest and geometry configuration were verified byte-identical to the starting staging commit `249ef26eec3bf9fac865972b610da72edf0706aa`; the live staging catalog matched as well.
+
+
+## Centerline refinement, 2026-09-19
+
+Marc approved the itinerary and requested centered strokes instead of the earlier label-avoidance offsets. `PARADE_ROAD_EDGES` records independently measured pairs from the base SVG; `PARADE_ROAD_CENTERS` calculates their midpoints. Both route paths and all arrows reuse these constants. First Street Y=188.232422, Second Street Y=251.4746095, Fifth Street Y=433.5703125; Dodge X=147.1035155, Bruce Power X=244.4804685, Grain Farmers X=339.3125, Hydro One X=437.0527345. Bruce County North follows its grey roadway midpoint Y=148.892578. The assembly gate/polygon, directions, route turns, controls, artwork, vendor data and pending exclusion remain unchanged. Existing printed road labels remain part of the original artwork; the centered route now passes over them as requested.
+
+Straight avenues use consistent centers through intersections; tiny original block-edge variations (less than 0.4pt) do not introduce zigzags. Tests check measured SVG boundary values, midpoint symmetry, axis-aligned joined paths, arrow alignment and unchanged itinerary. Browser validation uses the existing phone/tablet/desktop scenarios.

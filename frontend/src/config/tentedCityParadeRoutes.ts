@@ -1,6 +1,6 @@
 /** Official route PDFs in data/, interpreted with Marc's 2026-09-19 approval.
  * Coordinates are PDF points in the unchanged base SVG viewBox 0 0 774 603.
- * Road lanes are offset from printed street labels, never from their corridors.
+ * Road centers are measured independently between adjacent SVG roadway edges.
  */
 export type ParadeRouteId = 'tuesday' | 'wed-sat';
 export type RoutePoint = readonly [number, number];
@@ -11,13 +11,39 @@ export const PARADE_ASSEMBLY = {
   gate: [503, 139] as RoutePoint,
   label: [529, 179] as RoutePoint,
 };
+// Edges measured from the unchanged SVG paths, in PDF points. Minor row-to-row
+// block-edge variations (< 0.4pt) retain one straight avenue centerline.
+export const PARADE_ROAD_EDGES = {
+  dodge: [132.660156, 161.546875],
+  brucePower: [231.945312, 257.015625],
+  grainFarmers: [327.414062, 351.210938],
+  hydroOne: [426.238281, 447.867188],
+  first: [182.199219, 194.265625],
+  second: [245.605469, 257.34375],
+  fifth: [427.683594, 439.457031],
+  bruceCountyNorth: [144.058594, 153.726562],
+} as const;
+const midpoint = ([a, b]: readonly [number, number]) => (a + b) / 2;
+export const PARADE_ROAD_CENTERS = {
+  dodge: midpoint(PARADE_ROAD_EDGES.dodge),
+  brucePower: midpoint(PARADE_ROAD_EDGES.brucePower),
+  grainFarmers: midpoint(PARADE_ROAD_EDGES.grainFarmers),
+  hydroOne: midpoint(PARADE_ROAD_EDGES.hydroOne),
+  first: midpoint(PARADE_ROAD_EDGES.first),
+  second: midpoint(PARADE_ROAD_EDGES.second),
+  fifth: midpoint(PARADE_ROAD_EDGES.fifth),
+  bruceCountyNorth: midpoint(PARADE_ROAD_EDGES.bruceCountyNorth),
+};
+const { dodge: D, brucePower: B, grainFarmers: G, hydroOne: H,
+  first: F, second: S, fifth: V, bruceCountyNorth: N } = PARADE_ROAD_CENTERS;
+
 // PENDING ORGANIZER CLARIFICATION — CURRENTLY EXCLUDED.
 // Keep separate from active routes; no attendee-facing uncertainty note.
-export const PENDING_MUTUAL_SQUARE_SEGMENT: readonly RoutePoint[] = [[344, 313], [444, 313]];
+export const PENDING_MUTUAL_SQUARE_SEGMENT: readonly RoutePoint[] = [[G, 313], [H, 313]];
 
-const ENTRY: readonly RoutePoint[] = [PARADE_ASSEMBLY.gate, [503, 148], [444, 148], [444, 192]];
+const ENTRY: readonly RoutePoint[] = [PARADE_ASSEMBLY.gate, [503, N], [H, N], [H, F]];
 const ENTRY_ARROWS: RouteArrow[] = [
-  { at: [477, 148], direction: 'west' }, { at: [444, 168], direction: 'south' },
+  { at: [477, N], direction: 'west' }, { at: [H, 168], direction: 'south' },
 ];
 export const PARADE_ROUTES: Record<ParadeRouteId, {
   id: ParadeRouteId; label: string; source: string; roads: readonly string[];
@@ -28,24 +54,24 @@ export const PARADE_ROUTES: Record<ParadeRouteId, {
     roads: ['Bruce County North', 'Hydro One Avenue', 'First Street', 'Dodge Avenue',
       'Fifth Street', 'Bruce Power Avenue', 'Second Street', 'Grain Farmers Avenue',
       'Fifth Street', 'Hydro One Avenue', 'First Street'],
-    paths: [ENTRY, [[444,192],[142,192],[142,437],[241,437],[241,247.5],[344,247.5],[344,437],[444,437],[444,192]]],
+    paths: [ENTRY, [[H,F],[D,F],[D,V],[B,V],[B,S],[G,S],[G,V],[H,V],[H,F]]],
     arrows: [...ENTRY_ARROWS,
-      { at: [330,192], direction: 'west' }, { at: [142,210], direction: 'south' },
-      { at: [142,405], direction: 'south' }, { at: [195,437], direction: 'east' },
-      { at: [241,375], direction: 'north' }, { at: [310,247.5], direction: 'east' },
-      { at: [344,355], direction: 'south' }, { at: [395,437], direction: 'east' },
-      { at: [444,360], direction: 'north' }, { at: [444,210], direction: 'north' }],
+      { at: [330,F], direction: 'west' }, { at: [D,210], direction: 'south' },
+      { at: [D,405], direction: 'south' }, { at: [195,V], direction: 'east' },
+      { at: [B,375], direction: 'north' }, { at: [310,S], direction: 'east' },
+      { at: [G,355], direction: 'south' }, { at: [395,V], direction: 'east' },
+      { at: [H,360], direction: 'north' }, { at: [H,210], direction: 'north' }],
   },
   'wed-sat': {
     id: 'wed-sat', label: 'Wednesday–Saturday', source: 'IPM 2026 Tented City Map - Parade Route Wed to Sat.pdf',
     roads: ['Bruce County North', 'Hydro One Avenue', 'First Street', 'Dodge Avenue',
       'Fifth Street', 'Hydro One Avenue', 'First Street'],
-    paths: [ENTRY, [[444,192],[142,192],[142,437],[444,437],[444,192]]],
+    paths: [ENTRY, [[H,F],[D,F],[D,V],[H,V],[H,F]]],
     arrows: [...ENTRY_ARROWS,
-      { at: [330,192], direction: 'west' }, { at: [142,210], direction: 'south' },
-      { at: [142,345], direction: 'south' }, { at: [240,437], direction: 'east' },
-      { at: [444,415], direction: 'north' }, { at: [444,330], direction: 'north' },
-      { at: [444,205], direction: 'north' }],
+      { at: [330,F], direction: 'west' }, { at: [D,210], direction: 'south' },
+      { at: [D,345], direction: 'south' }, { at: [240,V], direction: 'east' },
+      { at: [H,415], direction: 'north' }, { at: [H,330], direction: 'north' },
+      { at: [H,205], direction: 'north' }],
   },
 };
 export function paradePath(points: readonly RoutePoint[]) {
