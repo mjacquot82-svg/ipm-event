@@ -6,13 +6,8 @@ import { Platform } from 'react-native';
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_MAX_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 1500;
-// Cached attendee data is still usable offline, but native clients refresh it
-// at least every 15 minutes when connectivity is available. Web reads refresh
-// immediately so reconnects do not leave a stale schedule or vendor catalog.
-const CACHE_MAX_AGE_MS = 15 * 60 * 1000;
-// Server-backed attendee content must be isolated by backend origin. The old
-// v1/production namespace was shared by staging and production and could
-// render staging Schedule data in a production client before refresh.
+// Server-backed content must be isolated by backend origin. The old v1 and
+// production namespaces were shared by staging and production.
 const CACHE_KEY_PREFIX = 'ipm_supabase_cache:v2';
 const LEGACY_CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
 const DEFAULT_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
@@ -46,22 +41,16 @@ type FetchWithCacheOptions<T> = {
 
 export type SupabaseFetchOptions<T> = {
   preferCache?: boolean;
-  timeoutMs?: number;
-  maxAttempts?: number;
   onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
   onBackgroundRefreshError?: (error: unknown) => void;
 };
 
-export type EventImage = {
-  url: string;
-  alt: string;
-  width: number;
-  height: number;
-  crop?: 'top-square';
-};
+export type EventImage = { url: string; alt: string; width: number; height: number; crop?: 'top-square' };
+export type EventExternalLink = { label: string; url: string };
 
 export type ScheduleEvent = {
   event_image?: EventImage | null;
+  external_links?: EventExternalLink[];
   id: string;
   title: string;
   description: string;
@@ -134,8 +123,6 @@ function getEnvironmentCacheIdentity() {
     const parsed = new URL(configuredApiBaseUrl);
     return `${parsed.protocol}//${parsed.host}`;
   } catch {
-    // Keep an invalid build configuration isolated rather than falling back
-    // to a namespace that another environment could share.
     return configuredApiBaseUrl || 'unknown-backend';
   }
 }
@@ -145,8 +132,7 @@ function getCacheKey(cacheKey: string) {
     .replace(/[^a-z0-9]+/gi, '_')
     .replace(/^_+|_+$/g, '')
     .toLowerCase();
-  // Do not read the legacy environment-ambiguous v1 namespace. This makes a
-  // device carrying staging data safe on its first production launch.
+  // Never read the legacy environment-ambiguous namespace.
   if (cacheKey === 'vendors' && Platform.OS === 'web') {
     return `${CACHE_KEY_PREFIX}:${identity}:vendors:canonical-v2`;
   }
@@ -295,15 +281,12 @@ export async function fetchCachedApiData<T>({
   };
 
   if (cachedData) {
-    const shouldRefresh = cachedData.cacheAge >= CACHE_MAX_AGE_MS || Platform.OS === 'web';
-    if (shouldRefresh) {
-      void refresh()
-        .then((result) => onBackgroundRefresh?.(result))
-        .catch((error) => {
-          console.warn('Background API refresh failed:', error);
-          onBackgroundRefreshError?.(error);
-        });
-    }
+    void refresh()
+      .then((result) => onBackgroundRefresh?.(result))
+      .catch((error) => {
+        console.warn('Background API refresh failed:', error);
+        onBackgroundRefreshError?.(error);
+      });
     return cachedData;
   }
 
@@ -366,28 +349,12 @@ export function getAnnouncementsData(options: SupabaseFetchOptions<Announcements
 }
 
 export async function getAnnouncementById(id: string): Promise<Announcement | null> {
-  const cacheKey = `announcement:${id}`;
-  const cached = await readCache<Announcement>(cacheKey);
-  try {
-    const response = await fetchWithTimeout(
-      `${getApiBaseUrl()}/api/announcements/${encodeURIComponent(id)}`,
-      12000,
-    );
-    if (response.status === 404) return null;
-    if (!response.ok) {
-      throw new Error(`Announcement request failed with status ${response.status}`);
-    }
-    const data = await response.json() as Announcement;
-    await writeCache(cacheKey, data, new Date().toISOString());
-    return data;
-  } catch (error) {
-    if (cached?.data) return cached.data;
-    throw error;
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/announcements/${encodeURIComponent(id)}`
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`Announcement request failed with status ${response.status}`);
   }
-}
-
-/** Warm the canonical vendor catalog during the normal online Home session. */
-export async function prefetchVendorsData() {
-  if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.onLine === false) return;
-  return getVendorsData({ preferCache: false, maxAttempts: 1, timeoutMs: 12000 });
+  return response.json() as Promise<Announcement>;
 }
