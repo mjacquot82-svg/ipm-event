@@ -56,7 +56,7 @@ function loadTypeScript(relative, parent = root) {
 }
 
 test('candidate preserves consolidated data after four confirmed cancellations', () => {
-  assert.equal(catalog.length, 227);
+  assert.equal(catalog.length, 228);
   for (const [name, location] of yellow) {
     const hits = catalog.filter((vendor) => vendor.name === name);
     assert.equal(hits.length, 1, name);
@@ -154,4 +154,27 @@ test('Hometown canonical identity resolves WEST-3 to the existing CKNX Lounge ma
   assert.equal(place?.kind, 'vendor');
   assert.equal(place?.vendor.locationLabel, 'CKNX Centennial Pavilion (Lounge), West 3');
   assert.deepEqual(place?.vendor.booths, ['WEST-3']);
+});
+
+test('resolved September 19 assignments retain IDs and resolve exactly the confirmed booth lots', () => {
+  const { tentedCityVendors } = loadTypeScript('src/data/tentedCityVendors.ts');
+  const { matchVendor } = loadTypeScript('src/config/tentedCityVendorMatch.ts');
+  const cases = [
+    ['15691f8e-2ecb-4904-8b4f-3ab4ec8f10c5', 'Fellowship of Christian Farmers', '2A-16–17', ['2A-16', '2A-17']],
+    ['b1280c80-ed82-5b61-a875-4ae2b558a0e0', 'Mitchell Cycle Inc., Mitchell', '2A-18–19', ['2A-18', '2A-19']],
+    ['e0a5d033-8f65-404e-bea0-3d29c912046b', 'Bailey Repair Services Ltd., Palmerston', '2A-20', ['2A-20']],
+    ['f2c294e5-6c52-55ae-920f-784caea9c320', 'B Town Farm Supply', '1B-07', ['1B-07']],
+    ['319f7c2d-22e3-4945-8c4d-caa3d9ad7ff4', 'JW Custom Fab, Cargill', '5A-21', ['5A-21']],
+  ];
+  for (const [id, name, location, booths] of cases) {
+    const rows = catalog.filter(v => v.id === id); assert.equal(rows.length, 1); assert.equal(rows[0].name, name); assert.equal(rows[0].location, location);
+    const mapped = tentedCityVendors.filter(v => v.name === name); assert.equal(mapped.length, 1); assert.deepEqual(mapped[0].booths, booths);
+    const result = matchVendor(mapped[0]); assert(result.rect); assert.equal(result.class, 'confident_lot');
+    assert.equal(result.lotIds.length, booths.length);
+    for (const booth of booths) assert(result.lotIds.some(id => id.endsWith(booth)), `${name}: ${booth}`);
+    for (const v of tentedCityVendors.filter(v => v.name !== name)) assert(!v.booths.some(b => booths.includes(b)), `Collision: ${name} / ${v.name}`);
+  }
+  const town = catalog.find(v => v.name === 'B Town Farm Supply');
+  assert.deepEqual(town, {id:'f2c294e5-6c52-55ae-920f-784caea9c320',name:'B Town Farm Supply',type:'',location:'1B-07',hours_of_operation:'',days_of_operation:'',priority:99});
+  assert.equal(tentedCityVendors.find(v => v.name === town.name).category, '');
 });

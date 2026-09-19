@@ -1,8 +1,12 @@
 import type { TentedCityVendor } from '../config/tentedCityTypes';
 
-type LocationUpdate = Pick<TentedCityVendor, 'locationLabel' | 'booths' | 'tent'>;
+type LocationUpdate = Pick<TentedCityVendor, 'locationLabel' | 'booths' | 'tent'> & Partial<Pick<TentedCityVendor, 'rect'>>;
 
 const UPDATED_LOCATIONS: Record<string, LocationUpdate> = {
+  // Sharon-confirmed assignments, September 19; existing identities are preserved.
+  'Fellowship of Christian Farmers': { locationLabel: '2A-16–17', booths: ['2A-16', '2A-17'], tent: null, rect: null },
+  'Mitchell Cycle Inc., Mitchell': { locationLabel: '2A-18–19', booths: ['2A-18', '2A-19'], tent: null, rect: null },
+  'Bailey Repair Services Ltd., Palmerston': { locationLabel: '2A-20', booths: ['2A-20'], tent: null, rect: null },
   'Your Ultimate Structures Inc., Beachville': { locationLabel: '2A-09', booths: ['2A-09'], tent: null },
   'Eastern Silk Road, Kitchener': { locationLabel: '4B-04', booths: ['4B-04'], tent: null },
   'JW Custom Fab, Cargill': { locationLabel: '5A-21', booths: ['5A-21'], tent: null },
@@ -20,6 +24,7 @@ const UPDATED_LOCATIONS: Record<string, LocationUpdate> = {
 };
 
 export const CONSOLIDATED_ADDED_VENDORS: TentedCityVendor[] = [
+  { name: 'B Town Farm Supply', category: '', tent: null, locationLabel: '1B-07', booths: ['1B-07'], rect: null },
   { name: 'National Energy Equipment Inc.', category: 'outdoor', tent: null, locationLabel: '2B-15', booths: ['2B-15'], rect: null },
   { name: 'Huron-Bruce Provincial Liberal Association', category: 'outdoor', tent: null, locationLabel: '3A-06', booths: ['3A-06'], rect: null },
   { name: 'CSN Auto Reset Group', category: 'outdoor', tent: null, locationLabel: '4B-02', booths: ['4B-02'], rect: null },

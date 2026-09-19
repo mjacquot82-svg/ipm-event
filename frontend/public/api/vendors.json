@@ -73,10 +73,19 @@
       "priority": 99
     },
     {
+      "id": "f2c294e5-6c52-55ae-920f-784caea9c320",
+      "name": "B Town Farm Supply",
+      "type": "",
+      "location": "1B-07",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
       "id": "e0a5d033-8f65-404e-bea0-3d29c912046b",
       "name": "Bailey Repair Services Ltd., Palmerston",
       "type": "Outdoor",
-      "location": "2A-21",
+      "location": "2A-20",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -580,7 +589,7 @@
       "id": "15691f8e-2ecb-4904-8b4f-3ab4ec8f10c5",
       "name": "Fellowship of Christian Farmers",
       "type": "Outdoor",
-      "location": "2A-17-18",
+      "location": "2A-16–17",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1183,7 +1192,7 @@
       "id": "b1280c80-ed82-5b61-a875-4ae2b558a0e0",
       "name": "Mitchell Cycle Inc., Mitchell",
       "type": "Outdoor",
-      "location": "2A-19-20",
+      "location": "2A-18–19",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2045,5 +2054,5 @@
     }
   ],
   "last_updated": "2026-09-12T14:28:36.762Z",
-  "total_count": 227
+  "total_count": 228
 }
