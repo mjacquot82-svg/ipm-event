@@ -73,7 +73,7 @@ function useEducation(kind: EducationKind, eligible: boolean, autoStart = true) 
   return { visible: focused && eligible && (visible === 'manual' || (autoStart && visible === 'automatic')), dismiss, replay, skip: () => { requestedReplay?.pending.clear(); dismiss(); } };
 }
 
-function EducationCallout({ title, body, progress, target, fallback, onNext, onDismiss, onTargetPress, onSkip, targetLabel = 'Open highlighted event details', targetTestID = 'schedule-education-open-event' }: {
+export function EducationCallout({ title, body, progress, target, fallback, onNext, onDismiss, onTargetPress, onSkip, targetLabel = 'Open highlighted event details', targetTestID = 'schedule-education-open-event' }: {
   title: string; body: string; progress?: string; target?: Anchor | null; fallback?: Anchor | null;
   onNext?: () => void; onDismiss: () => void; onTargetPress?: () => void; onSkip?: () => void; targetLabel?: string; targetTestID?: string;
 }) {
@@ -183,9 +183,6 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
 // Reuse the original contextual callout and Help styling; no new tour engine or storage keys.
 export function ContextualHelpButton({ label, onPress }: { label: string; onPress: () => void }) {
   return <TouchableOpacity accessibilityRole="button" accessibilityLabel={label} style={[styles.help, { width: 'auto', paddingHorizontal: 12, alignSelf: 'flex-start' }]} onPress={onPress}><Text style={styles.helpText}>{label}</Text></TouchableOpacity>;
-}
-export function VendorHelpReplay({ onDismiss, onSkip }: { onDismiss: () => void; onSkip?: () => void }) {
-  return <EducationCallout title="Find this vendor" body="Browse or search vendors; each card shows the available details. Use Find on Map to jump directly to a mapped vendor’s location." onDismiss={onDismiss} onSkip={onSkip} />;
 }
 
 export function MapEducationHelpButton({ mode }: { mode: string }) {

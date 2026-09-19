@@ -1,4 +1,5 @@
-import { FindOnMapTip, ContextualHelpButton, VendorHelpReplay, ContextualEducationReplay, useWalkthroughPreview } from '../../src/components/MapEducation';
+import { VendorTutorialTarget, VendorTutorialUnavailable } from '../../src/components/VendorTutorial';
+import { ContextualHelpButton, useWalkthroughPreview } from '../../src/components/MapEducation';
 import { vendorMapTipEligible } from '../../src/services/mapEducationEligibility';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -39,7 +40,18 @@ import { EXACT_MAP_UNAVAILABLE, vendorHasTrustedMapGeometry } from '../../src/co
 
 export default function VendorsScreen() {
   const [showVendorHelp, setShowVendorHelp] = useState(false);
-  const [helpReplay, setHelpReplay] = useState<React.ContextType<typeof ContextualEducationReplay>>({ pending: new Set() });
+  const [tutorialVendorId, setTutorialVendorId] = useState<string | null>(null);
+  const [tutorialNotice, setTutorialNotice] = useState('');
+  const list = useRef<FlatList<Vendor>>(null);
+  const visibleVendors = useRef<string[]>([]);
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ item: Vendor; isViewable: boolean }> }) => {
+    visibleVendors.current = viewableItems.filter(entry => entry.isViewable).map(entry => entry.item.id);
+  }).current;
+  const startVendorTutorial = () => {
+    setTutorialVendorId(null);
+    setTutorialNotice('');
+    setShowVendorHelp(true);
+  };
   const walkthroughPreview = useWalkthroughPreview();
   const previewStarted = useRef(false);
   useFocusEffect(useCallback(() => {
@@ -47,15 +59,15 @@ export default function VendorsScreen() {
     void AsyncStorage.getItem(EDUCATION_KEYS.vendorFindOnMapTipSeen).then(seen => {
       if (active && (seen !== 'true' || (walkthroughPreview && !previewStarted.current))) {
         previewStarted.current = true;
-        setShowVendorHelp(true);
+        startVendorTutorial();
       }
     }).catch(() => {});
-    return () => { active = false; setShowVendorHelp(false); setHelpReplay({ pending: new Set() }); };
+    return () => { active = false; setShowVendorHelp(false); setTutorialVendorId(null); };
   }, [walkthroughPreview]));
-  const finishVendorIntroduction = (skip = false) => {
+  const finishVendorTutorial = () => {
     void AsyncStorage.setItem(EDUCATION_KEYS.vendorFindOnMapTipSeen, 'true').catch(() => {});
     setShowVendorHelp(false);
-    setHelpReplay({ pending: new Set(skip ? [] : ['vendorFindOnMapTipSeen']) });
+    setTutorialVendorId(null);
   };
   usePageAnalytics('vendors', 'home_quick_action', 'vendor_directory_opened');
   const router = useRouter();
@@ -121,6 +133,47 @@ export default function VendorsScreen() {
   }, [searchQuery, selectedType, vendors]);
 
   const hasActiveFilters = Boolean(searchQuery.trim() || selectedType);
+  const mappedVendors = useMemo(() => vendors.filter(vendor => vendorMapTipEligible(vendor.name, vendor.location)), [vendors]);
+  useEffect(() => {
+    if (!showVendorHelp || loading) return;
+    const candidates = filteredVendors.filter(vendor => mappedVendors.some(mapped => mapped.id === vendor.id));
+    if (candidates.some(vendor => vendor.id === tutorialVendorId)) return;
+    if (candidates.length) {
+      setTutorialVendorId((candidates.find(vendor => visibleVendors.current.includes(vendor.id)) || candidates[0]).id);
+    } else if (mappedVendors.length) {
+      setSearchQuery('');
+      setSelectedType(null);
+      setTutorialNotice('Showing a mapped vendor from all vendors.');
+      setTutorialVendorId(mappedVendors[0].id);
+    } else setTutorialVendorId(null);
+  }, [showVendorHelp, loading, filteredVendors, mappedVendors, tutorialVendorId]);
+
+  const revealTutorialVendor = () => {
+    if (!showVendorHelp || !tutorialVendorId) return;
+    const index = filteredVendors.findIndex(vendor => vendor.id === tutorialVendorId);
+    if (index >= 0) list.current?.scrollToIndex({ index, viewPosition: 0.3, animated: false });
+  };
+  useEffect(() => {
+    if (!showVendorHelp || !tutorialVendorId || loading) return;
+    const timer = setTimeout(revealTutorialVendor, 150);
+    return () => clearTimeout(timer);
+  }, [showVendorHelp, tutorialVendorId, loading, filteredVendors]);
+
+  const openVendorOnMap = (vendor: Vendor, walkthrough = false) => {
+    const resolved = resolveVendorMapQuery(vendor.name, vendor.location);
+    if (resolved.status === 'mapped') {
+      if (walkthrough) finishVendorTutorial();
+      router.push({
+        pathname: '/(tabs)/map',
+        params: { location: resolved.query, showOnly: 'true', source: 'vendors', mapType: 'tented',
+          ...(walkthrough ? { vendorWalkthrough: String(Date.now()), vendorTutorialName: resolved.query } : {}),
+        },
+      });
+      return;
+    }
+    router.push({ pathname: '/(tabs)/map', params: { mapStatus: 'unavailable', source: 'vendors', mapType: 'tented' } });
+  };
+
 
   useEffect(() => {
     const query = searchQuery.trim();
@@ -176,7 +229,7 @@ export default function VendorsScreen() {
       <PageHeader title="Vendors" />
       <View style={styles.header}>
         <Text style={styles.title}>Vendors</Text>
-        <ContextualHelpButton label="Vendors Help" onPress={() => setShowVendorHelp(true)} />
+        <ContextualHelpButton label="Vendors Help" onPress={startVendorTutorial} />
         <Text style={styles.subtitle}>
           {hasActiveFilters
             ? `${filteredVendors.length} of ${vendors.length} vendors`
@@ -254,9 +307,15 @@ export default function VendorsScreen() {
   );
 
   return (
-    <ContextualEducationReplay.Provider value={helpReplay}><View style={styles.container}>
-      {showVendorHelp ? <VendorHelpReplay onDismiss={() => finishVendorIntroduction()} onSkip={() => finishVendorIntroduction(true)} /> : null}
+    <View style={styles.container}>
+      {showVendorHelp && mappedVendors.length === 0 ? <VendorTutorialUnavailable onSkip={finishVendorTutorial} /> : null}
       <FlatList
+        ref={list}
+        onViewableItemsChanged={onViewableItemsChanged}
+        onScrollToIndexFailed={({ averageItemLength, index }) => {
+          list.current?.scrollToOffset({ offset: averageItemLength * index, animated: false });
+          setTimeout(revealTutorialVendor, 300);
+        }}
         style={styles.content}
         data={filteredVendors}
         keyExtractor={(item) => item.id}
@@ -281,26 +340,12 @@ export default function VendorsScreen() {
               ) : null}
               {item.location?.trim() && !vendorHasTrustedMapGeometry(item.name) ? (
                 <Text style={styles.meta}>{EXACT_MAP_UNAVAILABLE}</Text>
-              ) : <FindOnMapTip key={item.id} kind="vendorFindOnMapTipSeen" eligible={!showVendorHelp && vendorMapTipEligible(item.name, item.location)}><TouchableOpacity testID="vendor-find-on-map"
-                style={styles.mapLink}
-                onPress={() => {
-                  const resolved = resolveVendorMapQuery(item.name, item.location);
-                  if (resolved.status === 'mapped') {
-                    router.push({
-                      pathname: '/(tabs)/map',
-                      params: { location: resolved.query, showOnly: 'true', source: 'vendors', mapType: 'tented' },
-                    });
-                    return;
-                  }
-                  router.push({
-                    pathname: '/(tabs)/map',
-                    params: { mapStatus: 'unavailable', source: 'vendors', mapType: 'tented' },
-                  });
-                }}
-              >
+              ) : <VendorTutorialTarget key={item.id} active={showVendorHelp && tutorialVendorId === item.id}
+                style={styles.mapLink} notice={tutorialNotice} onSkip={finishVendorTutorial}
+                onOpen={() => openVendorOnMap(item, showVendorHelp && tutorialVendorId === item.id)}>
                 <Feather name="map-pin" size={16} color="#8B1538" />
                 <Text style={styles.mapLinkText}>Find on Map</Text>
-              </TouchableOpacity></FindOnMapTip>}
+              </VendorTutorialTarget>}
             </View>
           </View>
         )}
@@ -325,7 +370,7 @@ export default function VendorsScreen() {
           </View>
         }
       />
-    </View></ContextualEducationReplay.Provider>
+    </View>
   );
 }
 

@@ -1,3 +1,4 @@
+import { VendorMapArrival } from '../../src/components/VendorTutorial';
 import EntrancesParkingMap from '../../src/components/EntrancesParkingMap';
 import { MapEducationAnchors, MapEducationMode, MapEducationReplay, MapsEducation, ScheduleMapArrival } from '../../src/components/MapEducation';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
@@ -53,6 +54,8 @@ function MapContent() {
     location?: string | string[];
     eventId?: string | string[];
     scheduleWalkthrough?: string | string[];
+    vendorWalkthrough?: string | string[];
+    vendorTutorialName?: string | string[];
     eventTitle?: string | string[];
     showOnly?: string | string[];
     source?: string | string[];
@@ -153,6 +156,7 @@ function MapContent() {
       ) : null}
       {mode === 'entrances' ? <View style={[styles.entrances, entrancesDesktop && desktopMapStyles.host, entrancesDesktop]}><EntrancesParkingMap /></View> : null}
       {selector}
+      <VendorMapArrival token={source === 'vendors' ? paramStr(params.vendorWalkthrough) : undefined} name={paramStr(params.vendorTutorialName)} onComplete={() => router.setParams({ vendorWalkthrough: undefined, vendorTutorialName: undefined })} />
       <ScheduleMapArrival token={source === 'schedule' ? paramStr(params.scheduleWalkthrough) : undefined} title={eventTitle} onComplete={() => router.setParams({ scheduleWalkthrough: undefined })} />
       {/* Existing destination params defer auto-onboarding for this visit, without changing routing or seen state. */}
       <MapsEducation mode={mode} onShowMap={setMode} autoStart={!Boolean(location || paramStr(params.showOnly) === 'true' || unavailable || verify1A)} />

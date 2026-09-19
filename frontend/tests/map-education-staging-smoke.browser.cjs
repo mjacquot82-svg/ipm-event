@@ -10,7 +10,7 @@ const origin=process.env.IPM_PREVIEW_URL;assert.ok(origin&&origin!=='https://the
  await p.setViewportSize({width:1440,height:1000});await p.getByRole('button',{name:'Map Help, replay Maps tour'}).click();await card.getByRole('button',{name:'Skip tutorial'}).click();await p.getByTestId('map-mode-rv').click();await p.getByTestId('rv-site-search').fill('M27');await p.getByText('RV Site M27',{exact:true}).click();await p.getByTestId('rv-site-highlight').waitFor();
  await p.goto(origin+'/vendors');await p.getByText('224 vendors',{exact:true}).waitFor({timeout:60000});
  // The first visible mapped vendor receives the education. Dismiss before filtering.
- await card.getByText('Find this vendor',{exact:true}).waitFor();await card.getByRole('button',{name:'Got it'}).click();
+ await card.getByText('Find this vendor',{exact:true}).waitFor();await card.getByRole('button',{name:'Skip tutorial',exact:true}).click();
  for(const name of ['Valard','CAN-AM']){await p.getByPlaceholder('Search vendors').fill(name);await p.getByText("Exact map location isn't available yet.",{exact:true}).waitFor();assert.equal(await p.getByText('Find on Map',{exact:true}).count(),0);}
  await p.getByPlaceholder('Search vendors').fill('Ontario Government');await p.getByText('Find on Map',{exact:true}).click();await p.getByTestId('vendor-booth-highlight').waitFor();
  await p.goto(origin+'/schedule');await p.getByRole('button',{name:'Got it, close Plan your day introduction'}).click();await p.getByPlaceholder('Search schedule').waitFor();
