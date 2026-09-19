@@ -16,6 +16,20 @@ const ENTRY_COMPLETED_KEY = 'pwa_install_entry_completed';
 const SESSION_DISMISS_KEY = 'pwa_install_session_dismissed';
 let dismissedInThisPage = false;
 
+type InstallDiagnostic = {
+  build: string; route: string; isHome: boolean; componentMounted: boolean;
+  platform: string; browser: string; mobile: boolean; standalone: boolean;
+  navigatorStandalone: boolean; beforeInstallPromptCaptured: boolean;
+  storageReadStatus: string; dismissalValue: string | null; sessionFallbackValue: string | null;
+  eligible: string; renderRequested: string; suppressionReason: string;
+};
+
+export function isInstallDebugMode() {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname.toLowerCase();
+  return (host === 'staging.theipm.ca' || host.startsWith('staging.')) && new URLSearchParams(window.location.search).get('installDebug') === '1';
+}
+
 function dismissedInSession() {
   if (dismissedInThisPage) return true;
   try { return window.sessionStorage.getItem(SESSION_DISMISS_KEY) === 'true'; }
@@ -72,6 +86,7 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
   const [visible, setVisible] = useState(false);
   const [environment, setEnvironment] = useState<InstallEnvironment>(() => ({ platform: 'unknown', browser: 'other', installState: 'unsupported_or_unknown', deviceFamily: null }));
   const [installing, setInstalling] = useState(false);
+  const [diagnostic, setDiagnostic] = useState<InstallDiagnostic | null>(null);
   const triggerRef = useRef<any>(null);
   const headingRef = useRef<any>(null);
   const installInFlight = useRef(false);
@@ -85,18 +100,41 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
     const version = ++evaluation.current;
     const next = currentEnvironment();
     setEnvironment(next);
-    if (next.installState === 'installed') { setVisible(false); return; }
-    if (!automatic || dismissedThisSession.current || dismissedInSession()) return;
+    const debug = isInstallDebugMode();
+    const route = typeof window !== 'undefined' ? window.location.pathname : 'unknown';
+    const isHome = route === '/' || route === '';
+    const baseDiagnostic = (patch: Partial<InstallDiagnostic> = {}): InstallDiagnostic => ({
+      build: (typeof window !== 'undefined' && (window as any).__IPM_BUILD__) || 'unknown',
+      route, isHome, componentMounted: true, platform: next.platform, browser: next.browser,
+      mobile: next.platform === 'android' || next.platform === 'ios', standalone: next.installState === 'installed',
+      navigatorStandalone: typeof navigator !== 'undefined' && navigator.standalone === true,
+      beforeInstallPromptCaptured: typeof window !== 'undefined' && Boolean(window.deferredPWAPrompt),
+      storageReadStatus: 'pending', dismissalValue: null, sessionFallbackValue: dismissedInSession() ? 'true' : 'false',
+      eligible: 'pending', renderRequested: visible ? 'yes' : 'pending', suppressionReason: 'pending', ...patch,
+    });
+    if (debug) setDiagnostic(baseDiagnostic());
+    if (next.installState === 'installed') {
+      setVisible(false);
+      if (debug) setDiagnostic(baseDiagnostic({ eligible: 'no', renderRequested: 'no', suppressionReason: 'reliable standalone/installed state' }));
+      return;
+    }
+    if (!automatic || dismissedThisSession.current || dismissedInSession()) {
+      if (debug) setDiagnostic(baseDiagnostic({ eligible: 'no', renderRequested: 'no', suppressionReason: !automatic ? 'automatic prop is false' : 'dismissed in this page/session' }));
+      return;
+    }
     // Storage is a preference source, not a prerequisite for educational guidance.
     // Read independently so a blocked key does not erase another known choice.
-    const [installed, completed, dismissedAt] = await Promise.all(
-      [INSTALLED_KEY, ENTRY_COMPLETED_KEY, DISMISS_KEY].map(async key => {
-        try { return await AsyncStorage.getItem(key); } catch { return null; }
-      }),
-    );
-    if (version !== evaluation.current || dismissedThisSession.current || dismissedInSession()) return;
-    setVisible(shouldOfferInstallGuidance({ installed: currentEnvironment().installState === 'installed',
-      installedHint: installed === 'true', completed: completed === 'true', dismissedAt }));
+    let storageReadStatus = 'ok';
+    const read = async (key: string) => { try { return await AsyncStorage.getItem(key); } catch { storageReadStatus = 'error'; return null; } };
+    const [installed, completed, dismissedAt] = await Promise.all([INSTALLED_KEY, ENTRY_COMPLETED_KEY, DISMISS_KEY].map(read));
+    if (version !== evaluation.current || dismissedThisSession.current || dismissedInSession()) {
+      if (debug) setDiagnostic(baseDiagnostic({ storageReadStatus, dismissalValue: dismissedAt, eligible: 'no', renderRequested: 'no', suppressionReason: 'evaluation became stale or session dismissed' }));
+      return;
+    }
+    const eligible = shouldOfferInstallGuidance({ installed: currentEnvironment().installState === 'installed', installedHint: installed === 'true', completed: completed === 'true', dismissedAt });
+    const suppressionReason = eligible ? 'none' : installed === 'true' ? 'stored installed flag' : completed === 'true' ? 'stored entry-completed flag' : dismissedAt ? 'stored dismissal timestamp' : 'eligibility returned false';
+    if (debug) setDiagnostic(baseDiagnostic({ storageReadStatus, dismissalValue: dismissedAt, eligible: eligible ? 'yes' : 'no', renderRequested: eligible ? 'yes' : 'no', suppressionReason }));
+    setVisible(eligible);
   }, [automatic]);
 
   useEffect(() => {
@@ -150,8 +188,9 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
   if (Platform.OS !== 'web') return null;
   const guidance = getInstallGuidance(environment);
   const manual = environment.installState !== 'install_prompt_available';
+  const debugPanel = diagnostic && isInstallDebugMode() ? <InstallDiagnosticPanel diagnostic={diagnostic} /> : null;
 
-  if (!visible && automatic) return null;
+  if (!visible && automatic) return debugPanel;
   if (!visible) return (
     <View style={styles.helpEntry}>
       <TouchableOpacity ref={triggerRef} accessibilityRole="button" accessibilityState={{ expanded: false }} onPress={() => { void evaluate(); setVisible(true); }} style={styles.continueButton}>
@@ -180,13 +219,29 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
       </View>
     </ScrollView>
   );
-  if (!automatic) return content;
-  return <Modal transparent visible accessibilityLabel="Install the IPM App" onRequestClose={() => { void dismiss(); }} animationType="none"
+  if (!automatic) return <>{content}{debugPanel}</>;
+  return <>{<Modal transparent visible accessibilityLabel="Install the IPM App" onRequestClose={() => { void dismiss(); }} animationType="none"
     onShow={() => headingRef.current?.focus?.()}>
     <SafeAreaView style={styles.overlay} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.dialog}>{content}</View>
     </SafeAreaView>
-  </Modal>;
+  </Modal>}{debugPanel}</>;
+}
+
+function InstallDiagnosticPanel({ diagnostic }: { diagnostic: InstallDiagnostic }) {
+  const rows: Array<[string, string | number | boolean]> = [
+    ['BUILD', diagnostic.build], ['ROUTE', diagnostic.route], ['IS HOME', diagnostic.isHome ? 'YES' : 'NO'],
+    ['COMPONENT MOUNTED', diagnostic.componentMounted ? 'YES' : 'NO'], ['PLATFORM', diagnostic.platform], ['BROWSER', diagnostic.browser],
+    ['MOBILE', diagnostic.mobile ? 'YES' : 'NO'], ['DISPLAY-MODE STANDALONE', diagnostic.standalone ? 'YES' : 'NO'],
+    ['NAVIGATOR.STANDALONE', diagnostic.navigatorStandalone ? 'YES' : 'NO'], ['BEFOREINSTALLPROMPT CAPTURED', diagnostic.beforeInstallPromptCaptured ? 'YES' : 'NO'],
+    ['STORAGE READ STATUS', diagnostic.storageReadStatus], ['DISMISSAL VALUE', diagnostic.dismissalValue || '(none)'],
+    ['SESSION FALLBACK VALUE', diagnostic.sessionFallbackValue || '(none)'], ['INSTALL GUIDE ELIGIBLE', diagnostic.eligible],
+    ['RENDER REQUESTED', diagnostic.renderRequested], ['SUPPRESSION REASON', diagnostic.suppressionReason],
+  ];
+  return <View accessible accessibilityLabel="Install guidance diagnostic" style={styles.diagnosticPanel}>
+    <Text style={styles.diagnosticHeading}>Install guidance diagnostic</Text>
+    {rows.map(([label, value]) => <Text key={label} style={styles.diagnosticRow}><Text style={styles.diagnosticLabel}>{label}: </Text>{String(value)}</Text>)}
+  </View>;
 }
 
 function InstructionCue({ cue }: { cue: InstallStepCue }) {
@@ -227,4 +282,8 @@ const styles = StyleSheet.create({
   continueButton: { alignItems: 'center', justifyContent: 'center', marginTop: 10, minHeight: 50, paddingHorizontal: 10 },
   continueText: { color: colors.primary, fontSize: 16, fontWeight: '800', textAlign: 'center', textDecorationLine: 'underline' },
   optional: { color: colors.textMuted, fontSize: 16, lineHeight: 24, textAlign: 'center' },
+  diagnosticPanel: { position: 'absolute', left: 8, right: 8, bottom: 8, zIndex: 3000, backgroundColor: '#111827', borderRadius: 10, padding: 10 },
+  diagnosticHeading: { color: '#FDE68A', fontSize: 14, fontWeight: '900', marginBottom: 4 },
+  diagnosticRow: { color: '#FFFFFF', fontSize: 11, lineHeight: 16 },
+  diagnosticLabel: { color: '#93C5FD', fontWeight: '800' },
 });

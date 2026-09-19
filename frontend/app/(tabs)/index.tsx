@@ -13,7 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import PWAInstallPrompt from '../../src/components/PWAInstallPrompt';
+import PWAInstallPrompt, { isInstallDebugMode } from '../../src/components/PWAInstallPrompt';
 import { useFocusEffect, usePathname, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
@@ -408,7 +408,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {homeFocused && <PWAInstallPrompt automatic />}
+      {(homeFocused || isInstallDebugMode()) && <PWAInstallPrompt automatic />}
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}

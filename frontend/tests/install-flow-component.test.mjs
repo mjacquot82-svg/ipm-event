@@ -33,7 +33,7 @@ test('deep links retain their route; Home alone owns automatic guidance', () => 
 const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
 const about = await readFile(new URL('../app/(tabs)/about.tsx', import.meta.url), 'utf8');
 test('Home-only focused mounting prevents contextual tutorial collision', () => {
- assert.match(home, /homeFocused && <PWAInstallPrompt automatic/);
+ assert.match(home, /homeFocused \|\| isInstallDebugMode\(\)\) && <PWAInstallPrompt automatic/);
  assert.match(home, /usePathname/);
  assert.match(about, /<PWAInstallPrompt \/>/);
  assert.ok(about.indexOf('<PWAInstallPrompt />') < about.indexOf('{appHelp ? <>'));
