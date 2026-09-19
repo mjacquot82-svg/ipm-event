@@ -17,9 +17,9 @@ except ImportError:
     )
 
 try:
-    from backend.notification_analytics import campaign_identity, refresh_statistics, has_attribution, valid_uuid, reminder_summary, read_reminder_ledger
+    from backend.notification_analytics import campaign_identity, refresh_statistics, has_attribution, unattributed_history, valid_uuid, reminder_summary, read_reminder_ledger
 except ModuleNotFoundError:
-    from notification_analytics import campaign_identity, refresh_statistics, has_attribution, valid_uuid, reminder_summary, read_reminder_ledger
+    from notification_analytics import campaign_identity, refresh_statistics, has_attribution, unattributed_history, valid_uuid, reminder_summary, read_reminder_ledger
 from fastapi import FastAPI, APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from dotenv import load_dotenv
@@ -501,6 +501,7 @@ class NotificationAdoptionResponse(BaseModel):
     snapshot_at: datetime
 
 class AnnouncementDeliveryStats(BaseModel):
+    historical_unattributed: bool = False
     requested_at: Optional[datetime] = None
     notification_origin_visit_count: Optional[int] = None
     announcement_id: str
@@ -1796,6 +1797,7 @@ async def list_announcement_delivery_stats(
         AnnouncementDeliveryStats(
             **row,
             provider_accepted=row.get("status") == "sent",
+            historical_unattributed=unattributed_history(row),
         ) for row in rows
     ])
 

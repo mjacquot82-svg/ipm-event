@@ -27,6 +27,12 @@ def has_attribution(row):
     return parse_qs(urlsplit(row.get('target_url') or '').query).get('notification_ref') == [row.get('id')]
 
 
+def unattributed_history(row):
+    return (row.get('status') == 'sent' and
+            (not row.get('provider_campaign_id') or row['provider_campaign_id'].startswith('wonderpush:'))
+            and not has_attribution(row))
+
+
 def valid_uuid(value):
     try:
         return str(UUID(str(value))) == value

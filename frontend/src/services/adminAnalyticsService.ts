@@ -130,7 +130,7 @@ export function getNotificationHealth() {
 
 export type CoveredNotificationMetric = { value: number | null; covered_sends: number; total_sends: number };
 export type NotificationSummaryResponse = {
-  scope: 'all_time'; snapshot_at: string; accepted_sends: number; failed_requests: number; pending_requests: number;
+  scope: 'all_time'; snapshot_at: string; accepted_sends: number; failed_requests: number; pending_requests: number; detailed_sends: number; historical_unattributed_sends: number;
   metrics: Record<'targeted_devices' | 'receipts' | 'opens' | 'visits' | 'failures', CoveredNotificationMetric>;
   latest_statistics_check: string | null; rates: null;
   recent: { title: string; requested_at: string | null; provider_accepted: boolean }[];

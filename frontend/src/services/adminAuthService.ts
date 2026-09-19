@@ -106,6 +106,7 @@ export type NotificationDelivery = {
 };
 
 export type AnnouncementDeliveryStats = {
+  historical_unattributed?: boolean;
   announcement_id: string;
   requested_at?: string | null;
   notification_origin_visit_count?: number | null;
