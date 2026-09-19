@@ -9,7 +9,6 @@ import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import colors from '../theme/colors';
 import { groundsLayerLayout, groundsPaintViewport } from '../config/groundsLayout';
-import { groundsPhoneLayerLayout } from '../config/groundsPhoneLayout';
 import { GROUNDS_MAP, GroundsZone, hitTestGroundsZone, resolveGroundsZone } from '../config/groundsZones';
 import { searchEventMap, type EventMapHit } from '../config/mapSearch';
 import { tentedCityVendors } from '../data/tentedCityVendors';
@@ -104,9 +103,7 @@ export default function GroundsMap({ highlightedLocation, initialEventTitle, ini
   const [focused, setFocused] = useState(false);
   const focusedKey = useRef<string | null>(null);
   const viewport = groundsPaintViewport(measured, windowSize);
-  const layer = useMemo(() => phone
-    ? groundsPhoneLayerLayout(viewport)
-    : { ...groundsLayerLayout(viewport), headerHeight: 0 }, [viewport.width, viewport.height, phone]);
+  const layer = useMemo(() => groundsLayerLayout(viewport), [viewport.width, viewport.height]);
   const scale = useSharedValue(1), tx = useSharedValue(0), ty = useSharedValue(0);
   const startScale = useSharedValue(1), startX = useSharedValue(0), startY = useSharedValue(0);
   const startFocalX = useSharedValue(0), startFocalY = useSharedValue(0);
@@ -190,9 +187,7 @@ export default function GroundsMap({ highlightedLocation, initialEventTitle, ini
   const map = (
     <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
-        {phone ? <View testID="grounds-artwork-crop" style={[StyleSheet.absoluteFillObject, { top: layer.headerHeight, overflow: 'hidden' }]}>
-          <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={[styles.image, { position: 'absolute', top: -layer.headerHeight, height: layer.height }]} />
-        </View> : <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />}
+        <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />
         <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
       </Animated.View>

@@ -38,7 +38,7 @@ test('legacy Parking selector and overlay are retired from Grounds', () => {
 
 test('two-layer refinement preserves approved traffic renderer, artwork, areas and Parking positions', () => {
   const base = '5e445dd3706865132d6a468ecd4bdf5577ef6fe4';
-  for (const file of ['src/components/GroundsParkingOverlay.tsx', 'src/config/groundsPhoneLayout.ts', 'assets/images/grounds-site-map.jpg']) {
+  for (const file of ['src/components/GroundsParkingOverlay.tsx', 'assets/images/grounds-site-map.jpg']) {
     const expected = execFileSync('git', ['show', `${base}:frontend/${file}`], { maxBuffer: 10 * 1024 * 1024 });
     assert.deepEqual(fs.readFileSync(new URL('../' + file, import.meta.url)), expected, file);
   }
