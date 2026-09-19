@@ -1,0 +1,343 @@
+source_row,print_name,company_name,type,lot,status,existing_ids,existing_names
+2,2 Farmers & a Cow Ice Cream Co.,2 Farmers & a Cow Ice Cream Co.,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+3,A&M Truck Parts Ltd,A&M Truck Parts Ltd,Agriculture,,Represented — normalized name or reviewed alias,b9f5cf91-c819-4c09-b66d-c7755e0cf06f,A&M Truck Parts Ltd
+4,Accurate Canada,Accurate General Services Inc.,,5A 12,Represented — normalized name or reviewed alias,3be605f9-7bf3-43ea-8021-d4e7f8d97226,"Accurate Canada, Burlington"
+5,ACE / JCB,Advance Construction Equipment Limited,,1A 09,Represented — normalized name or reviewed alias,730c5981-0e96-5ad3-a19e-305171940d35,"ACE / JCB, Harriston"
+6,Aces Heavy Towing,Aces Heavy Towing,,5A 27-28,Represented — normalized name or reviewed alias,a9af14f1-d5ed-53ee-bf1a-496ce6b51218,"Aces Heavy Towing, Mildmay"
+7,Action First Aid,Action First Aid,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+8,Agilec Employment Services,Agilec Employment Services,Rural Living 2,,Represented — normalized name or reviewed alias,f55883bc-5358-4211-a3b6-7b53edaba2e6,Agilec Employment Services
+9,Agriculture and Agri-Food Canada,Agriculture and Agri-Food Canada,Agriculture,,Represented — normalized name or reviewed alias,3b04e05a-7aff-4552-b267-caf238b690d4,Agriculture and Agri-Food Canada
+10,AgScape,AgScape,Education,,Unconfirmed physical grouping,,
+11,Alair Homes Huron,Alair Homes Hyrib (2748000 OnInc),Rural Living 1,,Proven indoor candidate — representation decision pending for CarePartners,,
+12,All Star Metals Inc.,All Star Metals Inc.,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+13,Amabel Books,Amabel Books,Artisan,,Represented — normalized name or reviewed alias,3ae7740c-f1c6-5e2c-b2ec-743f80879a0e,"Amabel Books, Allenford"
+14,Aqwa Building Solutions,Aqwa Building Solutions,Rural Living 1,,Proven indoor candidate — representation decision pending for CarePartners,,
+15,Armtec,Armtec,Agriculture,,Represented — normalized name or reviewed alias,af16cf06-a3fc-442f-89fb-34b7f7c811aa,Armtec
+16,Avenir Energy,Avenir Energy,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+17,B&L Farm Services Ltd.,B & L Farm Services Ltd.,,2B 13-14,Represented — normalized name or reviewed alias,ee1415e6-f744-4630-bc35-6abe2ba92ba5,"B&L Farm Services Ltd., Chesley"
+18,Bailey Repair Services Ltd.,Bailey Repair Services Ltd.,,2A 21,Represented — normalized name or reviewed alias,e0a5d033-8f65-404e-bea0-3d29c912046b,"Bailey Repair Services Ltd., Palmerston"
+19,Bear Tracks Inn & Restaurant,Bear Tracks Inn & Restaurant,Food,4A 36,Represented — normalized name or reviewed alias,544387d1-37b9-5d43-b747-61f890ea005b,"Bear Tracks Inn & Restaurant, Lion’s Head"
+20,Beef Farmers of Ontario & Bruce County Beef Farmers,Bruce County Beef Farmers / Bruce County Beef Farmers,Education,,Represented — normalized name or reviewed alias,33c808d3-5f23-5ac4-ac19-39c5f525d78a | c3475873-86ab-400c-b963-7b79080cfba0,Beef Farmers of Ontario & Bruce County Beef Farmers | Beef Farmers of Ontario & Bruce County Beef Farmers
+21,Beef Farmers of Ontario & Bruce County Beef Farmers,Beef Farmers of Ontario / Bruce County Beef Farmers,,2B 08 - 09 - N,Represented — normalized name or reviewed alias,33c808d3-5f23-5ac4-ac19-39c5f525d78a | c3475873-86ab-400c-b963-7b79080cfba0,Beef Farmers of Ontario & Bruce County Beef Farmers | Beef Farmers of Ontario & Bruce County Beef Farmers
+22,Bell Mobility (Cell Tower),Bell Mobility (CoW),,North,Represented — normalized name or reviewed alias,d29fbe51-a631-5f55-8fc0-f76b35bf07cd,Bell Cell Tower
+23,Ben Lobb Member of Parliament for Huron Bruce,Ben Lobb M.P.,Rural Living 1,,Represented — normalized name or reviewed alias,00cdb72c-1b0d-4a4f-ba56-94afe97592aa,Ben Lobb Member of Parliament for Huron Bruce
+24,Bernie McGlynn Lumber / South Bruce Flooring,Bernie McGlynn Lumber Ltd. / South Bruce Flooring,Rural Living 1,,Represented — normalized name or reviewed alias,988bfa58-8601-4351-9a9c-56367bdec339,Bernie McGlynn Lumber / South Bruce Flooring
+25,Better Farming | Small Farm Canada,AgMedia Inc,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+26,Big Bites,Big Bites,Food,2A 10,Represented — normalized name or reviewed alias,6ce4387f-b079-5bcc-a1e1-83065b50bdfe,"Big Bites, Durham"
+27,Blacks Creek Innovations,Blacks Creek Innovations Inc.,,5A 37-38,Represented — normalized name or reviewed alias,958a4bcd-92f5-51b5-b975-2959863c7aa7,"Blacks Creek Innovations, Prescott"
+28,Bluewater District School Board,Bluewater District School Board,Education,,Represented — normalized name or reviewed alias,c0b34681-27da-4ffd-bd87-4ef3bbdd3178,Bluewater District School Board
+29,Brandt Tractors Ltd.,Brandt Tractors Ltd.,,1B 05-06,Represented — normalized name or reviewed alias,cdabb1e6-a916-5b2c-9648-c7d9e226139a,"Brandt Tractors Ltd., London"
+30,Broeders Farm Equipment,Broeders Farm Equipment,,1B 08,Represented — normalized name or reviewed alias,577b1ad6-5ac8-41c4-a163-04c59c103493,"Broeders Farm Equipment, North Augusta"
+31,Bruce County,The Corporation of the County of Bruce,,East 1,Missing directory name with explicit lot — outside indoor-addition scope,,
+32,Bruce County Federation of Agriculture,Bruce County Federation of Agriculture,Education,,Represented — normalized name or reviewed alias,01d61f68-207b-43e3-a1a7-4b31ce36c8bf,Bruce County Federation of Agriculture
+33,Bruce County Genealogical Society,Bruce County Genealogical Society,Antiques,,Proven indoor candidate — representation decision pending for CarePartners,,
+34,Bruce County Historical Society,Bruce County Historical Society,Antiques,,Proven indoor candidate — representation decision pending for CarePartners,,
+35,Bruce District Masons,Bruce District Masons,,3B 04,Represented — normalized name or reviewed alias,016396f4-b39b-5f5f-8e87-bd542b53e7de,Bruce District Masons
+36,Bruce Grey Catholic District School Board,Bruce Grey Catholic District School Board,Education,,Represented — normalized name or reviewed alias,f27fb7aa-fafb-49a2-932c-f31e9e4b5f25,Bruce Grey Catholic District School Board
+37,Bruce Power,Bruce Power,,3B 07-12,Represented — normalized name or reviewed alias,97e57f2d-c4ec-52d9-91c5-d2872c1f677f,Bruce Power
+38,"Bruce/Grey Owen Sound Constituency Association, Green Party of Ontario","Bruce/Grey Owen Sound Constituency Association, Green Party of Ontario",Rural Living 2,,Proven indoor candidate — representation decision pending for CarePartners,,
+39,Buddsteel Architectural Products,Buddsteel Architectural Products  ,Rural Living 1,,Proven indoor candidate — representation decision pending for CarePartners,,
+40,Canada Clean Fuels,Canada Clean Fuels Inc.,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+41,Canadian Agricultural Safety Association (CASA),Canadian Agricultural Safety Association (CASA),Education,,Unconfirmed physical grouping,,
+42,Canadian Cattle Identification Agency,Canadian Cattle Identification Agency,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+43,Canadian Foodgrains Bank,Canadian Foodgrains Bank,Agriculture,,Represented — normalized name or reviewed alias,cae86ad1-4826-4a0a-b06c-3112e7a23706,Canadian Foodgrains Bank
+44,Canadian Propane Association,Canadian Propane Association,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+45,Canadian Snowbird Association,Canadian Snowbird Association Inc.,Rural Living 2,,Represented — normalized name or reviewed alias,fe9ce824-1ba8-4bf7-998d-b236ffefd2aa,Canadian Snowbird Association
+46,Canadian Union of Skilled Workers,Canadian Union of Skilled Workers Bruce Unit,Nuclear,,Unconfirmed physical grouping,,
+47,Can-Am Demo Area,Can Am / BRP Inc,,West 4,Represented — normalized name or reviewed alias,2f34e37e-1880-5e22-b369-9372257143f7,"Can-Am Demo Area, Montreal, QC"
+48,"Candu Energy Inc, an AtkinsRéalis company","Candu Energy Inc, an AtkinsRéalis company",Nuclear,,Unconfirmed physical grouping,,
+49,CarePartners - Exploring Care Excellence In Rural Ontario,CarePartners,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+50,CarePartners - Exploring Healthcare Careers in Rural Ontario,CarePartners,Rural Living 2,,Proven indoor candidate — representation decision pending for CarePartners,,
+51,CarePartners - Rural Health Care. Yours to Explore.,CarePartners,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+52,Cedarport Window and Door Centre Inc,Cedarport Window and Door Centre Inc,,2B 29,Represented — normalized name or reviewed alias,963dfdeb-c7e0-51a3-b502-12a9588d1ef7,Cedarport Window & Door Centre
+53,Chalmers Fuels,Chalmers Fuels,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+54,Cheesy Monkii Food Truck,Cheesy Monkii Food Truck,Food,3A 04,Represented — normalized name or reviewed alias,60d08cd6-3d43-5e1b-a762-6ff00e889720,"Cheesy Monkii Food Truck, Kincardine"
+55,Chepstow & District Lions Club,Chepstow & District Lions Club,Food,3A 17-18 **,Missing directory name with explicit lot — outside indoor-addition scope,,
+56,Chris's Barbeque and Country Style Catering,Chris's Barbeque and Country Style Catering,Food,5A 23-24,Represented — normalized name or reviewed alias,0d60adb3-a62f-4fd3-a301-5cae288d05fe,Chris's Barbeque and Country Style Catering
+57,Christadelphians: ASK,Christadelphians: Advancement of Scripture Knowledge,Rural Living 2,,Represented — normalized name or reviewed alias,5f2a4b8e-4a5c-45a0-928c-4ae43ead02df,Christadelphians: ASK
+58,Christian Farmers Federation of Ontario,Christian Farmers Federation of Ontario,Agriculture,,Represented — normalized name or reviewed alias,8263f8cc-47cc-46bb-880e-4fd4e040a055,Christian Farmers Federation of Ontario
+59,CIBC,CIBC,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+60,Circular Materials,Inventa Sales & Promotions - Circular Materials,Rural Living 1,,Proven indoor candidate — representation decision pending for CarePartners,,
+61,"CKNX, The One, Cook 94.5",Blackburn Radio Inc. (CKNX),,3A 01-03,Represented — normalized name or reviewed alias,7272eea0-f3fd-5f78-87eb-16e7b5b3a94b,"CKNX, The One, Cook 94.5, Wingham"
+62,Clifford Precision Inc.,Clifford Precision Inc.,,2A 13-15,Represented — normalized name or reviewed alias,c52964ff-5574-53fd-ab93-8e80e42760a5,"Clifford Precision Inc., Clifford"
+63,CMHA Grey Bruce,Canadian Mental Health Association (CMHA) Grey Bruce,Rural Living 2,,Represented — normalized name or reviewed alias,92ced957-30d0-44bd-948c-268b1a5b68a2,CMHA Grey Bruce
+64,Coastal Coffee,Coastal Coffee,Food,2A 11,Represented — normalized name or reviewed alias,d5be6e41-6954-52c8-957d-1a7fc0eb088b,"Coastal Coffee, Goderich"
+65,"Coops, Crappers & Cabins","Coops, Crappers & Cabins",,2A 34-35,Represented — normalized name or reviewed alias,92a43a21-957e-527e-afb9-e53835ca4cea,"Coops, Crappers & Cabins, Cambridge"
+66,Core Fuels Ltd. / Red Cap Propane Ltd.,Core Fuels Ltd. / Red Cap Propane Ltd.,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+67,Costco Wholesale,Costco Wholesale Guelph,,4A 32,Represented — normalized name or reviewed alias,9a268e45-492c-5022-967c-ba050427caee,"Costco Wholesale, Guelph"
+68,Cottrill Heavy Equipment,Cottrill Heavy Equipment,,2A 05,Represented — normalized name or reviewed alias,f8e07856-2d6a-4643-8df4-4c0a11806c74,"Cottrill Heavy Equipment, Kincardine"
+69,Crop Aid Nutrition,Crop Aid Nutrition,,2A 07,Represented — normalized name or reviewed alias,942731e1-eb46-4357-b4c5-1c7d48dfce92,"Crop Aid Nutrition, Saskatoon, SK"
+70,Croskill Overhead Doors,Croskill Overhead Doors Ltd,Rural Living 1,,Proven indoor candidate — representation decision pending for CarePartners,,
+71,CSN Auto Reset Group,CSN Auto Reset Group,,4B 02 - N,Represented — normalized name or reviewed alias,cbc1c263-8e96-508b-9aa2-e6b9508b43b8,CSN Auto Reset Group
+72,Culligan,Culligan Water,,3B 01-02,Represented — normalized name or reviewed alias,4dd3723c-6622-561c-84c7-efb5cbd97b33,"Culligan, Cambridge"
+73,Cuneo Interiors Limited,Cuneo Interiors Limited,,2A 30,Represented — normalized name or reviewed alias,f4c1eece-0a1f-4f0c-9b74-4feb3b12078c,"Cuneo Interiors Limited, Walkerton"
+74,Dairy Farmers of Ontario,Dairy Farmers of Ontario,Food,3A 13,Represented — normalized name or reviewed alias,515f1b29-b256-57de-aad6-d08ffc94c1ff | 6c4a5c1a-cabc-4def-b4f3-f0410c02c88d | 8cc1d9e1-08c7-4c22-9aab-62a26964020d | 90fe44dc-91e1-4ccc-a755-728cba56d8c1,Dairy Farmers of Ontario | Dairy Farmers of Ontario | Dairy Farmers of Ontario | Dairy Farmers of Ontario
+75,Dairy Farmers of Ontario,Dairy Farmers of Ontario,Education,,Represented — normalized name or reviewed alias,515f1b29-b256-57de-aad6-d08ffc94c1ff | 6c4a5c1a-cabc-4def-b4f3-f0410c02c88d | 8cc1d9e1-08c7-4c22-9aab-62a26964020d | 90fe44dc-91e1-4ccc-a755-728cba56d8c1,Dairy Farmers of Ontario | Dairy Farmers of Ontario | Dairy Farmers of Ontario | Dairy Farmers of Ontario
+76,Dairy Farmers of Ontario,Dairy Farmers of Ontario,,3A 14-16,Represented — normalized name or reviewed alias,515f1b29-b256-57de-aad6-d08ffc94c1ff | 6c4a5c1a-cabc-4def-b4f3-f0410c02c88d | 8cc1d9e1-08c7-4c22-9aab-62a26964020d | 90fe44dc-91e1-4ccc-a755-728cba56d8c1,Dairy Farmers of Ontario | Dairy Farmers of Ontario | Dairy Farmers of Ontario | Dairy Farmers of Ontario
+77,DC Foods,DC Foods,Food,1B 38,Represented — normalized name or reviewed alias,a212980e-ffe2-5aa2-acdc-0ea2884b2443,"DC Foods, Tillsonburg"
+78,DC Foods,DC Foods,Food,4B 12,Represented — normalized name or reviewed alias,a212980e-ffe2-5aa2-acdc-0ea2884b2443,"DC Foods, Tillsonburg"
+79,De Dell Seeds Inc.,De Dell Seeds Inc.,,2B 19-20,Represented — normalized name or reviewed alias,a513ffe9-7e0e-5ca7-be44-c827de0520b2,"DeDell Seeds Inc., Melbourne"
+80,DGFO - Dairy Goat Farmers of Ontario,Ontario Dairy Goat Co-operative / Gay Lea Foods / Dairy Goat Farmers of Ontario,Education,,Unconfirmed physical grouping,,
+81,Diamond Roof,Diamond Roof,,4B 30,Represented — normalized name or reviewed alias,d85f5e59-a290-5a49-a671-3cfbf99d45ae,"Diamond Roof, Wingham"
+82,Dill Doughs,Dill Doughs,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+83,DJ's Handcrafted Solid Wood Furniture Inc.,DJ's Handcrafted Solid Wood Furniture Inc.,,4A 29-30,Represented — normalized name or reviewed alias,4e094197-8317-42de-9fab-0fbfb2ec0d53,DJ's Handcrafted Solid Wood
+84,Doc MacCheesey,Doc MacCheesey,Food,2A 37,Missing directory name with explicit lot — outside indoor-addition scope,,
+85,Dodge RAM,Dodge RAM,,5A 01-04,Represented — normalized name or reviewed alias,5041c4ee-0da8-5174-b73c-2451f95aa2ac,DODGE DEALERS
+86,Drone Spray Canada,Drone Spray Canada,,1A 06 ,Represented — normalized name or reviewed alias,75a73bde-0381-53ae-a0b1-ce59d2b2f407,"Drone Spray Canada, Granton, Blenheim"
+87,Eastern Ontario Wardens’ Caucus,Eastern Ontario Wardens’ Caucus ,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+88,Eastern Silk Road,Eastern Silk Road,,4B 04 - N,Represented — normalized name or reviewed alias,4ca16511-186c-5a9b-b737-49f74ae85cad,"Eastern Silk Road, Kitchener"
+89,Eastlink,Eastlink,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+90,Ecoflo - Septic Solutions,Premier Tech Water and Environment Ltd,,2A 28,Represented — normalized name or reviewed alias,ab05b77c-425e-5c91-88b9-6e935972b015,Premier Tech Water & Environment
+91,Egg Farmers of Ontario,Egg Farmers of Ontario,Education,,Represented — normalized name or reviewed alias,03ff43f0-ece8-4f67-a3c5-3dfd9a21cf2f,Egg Farmers of Ontario
+92,Electrical Safety Authority,Electrical Safety Authority (ESA) - Northern Region,Rural Living 1,,Represented — normalized name or reviewed alias,fac9b1e9-54db-41cb-976f-eb4f6f2f8f16,Electrical Safety Authority
+93,Elevated Workplace Safety,Elevated Workplace Safety,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+94,Elite Sprouting Systems Inc.,Elite Sprouting Systems Inc.,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+95,ENJO Canada,ENJO Canada,Rural Living 1,,Represented — normalized name or reviewed alias,64319171-ef84-58ee-b1f9-00189522f700,ENJO Chemical Free Cleaning System
+96,Equestrian Elite,Equestrian Elite,Artisan,,Represented — normalized name or reviewed alias,f610134f-3c59-4bdf-98a9-39da2f155769,"Equestrian Elite, Durham"
+97,Equipment Ontario,Equipment Ontario - Mildmay,,1A 10-12,Represented — normalized name or reviewed alias,2a10f4a1-5e13-5940-8bd6-a057d52621c6,"Equipment Ontario, Mildmay"
+98,ETFO Bluewater Local,ETFO Bluewater Local,Education,,Represented — normalized name or reviewed alias,48108aac-d4c7-49e9-9c85-8a0a33e315b7,ETFO Bluewater Local
+99,Evelyn Piper Exclusive,Evelyn Piper Exclusive,,4A 12,Represented — normalized name or reviewed alias,26048e22-0c9e-5b19-b789-cdbc0e6f7d75,"Evelyn Piper Exclusive, Ajax"
+100,Express Heat Therapy,Express Heat Therapy,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+101,Farm Sip Supreme Canada,Farm Sip Supreme Canada,,1A 17,Represented — normalized name or reviewed alias,308fff09-c626-5ed7-bad4-217c5be5eabb,"Farm Sip Supreme Canada, Mount Forest"
+102,Farmers Choice Real Estate,Royal Le Page RCR Realty,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+103,Fellowship of Christian Farmers Canada,Fellowship of Christian Farmers - Canada,,2A 17-18,Represented — normalized name or reviewed alias,15691f8e-2ecb-4904-8b4f-3ab4ec8f10c5,Fellowship of Christian Farmers
+104,Ferntree Equipment & Distribution,Ferntree Equipment & Distribution,,5A 34,Represented — normalized name or reviewed alias,e6d29634-64c4-4255-816b-3f20f1d8f88b,"Ferntree Equipment & Distribution, Guelph"
+105,FIRST Robotics Canada,FIRST Robotics Canada,Education,,Unconfirmed physical grouping,,
+106,Flora and Fae,Flora and Fae,Artisan,,Represented — normalized name or reviewed alias,e173b0f8-0a76-4bc9-9eef-b610dbbfaad8,"Flora and Fae, Tara"
+107,Florence Leather,Florence Leather,,4B 15 - N,Represented — normalized name or reviewed alias,50bfa217-fb8e-5691-b5e4-a0993415dc21,Florence Leather
+108,Fort44 Inc.,Fort44 Inc.,Agriculture,,Represented — normalized name or reviewed alias,bcc0b099-1270-4436-8222-560ab866fea2,Fort44 Inc.
+109,Foxton Fuels Limited,Foxton Fuels Limited,,2B 10-12,Represented — normalized name or reviewed alias,d95b8f18-c931-524f-8209-a6711daf3236,"Foxton Fuels Limited, Wingham"
+110,Freiburger Welding,Freiburger Welding,Rural Living 1,,Represented — normalized name or reviewed alias,9b876531-d38c-4955-af9f-0550c9446f61,Freiburger Welding
+111,Fruitage of the Field,Fruitage of the Field,,4B 24,Missing directory name with explicit lot — outside indoor-addition scope,,
+112,Galaxy Sweets,Galaxy Sweets,Commercial,,Represented — normalized name or reviewed alias,dd656a11-03d9-451b-bd7a-c05b12320448,Galaxy Sweets
+113,Gay Lea Foods Co-operative Ltd.,Gay Lea Foods Co-operative Ltd.,,2B 03-04,Represented — normalized name or reviewed alias,a600c3a6-941e-4588-bd5c-c0ad2d40c058,Gay Lea Foods Co-operative Ltd
+114,Georgian Bay Funeral Services Association (GBFSA),Georgian Bay Funeral Services Association (GBFSA),,4B 05,Represented — normalized name or reviewed alias,88994284-29ae-4366-a784-6e69493b5dab,Georgian Bay Funeral Services Association (GBFSA)
+115,Gerry's Truck Centre Ltd.,Gerry's Truck Centre Ltd.,,4A 04,Represented — normalized name or reviewed alias,36040d1d-23a4-51f8-9b32-6c68d325e4b6,Gerry's Truck Centre
+116,GGS Structures Inc.,GGS Structures Inc,,2B 23,Represented — normalized name or reviewed alias,980d4d7b-b391-5382-a3ea-d2d70f692a52,"GGS Structures Inc., Vineland Station"
+117,Goderich Port Management Corporation,Goderich Port Management Corporation,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+118,Gospel Focus,Gospel Focus,,4A 33-34,Represented — normalized name or reviewed alias,0218c51e-8b47-44df-9c1a-a9831da530d2,"Gospel Focus, Kirkfield"
+119,Grain Farmers of Ontario,Grain Farmers of Ontario ,Education,,Unconfirmed physical grouping,,
+120,Green Valley Heating Inc.,Green Valley Heating Inc.,,4B 28,Represented — normalized name or reviewed alias,5fa56f5a-3345-4710-ac74-a360d65b1c81,"Green Valley Heating Inc., Granton"
+121,Gregglea Clydesdales,Gregglea Clydesdales,Education,,Unconfirmed physical grouping,,
+122,Grey Ag Services,Grey Ag Services,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+123,Grey Bruce Ontario Health Team,Grey Bruce Ontario Health Team,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+124,Grey Bruce Pork Producers,Grey Bruce Pork Producers,Education,,Unconfirmed physical grouping,,
+125,Grey Bruce Public Health,Grey Bruce Public Health,Rural Living 2,,Represented — normalized name or reviewed alias,d68df8ab-824a-4993-80b8-3a46d73669d2,Grey Bruce Public Health
+126,Grey County,Grey County,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+127,Guelph Solar,Guelph Solar Mechanical Inc,Agriculture,,Represented — normalized name or reviewed alias,72281fef-9af2-40e7-9132-2bcfe55ca87d,Guelph Solar
+128,Hallman Motors Ltd,Hallman Motors Ltd,,5A 25-26,Represented — normalized name or reviewed alias,b05a7b54-4daa-4e05-a0c3-3eb88c6f9f3c,"Hallman Motors Ltd., Hanover"
+129,Hanover Chrysler Dodge Jeep Ram Limited,Hanover Chrysler Dodge Jeep Ram Limited,,5A 01-04,Possible truncated existing identity — do not duplicate,,
+130,Hanover Honda & Hanover Volkswagen,Hanover Honda & Hanover Volkswagen,,5A 29-31,Possible truncated existing identity — do not duplicate,,
+131,Harkness Equipment,Harkness Equipment,,1B 15,Represented — normalized name or reviewed alias,aeb7774d-1e29-4018-8ad1-a6270fafe8c0,"Harkness Equipment, Harriston"
+132,Harry Buurma - free bibles,Harry Buurma,Rural Living 2,,Proven indoor candidate — representation decision pending for CarePartners,,
+133,HDTV & Electronics,HDTV & Electronics,Rural Living 2,,Proven indoor candidate — representation decision pending for CarePartners,,
+134,Hear Canada,Hear Canada,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+135,HearingLife Canada,HearingLife Canada,Commercial,,Represented — normalized name or reviewed alias,db8358ab-6aca-4cc1-9500-c20ae81c4c9c,HearingLife Canada
+136,Heatmaster (Highway 511 Heating),Heatmaster SS (Highway 511 Heating Solutions Inc),,2A 25-27,Represented — normalized name or reviewed alias,5c20ae03-5c55-5f07-8a69-7bc68e025a76,"Heatmaster (Highway 511 Heating), Perth"
+137,Heavenly Dreams Ice Cream Inc.,Heavenly Dreams Ice Cream Inc.,Food,4A 37,Represented — normalized name or reviewed alias,98c794d2-c2c6-5537-bd4c-5316f1a9b465,Heavenly Dreams Ice Cream Inc
+138,Heavy Equipment Care Ltd.,Heavy Equipment Care Ltd.,,1A 32-34,Represented — normalized name or reviewed alias,1a5fd8ed-ba9f-5306-99b7-c566e77b7174,"Heavy Equipment Care Ltd.,Durham"
+139,Highland Outbuildings,Highland Outbuildings,,4A 28,Represented — normalized name or reviewed alias,38dd8b37-f53d-5a49-b97a-ca04b49f4256,"Highland Outbuildings, Angus"
+140,Hip Town Hype,Hip Town Hype,,4A 14,Represented — normalized name or reviewed alias,6f2f724d-4858-5066-ad41-41e8398923da,"Hip Town Hype, Trent Lakes"
+141,HLR Hydraulic Line Repair,HLR Hydraulic Line Repair,,1B 28,Represented — normalized name or reviewed alias,6f0f3ab1-04f9-540d-b72a-2535b2fe59bc,"HLR Hydraulic Line Repair, Orangeville"
+142,Hometown Street Eats,Hometown Street Eats,Food,Lounge,Represented — normalized name or reviewed alias,a7971766-a77f-5ce5-9ce4-2f29808a1849,"Hometown Street Eats, Drayton"
+143,Huron County,County of Huron,Rural Living 2,,Represented — normalized name or reviewed alias,464f0a56-2cfb-42ba-9d27-59324d17ec16,Huron County
+144,Huron Tractor Ltd.,Huron Tractor Ltd.,,1A 25-27,Represented — normalized name or reviewed alias,01ed2846-d1d8-5c9e-a365-637c839b3f7d,"Huron Tractor Ltd., Walkerton"
+145,Huron-Bruce Provincial Liberal Association,Huron-Bruce Provincial Liberal Association,,3A 06 -N,Represented — normalized name or reviewed alias,bdb80694-dc56-54c3-a75d-e087aa2fe2cc,Huron-Bruce Provincial Liberal Association
+146,Huronia Welding,Huronia Welding - Med-E-Ox Mobility,,1A 29,Represented — normalized name or reviewed alias,b502c8eb-8115-555e-b00d-830e5606c36c,Huronia Welding
+147,Hydro One,Hydro One,,East 5,Represented — normalized name or reviewed alias,5ad9b389-f533-5b1f-8458-95c3e18134ed,Hydro One
+148,iLGi Canada,Bambrook Farm Equipment Inc.,,1A 05,Represented — normalized name or reviewed alias,4f2e7b8c-17aa-5780-b8f9-3139d37341f6 | 2b4480b3-5c43-428a-9e72-fd537d75e31e,Bambrook Farm Equipment | iLGi Canada
+149,Iron-Haven Structures,Iron-Haven Structures,,1B 35**,Missing directory name with explicit lot — outside indoor-addition scope,,
+150,It's About You by Christine Lennips,It's About You,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+151,J&H Sales and Service,J&H Sales and Service,,1A 13-15,Represented — normalized name or reviewed alias,ed5c65db-fabc-5e09-bac2-abe5d715abe4,"J&H Sales and Service, Chesley"
+152,J.A. Porter Holdings (Lucknow) Ltd.,J.A. Porter Holdings (Lucknow) Ltd.,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+153,Jeff's Catering,Jeffs Catering,Food,4A 38,Represented — normalized name or reviewed alias,da60dc40-1348-4a28-bba4-d72f96e9e258,"Jeff’s Catering, Uxbridge"
+154,Joe Carter - Group Benefits Specialist,Joe Carter - Group Benefits Specialist,Commercial,,Represented — normalized name or reviewed alias,b16de7a5-f57f-4789-bf01-735f6831ac80,Joe Carter - Group Benefits Specialist
+155,John Ernewein Limited,John Ernewein Limited,,1B 29,Represented — normalized name or reviewed alias,48df3f37-4bb4-46fc-b218-20722b7e5cb8,"John Ernewein Limited, Walkerton"
+156,JSC Factory Direct Inc.,JSC Factory Direct Inc.,,4B 13,Represented — normalized name or reviewed alias,795f3984-0b5b-4325-9142-e4d3a3901118,"JSC Factory Direct Inc., Barrie"
+157,JW Custom Fab,JW Custom Fab,,5A 21 ,Represented — normalized name or reviewed alias,319f7c2d-22e3-4945-8c4d-caa3d9ad7ff4,"JW Custom Fab, Cargill"
+158,K and S Boat and Sled,Kreations Candy and Treats / K and S Boat and Sled,,4B 34,Represented — normalized name or reviewed alias,5e1c39f7-d7c4-4bc7-9353-1b426bbbd4fd,K and S Boat and Sled
+159,Kenworth / TRP Hanover,Kenworth Truck Centres,,4A 01-03,Represented — normalized name or reviewed alias,980273b0-4ce6-4e72-9c33-53d00733a54f,"Kenworth / TRP Hanover, Hanover"
+160,Kincardine & Community Health Care Foundation,Kincardine & Community Health Care Foundation,Rural Living 2,,Proven indoor candidate — representation decision pending for CarePartners,,
+161,Kinectrics Inc.,Kinectrics Inc.,Nuclear,,Unconfirmed physical grouping,,
+162,Kodiak Boots,Workwear Outfitters (Kodiak) ,,2B 06,Represented — normalized name or reviewed alias,f1af824a-d4c0-5d98-b23f-847446d4f5fd,"Kodiak Boots, Cambridge"
+163,Kreations Candy and Treats,Kreations Candy and Treats / K and S Boat and Sled,,4B 34,Represented — normalized name or reviewed alias,b42f10a0-24ec-407b-b635-85a292c68f05,"Kreations Candy and Treats, Hanover"
+164,Krown Rust Control,Canadian Krown Dealers Inc./Krown Rust Control,,5A 20,Represented — normalized name or reviewed alias,231ca38a-08f3-54de-8834-d9b7f44b399b,"Krown Rust Control, Schomberg"
+165,Lambton Conveyor Ltd,Lambton Conveyor Ltd,,1B 13-14,Represented — normalized name or reviewed alias,e71d4eee-3a16-43f7-9dc5-68509adeb7e2,"Lambton Conveyor Ltd., Wallaceburg"
+166,LaSalle Agri Inc.,LaSalle Agri Inc.,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+167,LeafFilter Gutter Protection,LeafFilter Gutter Protection,Agriculture,,Represented — normalized name or reviewed alias,3383bf0f-7040-4292-b672-b8f546e6f90b,LeafFilter Gutter Protection
+168,Leslie Motors Ford,Leslie Motors Ford,,5A 13-14,Represented — normalized name or reviewed alias,1291cd01-94b3-457e-bf3e-31fe49769688,"Leslie Motors Ford, Walkerton"
+169,Lez Eats,LMB Connections Inc. / Lez Eats,Food,1B 37,Represented — normalized name or reviewed alias,d01d595a-1d1f-57fd-a56a-b6fb81b06f7b,"Lez Eats, Creemore"
+170,Libro Credit Union,Libro Credit Union,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+171,Liesemers Home Hardware,Liesemers Home Hardware,,4A 25,Represented — normalized name or reviewed alias,b0d60a72-d427-4896-9936-1f15c79ca9a8,"Liesemers Home Hardware, Mildmay"
+172,Lil' Country Woodshop Ltd.,Lil' Country Woodshop Ltd.,,4B 25,Represented — normalized name or reviewed alias,8cec8e17-dd34-54e9-84b2-0a91b529ec24,"Lil’ Country Woodshop Ltd., Alma"
+173,Listowel Hearing Centre,Listowel Hearing Centre,,4B 07,Represented — normalized name or reviewed alias,3eb56cf2-6c4c-4a36-bdd4-271177d1b783,"Listowel Hearing Centre, Listowel"
+174,Little Bowl,Little Bowl / 2717025 Ont Inc,Food,4B 10 **,Missing directory name with explicit lot — outside indoor-addition scope,,
+175,LiUNA Local 1059,LiUNA Local 1059,Nuclear,,Unconfirmed physical grouping,,
+176,London Eco-Metal Manufacturing,London Eco-Metal Manufacturing,Rural Living 1,,Proven indoor candidate — representation decision pending for CarePartners,,
+177,Lucan Biddulph Recreation Committee,Lucan Biddulph Recreation Committee,,4B 23,Represented — normalized name or reviewed alias,20f1eef1-1c99-454b-8a5c-698afcb1985c,"Lucan Biddulph Recreation Committee, Lucan"
+178,Maitland Valley Conservation Authority,Maitland Valley Conservation Authority,,5B 10-12,Represented — normalized name or reviewed alias,7c620123-0386-52db-a897-4a48292e4f22,Maitland Valley Conservation
+179,Maple Court Retirement,Maple Court Retirement,,4B 08 - N,Represented — normalized name or reviewed alias,054d5eeb-3c43-5637-8086-0740fa345d33,Maple Court Retirement
+180,Maple Lane Farm Service,Maple Lane Farm Service,,1A 18-20,Represented — normalized name or reviewed alias,f86f55a1-a099-5abe-9562-39b0b7450405,"Maple Lane Farm Service, Mount Forest"
+181,Marcc Apparel,Marcc Apparel,,3A 19,Represented — normalized name or reviewed alias,2fc6c262-4b4d-5d22-9163-67d01affc897,"Marcc Apparel, Mount Forest"
+182,Marcrest Manufacturing Inc.,Marcrest Manufacturing Inc.,,1A 22-24,Represented — normalized name or reviewed alias,2f803208-3db9-461e-8e00-d95ade31be75,"Marcrest Manufacturing Inc., Listowel"
+183,Marquardt Farm Drainage,Marquardt Farm Drainage Ltd.,,2B 21,Represented — normalized name or reviewed alias,001b990b-7d8c-59a6-9628-91ed7b659501,"Marquardt Farm Drainage, Palmerston"
+184,Martin's Land Management,Martin's Land Management,,5A 36,Represented — normalized name or reviewed alias,ac62d592-18e5-42b8-94cf-094a5a7fb3cd,"Martin’s Land Management, Blyth"
+185,McCullough Tirecraft,McCullough Tirecraft,,2B 24,Represented — normalized name or reviewed alias,276ea1c4-7834-4d9c-bb1d-b090494cea2d,"McCullough Tirecraft, Paisley"
+186,McDougall Energy Inc.,McDougall Energy Inc.,Agriculture,,Represented — normalized name or reviewed alias,bdfa0c9c-0c6e-4108-b898-3f41f2f74807,McDougall Energy Inc.
+187,McDougall Energy Inc.,McDougall Energy Inc.,Rural Expo Courtyard,,Represented — normalized name or reviewed alias,bdfa0c9c-0c6e-4108-b898-3f41f2f74807,McDougall Energy Inc.
+188,Meat & Poultry Ontario,Ontario Independent Meat Processors Association o/a Meat & Poultry Ontario,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+189,Med-E-Ox Mobility,Huronia Welding - Med-E-Ox Mobility,,1A 28,Represented — normalized name or reviewed alias,40957c12-afd1-5bb1-8481-26c9bfe54235,"Med-E-Ox Mobility, Goderich"
+190,Metcalf Food & Beverage Inc.,Metcalf Food & Beverage Inc.,Food,3B 13-14,Represented — normalized name or reviewed alias,9d2341cd-270e-5669-8d74-990ef1838766,Metalf Food & Beverage
+191,Midwest Co-op,Midwest Cooperative Services Inc,,1B 25-27,Represented — normalized name or reviewed alias,38b60d6f-d97d-512e-9510-444f60646405,"Midwest Co-op, Teeswater"
+192,Mike's Wood,Mike's Wood,Artisan,,Represented — normalized name or reviewed alias,b1efb2e2-a52d-485a-93b7-f0e53f0486d7,"Mike's Wood, Elmwood"
+193,Millroad Manufacturing and Sales Inc.,Millroad Manufacturing and Sales Inc.,,1B 23-24,Represented — normalized name or reviewed alias,ab55fe3b-1f16-45db-a994-75e140ebc6e5,Millroad Manufacturing & Sales
+194,Mineva Water,Water Refined Inc. Iba Mineva Water,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+195,Mitchell Cycle Inc.,Mitchell Cycle Inc.,,2A 19-20,Represented — normalized name or reviewed alias,b1280c80-ed82-5b61-a875-4ae2b558a0e0,"Mitchell Cycle Inc., Mitchell"
+196,MowUcontrol,Cornerstone Consulting Services Canada Inc,Rural Living 1,,Proven indoor candidate — representation decision pending for CarePartners,,
+197,MPAC - Municipal Property Assessment Corporation,MPAC - Municipal Property Assessment Corporation,Rural Living 1,,Represented — normalized name or reviewed alias,d7d546d4-2d97-4e22-936c-b7276e2926ee,MPAC - Municipal Property Assessment Corporation
+198,Mr. Kettle Corn,Mr. Kettle Corn Inc.,Food,5A 11,Represented — normalized name or reviewed alias,d4ce21fd-2eb8-5fd8-ab81-8f0776f95886,"Mr. Kettle Corn, Campbellville"
+199,Multi Shelter Solutions,Multi Shelter Solutions,,2A 01-02,Represented — normalized name or reviewed alias,cd66378b-d4bc-57f6-bdaa-bd3806d1e226,"Multi Shelter Solutions, Palmerston"
+200,Nana's Sewing Basket,Nana's Sewing Basket,Artisan,,Represented — normalized name or reviewed alias,557385b5-4aac-424e-a00b-660800f0c543,"Nana's Sewing Basket, Walkerton"
+201,National Energy Equipment Inc.,National Energy Equipment Inc.,,2B 15 - N,Represented — normalized name or reviewed alias,9ef92046-0bef-557b-9739-8c0a90888010,National Energy Equipment Inc.
+202,Natural Stitch Designs,Natural Stitch Designs,Artisan,,Represented — normalized name or reviewed alias,f2f40011-8138-4f50-bb92-48e0ce605ed3,"Natural Stitch Designs, Amaranth"
+203,Norfolk Drone Services,Norfolk Drone Services,,1B 07 ***,Conflicting assignment — human confirmation,,
+204,Northern Fabrication,Northern Fabrication,,4A 14,Conflicting assignment — human confirmation,,
+205,Northern Flyer Design (Ken Thornburn),Northern Flyer Design (Ken Thornburn),Artisan,,Represented — normalized name or reviewed alias,e3b3d8ca-c12b-485e-bf42-bc3ee2f605be,"Northern Flyer Design (Ken Thornburn), Tara"
+206,Northern Leisure Products Ltd.,Moonlight Sauna Inc.,,4A 26-27,Represented — normalized name or reviewed alias,451f9696-65a0-5333-81c8-8a96528056b6,"Northern Leisure Products Ltd., Wroxeter"
+207,Norwex,Norwex,Commercial,,Represented — normalized name or reviewed alias,65e03aa7-8bec-4465-a7a7-83ce3c22abc2,Norwex
+208,Oasis Therapy,PLS Insoles (Oasis Therapy),Commercial,,Represented — normalized name or reviewed alias,19c4141d-9ce0-4a98-bc7c-2ae658ba2b20,Oasis Therapy
+209,OK Tire Kincardine,KinFarm Tire Ltd.,,2A 06,Represented — normalized name or reviewed alias,f9b89b9b-6c4f-40ef-a246-bb26e1dae66a,"OK Tire Kincardine, Kincardine"
+210,Old Country Leather,Old Country Leather,,4B 24,Represented — normalized name or reviewed alias,601fbb68-e23d-5bb4-baa9-c6ad4a060efe,"Old Country Leather, Chesley"
+211,Ontario Agri-Food Discovery Centre,Ontario Agri-Food Discovery Centre,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+212,Ontario Association of Agriculture Societies,Ontario Association of Agriculture Societies (OAAS),Education,,Unconfirmed physical grouping,,
+213,Ontario Bean Growers,Ontario Bean Growers,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+214,Ontario Cattle Feeders’ Association/Ontario Corn Fed Beef,Ontario Cattle Feeders’ Association/Ontario Corn Fed Beef,,2B 07,Represented — normalized name or reviewed alias,a289e824-af93-5280-9920-4a0f368254ac,Ontario Cattle Feeders Association
+215,Ontario Dairy Goat Co-operative,Ontario Dairy Goat Co-operative ,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+216,Ontario Flag and Pole,Ontario Flag and Pole,,3A 07,Represented — normalized name or reviewed alias,07ae58c3-8333-5bd3-a44e-94e2fb9dd0cf,"Ontario Flag and Pole, Sutton West"
+217,Ontario Fur Managers Federation,Ontario Fur Managers Federation,Education,,Represented — normalized name or reviewed alias,c965a55b-6079-4aad-83ef-25e8029a4275,Ontario Fur Managers Federation
+218,Ontario Government,OMAFA - Ontario Government,,3B 19-24,Represented — normalized name or reviewed alias,ea600d40-10e9-4dfb-b232-a0a65fdcf9dc,Ontario Government
+219,Ontario Landowners Association,Ontario Landowners Association,,2B 18,Represented — normalized name or reviewed alias,78872f2a-d229-44cf-ae91-32a902b88389,"Ontario Landowners Association, Elmwood"
+220,Ontario Mutual Insurance Association,Ontario Mutual Insurance Association,,3A 20-24,Represented — normalized name or reviewed alias,4e21f0a7-a849-4836-a018-b4e6377df6dc,Ontario Mutual Insurance Association
+221,Ontario PC Caucus,PC Caucus Servies - Ontario PC Caucus,,3B 18,Represented — normalized name or reviewed alias,36cd75e0-d95a-4cc2-99e1-5c460cc0a2cf,Ontario PC Caucus
+222,Ontario Phragmites Action,Invasive Species Centre,Agriculture,,Represented — normalized name or reviewed alias,72e344c1-223b-4f4e-9544-40456b21a939,Ontario Phragmites Action
+223,Ontario Power Generation (OPG),Ontario Power Generation,Nuclear,,Unconfirmed physical grouping,,
+224,Ontario Provincial Police - South Bruce,Ontario Provincial Police - South Bruce,,5A 15-16,Represented — normalized name or reviewed alias,041cfecf-c2d8-5ffe-b19c-792667708f43,Ontario Provincial Police - South Bruce
+225,Ontario Sheep Farmers,Ontario Sheep Farmers,Education,,Unconfirmed physical grouping,,
+226,Ontario Youth Apprenticeship Program (OYAP),Ontario Youth Apprenticeship Program (OYAP),Education,,Represented — normalized name or reviewed alias,9f7fd4cf-fe95-4d75-88ff-13a899280283,Ontario Youth Apprenticeship Program (OYAP)
+227,Paisley Drive Designs,Paisley Drive Designs ,Artisan,,Represented — normalized name or reviewed alias,421f2f71-ea28-43c1-a7d2-e316b9e45842,"Paisley Drive Designs, Chesley"
+228,"Parrish & Heimbecker, Ltd","Parrish & Heimbecker, Ltd",Agriculture,,Represented — normalized name or reviewed alias,0b03a71a-bb5e-461b-8af9-b303298f8b61,"Parrish & Heimbecker, Ltd"
+229,Paul Grewall Novelties Ltd.,Paul Grewall Novelties Ltd.,,4A 11,Represented — normalized name or reviewed alias,7eee91bc-4487-5006-b808-4ffb836d263c,"Paul Grewall Novelties Ltd., Brampton"
+230,PIKA PIKA,PIKA PIKA Foods Inc,Rural Living 2,,Represented — normalized name or reviewed alias,c2f887e0-c182-4fe3-a124-c5ea39f0c56c,PIKA PIKA
+231,Playtime Casino Hanover,Playtime Casino Hanover,Commercial,,Represented — normalized name or reviewed alias,f4fa6a81-0991-4f33-9c19-bb049c6cbb97,Playtime Casino Hanover
+232,Postech Screw Piles,Postech Screw Piles,,2A 29,Represented — normalized name or reviewed alias,3f4f5e08-19e2-4be2-84f4-5bde645d5dc8,"Postech Screw Piles, Markdale"
+233,Primerica,Primerica,,4B 27,Represented — normalized name or reviewed alias,b1648352-eebe-452b-a022-ffd1e8cd4659,"Primerica, Hanover"
+234,Pro Cart,Pro Cart,,5A 19,Represented — normalized name or reviewed alias,d43060eb-1136-597f-b4ec-c44de517ba14,Pro Cart
+235,Pro Fleet Care,Pro Fleet Care,Rural Living 2,,Proven indoor candidate — representation decision pending for CarePartners,,
+236,ProResp Inc,ProResp Inc,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+237,Quality Homes,Quality Homes,,3A 09-12,Represented — normalized name or reviewed alias,0df6baad-ed21-5262-b0a8-5771faf56bce,"Quality Homes, Kenilworth"
+238,Quality Seeds Ltd,Quality Seeds Ltd,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+239,Rachel Joy Jewellery,Rachel Joy Jewellery,Artisan,,Represented — normalized name or reviewed alias,a4947094-8c16-5fcb-903f-d0073ae78023,"Rachel Joy Jewellery, Kincardine"
+240,RAM Truck Corral,RAM Truck Corral,,South 1,Site feature / attraction — not added,,
+241,Reformed Evangelistic Outreach,Reformed Evangelistic Outreach,,4B 14,Represented — normalized name or reviewed alias,3e324cae-84da-45f6-9f2c-b9201d65e86e,"Reformed Evangelistic Outreach, Ancaster"
+242,Rintoul's Pools & Hot Tubs,Rintoul's Pools & Hot Tubs - duplicate fix,,2B 30-31,Represented — normalized name or reviewed alias,fa3d7bc2-5810-466d-b041-edf8cffaaf3a,"Rintoul’s Pools & Hot Tubs, Owen Sound"
+243,RMP Metal Works,RMP Metal Works,,4B 26,Represented — normalized name or reviewed alias,33761caa-c08b-43fe-80ed-c853cb948963,"RMP Metal Works, Mount Forest"
+244,Robert's Equipment,Robert's Equipment,,1A 01-04,Represented — normalized name or reviewed alias,c6f51443-af42-5f5b-a721-56003fffc888,"Robert’s Equipment, Chesley"
+245,Rogers Communications (Cell Tower),Rogers Communications (CoW),,North,Represented — normalized name or reviewed alias,e5a48235-3331-5d0f-bff3-044fe48ae753,Rogers Cell Tower
+246,"Royal Bank of Canada (""RBC"")",Royal Bank of Canada,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+247,Royal Homes,Royal Homes Corporation,,2A 31-32,Represented — normalized name or reviewed alias,2be13b1c-4a62-4a39-9050-c9795a00d9f3,"Royal Homes, Wingham"
+248,Rural Home Care,Rural Home Care,Rural Living 1,,Represented — normalized name or reviewed alias,f5b057d7-2036-467d-b45e-6008fcc3bcc1,Rural Home Care
+249,Rural Ontario Institute/AALP,Rural Ontario Institute / AALP ,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+250,Saugeen Economic Development Corporation,Saugeen Economic Development Corporation,Agriculture,,Represented — normalized name or reviewed alias,42aaed65-6d65-47c5-b938-74315db706a6,Saugeen Economic Development Corporation
+251,Scatterbrain Creations by Paige & Mom,Scatterbrain Creations by Paige & Mom,,4A 13,Represented — normalized name or reviewed alias,8bc0e5f3-250b-53e2-914f-9e772ff4449c,Scatterbrain Creations by Paige & Mom
+252,Schmidt's Farm Drainage,Schmidt's Farm Drainage,Agriculture,,Represented — normalized name or reviewed alias,843e1734-6422-4cab-9107-d9632a28698e,Schmidt's Farm Drainage
+253,Set Free Healing,Set Free Healing,Rural Living 2,,Proven indoor candidate — representation decision pending for CarePartners,,
+254,Shiva Fashion Inc,Shiva Fashions Inc,,4A 24,Represented — normalized name or reviewed alias,4d5f1aa5-31ea-558c-916a-62eaf36895a3,"Shiva Fashion Inc, Scarborough"
+255,Shouldice Stone,Shouldice Stone,,2A 33,Represented — normalized name or reviewed alias,f311640d-efb0-45b7-a173-4830632528fe,"Shouldice Stone, Shallow Lake"
+256,Skills Ontario,Skills Ontario - Ontario Competences Canada,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+257,SMG Champion Sawmills,Clark Code Repairs,,5A 35,Represented — normalized name or reviewed alias,686e6288-b6b6-5e68-a433-6004f26533f5,"SMG Champion Sawmills, Oxford Mills"
+258,Smyth Welding & Machine Shop Ltd.,Smyth Welding & Machine Shop Ltd.,,1A 30-31,Represented — normalized name or reviewed alias,38d294e6-c677-42c2-9ce0-50ea5f2e0e37,"Smyth Welding & Machine Shop Ltd., Auburn"
+259,Snobelen Farms Ltd.,Snobelen Farms Ltd.,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+260,Society of United Professionals,Society of United Professionals,Nuclear,,Unconfirmed physical grouping,,
+261,Soleno Inc.,Soleno Inc.,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+262,Solera Solar Lighting,Light Efficient Design - Solar,Agriculture,,Proven indoor candidate — representation decision pending for CarePartners,,
+263,Speedway Trailers,Speedway Trailers / 2795604 Ontario Inc /,,1B 09-12,Represented — normalized name or reviewed alias,df690400-2416-50e3-9e47-6f6211305a35,"Speedway Trailers, Cambridge"
+264,Sprucedale Agromart Ltd.,Sprucedale Agromart Ltd. ,,2B 01-02,Represented — normalized name or reviewed alias,771c706e-07d4-4670-b3be-ec73e84a19a0,"Sprucedale Agromart Ltd., Hanover"
+265,Starbright Industry Inc.,Starbright Industry Inc.,,1A 08,Represented — normalized name or reviewed alias,b301ff51-3cfb-4551-ae4f-68d89d262650,"Starbright Industry Inc., Listowel"
+266,StumpedIt,StumpedIt,,5A 33,Represented — normalized name or reviewed alias,cb4a17b1-8ea6-4995-b585-d8b44e8ed861,"StumpedIt, Clinton"
+267,Superior Meats,Superior Meats,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+268,Surf & Turf Instant Shelters Inc,Surf & Turf Instant Shelters Inc,,2B 28,Represented — normalized name or reviewed alias,c75c2127-8422-53d6-9c8b-e2746eca0e77,"Surf & Turf Instant Shelters Inc, Smithville"
+269,Susan Seitz,Susan Seitz,Artisan,,Represented — normalized name or reviewed alias,12b95efc-6dc2-4794-92a2-0fb3ac1d8c3c,"Susan Seitz, Walkerton"
+270,SV Law,SV Law,Commercial,,Represented — normalized name or reviewed alias,b574de87-5059-488d-841b-2728fb5227d4,SV Law
+271,Teeswater Agro Parts Ltd.,Teeswater Agro Parts Ltd.,,1A 21,Represented — normalized name or reviewed alias,b81fa732-3f9b-55a6-b997-2f91d050f1ad,Teeswater Agro Parts Ltd
+272,Teeswater Concrete Ltd,Teeswater Concrete Ltd,,1B 32-34,Represented — normalized name or reviewed alias,0c95c985-d68e-47eb-bce4-68c5ebabebaf,"Teeswater Concrete Ltd, Teeswater"
+273,Teeswater Laser,Teeswater Laser,Rural Living 1,,Represented — normalized name or reviewed alias,2349eab4-0602-421f-b0f6-b07949c227eb,Teeswater Laser
+274,Tenth Street Wealth Management - Raymond James,Raymond James,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+275,The Back 40 Smoke Box,TheBack40 Inc,Food,4B 33 **,Missing directory name with explicit lot — outside indoor-addition scope,,
+276,The Insurance Market,The Insurance Market,Rural Living 1,,Represented — normalized name or reviewed alias,34e10e60-9e05-4461-9350-d85fb6babb70,The Insurance Market
+277,The Kirstine-Ellis Group,The Kirstine-Ellis Group,Rural Living 2,,Proven indoor candidate — representation decision pending for CarePartners,,
+278,The Miller Group,The Miller Group / Miller Paving Ltd.,Agriculture,,Represented — normalized name or reviewed alias,79c70f83-6ff1-41b1-9b88-81ec1a52e64b,The Miller Group
+279,The Quilt Jeannie,The Quilt Jeannie,Quilts,,Represented — normalized name or reviewed alias,125044e1-87e9-403a-ba52-73a3826f0de7,The Quilt Jeannie
+280,The WOMB Bruce County,The WOMB Bruce County,Rural Living 2,,Represented — normalized name or reviewed alias,215cc6ac-a0ef-4157-b2c3-2300a4727d2b,The WOMB Bruce County
+281,Thede Acres Alpacas,Thede Acres Alpacas,Rural Living 2,,Represented — normalized name or reviewed alias,3760419b-7bb3-41b8-becd-c2e028b4ca27,Thede Acres Alpacas
+282,Tilly's Fresh Fair Style Lemonade,Tilly's Carnival Favorites,Food,3B 05 **,Missing directory name with explicit lot — outside indoor-addition scope,,
+283,Titanium Gourmet Inc.,Titanium Gourmet Inc.,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+284,Toromont Cat,Toromont Cat,,1B 30-31,Represented — normalized name or reviewed alias,b33c0148-7c81-5869-840d-0bfd15c2020e,"Toromont Cat, Concord"
+285,Township of North Huron,Township of North Huron,,4B 01,Represented — normalized name or reviewed alias,ceee2669-10f5-4f4e-9fc6-b83af3cb945e,"Township of North Huron, Wingham"
+286,Transit Trailer Ltd.,Transit Trailer Ltd.,,2A 03-04,Represented — normalized name or reviewed alias,d5749364-7845-5656-96c9-5d5f34f078f7,Transit Trailer Ltd
+287,TreeGirl Henna,TreeGirl Henna,Commercial,,Represented — normalized name or reviewed alias,73abc49e-5b32-49a9-ba05-dfa04bdb577c,TreeGirl Henna
+288,Treemendous Tree Sales & Transplanting,Treemendous Tree Sales & Transplanting,,5A 32,Represented — normalized name or reviewed alias,9efea015-7697-44b4-a27f-5c1b605b81d6,Treemendous Tree Sales & Transplanting
+289,Turquesa Mexican Food,Turquesa Mexican Food,Food,2B 25 **,Missing directory name with explicit lot — outside indoor-addition scope,,
+290,UBC Local 2222,UBC Local 2222,Nuclear,,Unconfirmed physical grouping,,
+291,Uber Canada,Uber Canada,Commercial,,Proven indoor candidate — representation decision pending for CarePartners,,
+292,United Rentals,United Rentals,,2B 16-17,Represented — normalized name or reviewed alias,8a575b7b-f478-5422-9eef-efe2e5a71c5d,"United Rentals, Walkerton"
+293,University of Guelph,University of Guelph,,3B 16-17,Represented — normalized name or reviewed alias,0dccef26-1036-5abd-aac2-640f424033fa,"University of Guelph, Guelph"
+294,Valard Construction,Valard Construction LP,,5A 39-42,Represented — normalized name or reviewed alias,0bd5ea4a-dae9-59b1-acf0-3547467cf4d0,"Valard Construction, Vaughan"
+295,Victim Services Bruce Grey,Victim Services Bruce Grey,Rural Living 1,,Proven indoor candidate — representation decision pending for CarePartners,,
+296,Walker,Walker Industries,,3A 05,Represented — normalized name or reviewed alias,cbf78721-1b06-580e-a061-d8da29137eee,Walker
+297,Walkerton & District Hospital Foundation,Walkerton & District Hospital Foundation,,3B 06,Possible truncated existing identity — do not duplicate,,
+298,Walkerton Clean Water Centre,Walkerton Clean Water Centre,Rural Living 1,,Represented — normalized name or reviewed alias,e1965785-7bae-466f-a0ec-153577c3bd52,Walkerton Clean Water Centre
+299,Walkerton Toyota,Walkerton Toyota,,5A 17-18,Represented — normalized name or reviewed alias,e44c33ae-9215-4f2c-9c57-60fa45ecc648,"Walkerton Toyota, Walkerton"
+300,Wallenstein Equipment Inc.,Wallenstein Equipment Inc,,1B 01-04,Represented — normalized name or reviewed alias,cab591f1-b93a-533d-9291-68a0c075027c,"Wallenstein Equipment Inc., Wallenstein"
+301,Wash Bay Products Inc,Wash Bay Products Inc,,2A 08,Represented — normalized name or reviewed alias,8fe67fa6-e0ca-496d-95c9-9069ed38169a,"Wash Bay Products Inc, Mildmay"
+302,Water and Wellness,Water and Wellness,,4B 36-38,Represented — normalized name or reviewed alias,8139913d-6b7a-4eba-bcfa-e2f21ca2f5e8,"Water and Wellness, Walkerton"
+303,We Cater Food on Wheels,We Cater Food on Wheels,Food,4B 11,Represented — normalized name or reviewed alias,d3b7ad4d-cff8-5a57-939d-a44a316001ea,"We Cater Food on Wheels, York"
+304,WeCover Structures,WeCover Structures,Agriculture,,Represented — normalized name or reviewed alias,096575d8-9155-4f08-a307-44d60a3e2596,Wecover Structures
+305,Weldesign Hardware Inc.,Weldesign Hardware Inc.,,2B 22 - N,Represented — normalized name or reviewed alias,9e597f9a-0607-567e-816e-8f58904a308d,"Weldesign Hardware Inc., Burgessville"
+306,Weppler Farm Machinery Ltd.,Weppler Farm Machinery Ltd.,,1A 16,Represented — normalized name or reviewed alias,3e66a69a-8ef2-48d8-b1ec-69a4f25a0b9b,"Weppler Farm Machinery Ltd., Ayton"
+307,Western Ontario Wardens Caucus,Western Ontario Wardens Caucus,Rural Expo Courtyard,,Proven indoor candidate — representation decision pending for CarePartners,,
+308,What's Cookin' Food Trailer,What's Cookin' Food Trailer,Food,2A 12,Represented — normalized name or reviewed alias,63fb0f49-256e-511e-8102-bbf03765ca1f,What's Cookin' Food Trailer
+309,Whisky & Wine Rustic Design Co.,Whisky & Wine Rustic Design Co.,Artisan,,Proven indoor candidate — representation decision pending for CarePartners,,
+310,Wild Willies Food Truck,Wild Willies Food Truck,Food,2B 26 - N,Represented — normalized name or reviewed alias,7dda3a67-39ed-56a8-b965-5196fa4a65a8,"Wild Willies Food Truck, Bayfield"
+311,Wildflower Designs,Wildflower Designs,Artisan,,Represented — normalized name or reviewed alias,cda2170e-a9ca-4c58-b8ba-75884ec3579e,"Wildflower Designs, Shallow Lake"
+312,Wilson Developments,Wilson Developments / 5153745 Ontario Inc.,Rural Living 1,,Represented — normalized name or reviewed alias,3c2093d3-f87d-44e9-9062-3e029f932769,Wilson Developments
+313,Women's House Serving Bruce and Grey,Women's House Serving Bruce and Grey,,4B 06,Possible truncated existing identity — do not duplicate,,
+314,Wonderfull Inc.,Wonderfull Inc.,,2B 05,Represented — normalized name or reviewed alias,342201a1-273f-4928-ae3d-b9c967edf69d,"Wonderfull Inc., Innisfil"
+315,Work Authority,Work Authority - Hanover,Rural Living 2,,Proven indoor candidate — representation decision pending for CarePartners,,
+316,Work N Wear,Work N Wear,,2A 22-24,Represented — normalized name or reviewed alias,bb547ee3-95c7-5a03-8bb9-4ef1af6c1f23,"Work N Wear, Markham"
+317,WT Living,W.T. Land LP,Rural Living 1,,Proven indoor candidate — representation decision pending for CarePartners,,
+318,Xplore Inc.,Xplore Inc.,,3B 03,Represented — normalized name or reviewed alias,c89afdd0-3381-5d75-b677-1f45ecd8f8c9,"Xplore Inc., Markham"
+319,YMCA Owen Sound Grey Bruce - Employment Services,YMCA Owen Sound Grey Bruce - Employment Services,Rural Living 2,,Represented — normalized name or reviewed alias,23bb582a-b74a-4013-adb9-312803cac3bc,YMCA Owen Sound Grey Bruce - Employment Services
+320,Your Ultimate Structures Inc.,Your Ultimate Structures Inc.,,2A 09 - N,Represented — normalized name or reviewed alias,079016da-3510-5e2d-a127-c2eb0b5f9810,"Your Ultimate Structures Inc., Beachville"
+321,Antiques and Historical Areas,Antiques and Historical Displays,,South 2 & 3,Site feature / attraction — not added,,
+322,Artisan Vendors Tent,Artisan Tent,,2B 33-38,Site feature / attraction — not added,,
+323,Canadian Cowgirls,Canadian Cowgirls,,5A 05-10,Site feature / attraction — not added,,
+324,CarePartners Family Centre (including First Aid and Lost Persons),"Family Centre, First Aid and Lost Persons Tent",,3A 25 - 28,Site feature / attraction — not added,,
+325,CKNX Centennial Pavilion (Lounge) and Grain Farmers of Ontario Stage,CKNX Centennial Pavilion (Lounge),,West 3,Site feature / attraction — not added,,
+326,Commercial Market Tent (Exhbitors & Vendors),Commercial Tent,,4A 05-10,Site feature / attraction — not added,,
+327,Dancing Tractors / Combine Derby,Dancing Tractors / Combine Derby,,West 2,Site feature / attraction — not added,,
+328,Enviro-Farm,Enviro-Farm,,1B 16-22,Site feature / attraction — not added,,
+329,Equipment Demo Area,Equipment Demo Area,,West 1,Site feature / attraction — not added,,
+330,Grain Farmers of Ontario VIP Tent,GFO VIP Tent,,3B 33-38,Site feature / attraction — not added,,
+331,Great Canadian Lumberjacks,Great Canadian Lumberjacks,,1A 35-38,Site feature / attraction — not added,fb1f11fa-5cbe-5618-a233-594b716eea62,Great Canadian Lumberjacks
+332,Hydro One Education Centre,Hydro One Education Centre - Education Committee,,South 4,Site feature / attraction — not added,,
+333,Media Centre,Media Centre,,1A 07,Site feature / attraction — not added,,
+334,MNP Lifestyles Tent,Lifestyles Tent,,East 2,Site feature / attraction — not added,,
+335,Ontario Mutuals Main Stage in the Britespan Building,Main Stage,,3B 28-32,Site feature / attraction — not added,,
+336,Ontario Plowmen's Association Welcome Centre,Ontario Plowmen's Association Welcome Centre,,3B 25-27,Site feature / attraction — not added,,
+337,Partnership Park,Partnership Park,,3A 29-35,Site feature / attraction — not added,,
+338,Quilt Tent,Quilt Tent,,3A 39-44,Site feature / attraction — not added,,
+339,Rural Expo Courtyard presented by the Ontario Propane Association,Rural Expo Courtyard,,3B 39-44,Site feature / attraction — not added,,
+340,Rural Living Tent #1 (Exhibitors & Vendors),Rural Living Tent,,4A 16-21,Site feature / attraction — not added,,
+341,Rural Living Tent #2 (Exhibitors & Vendors),Rural Living Tent,,4B 17-22,Site feature / attraction — not added,,
+342,Souvenir Tent - IPM 2026,Souvenir Tent / Cookbooks,,3A 36-38,Site feature / attraction — not added,,
+343,Teeswater Concrete Farming for the Future Tent,Agriculture Tent,,1B 16-22,Site feature / attraction — not added,,
