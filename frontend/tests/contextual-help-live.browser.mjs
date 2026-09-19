@@ -1,0 +1,14 @@
+// Canonical staging smoke with actual public Schedule/vendor responses, never writes.
+import assert from 'node:assert/strict';import fs from 'node:fs';
+const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
+const base='https://staging.theipm.ca',out=process.env.IPM_TEST_OUTPUT||'.artifacts/contextual-help/live';fs.mkdirSync(out,{recursive:true});
+const browser=await chromium.launch();try{
+ const c=await browser.newContext({viewport:{width:390,height:900},serviceWorkers:'block'});
+ await c.route('**/*',r=>!['GET','OPTIONS'].includes(r.request().method())||/wonderpush|webpushr|google-analytics/.test(r.request().url())?r.abort():r.continue());
+ await c.addInitScript(()=>{for(const k of ['@ipm_schedule_itinerary_onboarding_v1','@ipm_schedule_event_details_tip_seen_v1','@ipm_schedule_find_on_map_tip_seen_v1','@ipm_vendor_find_on_map_tip_seen_v1','@ipm_maps_tour_seen_v1'])localStorage.setItem(k,'true');});
+ const response=await c.request.get('https://ipm-staging-backend.onrender.com/api/schedule');assert(response.ok());const data=await response.json(),event=data.events.find(e=>e.location_name==='The Beyond Wireless Stage');assert(event);
+ const p=await c.newPage();await p.goto(base+'/schedule?eventId='+event.id);await p.getByTestId('schedule-find-on-map').scrollIntoViewIfNeeded();await p.getByTestId('schedule-find-on-map').click();await p.getByTestId('selected-stage-highlight').waitFor();await p.waitForFunction(title=>document.querySelector('[data-testid=map-selection-title]')?.textContent===title,event.title);const text=await p.getByTestId('map-selection-card').innerText();if(event.start_time)assert(!text.includes(event.start_time));await p.screenshot({path:out+'/event-map.png'});
+ await p.goto(base+'/vendors');await p.getByRole('button',{name:'Vendors Help',exact:true}).waitFor();await p.getByPlaceholder('Search vendors',{exact:true}).fill('Ontario Government');await p.getByTestId('vendor-find-on-map').click();await p.getByTestId('vendor-booth-highlight').waitFor();assert.match(await p.getByTestId('map-selection-title').innerText(),/Ontario Government/);assert(!await p.getByTestId('map-selection-card').innerText().then(t=>t.includes(event.title)));await p.screenshot({path:out+'/vendor-map.png'});
+ await p.goto(base+'/schedule');await p.getByRole('button',{name:'Schedule Help',exact:true}).click();await p.getByText('Plan your day',{exact:true}).waitFor();await p.waitForTimeout(450);await p.screenshot({path:out+'/schedule-help.png'});await p.getByRole('button',{name:'Got it, close Plan your day introduction'}).click();
+ fs.writeFileSync(out+'/actual-record.json',JSON.stringify({id:event.id,title:event.title,location:event.location_name},null,2));console.log('PASS actual staging Schedule event → correct title/highlight/no times; actual Ontario Government → vendor title/highlight; live Schedule/Vendors Help');await c.close();
+}finally{await browser.close();}

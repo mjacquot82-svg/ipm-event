@@ -13,7 +13,7 @@ const {scheduleMapTipEligible,vendorMapTipEligible}=load(new URL('../src/service
 const {EDUCATION_KEYS,MAP_TOUR_STEPS}=load(new URL('../src/services/mapEducationState.ts',import.meta.url));
 test('five current map steps target parking, search, parade, reset and camping',()=>{
  assert.deepEqual(MAP_TOUR_STEPS.map(s=>s.target),['entrances','tented-search','parade-routes','tented-reset','rv']);
- assert.match(MAP_TOUR_STEPS[0].body,/Open Entrances \/ Parking.*official entrance and parking map/);
+ assert.match(MAP_TOUR_STEPS[0].body,/Grounds shows the overall site.*Entrances \/ Parking.*official entrance and parking map/);
  assert.match(MAP_TOUR_STEPS[1].body,/vendor, booth, stage or place/);
  assert.match(MAP_TOUR_STEPS[2].body,/Tap Parade Routes to expand.*Tuesday or Wednesday–Saturday.*blue line and arrows.*Off/);
  assert.match(MAP_TOUR_STEPS[3].body,/Drag.*pinch.*reset/);

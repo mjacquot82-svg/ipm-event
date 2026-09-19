@@ -37,7 +37,7 @@ test('map wires semantic areas, selection, focus, and official SVG source', () =
   assert.match(component, /semanticAreaRect/);
   assert.match(component, /accessibilityLabel={`Select \$\{area\.label\}`}/);
   assert.match(component, /findSemanticAreaForLocation\(initialQuery\)/);
-  assert.match(component, /selectSemanticArea\(semanticArea\)/);
+  assert.match(component, /selectSemanticArea\(semanticArea, initialEventTitle\)/);
 });
 
 

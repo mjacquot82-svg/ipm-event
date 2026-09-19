@@ -1,4 +1,4 @@
-import { FindOnMapTip } from '../../src/components/MapEducation';
+import { FindOnMapTip, ContextualHelpButton, VendorHelpReplay, ContextualEducationReplay } from '../../src/components/MapEducation';
 import { vendorMapTipEligible } from '../../src/services/mapEducationEligibility';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -36,6 +36,8 @@ import { resolveVendorMapQuery, vendorMatchesSearch } from '../../src/config/ven
 import { EXACT_MAP_UNAVAILABLE, vendorHasTrustedMapGeometry } from '../../src/config/mapAvailability';
 
 export default function VendorsScreen() {
+  const [showVendorHelp, setShowVendorHelp] = useState(false);
+  const [helpReplay, setHelpReplay] = useState<React.ContextType<typeof ContextualEducationReplay>>(null);
   usePageAnalytics('vendors', 'home_quick_action', 'vendor_directory_opened');
   const router = useRouter();
   const { frameStyle, sectionStyle } = useAttendeeLayout();
@@ -155,6 +157,7 @@ export default function VendorsScreen() {
       <PageHeader title="Vendors" />
       <View style={styles.header}>
         <Text style={styles.title}>Vendors</Text>
+        <ContextualHelpButton label="Vendors Help" onPress={() => setShowVendorHelp(true)} />
         <Text style={styles.subtitle}>
           {hasActiveFilters
             ? `${filteredVendors.length} of ${vendors.length} vendors`
@@ -232,7 +235,8 @@ export default function VendorsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <ContextualEducationReplay.Provider value={helpReplay}><View style={styles.container}>
+      {showVendorHelp ? <VendorHelpReplay onDismiss={() => { setShowVendorHelp(false); setHelpReplay({ pending: new Set(['vendorFindOnMapTipSeen']) }); }} /> : null}
       <FlatList
         style={styles.content}
         data={filteredVendors}
@@ -258,7 +262,7 @@ export default function VendorsScreen() {
               ) : null}
               {item.location?.trim() && !vendorHasTrustedMapGeometry(item.name) ? (
                 <Text style={styles.meta}>{EXACT_MAP_UNAVAILABLE}</Text>
-              ) : <FindOnMapTip key={item.id} kind="vendorFindOnMapTipSeen" eligible={vendorMapTipEligible(item.name, item.location)}><TouchableOpacity testID="vendor-find-on-map"
+              ) : <FindOnMapTip key={item.id} kind="vendorFindOnMapTipSeen" eligible={!showVendorHelp && vendorMapTipEligible(item.name, item.location)}><TouchableOpacity testID="vendor-find-on-map"
                 style={styles.mapLink}
                 onPress={() => {
                   const resolved = resolveVendorMapQuery(item.name, item.location);
@@ -302,7 +306,7 @@ export default function VendorsScreen() {
           </View>
         }
       />
-    </View>
+    </View></ContextualEducationReplay.Provider>
   );
 }
 

@@ -50,6 +50,8 @@ export default function MapScreen() {
 function MapContent() {
   const params = useLocalSearchParams<{
     location?: string | string[];
+    eventId?: string | string[];
+    eventTitle?: string | string[];
     showOnly?: string | string[];
     source?: string | string[];
     mapStatus?: string | string[];
@@ -58,6 +60,8 @@ function MapContent() {
   }>();
   const location = paramStr(params.location);
   const source = paramStr(params.source);
+  const eventTitle = source === 'schedule' ? paramStr(params.eventTitle) : undefined;
+  const eventId = source === 'schedule' ? paramStr(params.eventId) : undefined;
   const mapStatus = paramStr(params.mapStatus);
   const verify1a = paramStr(params.verify1a);
   const mapType = paramStr(params.mapType);
@@ -112,6 +116,8 @@ function MapContent() {
         <TentedCityMap
           initialQuery={unavailable ? '' : (overrideLocation || (typeof location === 'string' ? location : '') || '')}
           mapUnavailable={unavailable}
+          initialEventTitle={!overrideLocation ? eventTitle : undefined}
+          initialEventId={!overrideLocation ? eventId : undefined}
           exactInitialPlace={source === 'vendors' && !overrideLocation}
           verify1A={verify1A}
           onSwitchToGrounds={(loc) => {
@@ -133,6 +139,8 @@ function MapContent() {
         <View style={[styles.grounds, groundsDesktop && desktopMapStyles.host, groundsDesktop]}>
           <GroundsMap
             highlightedLocation={overrideLocation || location || null}
+            initialEventTitle={!overrideLocation ? eventTitle : undefined}
+            initialEventId={!overrideLocation ? eventId : undefined}
             onSwitchToTented={(loc) => {
               if (loc) setOverrideLocation(loc);
               setMode('tented');

@@ -86,8 +86,8 @@ function ZoneHighlight({ zone }: { zone: GroundsZone }) {
   );
 }
 
-export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSwitchToRv }: {
-  highlightedLocation?: string | null;
+export default function GroundsMap({ highlightedLocation, initialEventTitle, initialEventId, onSwitchToTented, onSwitchToRv }: {
+  highlightedLocation?: string | null; initialEventTitle?: string; initialEventId?: string;
   onSwitchToTented: (location?: string) => void;
   onSwitchToRv?: () => void;
 }) {
@@ -99,6 +99,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   const phone = windowSize.width < DESKTOP_MAP_BREAKPOINT;
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<GroundsZone | null>(null);
+  const [eventSelectionTitle, setEventSelectionTitle] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const focusedKey = useRef<string | null>(null);
@@ -137,6 +138,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
 
   const chooseZone = useCallback((zone: GroundsZone | null, opts?: { switchTented?: boolean }) => {
     if (!zone) return;
+    setEventSelectionTitle(null);
     setSelected(zone);
     flyTo(zone);
     if ((opts?.switchTented ?? true) && zone.action === 'switch-tented') setTimeout(() => onSwitchToTented(), 280);
@@ -160,6 +162,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   }, [chooseZone, layer.left, layer.top, layer.width, layer.height]);
 
   useEffect(() => {
+    setEventSelectionTitle(initialEventTitle || null);
     const zone = resolveGroundsZone(highlightedLocation);
     if (!zone) return;
     setSelected(zone);
@@ -167,7 +170,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     if (focusedKey.current === key) return;
     focusedKey.current = key;
     flyTo(zone);
-  }, [highlightedLocation, flyTo]);
+  }, [highlightedLocation, initialEventTitle, initialEventId, flyTo]);
 
   // Shared TC web gesture lifecycle (pinchAroundMovingFocal, finishWebGesture clamp-only-outside,
   // rubber-band pan, double-tap, optional single-tap zone hit). No Grounds-only constants.
@@ -200,6 +203,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     [query, focused],
   );
   const reset = () => {
+    setEventSelectionTitle(null);
     setSelected(null);
     setQuery('');
     setFocused(false);
@@ -250,15 +254,15 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     <TouchableOpacity style={[styles.reset, desktop && desktopMapStyles.fit]} onPress={reset} accessibilityLabel="Fit map to grounds" testID="grounds-fit-reset">
       <Feather name="maximize-2" size={18} color={colors.textPrimary} />
     </TouchableOpacity>
-    {(selected?.action === 'info' || selected?.action === 'switch-rv') ? (
+    {selected && (eventSelectionTitle || selected.action === 'info' || selected.action === 'switch-rv') ? (
       <View style={[styles.card, desktop && desktopMapStyles.groundsInfo, desktop && { bottom: 124 }]} pointerEvents="box-none" testID="grounds-info-card">
         <View style={styles.cardInner} pointerEvents="auto">
           <View style={styles.cardRow}>
             <View style={styles.cardCopy}>
-              <Text style={styles.title}>{selected.label}</Text>
-              <Text style={styles.fact}>{selected.fact}</Text>
+              <Text testID="map-selection-title" style={styles.title}>{eventSelectionTitle || selected.label}</Text>
+              <Text style={styles.fact}>{eventSelectionTitle ? selected.label : selected.fact}</Text>
             </View>
-            <TouchableOpacity onPress={() => setSelected(null)} accessibilityLabel="Dismiss">
+            <TouchableOpacity onPress={() => { setSelected(null); setEventSelectionTitle(null); }} accessibilityLabel="Dismiss">
               <Feather name="x" size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>

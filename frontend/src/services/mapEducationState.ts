@@ -6,7 +6,7 @@ export const EDUCATION_KEYS = {
 } as const;
 export type EducationKind = keyof typeof EDUCATION_KEYS;
 export const MAP_TOUR_STEPS = [
-  { target: 'entrances', map: 'entrances', title: 'Find parking', body: 'Open Entrances / Parking for the official entrance and parking map. Pinch to zoom for a closer look.' },
+  { target: 'entrances', map: 'entrances', title: 'Find parking', body: 'Grounds shows the overall site, including plowing fields and RV Park. Entrances / Parking shows the official entrance and parking map.' },
   { target: 'tented-search', map: 'tented', title: 'Find a place', body: 'On Tented City, search for a vendor, booth, stage or place. Select a result to highlight its location.' },
   { target: 'parade-routes', map: 'tented', title: 'Follow the parade', body: 'Tap Parade Routes to expand it. Choose Tuesday or Wednesday–Saturday. The blue line and arrows show that day’s route. Select Off to hide it.' },
   { target: 'tented-reset', map: 'tented', title: 'Move around the map', body: 'Drag to move and pinch to zoom. Use this reset button to fit the map again.' },

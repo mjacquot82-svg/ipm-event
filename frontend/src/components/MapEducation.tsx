@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EDUCATION_KEYS, MAP_TOUR_STEPS, type EducationKind } from '../services/mapEducationState';
 
+export const ContextualEducationReplay = createContext<{ pending: Set<EducationKind> } | null>(null);
+
 type Anchor = { measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => void };
 type Rect = { x: number; y: number; width: number; height: number };
 export const MapEducationMode = createContext('');
@@ -18,6 +20,7 @@ export function useMapEducationAnchor(name: string) {
 let owner: object | null = null;
 const remembered = new Set<EducationKind>();
 function useEducation(kind: EducationKind, eligible: boolean, autoStart = true) {
+  const requestedReplay = useContext(ContextualEducationReplay);
   const pathname = usePathname();
   const focused = pathname.endsWith(kind === 'mapsTourSeen' ? '/map' : kind.startsWith('schedule') ? '/schedule' : '/vendors');
   const token = useRef({}).current;
@@ -32,6 +35,9 @@ function useEducation(kind: EducationKind, eligible: boolean, autoStart = true) 
     let live = true;
     const check = async () => {
       try {
+        if (live && requestedReplay?.pending.has(kind) && (!owner || owner === token)) {
+          requestedReplay.pending.delete(kind); owner = token; setVisible('manual'); return;
+        }
         const seen = remembered.has(kind) || await AsyncStorage.getItem(EDUCATION_KEYS[kind]) === 'true';
         if (live && !seen && (!owner || owner === token)) { owner = token; setVisible('automatic'); }
       } catch { /* Unavailable storage must never block the underlying app. */ }
@@ -39,7 +45,7 @@ function useEducation(kind: EducationKind, eligible: boolean, autoStart = true) 
     void check();
     const timer = setInterval(() => void check(), 700);
     return () => { live = false; clearInterval(timer); if (owner === token) owner = null; };
-  }, [eligible, focused, kind, token, autoStart]);
+  }, [eligible, focused, kind, token, autoStart, requestedReplay]);
   const dismiss = () => {
     remembered.add(kind);
     void AsyncStorage.setItem(EDUCATION_KEYS[kind], 'true').catch(() => {});
@@ -128,6 +134,14 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
       </View>
     </View>
   </Modal>;
+}
+
+// Reuse the original contextual callout and Help styling; no new tour engine or storage keys.
+export function ContextualHelpButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return <TouchableOpacity accessibilityRole="button" accessibilityLabel={label} style={[styles.help, { width: 'auto', paddingHorizontal: 12, alignSelf: 'flex-start' }]} onPress={onPress}><Text style={styles.helpText}>{label}</Text></TouchableOpacity>;
+}
+export function VendorHelpReplay({ onDismiss }: { onDismiss: () => void }) {
+  return <EducationCallout title="Find this vendor" body="Browse or search vendors; each card shows the available details. Use Find on Map to jump directly to a mapped vendor’s location." onDismiss={onDismiss} />;
 }
 
 export function MapEducationHelpButton({ mode }: { mode: string }) {

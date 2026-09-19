@@ -88,9 +88,9 @@ test('map screen prefers explicit mapType and syncs mode when params change', ()
   assert.match(mapSource, /mapType/);
   assert.match(mapSource, /resolveMapTypeForLocation/);
   assert.match(mapSource, /useEffect\(\(\) => \{\s*setMode\(desiredMode\);\s*setOverrideLocation\(null\);\s*\}, \[desiredMode, location\]\)/s);
-  assert.match(mapSource, /if \(mapType === 'tented' \|\| mapType === 'grounds'(?: \|\| mapType === 'rv')?\) return mapType/);
+  assert.match(mapSource, /if \(mapType === 'tented' \|\| mapType === 'grounds'(?: \|\| mapType === 'rv')?(?: \|\| mapType === 'entrances')?\) return mapType/);
   // Must not blindly force every schedule source onto tented (grounds destinations stay grounds).
-  assert.doesNotMatch(mapSource, /source === 'schedule'/);
+  assert.doesNotMatch(mapSource.slice(mapSource.indexOf('function resolveInitialMode'), mapSource.indexOf('export default function')), /source === 'schedule'/);
 });
 
 test('grounds destinations resolve mapType grounds', () => {

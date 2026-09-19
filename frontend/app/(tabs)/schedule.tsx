@@ -1,4 +1,4 @@
-import { FindOnMapTip, ScheduleEventDetailsTip } from '../../src/components/MapEducation';
+import { FindOnMapTip, ScheduleEventDetailsTip, ContextualHelpButton, ContextualEducationReplay } from '../../src/components/MapEducation';
 import { scheduleMapTipEligible } from '../../src/services/mapEducationEligibility';
 import { EventDetailMedia } from '@/src/components/EventDetailMedia';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
@@ -79,6 +79,7 @@ export default function ScheduleScreen() {
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showScheduleOnboarding, setShowScheduleOnboarding] = useState(false);
+  const [helpReplay, setHelpReplay] = useState<React.ContextType<typeof ContextualEducationReplay>>(null);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const [visibleEducationEventId, setVisibleEducationEventId] = useState<string | null>(null);
   const educationViewability = useRef({ itemVisiblePercentThreshold: 100, minimumViewTime: 200 }).current;
@@ -521,7 +522,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ContextualEducationReplay.Provider value={helpReplay}><View style={styles.container}>
       <SectionList
         viewabilityConfig={educationViewability}
         onViewableItemsChanged={educationViewableItemsChanged}
@@ -546,6 +547,10 @@ export default function ScheduleScreen() {
               {/* Header */}
               <View style={styles.header}>
         <Text style={styles.title}>Schedule</Text>
+        <ContextualHelpButton label="Schedule Help" onPress={() => {
+          setHelpReplay({ pending: new Set(['scheduleEventDetailsTipSeen', 'scheduleFindOnMapTipSeen']) });
+          setShowScheduleOnboarding(true);
+        }} />
         <View style={styles.headerSubtitle}>
           <Text style={styles.subtitle}>{events.length} events</Text>
           {favorites.length > 0 && (
@@ -900,6 +905,9 @@ export default function ScheduleScreen() {
                 Star events to add them to your itinerary.
               </Text>
               <Text style={styles.onboardingModalSecondaryText}>
+                Browse events, choose a day or search. Tap an event for its details and location.
+              </Text>
+              <Text style={styles.onboardingModalSecondaryText}>
                 If notifications are enabled, we&apos;ll remind you approximately 30 minutes before each event starts.
               </Text>
               <TouchableOpacity
@@ -1078,6 +1086,8 @@ export default function ScheduleScreen() {
                             location: mapLocation,
                             showOnly: 'true',
                             source: 'schedule',
+                            eventId: selectedEvent.id,
+                            eventTitle: selectedEvent.title,
                             mapType: resolveMapTypeForLocation(mapLocation, tentedCityVendors),
                           }
                         });
@@ -1168,7 +1178,7 @@ export default function ScheduleScreen() {
           </View>
         </View>
       ) : null}
-    </View>
+    </View></ContextualEducationReplay.Provider>
   );
 }
 
