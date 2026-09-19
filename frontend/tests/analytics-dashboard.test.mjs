@@ -121,8 +121,8 @@ test('organizers request only the health summary and diagnostics are Owner-only 
  assert.match(dashboardSource,/canViewNotificationDiagnostics = false/);
  assert.match(dashboardSource,/canViewNotificationDiagnostics && <Section title="Advanced notification diagnostics"/);
  assert.doesNotMatch(dashboardSource,/<Section title="Advanced notification diagnostics"[^>]*initiallyOpen/);
- assert.match(dashboardSource,/ready at last check/);
- assert.match(dashboardSource,/Readiness does not confirm delivery/);
+ assert.match(dashboardSource,/appeared ready at their latest stored provider check/);
+ assert.match(dashboardSource,/Stored readiness does not confirm delivery/);
  assert.match(dashboardSource,/<NotificationHealthDiagnostics onAuthenticationExpired=/);
 });
 

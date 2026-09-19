@@ -34,7 +34,9 @@
     },
     "latest_statistics_check": null,
     "rates": null,
-    "recent": []
+    "recent": [],
+    "historical_unattributed_sends": 0,
+    "detailed_sends": 0
   },
   "historical": {
     "scope": "all_time",
@@ -73,16 +75,18 @@
     "rates": null,
     "recent": [
       {
-        "title": "[STAGING FIXTURE] Example announcement",
-        "requested_at": "2026-09-18T23:00:00+00:00",
+        "title": "THE BRUCE RV PARK IS OPEN!",
+        "requested_at": "2026-09-19T13:38:31Z",
         "provider_accepted": true
       },
       {
-        "title": "[STAGING FIXTURE] Example announcement",
-        "requested_at": "2026-09-18T23:00:00+00:00",
+        "title": "Celebration of Excellence Banquet",
+        "requested_at": "2026-09-18T14:24:44Z",
         "provider_accepted": true
       }
-    ]
+    ],
+    "historical_unattributed_sends": 2,
+    "detailed_sends": 0
   },
   "full": {
     "scope": "all_time",
@@ -125,7 +129,9 @@
         "requested_at": "2026-09-18T23:00:00+00:00",
         "provider_accepted": true
       }
-    ]
+    ],
+    "historical_unattributed_sends": 0,
+    "detailed_sends": 1
   },
   "mixed": {
     "scope": "all_time",
@@ -173,7 +179,9 @@
         "requested_at": "2026-09-18T23:00:00+00:00",
         "provider_accepted": true
       }
-    ]
+    ],
+    "historical_unattributed_sends": 0,
+    "detailed_sends": 1
   },
   "failures": {
     "scope": "all_time",
@@ -216,7 +224,9 @@
         "requested_at": "2026-09-18T23:00:00+00:00",
         "provider_accepted": true
       }
-    ]
+    ],
+    "historical_unattributed_sends": 0,
+    "detailed_sends": 1
   },
   "reminders": {
     "scope": "all_time",
@@ -253,7 +263,9 @@
     },
     "latest_statistics_check": null,
     "rates": null,
-    "recent": []
+    "recent": [],
+    "historical_unattributed_sends": 0,
+    "detailed_sends": 0
   },
   "partial": {
     "scope": "all_time",
@@ -306,6 +318,8 @@
         "requested_at": "2026-09-18T23:00:00+00:00",
         "provider_accepted": true
       }
-    ]
+    ],
+    "historical_unattributed_sends": 0,
+    "detailed_sends": 2
   }
 }

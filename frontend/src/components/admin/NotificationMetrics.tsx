@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import type { AnnouncementDeliveryStats } from '../../services/adminAuthService';
-import { notificationMetricRows, notificationMissingDetail } from '../../analytics/notificationMetrics';
+import { notificationMetricRows, notificationMissingDetail, notificationDefinitions } from '../../analytics/notificationMetrics';
 import { colors } from '../../theme/colors';
 
 export function NotificationAnalyticsDetails() {
@@ -10,7 +10,7 @@ export function NotificationAnalyticsDetails() {
     <Pressable accessibilityRole="button" aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={styles.detailsButton}>
       <Text style={styles.detailsLabel}>Analytics details {expanded ? '−' : '+'}</Text>
     </Pressable>
-    {expanded && <Text style={styles.note}>Provider acceptance and receipts do not confirm visible display. Counts describe devices or events, not people. App visits are separate from provider notification opens. Known deliverable devices are a snapshot, not the provider’s exact target count. Missing statistics are unavailable, not zero.</Text>}
+    {expanded && <Text style={styles.note}>Provider acceptance does not confirm delivery. Confirmed receipts acknowledge device receipt, not reading or visible display. Notification taps and link visits are separate measurements, not unique people. Estimated available registrations are a local snapshot, not an exact provider target count. Unknown values are unavailable, not zero.</Text>}
   </View>;
 }
 
@@ -24,13 +24,15 @@ export function NotificationMetrics({ stats, available = true }: { stats?: Annou
         : <Text style={styles.secondary}>Provider accepted: {stats.provider_accepted ? 'Yes' : stats.status === 'failed' ? 'No' : 'Pending / unknown'}</Text>}
     </View>
     {stats && <>
-      {stats.status === 'failed' && <Text style={styles.failure}>Provider request failed</Text>}
+      {stats.status === 'failed' && <Text style={styles.failure}>Failed send request</Text>}
       {time && <Text style={styles.note}>{stats.requested_at ? 'Requested' : 'Provider accepted'}: {new Date(time).toLocaleString()}</Text>}
       {notificationMetricRows(stats).length > 0 && <View style={styles.grid}>
         {notificationMetricRows(stats).map(([label, value]) => <View key={label} style={styles.metric} accessibilityLabel={`${label}: ${value}`}>
           <Text style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text>
+          <Text style={styles.note}>{notificationDefinitions[label as keyof typeof notificationDefinitions]}</Text>
         </View>)}
       </View>}
+      {stats.historical_unattributed && <Text style={styles.note}>Detailed provider statistics were not uniquely attributable for this earlier send.</Text>}
       {missing && <Text style={styles.note}>{missing}</Text>}
       {stats.provider_statistics_refreshed_at && <Text style={styles.note}>Statistics last checked: {new Date(stats.provider_statistics_refreshed_at).toLocaleString()}</Text>}
     </>}

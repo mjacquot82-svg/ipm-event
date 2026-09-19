@@ -28,10 +28,12 @@
       "snapshot_at": "2026-09-18T23:00:00+00:00"
     },
     "summary": {
+      "registered_records": 3,
+      "readiness_stale_records": 0,
       "ready_devices": 3,
       "readiness_outdated": false,
       "status": "healthy",
-      "message": "No known notification problems.",
+      "message": "No technical concerns identified in the stored checks.",
       "snapshot_at": "2026-09-18T23:00:00+00:00"
     }
   },
@@ -64,10 +66,12 @@
       "snapshot_at": "2026-09-18T23:00:00+00:00"
     },
     "summary": {
+      "registered_records": 127,
+      "readiness_stale_records": 3,
       "ready_devices": 18,
       "readiness_outdated": true,
       "status": "attention",
-      "message": "Notification health needs an administrator\u2019s attention.",
+      "message": "Technical review recommended. Some registrations need further checking; this does not prove delivery failure.",
       "snapshot_at": "2026-09-18T23:00:00+00:00"
     }
   },
@@ -100,10 +104,12 @@
       "snapshot_at": "2026-09-18T23:00:00+00:00"
     },
     "summary": {
+      "registered_records": 3,
+      "readiness_stale_records": 0,
       "ready_devices": 0,
       "readiness_outdated": false,
       "status": "incomplete",
-      "message": "Some devices still need an up-to-date check.",
+      "message": "Some registration checks are incomplete or out of date.",
       "snapshot_at": "2026-09-18T23:00:00+00:00"
     }
   },
@@ -136,10 +142,12 @@
       "snapshot_at": "2026-09-18T23:00:00+00:00"
     },
     "summary": {
+      "registered_records": 3,
+      "readiness_stale_records": 3,
       "ready_devices": 3,
       "readiness_outdated": true,
       "status": "incomplete",
-      "message": "Some devices still need an up-to-date check.",
+      "message": "Some registration checks are incomplete or out of date.",
       "snapshot_at": "2026-09-18T23:00:00+00:00"
     }
   },
@@ -172,10 +180,12 @@
       "snapshot_at": "2026-09-18T23:00:00+00:00"
     },
     "summary": {
+      "registered_records": 0,
+      "readiness_stale_records": 0,
       "ready_devices": 0,
       "readiness_outdated": false,
       "status": "empty",
-      "message": "No notification devices registered yet.",
+      "message": "No browser/device notification registrations recorded yet.",
       "snapshot_at": "2026-09-18T23:00:00+00:00"
     }
   }

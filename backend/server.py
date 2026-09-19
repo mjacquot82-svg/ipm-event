@@ -1,4 +1,4 @@
-from backend.notification_analytics import (campaign_identity, refresh_statistics, has_attribution, valid_uuid, reminder_summary, read_reminder_ledger)
+from backend.notification_analytics import (campaign_identity, refresh_statistics, has_attribution, unattributed_history, valid_uuid, reminder_summary, read_reminder_ledger)
 from backend.event_media import EventDetailContent
 from backend.announcement_images import (
     AnnouncementImage,
@@ -512,6 +512,7 @@ class NotificationAdoptionResponse(BaseModel):
     snapshot_at: datetime
 
 class AnnouncementDeliveryStats(BaseModel):
+    historical_unattributed: bool = False
     requested_at: Optional[datetime] = None
     notification_origin_visit_count: Optional[int] = None
     announcement_id: str
@@ -1835,6 +1836,7 @@ async def list_announcement_delivery_stats(
         AnnouncementDeliveryStats(
             **row,
             provider_accepted=row.get("status") == "sent",
+            historical_unattributed=unattributed_history(row),
         ) for row in rows
     ])
 

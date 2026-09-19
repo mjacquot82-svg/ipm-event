@@ -282,9 +282,10 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
     <View style={styles.healthSummary} accessibilityLabel="Notification health summary">
       <Text style={styles.sectionTitle}>Notification health</Text>
       {!healthSummary ? <Text style={styles.sectionSubtitle}>{aggregateLoading ? 'Loading notification health…' : 'Notification health is temporarily unavailable.'}</Text> : <>
-        <Text style={styles.healthReady}>{healthSummary.ready_devices.toLocaleString()} {healthSummary.ready_devices === 1 ? 'device' : 'devices'} ready at last check</Text>
+        {healthSummary.registered_records != null && <Text style={styles.healthReady}>{healthSummary.registered_records.toLocaleString()} browser/device notification registrations</Text>}
+        <Text style={styles.sectionSubtitle}>{healthSummary.ready_devices.toLocaleString()} appeared ready at their latest stored provider check</Text>
         <Text style={healthSummary.status === 'attention' ? styles.healthAttention : styles.sectionSubtitle}>{healthSummary.message}</Text>
-        <Text style={styles.healthHelp}>Readiness does not confirm delivery.{healthSummary.readiness_outdated ? ' Some readiness checks are over 24 hours old.' : ''}</Text>
+        <Text style={styles.healthHelp}>Registrations are not people or necessarily distinct physical devices. Stored readiness does not confirm delivery or readiness now.{healthSummary.readiness_stale_records != null ? ` ${healthSummary.readiness_stale_records} positive readiness checks are over 24 hours old.` : healthSummary.readiness_outdated ? ' Some readiness checks are over 24 hours old.' : ''}</Text>
       </>}
     </View>
     {canViewNotificationDiagnostics && <Section title="Advanced notification diagnostics" subtitle="Owner only · registration checks and troubleshooting">

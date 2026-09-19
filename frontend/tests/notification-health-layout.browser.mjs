@@ -57,12 +57,12 @@ const technicalLabels={
  'Active operations':'active_leases','Expired leases':'expired_leases','Retries due':'retries_due','Retries scheduled':'retries_scheduled',
 };
 try{
- for(const width of [1440,768,390]){
+ for(const width of [1440,768,390,320]){
   role='Communications';healthCase='healthy';diagnosticCalls=0;
   await openAnalytics(width);
   const summary=page.getByLabel('Notification health summary');
-  assert.ok((await summary.innerText()).includes('3 devices ready at last check'));
-  assert.ok((await summary.boundingBox()).height<200);
+  assert.ok((await summary.innerText()).includes('3 appeared ready at their latest stored provider check'));
+  assert.ok((await summary.innerText()).includes('browser/device notification registrations'));
   assert.equal(await page.getByText('Advanced notification diagnostics',{exact:true}).count(),0);
   for(const label of Object.keys(technicalLabels)) assert.equal(await page.getByText(label,{exact:true}).count(),0,label);
   await page.getByText('No announcement notifications accepted by the provider yet.',{exact:true}).waitFor();

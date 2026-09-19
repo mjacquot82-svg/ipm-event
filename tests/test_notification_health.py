@@ -136,13 +136,14 @@ def test_organizer_summary_readiness_is_not_delivery_and_categories_are_not_adde
     from backend.notification_health import organizer_health_summary
     health=build_health([row('VERIFIED', provider_ready=True, provider_checked_at=NOW.isoformat(), verification_expires_at=FUTURE) for _ in range(3)],{},now=NOW)
     summary=organizer_health_summary(health)
+    assert summary['registered_records']==3 and summary['readiness_stale_records']==0
     assert summary['ready_devices']==3 and summary['status']=='healthy'
-    assert summary['message']=='No known notification problems.'
+    assert summary['message']=='No technical concerns identified in the stored checks.'
     # One registration can appear in several issue categories: never invent a sum.
     health.update(key_mismatch=1,uncertain=1,current_check_failures=1)
     summary=organizer_health_summary(health)
     assert summary['status']=='attention' and not any(c.isdigit() for c in summary['message'])
-    assert set(summary)=={'ready_devices','readiness_outdated','status','message','snapshot_at'}
+    assert set(summary)=={'registered_records','readiness_stale_records','ready_devices','readiness_outdated','status','message','snapshot_at'}
 
 
 @pytest.mark.parametrize('overrides,expected', [

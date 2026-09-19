@@ -35,7 +35,7 @@ await page.route('**/*',async route=>{
  return route.abort();
 });
 try{
- for(const width of [1440,768,390]){
+ for(const width of [1440,768,390,320]){
   await page.setViewportSize({width,height:1000});
   for(const name of Object.keys(cases)){
    current=name;
@@ -49,11 +49,17 @@ try{
    const a=panel.getByLabel('Announcement notification summary');
    if(cases[name].accepted_sends===0)await a.getByText('No announcement notifications accepted by the provider yet.',{exact:true}).waitFor();
    else{
-    for(const [key,label] of Object.entries({targeted_devices:'Targeted devices',receipts:'Provider-confirmed receipts',opens:'Notification opens',visits:'Notification-origin app visits',failures:'Provider failures'})){
+    for(const [key,label] of Object.entries({targeted_devices:'Devices targeted',receipts:'Confirmed receipts',opens:'Notification taps',visits:'Visits through notification links',failures:'Provider-reported delivery failures'})){
      const metric=cases[name].metrics[key],card=a.getByLabel(label,{exact:true});
-     await card.getByText(metric.value==null?'Not available':metric.value.toLocaleString(),{exact:true}).waitFor();
+     if(key==='targeted_devices' && metric.value==null){assert.equal(await card.count(),0);continue;}
+     await card.getByText(metric.value==null?'Unavailable':metric.value.toLocaleString(),{exact:true}).waitFor();
      assert.ok((await card.innerText()).includes(`Data available for ${metric.covered_sends} of ${metric.total_sends} sends`));
     }
+   }
+   if(name==='historical'){
+    await a.getByText('Detailed delivery data available for 0 of 2 sends',{exact:true}).waitFor();
+    await a.getByText('Detailed provider statistics were not uniquely attributable for these earlier sends.',{exact:true}).waitFor();
+    for(const title of ['THE BRUCE RV PARK IS OPEN!','Celebration of Excellence Banquet']) await a.getByText(title,{exact:true}).waitFor();
    }
    if(name==='failures'){
     assert.equal(await a.getByLabel('Failed send requests',{exact:true}).getByText('1',{exact:true}).count(),1);
@@ -63,7 +69,7 @@ try{
    for(const [label,n] of [['Reminders provider accepted',3],['Reminder provider failures',1],['Reminder delivery unknown',2]]) assert.equal(await reminders.getByLabel(label,{exact:true}).getByText(String(n),{exact:true}).count(),1);
    assert.doesNotMatch(await panel.innerText(),/\d%|unique people|installation_id|push_token|capability|claim IDs/i);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-   if(['empty','mixed','partial'].includes(name)){
+   if(['historical','mixed','partial'].includes(name)){
     await page.setViewportSize({width,height:2400});
     await panel.screenshot({path:`${artifacts}/${name}-${width}.png`});
     await page.setViewportSize({width,height:1000});

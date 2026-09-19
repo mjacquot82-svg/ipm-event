@@ -1,18 +1,19 @@
 import React from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import type { NotificationSummaryResponse, ReminderSummaryResponse } from '../../services/adminAnalyticsService';
+import { notificationDefinitions } from '../../analytics/notificationMetrics';
 import { colors } from '../../theme/colors';
 
 function Count({ label, value, help }: { label: string; value: number | null; help?: string }) {
   return <View style={styles.card} accessibilityLabel={label}>
-    <Text style={styles.value}>{value == null ? 'Not available' : value.toLocaleString()}</Text>
+    <Text style={styles.value}>{value == null ? 'Unavailable' : value.toLocaleString()}</Text>
     <Text style={styles.label}>{label}</Text>
     {help && <Text style={styles.help}>{help}</Text>}
   </View>;
 }
 const metricLabels = {
-  targeted_devices: 'Targeted devices', receipts: 'Provider-confirmed receipts', opens: 'Notification opens',
-  visits: 'Notification-origin app visits', failures: 'Provider failures',
+  targeted_devices: 'Devices targeted', receipts: 'Confirmed receipts', opens: 'Notification taps',
+  visits: 'Visits through notification links', failures: 'Provider-reported delivery failures',
 } as const;
 const torontoTime = (value: string) => new Date(value).toLocaleString('en-CA', { timeZone: 'America/Toronto', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
@@ -26,18 +27,22 @@ export function NotificationOverview({ announcements, reminders, loading, onOpen
       <Text style={styles.help}>All-time sends to everyone in this event. Test sends are excluded.</Text>
       {!announcements ? <Text style={styles.help}>{loading ? 'Loading notification summary…' : 'Notification summary is temporarily unavailable.'}</Text> : <>
         {announcements.accepted_sends === 0 ? <Text style={styles.empty}>No announcement notifications accepted by the provider yet.</Text> : <View style={styles.grid}>
-          <Count label="Announcement sends" value={announcements.accepted_sends} help="Provider accepted; not confirmed display." />
+          <Count label="Announcement sends accepted" value={announcements.accepted_sends} help={notificationDefinitions['Announcement sends accepted']} />
           {Object.entries(metricLabels).map(([key, label]) => {
             const metric = announcements.metrics[key as keyof typeof metricLabels];
-            return <Count key={key} label={label} value={metric.value} help={`Data available for ${metric.covered_sends} of ${metric.total_sends} sends`} />;
+            if (key === 'targeted_devices' && metric.value == null) return null;
+            return <Count key={key} label={label} value={metric.value} help={`${notificationDefinitions[label]} Data available for ${metric.covered_sends} of ${metric.total_sends} sends`} />;
           })}
         </View>}
-        {(announcements.failed_requests > 0 || announcements.pending_requests > 0) && <View style={styles.grid}>
-          {announcements.failed_requests > 0 && <Count label="Failed send requests" value={announcements.failed_requests} help="Separate from provider-reported failures after acceptance." />}
+        <View style={styles.grid}>
+          <Count label="Failed send requests" value={announcements.failed_requests} help={notificationDefinitions['Failed send requests']} />
           {announcements.pending_requests > 0 && <Count label="Pending / unknown requests" value={announcements.pending_requests} />}
-        </View>}
+        </View>
         {announcements.accepted_sends > 0 && <>
-          <Text style={styles.help}>Counts add known values across sends. A device may be counted in more than one send. Missing values are not zero. Opens and receipts are provider events, so device conversion rates are not shown.</Text>
+          {announcements.detailed_sends != null && <Text style={styles.label}>Detailed delivery data available for {announcements.detailed_sends} of {announcements.accepted_sends} sends</Text>}
+          <Text style={styles.help}>Each metric shows its own coverage. Counts add known values across sends; the same device may appear more than once.</Text>
+          {!!announcements.historical_unattributed_sends && <Text style={styles.help}>Detailed provider statistics were not uniquely attributable for {announcements.historical_unattributed_sends === announcements.accepted_sends ? 'these earlier sends' : 'some earlier sends'}.</Text>}
+          <Text style={styles.help}>Unknown / unavailable: {notificationDefinitions['Unknown / unavailable']}</Text>
           <Text style={styles.help}>{announcements.latest_statistics_check ? `Latest stored provider check: ${torontoTime(announcements.latest_statistics_check)}. Other sends may have older statistics.` : 'No provider check time is recorded for these sends.'} Refresh reads saved statistics; it does not contact the provider.</Text>
         </>}
         {announcements.recent.length > 0 && <View style={styles.recent}>
@@ -52,7 +57,7 @@ export function NotificationOverview({ announcements, reminders, loading, onOpen
     </View>
     <View style={[styles.group, styles.reminders]} accessibilityLabel="T-30 reminder analytics">
       <Text style={styles.title}>Event reminders / T-30</Text>
-      <Text style={styles.help}>Automatic reminders for starred events. Current interests and all-time normal reminder outcomes; controlled test deliveries are excluded.</Text>
+      <Text style={styles.help}>Automatic reminders for starred events. Current interests and all-time normal reminder outcomes.</Text>
       {!reminders ? <Text style={styles.help}>{loading ? 'Loading reminders…' : 'Reminder summary is temporarily unavailable.'}</Text> : <View style={styles.grid}>
         <Count label="Active reminder interests" value={reminders.active_interests} />
         <Count label="Reminders provider accepted" value={reminders.provider_accepted} />

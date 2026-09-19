@@ -102,16 +102,18 @@ def organizer_health_summary(health):
     if health['circuit'] == 'OPEN' or any(health[key] > 0 for key in (
         'repairable_mismatch', 'key_mismatch', 'uncertain', 'current_check_failures', 'expired_leases'
     )):
-        status, message = 'attention', 'Notification health needs an administrator’s attention.'
+        status, message = 'attention', 'Technical review recommended. Some registrations need further checking; this does not prove delivery failure.'
     elif health['circuit'] == 'UNKNOWN':
         status, message = 'incomplete', 'Notification health could not be fully confirmed.'
     elif health['registrations'] == 0:
-        status, message = 'empty', 'No notification devices registered yet.'
+        status, message = 'empty', 'No browser/device notification registrations recorded yet.'
     elif any(health[key] > 0 for key in ('not_yet_checked', 'other_checked', 'provider_ready_stale', 'verified_expired')):
-        status, message = 'incomplete', 'Some devices still need an up-to-date check.'
+        status, message = 'incomplete', 'Some registration checks are incomplete or out of date.'
     else:
-        status, message = 'healthy', 'No known notification problems.'
+        status, message = 'healthy', 'No technical concerns identified in the stored checks.'
     return {
+        'registered_records': health['registrations'],
+        'readiness_stale_records': health['provider_ready_stale'],
         'ready_devices': health['provider_ready'],
         'readiness_outdated': health['provider_ready_stale'] > 0,
         'status': status, 'message': message, 'snapshot_at': health['snapshot_at'],

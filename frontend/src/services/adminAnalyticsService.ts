@@ -132,6 +132,7 @@ export type CoveredNotificationMetric = { value: number | null; covered_sends: n
 export type NotificationSummaryResponse = {
   scope: 'all_time'; snapshot_at: string; accepted_sends: number; failed_requests: number; pending_requests: number;
   metrics: Record<'targeted_devices' | 'receipts' | 'opens' | 'visits' | 'failures', CoveredNotificationMetric>;
+  detailed_sends?: number; historical_unattributed_sends?: number;
   latest_statistics_check: string | null; rates: null;
   recent: { title: string; requested_at: string | null; provider_accepted: boolean }[];
 };
@@ -144,6 +145,7 @@ export function getReminderSummary() {
 }
 
 export type NotificationHealthSummary = {
+  registered_records?: number; readiness_stale_records?: number;
   ready_devices: number; readiness_outdated: boolean;
   status: 'healthy' | 'attention' | 'incomplete' | 'empty'; message: string; snapshot_at: string;
 };

@@ -134,3 +134,24 @@ def test_authenticated_route_returns_only_summary_and_never_uses_provider(monkey
         assert 'internal-only' not in response.text
     try:asyncio.run(check())
     finally:server.app.dependency_overrides.clear()
+
+
+def test_historical_image_sends_have_no_invented_detail_coverage():
+    rows = [row(provider_campaign_id='wonderpush:accepted', notification_title=title)
+            for title in ['Celebration of Excellence Banquet', 'THE BRUCE RV PARK IS OPEN!']]
+    result = overview(rows, NOW)
+    assert result['accepted_sends'] == result['historical_unattributed_sends'] == 2
+    assert result['detailed_sends'] == 0
+    assert all(metric == dict(value=None, covered_sends=0, total_sends=2)
+               for metric in result['metrics'].values())
+    rows.append(row(provider_campaign_id='unique', provider_open_count=0, audience_device_count=249))
+    result = overview(rows, NOW)
+    assert result['detailed_sends'] == 1
+    assert result['metrics']['opens'] == dict(value=0, covered_sends=1, total_sends=3)
+    assert result['metrics']['targeted_devices']['value'] is None
+
+
+def test_estimate_is_not_exact_targeting_or_detail_coverage():
+    result = overview([row(audience_device_count=248)], NOW)
+    assert result['metrics']['targeted_devices']['value'] is None
+    assert result['detailed_sends'] == 0
