@@ -1,3 +1,5 @@
+import { ParadeRouteOverlay, ParadeRouteControls } from './ParadeRouteOverlay';
+import type { ParadeRouteId } from '../config/tentedCityParadeRoutes';
 import { useMapEducationAnchor, MapEducationHelpButton } from './MapEducation';
 import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
@@ -86,6 +88,7 @@ export default function TentedCityMap({
   const [selected, setSelected] = useState<TentedCityPlace | null>(null);
   const [selectedSemanticArea, setSelectedSemanticArea] = useState<SemanticMapArea | null>(null);
   const [selectedBoothId, setSelectedBoothId] = useState<string | null>(null);
+  const [paradeRoute, setParadeRoute] = useState<ParadeRouteId | null>(null);
   const [filter, setFilter] = useState<FilterId>('all');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [unavailable, setUnavailable] = useState(Boolean(mapUnavailable));
@@ -513,6 +516,7 @@ export default function TentedCityMap({
             <View pointerEvents="none" style={styles.selectedStageInnerEdge} />
           </View>
         ) : null}
+        <ParadeRouteOverlay routeId={paradeRoute} />
       </Animated.View>
     </Animated.View>
   );
@@ -568,6 +572,7 @@ export default function TentedCityMap({
             return <TouchableOpacity key={item.id} style={[styles.chip, on && styles.chipOn]} onPress={() => setFilter(item.id)}><Text style={[styles.chipText, on && styles.chipTextOn]}>{item.label}</Text></TouchableOpacity>;
           })}
         </View>
+        <ParadeRouteControls value={paradeRoute} onChange={setParadeRoute} />
         {verify1A ? <View style={styles.verifyBanner} pointerEvents="none"><Text style={styles.verifyBannerText}>Tented City geometry overlay on. Five taps on Tented City to hide.</Text></View> : null}
         {focused && query.trim().length > 0 ? (
           <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
