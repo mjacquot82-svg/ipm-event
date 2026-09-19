@@ -48,7 +48,7 @@ dump.rdb
 
 # Python
 __pycache__/
-*pyc*
+*.py[cod]
 venv/
 .venv/
 
@@ -65,139 +65,35 @@ chainlit.md
 agenthub/agents/youtube/db
 
 # Archive files and large assets
-**/*.zip
-**/*.tar.gz
-**/*.tar
-**/*.tgz
-*.pack
-*.deb
-*.dylib
 
 # Build caches
 .cache/
 
 # Mobile development
-android-sdk/ -e 
+android-sdk/
 # Environment files
 *.env
 *.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
--e 
-# Environment files
-*.env
-*.env.*
+
+# Workspace containers and private recovery material (never application assets)
+/.worktrees/
+/storage-private/
+
+# Explicit disposable artifact area; curate durable reports into docs/ first
+/.artifacts/
+
+# Framework/runtime caches
+/frontend/.expo/
+/frontend/.metro-cache/
+/frontend/.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Known test/build output only; no blanket PNG/JSON/video/diagnostics ignores
+/frontend/test-results/
+/frontend/playwright-report/
+/frontend/coverage/
+/frontend/web-build/
+/frontend/build/
+/frontend/export/
