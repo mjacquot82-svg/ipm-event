@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const component = await readFile(new URL('../src/components/PWAInstallPrompt.tsx', import.meta.url), 'utf8');
 const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
+const appStatus = await readFile(new URL('../src/components/AppStatus.tsx', import.meta.url), 'utf8');
 
 test('diagnostic mode is staging-host and query gated', () => {
   assert.match(component, /host === 'staging\.theipm\.ca'/);
@@ -18,4 +19,10 @@ test('diagnostic reports the same install decision inputs', () => {
 
 test('diagnostic can mount even when pathname check disagrees', () => {
   assert.match(home, /homeFocused \|\| isInstallDebugMode\(\)/);
+});
+
+test('diagnostic snapshot is also exposed in the existing staging App Status surface', () => {
+  assert.match(appStatus, /ipm-install-diagnostic/);
+  assert.match(appStatus, /Install guidance diagnostic/);
+  assert.match(appStatus, /COMPONENT MOUNTED/);
 });

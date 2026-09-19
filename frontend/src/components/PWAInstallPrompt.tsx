@@ -27,7 +27,12 @@ type InstallDiagnostic = {
 export function isInstallDebugMode() {
   if (typeof window === 'undefined') return false;
   const host = window.location.hostname.toLowerCase();
-  return (host === 'staging.theipm.ca' || host.startsWith('staging.')) && new URLSearchParams(window.location.search).get('installDebug') === '1';
+  if (!(host === 'staging.theipm.ca' || host.startsWith('staging.'))) return false;
+  if (new URLSearchParams(window.location.search).get('installDebug') === '1') {
+    (window as any).__IPM_INSTALL_DEBUG__ = true;
+    return true;
+  }
+  return (window as any).__IPM_INSTALL_DEBUG__ === true;
 }
 
 function dismissedInSession() {
@@ -65,7 +70,7 @@ type InstallOutcome = 'accepted' | 'dismissed';
 type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: InstallOutcome }> };
 
 declare global {
-  interface Window { ipmInstalledThisSession?: boolean; deferredPWAPrompt?: BeforeInstallPromptEvent | null; deferredPWAPromptCapturedAt?: number }
+  interface Window { ipmInstalledThisSession?: boolean; deferredPWAPrompt?: BeforeInstallPromptEvent | null; deferredPWAPromptCapturedAt?: number; __IPM_INSTALL_DEBUG__?: boolean; ipmInstallDiagnostic?: InstallDiagnostic }
   interface Navigator { standalone?: boolean }
 }
 
@@ -80,6 +85,13 @@ function currentEnvironment(): InstallEnvironment {
     userAgent: navigator.userAgent, platformHint: navigator.platform, maxTouchPoints: navigator.maxTouchPoints,
     standalone, nativePromptAvailable: !standalone && Boolean(window.deferredPWAPrompt),
   });
+}
+
+function publishDiagnostic(next: InstallDiagnostic) {
+  if (typeof window !== 'undefined') {
+    window.ipmInstallDiagnostic = next;
+    window.dispatchEvent(new Event('ipm-install-diagnostic'));
+  }
 }
 
 export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onDismiss?: () => void; automatic?: boolean }) {
@@ -112,14 +124,14 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
       storageReadStatus: 'pending', dismissalValue: null, sessionFallbackValue: dismissedInSession() ? 'true' : 'false',
       eligible: 'pending', renderRequested: visible ? 'yes' : 'pending', suppressionReason: 'pending', ...patch,
     });
-    if (debug) setDiagnostic(baseDiagnostic());
+    if (debug) { const snapshot = baseDiagnostic(); setDiagnostic(snapshot); publishDiagnostic(snapshot); }
     if (next.installState === 'installed') {
       setVisible(false);
-      if (debug) setDiagnostic(baseDiagnostic({ eligible: 'no', renderRequested: 'no', suppressionReason: 'reliable standalone/installed state' }));
+      if (debug) { const snapshot = baseDiagnostic({ eligible: 'no', renderRequested: 'no', suppressionReason: 'reliable standalone/installed state' }); setDiagnostic(snapshot); publishDiagnostic(snapshot); }
       return;
     }
     if (!automatic || dismissedThisSession.current || dismissedInSession()) {
-      if (debug) setDiagnostic(baseDiagnostic({ eligible: 'no', renderRequested: 'no', suppressionReason: !automatic ? 'automatic prop is false' : 'dismissed in this page/session' }));
+      if (debug) { const snapshot = baseDiagnostic({ eligible: 'no', renderRequested: 'no', suppressionReason: !automatic ? 'automatic prop is false' : 'dismissed in this page/session' }); setDiagnostic(snapshot); publishDiagnostic(snapshot); }
       return;
     }
     // Storage is a preference source, not a prerequisite for educational guidance.
@@ -128,12 +140,12 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
     const read = async (key: string) => { try { return await AsyncStorage.getItem(key); } catch { storageReadStatus = 'error'; return null; } };
     const [installed, completed, dismissedAt] = await Promise.all([INSTALLED_KEY, ENTRY_COMPLETED_KEY, DISMISS_KEY].map(read));
     if (version !== evaluation.current || dismissedThisSession.current || dismissedInSession()) {
-      if (debug) setDiagnostic(baseDiagnostic({ storageReadStatus, dismissalValue: dismissedAt, eligible: 'no', renderRequested: 'no', suppressionReason: 'evaluation became stale or session dismissed' }));
+      if (debug) { const snapshot = baseDiagnostic({ storageReadStatus, dismissalValue: dismissedAt, eligible: 'no', renderRequested: 'no', suppressionReason: 'evaluation became stale or session dismissed' }); setDiagnostic(snapshot); publishDiagnostic(snapshot); }
       return;
     }
     const eligible = shouldOfferInstallGuidance({ installed: currentEnvironment().installState === 'installed', installedHint: installed === 'true', completed: completed === 'true', dismissedAt });
     const suppressionReason = eligible ? 'none' : installed === 'true' ? 'stored installed flag' : completed === 'true' ? 'stored entry-completed flag' : dismissedAt ? 'stored dismissal timestamp' : 'eligibility returned false';
-    if (debug) setDiagnostic(baseDiagnostic({ storageReadStatus, dismissalValue: dismissedAt, eligible: eligible ? 'yes' : 'no', renderRequested: eligible ? 'yes' : 'no', suppressionReason }));
+    if (debug) { const snapshot = baseDiagnostic({ storageReadStatus, dismissalValue: dismissedAt, eligible: eligible ? 'yes' : 'no', renderRequested: eligible ? 'yes' : 'no', suppressionReason }); setDiagnostic(snapshot); publishDiagnostic(snapshot); }
     setVisible(eligible);
   }, [automatic]);
 
