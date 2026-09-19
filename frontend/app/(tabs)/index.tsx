@@ -13,7 +13,8 @@ import {
   Platform,
 } from 'react-native';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect, useRouter } from 'expo-router';
+import PWAInstallPrompt from '../../src/components/PWAInstallPrompt';
+import { useFocusEffect, usePathname, useRouter } from 'expo-router';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { getVisibleAnnouncements } from '../../src/components/AnnouncementCard';
 import ResponsiveBanner from '../../src/components/ResponsiveBanner';
@@ -207,6 +208,7 @@ function getTimeUntil(eventDate: Date | null) {
 }
 
 export default function HomeScreen() {
+  const homeFocused = usePathname() === '/';
   usePageAnalytics('home', 'launch');
   const router = useRouter();
   const { sectionStyle: attendeeSectionStyle } = useAttendeeLayout();
@@ -427,6 +429,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {homeFocused && <PWAInstallPrompt automatic />}
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}

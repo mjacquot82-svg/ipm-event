@@ -18,6 +18,7 @@ import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendee
 import { eventInfo } from '../../src/data/mockData';
 import { openTrackedLink, trackControlledOutbound } from '../../src/analytics/trackedLinks';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import PWAInstallPrompt from '../../src/components/PWAInstallPrompt';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 
 const BUILD_NUMBER = process.env.EXPO_PUBLIC_IPM_BUILD_NUMBER || 'development';
@@ -165,6 +166,8 @@ export default function AboutScreen() {
             ))}
           </View>
         </View>
+
+        {Platform.OS === 'web' ? <View style={styles.section}><PWAInstallPrompt /></View> : null}
 
         <AttendeeAttribution source="about_attribution" />
 
