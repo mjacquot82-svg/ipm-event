@@ -142,6 +142,7 @@ export default function AdminDashboardScreen() {
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [vendors, setVendors] = useState<AdminVendor[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [vendorsLoaded, setVendorsLoaded] = useState(false);
   const [vendorsError, setVendorsError] = useState<string | null>(null);
   const [vendorSearch, setVendorSearch] = useState('');
   const [editorMode, setEditorMode] = useState<VendorEditorMode>('closed');
@@ -151,6 +152,7 @@ export default function AdminDashboardScreen() {
   const [vendorSaving, setVendorSaving] = useState(false);
   const [scheduleEvents, setScheduleEvents] = useState<AdminScheduleEvent[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleLoaded, setScheduleLoaded] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [scheduleSearch, setScheduleSearch] = useState('');
   const [scheduleDayFilter, setScheduleDayFilter] = useState('All');
@@ -187,6 +189,7 @@ export default function AdminDashboardScreen() {
     try {
       const result = await listAdminVendors();
       setVendors(result.vendors);
+      setVendorsLoaded(true);
     } catch (err) {
       setVendorsError(err instanceof Error ? err.message : 'Unable to load vendors');
     } finally {
@@ -200,6 +203,7 @@ export default function AdminDashboardScreen() {
     try {
       const result = await listScheduleEvents();
       setScheduleEvents(result.events);
+      setScheduleLoaded(true);
     } catch (err) {
       setScheduleError(err instanceof Error ? err.message : 'Unable to load schedule');
     } finally {
@@ -271,10 +275,10 @@ export default function AdminDashboardScreen() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && activeSection === 'vendors') {
+    if (isAuthenticated && (activeSection === 'dashboard' || activeSection === 'vendors')) {
       loadVendors();
     }
-    if (isAuthenticated && activeSection === 'schedule') {
+    if (isAuthenticated && (activeSection === 'dashboard' || activeSection === 'schedule')) {
       loadSchedule();
     }
     if (isAuthenticated && activeSection === 'communications') {
@@ -670,8 +674,10 @@ export default function AdminDashboardScreen() {
       {activeSection === 'dashboard' && (
         <DashboardPage
           currentUser={currentUser}
-          vendorsCount={vendors.length}
-          scheduleCount={scheduleEvents.length}
+          vendorsCount={vendorsError ? 'Unavailable' : !vendorsLoaded || vendorsLoading ? 'Loading…' : String(vendors.length)}
+          scheduleCount={scheduleError ? 'Unavailable' : !scheduleLoaded || scheduleLoading ? 'Loading…' : String(scheduleEvents.length)}
+          countsError={[vendorsError, scheduleError].filter(Boolean).join(' ')}
+          onRefreshCounts={() => { loadVendors(); loadSchedule(); }}
           onOpenSchedule={() => setActiveSection('schedule')}
         />
       )}
@@ -790,11 +796,15 @@ function DashboardPage({
   currentUser,
   vendorsCount,
   scheduleCount,
+  countsError,
+  onRefreshCounts,
   onOpenSchedule,
 }: {
   currentUser: OrganizerUser | null;
-  vendorsCount: number;
-  scheduleCount: number;
+  vendorsCount: string;
+  scheduleCount: string;
+  countsError: string;
+  onRefreshCounts: () => void;
   onOpenSchedule: () => void;
 }) {
   return (
@@ -806,9 +816,10 @@ function DashboardPage({
       <View style={styles.metricGrid}>
         <MetricCard label="Event" value={currentUser?.event_id || 'Current event'} icon="map-pin" />
         <MetricCard label="Role" value={currentUser?.role || 'Organizer'} icon="shield" />
-        <MetricCard label="Vendors" value={String(vendorsCount)} icon="shopping-bag" />
-        <MetricCard label="Schedule" value={String(scheduleCount)} icon="calendar" />
+        <MetricCard label="Vendors" value={vendorsCount} icon="shopping-bag" />
+        <MetricCard label="Schedule" value={scheduleCount} icon="calendar" />
       </View>
+      {countsError ? <ErrorState message={countsError} onRetry={onRefreshCounts} /> : null}
     </ContentPage>
   );
 }
