@@ -3,7 +3,7 @@ import type { TentedCityVendor } from '../config/tentedCityTypes';
 
 /** Sharon-confirmed containing areas only; these are not individual stalls. */
 export function applyApprovedIndoorExhibitors(vendors: TentedCityVendor[]): TentedCityVendor[] {
-  const names = new Set(approved.map((entry) => entry.name));
+  const names = new Set(approved.flatMap((entry) => [entry.name, ...entry.replacesMapNames]));
   return [
     ...vendors.filter((vendor) => !names.has(vendor.name)),
     ...approved.map((entry) => ({

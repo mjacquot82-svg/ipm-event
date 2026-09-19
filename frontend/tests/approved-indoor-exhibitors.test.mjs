@@ -33,6 +33,9 @@ for (const entry of approved) test(`${entry.name}: search, location, exact map t
   assert.deepEqual(resolved, { status: 'mapped', query: entry.name });
   const mapped = tentedCityVendors.filter(v => v.name === resolved.query);
   assert.equal(mapped.length, 1);
+  for (const legacy of entry.replacesMapNames) {
+    if (legacy !== entry.name) assert.equal(tentedCityVendors.filter(v => v.name === legacy).length, 0, 'legacy map duplicate removed');
+  }
   assert.deepEqual(mapped[0].booths, [entry.area]);
   const footprint = footprintForVendor(mapped[0]);
   assert.ok(footprint, 'existing canonical geometry must resolve');
