@@ -11,7 +11,7 @@ The requested refinement uses that existing spotlight/callback mechanism for bot
 ## Attendee sequence
 
 1. Plan your day remains unchanged: Got it starts the practical portion; Skip ends it.
-2. View event details highlights a currently visible event. It prefers a visible event with a usable mapped location, falling back to the existing visible-event strategy. It tells the attendee to tap the highlighted event. Only that action advances into the event details. There is no Got it/Next continuation on the action step.
+2. View event details highlights a currently visible event. It measures currently rendered cards with usable mapped locations. The shared spotlight lease selects one visible target, without retaining a virtualized-list ID that can become stale after filtering. It tells the attendee to tap the highlighted event. Only that action advances into the event details. There is no Got it/Next continuation on the action step.
 3. Find this event explains that the detail has time, date and location, and highlights the actual location action. Tapping that target invokes the same `openSelectedEventOnMap` handler as the ordinary location button. Completing the step opens the existing correct map/highlight, with event title primary and venue secondary and no ambiguous time list.
 
 Both interactive steps expose Skip. Escape/back dismisses education. Unrelated taps do not progress. Keyboard focus includes the highlighted action and Skip. No event ID is hard-coded. Empty data or unavailable/unmeasurable targets do not create a blocking tutorial; normal navigation and Help remain available.

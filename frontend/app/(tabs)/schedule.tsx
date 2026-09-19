@@ -83,12 +83,6 @@ export default function ScheduleScreen() {
   const walkthroughPreview = useWalkthroughPreview();
   const previewStarted = useRef(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
-  const [visibleEducationEventId, setVisibleEducationEventId] = useState<string | null>(null);
-  const educationViewability = useRef({ itemVisiblePercentThreshold: 100, minimumViewTime: 200 }).current;
-  const educationViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { item: ScheduleEvent; isViewable: boolean }[] }) => {
-    const visible = viewableItems.filter(item => item.isViewable && item.item.id);
-    setVisibleEducationEventId((visible.find(item => scheduleMapTipEligible(item.item.location_name, item.item.title)) || visible[0])?.item.id ?? null);
-  }).current;
   const [showStarConfirmation, setShowStarConfirmation] = useState(false);
   const onboardingDismissRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
   const [successfulAddition, setSuccessfulAddition] = useState(0);
@@ -555,8 +549,6 @@ export default function ScheduleScreen() {
   return (
     <ContextualEducationReplay.Provider value={helpReplay}><View style={styles.container}>
       <SectionList
-        viewabilityConfig={educationViewability}
-        onViewableItemsChanged={educationViewableItemsChanged}
         style={styles.content}
         contentContainerStyle={styles.listContent}
         sections={scheduleSections}
@@ -825,7 +817,7 @@ export default function ScheduleScreen() {
 
           return (
             <View style={sectionStyle}>
-              <ScheduleEventDetailsTip eligible={onboardingLoaded && !showScheduleOnboarding && !showEventModal && !showCategorySelector && !loading && !refreshing && visibleEducationEventId === event.id} onOpen={openEvent}>
+              <ScheduleEventDetailsTip eligible={onboardingLoaded && !showScheduleOnboarding && !showEventModal && !showCategorySelector && !loading && !refreshing && scheduleMapTipEligible(event.location_name, event.title)} onOpen={openEvent}>
                   <TouchableOpacity
                     style={[styles.eventCard, { backgroundColor: categoryStyle.tint }]}
                     onPress={openEvent}

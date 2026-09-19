@@ -223,11 +223,14 @@ export function ScheduleEventDetailsTip({ eligible, onOpen, children }: {
   useEffect(() => {
     setStable(false);
     if (!eligible) return;
-    // Wait beyond the introduction's fade, then require a fully visible card.
-    const timer = setTimeout(() => anchor.current?.measureInWindow((x, y, w, h) => {
+    // Measure current cards rather than retaining a virtualized-list item ID.
+    // Search/filter changes and scrolling can move a target after the intro fades.
+    const measure = () => anchor.current?.measureInWindow((x, y, w, h) => {
       setStable(w > 0 && h > 0 && y >= 0 && y + h < height - 60);
-    }), 500);
-    return () => clearTimeout(timer);
+    });
+    const timer = setTimeout(measure, 500);
+    const interval = setInterval(measure, 700);
+    return () => { clearTimeout(timer); clearInterval(interval); };
   }, [eligible, height]);
   const state = useEducation('scheduleEventDetailsTipSeen', eligible && stable);
   return <View ref={anchor} collapsable={false}>
