@@ -176,12 +176,12 @@ export default function AboutScreen() {
         </View>
 
         {Platform.OS === 'web' ? <View style={styles.helpSection}>
+          <PWAInstallPrompt />
           <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: appHelp }}
             onPress={() => setAppHelp(!appHelp)} style={styles.helpButton}>
             <Text style={styles.helpLabel}>{appHelp ? 'Hide app help' : 'App help'}</Text>
           </TouchableOpacity>
           {appHelp ? <>
-            <PWAInstallPrompt />
             <NotificationOptIn />
             <AppStatus />
           </> : null}

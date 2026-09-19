@@ -39,6 +39,8 @@ for(const [name,width,ua,installed,permission,dismissed] of [
  const p=await c.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  await p.goto(base,{waitUntil:'domcontentloaded'});
  const countdown=p.getByText('IPM 2026 Starts In',{exact:true});await countdown.waitFor();await p.waitForTimeout(1000);
+ const install=p.getByRole('dialog',{name:'Install the IPM App',exact:true});
+ if(!installed){await install.waitFor();await install.getByRole('button',{name:'Continue without installing'}).click();}else assert.equal(await install.count(),0);
  const text=await p.locator('body').innerText();
  assert(!/Use IPM now|You’re already in IPM|Get important IPM updates|Notification options|IPM is on your Home Screen|Notification delivery|VERIFIED|MISMATCH|provider-ready|reconciliation|notification health/i.test(text));
  const box=await countdown.boundingBox();assert(box&&box.y<(width<720?500:800),`${name}: countdown top ${box?.y}`);
@@ -52,7 +54,7 @@ for(const [name,width,ua,installed,permission,dismissed] of [
  await p.goto(base+'/schedule',{waitUntil:'domcontentloaded'});await p.getByText('Schedule',{exact:true}).first().waitFor();
  await p.goto(base,{waitUntil:'domcontentloaded'});await countdown.waitFor();assert.equal(await invitation.count(),0);
  assert.deepEqual(errors,[]);
- console.log('PASS',name,'countdown y',Math.round(box.y),'no setup wall, no install promotion, dismissal/navigation/permission safety');
+ console.log('PASS',name,'countdown y',Math.round(box.y),'optional installation dismissed, Home layout/navigation/permission safety');
  await c.close();
 }
 await browser.close();

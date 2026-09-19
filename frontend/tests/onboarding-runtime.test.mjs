@@ -28,6 +28,7 @@ function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Ch
  require:(name)=>{
   if(name==='react')return {...hooks,default:hooks};
   if(name==='react-native')return {Platform:{OS:'web'},StyleSheet:{create:x=>x},Text:'Text',View:'View',ScrollView:'ScrollView',TouchableOpacity:'Button',ActivityIndicator:'Spinner'};
+  if(name==='react-native-safe-area-context')return {SafeAreaView:'View'};
   if(name==='expo-router')return {useFocusEffect:f=>hooks.useEffect(f,[f])};
   if(name.includes('async-storage'))return {default:{setItem:async(k,v)=>storage.set(k,v),getItem:async k=>storage.get(k)||null}};
   if(name.includes('vector-icons'))return {Feather:'Icon'};
@@ -35,6 +36,7 @@ function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Ch
   if(name.includes('notificationHelp'))return {notificationHelp};
   if(name.includes('pwaUpdateService'))return {holdPwaUpdate:()=>{calls.holds++;return()=>calls.holds--;}};
   if(name.endsWith('wonderPushService'))return sdk;
+  if(name.endsWith('itineraryReminderSync.web'))return {registerControlledTestDevice:async()=>{}};
   if(name.endsWith('notificationRegistration'))return {ensureNotificationRegistration:async opts=>{calls.register.push(opts);}};
   if(name.includes('wonderPushRuntimeDiagnostic'))return {recordNotificationWorkflowDiagnostic:()=>{}};
   if(name.includes('theme/colors'))return {default:{},colors:{}};
@@ -78,15 +80,15 @@ test('bounded status failure gives an explicit read retry, never a permission lo
 test('B native install is captured without opening help, then used only on click',async()=>{
  const h=harness('PWAInstallPrompt.tsx');h.exports.startInstallPromptCapture();await h.flush();
  h.win.dispatchEvent({type:'beforeinstallprompt',preventDefault(){},prompt:async()=>h.calls.prompt++,userChoice:Promise.resolve({outcome:'dismissed'})});await h.flush();
- assert.doesNotMatch(h.text(),/Do I need/);assert.equal(h.calls.prompt,0);
- await h.click('Add IPM to your Home Screen · Optional');await h.click('Add IPM to your Home Screen');assert.equal(h.calls.prompt,1);assert.doesNotMatch(h.text(),/Do I need/);
+ assert.doesNotMatch(h.text(),/Install the IPM App/);assert.equal(h.calls.prompt,0);
+ await h.click('Install App');await h.click('Install App');assert.equal(h.calls.prompt,1);assert.doesNotMatch(h.text(),/Install the IPM App/);
 });
 for(const ua of ['Android Chrome/130.0','iPhone Safari/604.1','Windows Chrome/130.0'])test('M dismissal never reopens install help: '+ua,async()=>{
- const h=harness('PWAInstallPrompt.tsx',{ua});h.exports.startInstallPromptCapture();await h.flush();await h.click('Add IPM to your Home Screen · Optional');await h.click('Continue without installing');
- h.win.dispatchEvent({type:'beforeinstallprompt',preventDefault(){},prompt:async()=>{},userChoice:Promise.resolve({outcome:'dismissed'})});await h.flush();assert.doesNotMatch(h.text(),/Do I need/);
+ const h=harness('PWAInstallPrompt.tsx',{ua});h.exports.startInstallPromptCapture();await h.flush();await h.click('Install App');await h.click('Continue without installing');
+ h.win.dispatchEvent({type:'beforeinstallprompt',preventDefault(){},prompt:async()=>{},userChoice:Promise.resolve({outcome:'dismissed'})});await h.flush();assert.doesNotMatch(h.text(),/Install the IPM App/);
 });
 test('C installed Android and iPhone offer status instead of another install action',async()=>{
- for(const ua of ['Android Chrome/130.0','iPhone Safari/604.1']){const h=harness('PWAInstallPrompt.tsx',{ua,standalone:true});await h.flush();assert.match(h.text(),/IPM is on your Home Screen/);assert.equal(h.calls.prompt,0);}
+ for(const ua of ['Android Chrome/130.0','iPhone Safari/604.1']){const h=harness('PWAInstallPrompt.tsx',{ua,standalone:true});await h.flush();assert.match(h.text(),/Installed app help/);assert.equal(h.calls.prompt,0);}
 });
 test('G/i iPhone notification help is capability-specific and preserves browser use',()=>{
  const e=detectInstallEnvironment({userAgent:'iPhone Safari/604.1'});assert.match(notificationHelp(e,'unsupported'),/16.4/);assert.match(notificationHelp(e,'unsupported'),/browse IPM here/);

@@ -1,3 +1,5 @@
+> Historical policy: automatic installation guidance was restored on staging on 19 September 2026. See [the recovery report](recovery/device-aware-install-guidance-20260919.md) for the current one-time Home prompt and About replay policy. Notification behavior is unchanged.
+
 # Browser-first attendee setup — staging release
 
 ## Audit and design
