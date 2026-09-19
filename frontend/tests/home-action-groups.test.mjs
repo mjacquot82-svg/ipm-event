@@ -6,7 +6,7 @@ const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url),
 const destinations = await readFile(new URL('../src/analytics/trackedLinks.ts', import.meta.url), 'utf8');
 
 const actionsStart = home.indexOf('<Text style={styles.sectionTitle}>Quick Actions</Text>');
-const linksStart = home.indexOf('<Text style={[styles.sectionTitle, styles.linksTitle]}>Links</Text>', actionsStart);
+const linksStart = home.indexOf('{/* External links */}', actionsStart);
 const groupsEnd = home.indexOf('{happeningNow.length > 0', linksStart);
 const actions = home.slice(actionsStart, linksStart);
 const links = home.slice(linksStart, groupsEnd);
@@ -15,9 +15,9 @@ const groupedButtons = home.slice(actionsStart, groupsEnd);
 const allButtons = [
   'Map', 'Schedule', 'Vendors', 'Sponsors', 'Volunteer', 'Exhibitors', 'Tickets',
   'Camping', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service',
-  'Personal Itinerary', 'Queen of the Furrow', 'Emergency Services', 'Announcements', '2026 Show Guide',
+  'Personal Itinerary', 'Queen of the Furrow', 'Emergency Services', 'Announcements', 'Accessibility Information', '2026 Show Guide',
 ];
-const actionButtons = ['Emergency Services', 'Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements'];
+const actionButtons = ['Emergency Services', 'Map', 'Schedule', 'Vendors', 'Camping', 'Personal Itinerary', 'Queen of the Furrow', 'Announcements', 'Accessibility Information'];
 const linkButtons = ['Sponsors', 'Volunteer', 'Exhibitors', 'Tickets', 'Souvenirs', 'Celebration of Excellence', 'Interdenominational Worship Service', '2026 Show Guide'];
 
 function occurrences(source, label) {
@@ -68,7 +68,7 @@ test('Quick Actions reflow naturally without width-specific gaps', () => {
   assert.doesNotMatch(home, /(?:mobile|desktop).*Emergency Services|Emergency Services.*(?:mobile|desktop)/i);
 });
 
-test('internal controls are isolated under Action Buttons', () => {
+test('Quick Action controls are isolated under Action Buttons', () => {
   for (const label of actionButtons) {
     assert.equal(occurrences(actions, label), 1, `${label} missing from actions`);
     assert.equal(occurrences(links, label), 0, `${label} leaked into links`);
@@ -127,4 +127,29 @@ test('Links feature the 2026 Show Guide PDF card', () => {
   assert.match(links, /openQuickLink\('show_guide', 'show_guide'\)/);
   assert.ok(destinations.includes("show_guide: {"));
   assert.ok(destinations.includes("url: 'https://www.plowingmatch.org/ipm2026/wp-content/uploads/2026/08/IPM-2026-Show-Guide.pdf'"));
+});
+
+
+test('Accessibility completes the standard Quick Actions grid immediately after Announcements', () => {
+  const grid = actions.match(/<View style=\{styles\.quickActionsGrid\}>([\s\S]*)<\/View>\s*$/)?.[1];
+  assert.ok(grid, 'Quick Actions must be contained in one grid');
+  const cards = [...grid.matchAll(/<TouchableOpacity\b[\s\S]*?<\/TouchableOpacity>/g)].map(([card]) => card);
+  assert.equal(cards.length, 9);
+  assert.match(cards[6], />Queen of the Furrow<\/Text>/);
+  assert.match(cards[7], />Announcements<\/Text>/);
+  const card = cards[8];
+  assert.match(card, />Accessibility Information<\/Text>/);
+  assert.match(card, /style=\{styles\.actionCard\}/);
+  assert.match(card, /styles\.actionIcon/);
+  assert.match(card, /<Ionicons name="accessibility" size=\{22\} color="#FFFFFF" \/>/);
+  assert.match(card, /<Text style=\{styles\.actionTitle\}>/);
+  assert.match(card, /openQuickLink\('accessibility', 'accessibility'\)/);
+  assert.doesNotMatch(home, /accessibilityAction/);
+});
+
+test('Accessibility keeps its destination and approved About/Links removal', async () => {
+  const about = await readFile(new URL('../app/(tabs)/about.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(about, /Accessibility Information/);
+  assert.doesNotMatch(home, /<Text style=\{styles\.sectionTitle\}>Links<\/Text>/);
+  assert.ok(destinations.includes("accessibility: { id: 'accessibility', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/visitor-info/accessibility/' }"));
 });
