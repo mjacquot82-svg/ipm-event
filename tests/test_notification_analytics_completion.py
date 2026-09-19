@@ -320,3 +320,34 @@ def test_statistics_http_logging_never_exposes_credentials(monkeypatch,caplog):
             'fixture-campaign',requested_at=NOW.isoformat()))
     assert values['provider_confirmed_receipt_count']==2
     assert 'fixture-SECRET' not in caplog.text and 'accessToken=' not in caplog.text
+
+
+def test_future_send_identity_and_destination_across_announcements_and_tests(monkeypatch):
+    """Exercise the actual send orchestration with a provider fake, never a live send."""
+    from urllib.parse import urlsplit, parse_qs
+    provider, ledger = configure_notification_fakes(monkeypatch, announcement())
+    server.announcement_service.announcements[('event-a', 'announcement-2')] = {
+        **announcement(), 'id': 'announcement-2'}
+    user = {'username': 'owner', 'role': 'Owner', 'event_id': 'event-a'}
+    identities, idempotency_keys = set(), set()
+    for aid, audience in [('announcement-1', 'everyone'), ('announcement-2', 'everyone'),
+                          ('announcement-1', 'test'), ('announcement-1', 'test')]:
+        result = asyncio.run(server.notify_announcement(aid, audience, user))
+        stored = ledger.rows[-1]
+        options = provider.everyone_options if audience == 'everyone' else provider.test_options
+        assert options['campaign_id'] == stored['provider_campaign_id'] == result.provider_campaign_id
+        assert options['campaign_id'] == campaign_identity(stored['id'], audience)
+        identities.add(options['campaign_id']); idempotency_keys.add(options['idempotency_key'])
+        destination = urlsplit(stored['target_url'])
+        assert destination.path == f'/announcements/{aid}'
+        assert parse_qs(destination.query) == {'notification_ref': [stored['id']]}
+        assert 'owner' not in destination.query and 'test-1' not in destination.query
+    assert len(identities) == len(idempotency_keys) == 4
+    with pytest.raises(HTTPException) as duplicate:
+        asyncio.run(server.notify_announcement('announcement-1', 'everyone', user))
+    assert duplicate.value.status_code == 409 and len(ledger.rows) == 4
+
+
+def test_historical_explanation_requires_evidence_not_just_missing_counts():
+    assert unattributed_history(delivery(provider_campaign_id='wonderpush:accepted', target_url='https://example.test/announcements/a'))
+    assert not unattributed_history(delivery())

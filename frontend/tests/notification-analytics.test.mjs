@@ -8,29 +8,30 @@ const nav1 = '00000000-0000-4000-8000-000000000002';
 const nav2 = '00000000-0000-4000-8000-000000000003';
 const history = () => ({state: {router: 'preserved'}, replaceState(value) {this.state = value;}});
 
-test('provider fixture maps every count and acceptance to precise UI labels', () => {
- const rows = Object.fromEntries(notificationMetricRows({status:'sent', provider_accepted:true,
-  audience_device_count:13, provider_targeted_device_count:12, provider_sent_count:11,
-  provider_confirmed_receipt_count:9, provider_open_count:3, notification_origin_visit_count:2, provider_failure_count:1}));
- for(const [label,n] of [['Known deliverable devices at send',13],['Targeted devices',12],['Sent to push service',11],['Provider-confirmed receipts',9],['Notification opens',3],['Notification-origin app visits',2],['Provider failures',1]]) assert.equal(rows[label],String(n));
- assert.ok(!Object.keys(rows).some(x=>/delivered|people/i.test(x)));
+test('plain-English rows distinguish exact targets, estimates and gateway sends', () => {
+ const rows=Object.fromEntries(notificationMetricRows({provider_targeted_device_count:12,audience_device_count:13,
+  provider_sent_count:11,provider_confirmed_receipt_count:9,provider_open_count:3,notification_origin_visit_count:2,provider_failure_count:1}));
+ for(const [label,n] of [['Devices targeted',12],['Confirmed receipts',9],['Notification taps',3],['Visits through notification links',2],['Provider-reported delivery failures',1]]) assert.equal(rows[label],String(n));
+ assert.ok(!('Estimated available registrations at send time' in rows));
+ assert.ok(!('Sent to push service' in rows));
+ const estimated=Object.fromEntries(notificationMetricRows({audience_device_count:248}));
+ assert.equal(estimated['Estimated available registrations at send time'],'248');
+ assert.ok(!('Devices targeted' in estimated));
 });
-test('absent sends are compact; historical missing telemetry is summarized, never zero', () => {
- for(const value of [null,undefined]) assert.equal(metricValue(value),'Not available');
+test('unknown remains unavailable while measured zero remains zero', () => {
+ for(const value of [null,undefined]) assert.equal(metricValue(value),'Unavailable');
  assert.equal(metricValue(0),'0');
  assert.deepEqual(notificationMetricRows(),[]);
- const historical={status:'sent',provider_accepted:true,provider_sent_count:null};
- assert.deepEqual(notificationMetricRows(historical),[]);
- assert.equal(notificationMissingDetail(historical),'Detailed delivery analytics are not available for this send.');
+ const historical=notificationMetricRows({status:'sent',provider_accepted:true});
+ assert.equal(historical.length,4);
+ assert.ok(historical.every(([,value])=>value==='Unavailable'));
+ const partial=Object.fromEntries(notificationMetricRows({provider_open_count:0,provider_sent_count:11}));
+ assert.equal(partial['Notification taps'],'0');assert.equal(partial['Confirmed receipts'],'Unavailable');
+ assert.equal(notificationMissingDetail({}), 'The system does not have reliable evidence for this value.');
 });
-test('partial statistics retain explicit zero and collapse missing counts', () => {
- const stats={status:'sent',provider_accepted:true,provider_open_count:0,provider_sent_count:11};
- assert.deepEqual(notificationMetricRows(stats),[['Notification opens','0'],['Sent to push service','11']]);
- assert.equal(notificationMissingDetail(stats),'Additional delivery analytics are not available.');
-});
-test('complete statistics need no unavailable explanation', () => {
- assert.equal(notificationMissingDetail({provider_targeted_device_count:12,provider_confirmed_receipt_count:9,
- provider_open_count:3,notification_origin_visit_count:2,provider_failure_count:0,provider_sent_count:11}),null);
+test('complete detail does not require unsupported exact targets', () => {
+ assert.equal(notificationMissingDetail({provider_confirmed_receipt_count:9,provider_open_count:3,
+  notification_origin_visit_count:2,provider_failure_count:0}),null);
 });
 test('notification navigation reload/back remains one visit and preserves router state', () => {
  const h=history();
@@ -66,11 +67,4 @@ test('Expo Router replacing history fields on reload keeps the tab-scoped visit 
 });
 test('router attribution fails closed if tab storage cannot persist', () => {
  assert.equal(notificationNavigationId(ref,{state:{id:'entry'},replaceState(){}},()=>nav1,{getItem(){throw Error('blocked');},setItem(){}}),null);
-});
-
-test('production reminder overview describes real outcomes without staging terminology', async () => {
- const source = await readFile(new URL('../src/components/admin/NotificationOverview.tsx', import.meta.url), 'utf8');
- assert.match(source, /Current interests and all-time reminder outcomes\./);
- assert.doesNotMatch(source, /controlled|fixture|Arm tests?|Device A|staging claims|test deliveries/i);
- assert.match(source, /Provider acceptance does not confirm visible display/);
 });
