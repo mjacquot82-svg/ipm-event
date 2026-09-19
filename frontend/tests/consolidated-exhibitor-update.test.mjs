@@ -56,7 +56,7 @@ function loadTypeScript(relative, parent = root) {
 }
 
 test('candidate preserves consolidated data after four confirmed cancellations', () => {
-  assert.equal(catalog.length, 228);
+  assert.equal(catalog.length, 296);
   for (const [name, location] of yellow) {
     const hits = catalog.filter((vendor) => vendor.name === name);
     assert.equal(hits.length, 1, name);

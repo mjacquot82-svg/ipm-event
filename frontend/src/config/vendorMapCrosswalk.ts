@@ -1,4 +1,5 @@
 import { tentedCityVendors } from '../data/tentedCityVendors';
+import approvedIndoorExhibitors from '../data/approvedIndoorExhibitors.json';
 import type { TentedCityVendor } from './tentedCityTypes';
 
 /**
@@ -91,6 +92,11 @@ export function resolveVendorMapQuery(
   const raw = (liveName || '').trim();
   if (!raw) return { status: 'unmapped' };
   const key = normalizeVendorKey(raw);
+
+  // These exact print names have newly confirmed, specific containing areas.
+  // Prefer them over historical aliases pointing to a combined tent region.
+  const approved = approvedIndoorExhibitors.find((entry) => normalizeVendorKey(entry.name) === key);
+  if (approved) return { status: 'mapped', query: approved.name };
   if (!key) return { status: 'unmapped' };
 
   const aliasName = VENDOR_MAP_ALIASES[key] || VENDOR_MAP_ALIASES[raw];
@@ -184,4 +190,3 @@ export function vendorMatchesSearch(
 
   return false;
 }
-

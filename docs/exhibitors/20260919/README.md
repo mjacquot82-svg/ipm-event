@@ -1,6 +1,6 @@
-# Indoor exhibitor reconciliation — review hold
+# Indoor exhibitor reconciliation — candidate
 
-No directory, map, production or staging deployment changes have been made.
+The approved 68 print entries are added to the non-production candidate. The original 228 directory records are unchanged. Production is unchanged.
 **All suggested locations in UNCONFIRMED-locations-for-organizers.csv are hypotheses, NOT app data.** The last two columns are blank for organizer completion.
 
 ## Baseline and sources
@@ -14,11 +14,11 @@ No directory, map, production or staging deployment changes have been made.
 - Newer approved assignments remain unchanged: B Town 1B 07; JW 5A 21; Fellowship 2A 16–17; Mitchell 2A 18–19; Bailey 2A 20. Source workbook older assignments do not overwrite these corrections.
 - Sharon's September 17 cancellation email excludes RONA Doidge Kincardine, WM, Real-time Fun and Rentals/Route 66, and AmSpec; none is proposed for addition.
 
-## Count distinction requiring a decision
+## Count distinction — resolved by Marc
 
 **68 missing print/activity entries represent 66 company names.** CarePartners appears three times with distinct print names, in Agriculture, Rural Living 2 and Rural Expo Courtyard. No other candidate company repeats. The requested approximate 66 is reproducible as company count, not as separately named directory records.
 
-The exact names are in `proven-indoor-candidates.csv`. Before writes, decide whether CarePartners should have one record with all three names/locations or three distinct activity records. No CarePartners identity or location should silently be discarded. This hold is about representation, not uncertainty about those three containing areas.
+The exact 68 added names are in `proven-indoor-candidates.csv`. Marc explicitly confirmed three separate CarePartners attendee entries, retaining all three printed activity names and distinct containing locations. Resulting directory count: **296**. No other companies were collapsed.
 
 | Category | Missing print entries |
 |---|---:|
@@ -45,8 +45,8 @@ The 342-row reconciliation classifies: 219 represented rows; 68 proven indoor pr
 
 Punctuation, legal suffixes, apostrophes and appended city names were normalized. Reviewed aliases include ENJO Canada / ENJO Chemical Free Cleaning System (existing confirmed commit 0fed35f7), Fellowship, DJ's, Metcalf / Metalf, Bell and Rogers cell towers, Ontario Cattle Feeders and Maitland Valley Conservation. A shared booth alone was not accepted as identity proof for the four truncated names.
 
-Existing map catalog contains many of the missing directory names and containing-tent areas, but also stale merged Rural Living geometry. It cannot be blindly copied. Before candidate implementation, each added record needs strict resolution to its approved containing area or text-only fallback. No new geometry has been created. Browser/search/highlight validation has not run because no candidate data was changed.
+Existing map catalog contains many of the missing directory names and containing-tent areas, but also stale merged Rural Living geometry. It cannot be blindly copied. Each added record resolves by exact print name to its approved containing area, using existing canonical geometry. No new geometry is created. Validation results are recorded in the candidate validation report.
 
 ## Safety
 
-App records added: 0. Existing records changed: 0. Duplicates created: 0. Notifications: 0. Production changes: 0. T-30 unchanged. No deployment, migration, backend or Render changes.
+Candidate app records added: 68. Existing records changed: 0. Duplicates created: 0. Notifications: 0. Production changes: 0. T-30 unchanged. No production deployment, migration, backend or Render changes.
