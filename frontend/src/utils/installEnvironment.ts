@@ -29,6 +29,14 @@ export function isInstallGuidanceEligible(dismissedAt: string | null, now: numbe
   return now - dismissedTime >= INSTALL_DISMISS_COOLDOWN_MS || promptIsNewer;
 }
 
+// One-time Home guidance. Keep historical choices; never revive a timed nag.
+export function shouldOfferInstallGuidance({ installed, installedHint, completed, dismissedAt }: {
+  installed: boolean; installedHint: boolean; completed: boolean; dismissedAt: string | null;
+}): boolean {
+  const dismissed = dismissedAt !== null && Number.isFinite(Number(dismissedAt)) && Number(dismissedAt) > 0;
+  return !installed && !installedHint && !completed && !dismissed;
+}
+
 export function detectInstallEnvironment({
   userAgent = '', platformHint = '', maxTouchPoints = 0, standalone = false, nativePromptAvailable = false,
 }: {
@@ -39,7 +47,8 @@ export function detectInstallEnvironment({
   const android = /android/.test(ua);
   const platform: InstallPlatform = ios ? 'ios' : android ? 'android' : ua ? 'desktop' : 'unknown';
   let browser: InstallBrowser = 'other';
-  if (/samsungbrowser\//.test(ua)) browser = 'samsung_internet';
+  if (/; wv\)|\bwv;|fban|fbav|instagram/.test(ua)) browser = 'other';
+  else if (/samsungbrowser\//.test(ua)) browser = 'samsung_internet';
   else if (/edgios|edga|edg\//.test(ua)) browser = 'edge';
   else if (/fxios|firefox\//.test(ua)) browser = 'firefox';
   else if (/crios|chrome\//.test(ua)) browser = 'chrome';
@@ -63,7 +72,7 @@ export function getInstallGuidance(environment: InstallEnvironment): InstallGuid
     const browserName = environment.browser === 'samsung_internet' ? 'Samsung Internet' : environment.browser === 'edge' ? 'Edge' : environment.browser === 'chrome' ? 'Chrome' : null;
     return {
       heading: environment.platform === 'desktop' && browserName ? `Install the IPM App in ${browserName}` : 'Install the IPM App',
-      intro: 'Your browser will ask you to confirm. This is optional.', steps: [], primaryLabel: 'Add IPM to your Home Screen',
+      intro: 'Your browser will ask you to confirm. This is optional.', steps: [], primaryLabel: 'Install App',
     };
   }
   if (environment.platform === 'ios' && environment.browser === 'safari') {
@@ -82,7 +91,7 @@ export function getInstallGuidance(environment: InstallEnvironment): InstallGuid
     ], primaryLabel: null };
   }
   if (environment.browser === 'samsung_internet') {
-    return { heading: 'Install the IPM App on your Samsung', intro: 'Follow these steps in Samsung Internet.', steps: [
+    return { heading: 'Install the IPM App in Samsung Internet', intro: 'Follow these steps in Samsung Internet.', steps: [
       { cue: 'menu', title: 'Tap the Menu button', hint: 'Look for ☰ at the bottom-right of Samsung Internet.' },
       { cue: 'add_home', title: 'Tap “Add page to”', hint: 'On some versions, you may see “Add to” instead.' },
       { cue: 'install', title: 'Tap “Home screen”', hint: 'Confirm if Samsung asks. The IPM App will appear with your other apps.' },
@@ -92,7 +101,7 @@ export function getInstallGuidance(environment: InstallEnvironment): InstallGuid
     return { heading: 'Install the IPM App in Chrome', intro: 'Follow these three taps in Chrome.', steps: [
       { cue: 'more_vertical', title: 'Tap the three dots', hint: 'Look for ⋮ in the top-right corner of Chrome.' },
       { cue: 'add_home', title: 'Tap “Add to Home screen”', hint: 'Chrome may show “Install app” directly instead—choose that if you see it.' },
-      { cue: 'install', title: 'Tap “Install app,” then “Install”', hint: 'The IPM App will appear on your phone like your other apps.' },
+      { cue: 'install', title: 'Confirm “Install” or “Add”', hint: 'Follow the confirmation shown by Chrome. IPM will be available from your Home Screen or app list.' },
     ], primaryLabel: null };
   }
   if (environment.platform === 'android') {

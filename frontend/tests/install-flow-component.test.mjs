@@ -18,14 +18,31 @@ test('component preserves standalone bypass, appinstalled handling, and dismissa
 
 test('component keeps an accessible optional continuation and labelled instructional cues', () => {
   assert.match(source, /accessibilityLabel="Continue without installing"/);
-  assert.match(source, /Close help — keep using IPM/);
+  assert.match(source, /Continue using the website/);
   assert.match(source, /accessibilityLabel=\{label\}/);
 });
 
 const layout = await readFile(new URL('../app/_layout.tsx', import.meta.url), 'utf8');
-test('R deep-linked first visits retain the route without a global installation overlay', () => {
+test('deep links retain their route; Home alone owns automatic guidance', () => {
  assert.doesNotMatch(layout, /<PWAInstallPrompt/);
  assert.match(layout, /startInstallPromptCapture/);
  assert.doesNotMatch(source, /router\.replace|router\.push|location\.href/);
  assert.doesNotMatch(source, /absoluteFillObject|isInstallGuidanceEligible/);
+});
+
+const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
+const about = await readFile(new URL('../app/(tabs)/about.tsx', import.meta.url), 'utf8');
+test('Home-only focused mounting prevents contextual tutorial collision', () => {
+ assert.match(home, /homeFocused && <PWAInstallPrompt automatic/);
+ assert.match(home, /usePathname/);
+ assert.match(about, /<PWAInstallPrompt \/>/);
+ assert.ok(about.indexOf('<PWAInstallPrompt />') < about.indexOf('<AttendeeAttribution'));
+ assert.doesNotMatch(about, /NotificationOptIn|AppStatus|appHelp/);
+});
+test('install flow writes only its own preferences and holds updater interactions', () => {
+ assert.doesNotMatch(source, /removeItem|clear\(|favorites|notificationRegistration|subscribeToNotifications|Notification\.requestPermission/);
+ assert.match(source, /holdPwaUpdate/);
+ assert.match(source, /ENTRY_COMPLETED_KEY/);
+ assert.match(source, /onRequestClose/);
+ assert.match(source, /SafeAreaView/);
 });

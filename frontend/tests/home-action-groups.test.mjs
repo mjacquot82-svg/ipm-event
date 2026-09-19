@@ -142,9 +142,10 @@ test('Accessibility uses the existing destination and Home has no visible Links 
   assert.match(home, /shareFeedback &&/);
 });
 
-test('About removes only Accessibility navigation and retains production Emergency Services', async () => {
+test('About adds install replay while retaining production Emergency Services', async () => {
   const about = await readFile(new URL('../app/(tabs)/about.tsx', import.meta.url), 'utf8');
   assert.doesNotMatch(about, /Accessibility Information|openAccessibilityInformation/);
   assert.match(about, /Emergency Services \/ Need Help/);
-  assert.doesNotMatch(about, /PWAInstallPrompt|NotificationOptIn|AppStatus|appHelp/);
+  assert.match(about, /<PWAInstallPrompt \/>/);
+  assert.doesNotMatch(about, /NotificationOptIn|AppStatus|appHelp/);
 });

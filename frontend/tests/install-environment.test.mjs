@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { detectInstallEnvironment, getInstallGuidance, INSTALL_DISMISS_COOLDOWN_MS, isInstallGuidanceEligible } from '../src/utils/installEnvironment.ts';
+import { detectInstallEnvironment, getInstallGuidance, INSTALL_DISMISS_COOLDOWN_MS, isInstallGuidanceEligible, shouldOfferInstallGuidance } from '../src/utils/installEnvironment.ts';
 
 const detect = (userAgent, options = {}) => detectInstallEnvironment({ userAgent, ...options });
 const iphoneSafari = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1';
@@ -15,13 +15,28 @@ test('iPhone Chrome explains the Safari handoff and installation steps', () => {
 test('iPhone Firefox explains the Safari handoff', () => { const g = getInstallGuidance(detect(iphoneFirefox)); assert.match(g.intro, /keep using IPM in Firefox/i); assert.equal(g.steps[0].cue, 'safari'); });
 test('iPhone Edge explains the Safari handoff', () => { const g = getInstallGuidance(detect(iphoneEdge)); assert.match(g.intro, /keep using IPM in Edge/i); assert.equal(g.steps[0].cue, 'safari'); });
 test('unknown iPhone browser uses the same Safari handoff', () => { const g = getInstallGuidance(detect('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 BrowserX/1.0 Mobile/15E148')); assert.match(g.intro, /keep using IPM in this browser/i); assert.match(JSON.stringify(g), /Safari/); });
-test('Android Chrome with native prompt selects the easiest native action', () => { const e = detect(androidChrome, { nativePromptAvailable: true }); assert.equal(e.installState, 'install_prompt_available'); assert.equal(getInstallGuidance(e).primaryLabel, 'Add IPM to your Home Screen'); assert.equal(getInstallGuidance(e).steps.length, 0); });
+test('Android Chrome with native prompt selects the easiest native action', () => { const e = detect(androidChrome, { nativePromptAvailable: true }); assert.equal(e.installState, 'install_prompt_available'); assert.equal(getInstallGuidance(e).primaryLabel, 'Install App'); assert.equal(getInstallGuidance(e).steps.length, 0); });
 test('Android Chrome without prompt receives current Chrome-specific fallback', () => { const g = getInstallGuidance(detect(androidChrome)); assert.equal(g.heading, 'Install the IPM App in Chrome'); assert.equal(g.steps[0].cue, 'more_vertical'); assert.match(g.steps[0].hint, /top-right/); assert.match(g.steps[1].title, /Add to Home screen/); assert.equal(g.primaryLabel, null); });
 test('Samsung Internet is distinct and only broad family is used', () => { const e = detect(samsung); assert.equal(e.browser, 'samsung_internet'); assert.equal(e.deviceFamily, 'samsung'); assert.match(getInstallGuidance(e).heading, /Samsung/); });
 test('other Android browser receives safe generic fallback', () => { const e = detect('Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Mobile BrowserX/1.0'); assert.equal(e.browser, 'other'); assert.match(getInstallGuidance(e).steps[2].hint, /Chrome/); });
-test('desktop install-capable Chrome receives native action and explicit heading', () => { const e = detect('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36', { nativePromptAvailable: true }); const g = getInstallGuidance(e); assert.equal(e.platform, 'desktop'); assert.equal(g.heading, 'Install the IPM App in Chrome'); assert.equal(g.primaryLabel, 'Add IPM to your Home Screen'); });
+test('desktop install-capable Chrome receives native action and explicit heading', () => { const e = detect('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36', { nativePromptAvailable: true }); const g = getInstallGuidance(e); assert.equal(e.platform, 'desktop'); assert.equal(g.heading, 'Install the IPM App in Chrome'); assert.equal(g.primaryLabel, 'Install App'); });
 test('desktop Chrome fallback uses current Cast save and share wording', () => { const g = getInstallGuidance(detect('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36')); assert.match(g.steps[1].title, /Cast, save, and share/); assert.match(g.steps[1].hint, /Install page as app/); });
 test('desktop Edge gets Edge-specific Apps instructions', () => { const g = getInstallGuidance(detect('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128.0 Safari/537.36 Edg/128.0')); assert.equal(g.heading, 'Install the IPM App in Edge'); assert.match(g.steps[1].title, /More tools/); assert.match(g.steps[1].hint, /Install this site as an app/); });
 test('standalone mode bypasses guidance', () => { const e = detect(androidChrome, { standalone: true, nativePromptAvailable: true }); assert.equal(e.installState, 'installed'); assert.equal(getInstallGuidance(e).heading, ''); });
 test('unknown environment remains optional and non-blocking', () => { const e = detect(''); assert.equal(e.installState, 'unsupported_or_unknown'); assert.match(getInstallGuidance(e).intro, /use the app now/i); });
 test('decline is respected during cooldown and eligible later', () => { const now = 10 * INSTALL_DISMISS_COOLDOWN_MS; assert.equal(isInstallGuidanceEligible(String(now - 1000), now), false); assert.equal(isInstallGuidanceEligible(String(now - INSTALL_DISMISS_COOLDOWN_MS), now), true); assert.equal(isInstallGuidanceEligible(String(now - 1000), now, true), true); });
+
+test('one-time Home policy respects every historical choice without timed re-prompts', () => {
+ const fresh={installed:false,installedHint:false,completed:false,dismissedAt:null};
+ assert.equal(shouldOfferInstallGuidance(fresh),true);
+ for(const change of [{installed:true},{installedHint:true},{completed:true},{dismissedAt:'1'}])
+  assert.equal(shouldOfferInstallGuidance({...fresh,...change}),false);
+});
+test('iPad desktop-style agent is identified by MacIntel and touch support', () => {
+ const e=detect('Mozilla/5.0 Macintosh Version/18.0 Safari/605.1.15',{platformHint:'MacIntel',maxTouchPoints:5});
+ assert.equal(e.platform,'ios');assert.equal(e.browser,'safari');assert.equal(getInstallGuidance(e).steps[0].cue,'share');
+});
+test('embedded Android webviews do not claim Chrome browser menu support', () => {
+ const e=detect('Mozilla/5.0 (Linux; Android 15; wv) AppleWebKit/537.36 Chrome/130.0 Mobile Safari/537.36');
+ assert.equal(e.browser,'other');assert.match(getInstallGuidance(e).steps[2].hint,/Chrome/);
+});
