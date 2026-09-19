@@ -241,7 +241,7 @@ async def read_reminder_ledger(repository, now):
     }, 'registration_id,schedule_item_id')
     deliveries = await rows('/itinerary_reminder_deliveries', {
         'select': 'id,registration_id,schedule_item_id,status,attempt_count,next_attempt_at,batch_id,provider_request_attempted_at,registration:itinerary_reminder_installations!inner(event_id)',
-        'registration.event_id': f'eq.{event_id}', 'reminder_type': 'eq.itinerary_t30', 'controlled_fixture_id': 'is.null',
+        'registration.event_id': f'eq.{event_id}', 'reminder_type': 'eq.itinerary_t30',
     }, 'id')
     batches = await rows('/itinerary_reminder_batches', {
         'select': 'id,attempt_count', 'event_id': f'eq.{event_id}', 'reminder_type': 'eq.itinerary_t30',

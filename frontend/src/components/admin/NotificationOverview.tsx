@@ -52,7 +52,7 @@ export function NotificationOverview({ announcements, reminders, loading, onOpen
     </View>
     <View style={[styles.group, styles.reminders]} accessibilityLabel="T-30 reminder analytics">
       <Text style={styles.title}>Event reminders / T-30</Text>
-      <Text style={styles.help}>Automatic reminders for starred events. Current interests and all-time normal reminder outcomes; controlled test deliveries are excluded.</Text>
+      <Text style={styles.help}>Automatic reminders for starred events. Current interests and all-time reminder outcomes.</Text>
       {!reminders ? <Text style={styles.help}>{loading ? 'Loading reminders…' : 'Reminder summary is temporarily unavailable.'}</Text> : <View style={styles.grid}>
         <Count label="Active reminder interests" value={reminders.active_interests} />
         <Count label="Reminders provider accepted" value={reminders.provider_accepted} />

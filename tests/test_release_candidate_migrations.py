@@ -27,6 +27,7 @@ def db():
         for file in sorted((ROOT/'supabase/migrations').glob('*.sql')):
             if file.name.endswith('announcement_images.sql'):continue # Supabase Storage bucket policies are already deployed; not a candidate delta.
             sql(file.read_text())
+        sql.container_name = name
         yield sql
     finally:subprocess.run(['docker','rm','-f',name],check=True,capture_output=True)
 

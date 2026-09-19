@@ -4,6 +4,8 @@ Built from `origin/main` (`5c41f907821cf11be9c3140d8b8c275c0f9b5c29`), selective
 
 This is a code/content candidate for Marc's review, not authorization to deploy or activate reminders. See [baselines](baselines.md), [every staging-delta path](file-audit.md), [migrations/environment](migration-environment-audit.md), and [validation](validation.md).
 
+Latest candidate correction: [production analytics schema leak and real PostgREST regression](analytics-schema-fix.md). The analytics blocker is fixed; Render configuration verification and deployment authorization remain pending.
+
 ## Included
 
 - Current production's Tented City semantic map, search, exact multi-location vendor identity and existing Grounds/Camping camera/gesture behavior. Approved removal of All/Vendors/Food/Stages map chips; official Entrances / Parking remains, without the superseded Grounds Parking overlay.

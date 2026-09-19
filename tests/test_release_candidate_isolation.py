@@ -16,7 +16,7 @@ def test_no_staging_targeting_or_preview_controls():
         for p in (ROOT/folder).rglob('*'):
             if p.suffix not in ['.py','.tsx','.ts','.sql']:continue
             source=p.read_text()
-            for token in ['STAGING_T30','controlled_arm','test_device_label','Arm reminder test','synthetic_events','Device A','previewWalkthrough=', 'def simulate_load(', 'def simulate_batched_load(']:
+            for token in ['STAGING_T30','controlled_fixture_id','controlled test deliveries','controlled_arm','test_device_label','Arm reminder test','synthetic_events','Device A','previewWalkthrough=', 'def simulate_load(', 'def simulate_batched_load(']:
                 assert token not in source,(p,token)
     assert 'return false' in (ROOT/'frontend/src/components/MapEducation.tsx').read_text().split('export function useWalkthroughPreview()')[1].split('\n')[0]
 

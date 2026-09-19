@@ -67,3 +67,10 @@ test('Expo Router replacing history fields on reload keeps the tab-scoped visit 
 test('router attribution fails closed if tab storage cannot persist', () => {
  assert.equal(notificationNavigationId(ref,{state:{id:'entry'},replaceState(){}},()=>nav1,{getItem(){throw Error('blocked');},setItem(){}}),null);
 });
+
+test('production reminder overview describes real outcomes without staging terminology', async () => {
+ const source = await readFile(new URL('../src/components/admin/NotificationOverview.tsx', import.meta.url), 'utf8');
+ assert.match(source, /Current interests and all-time reminder outcomes\./);
+ assert.doesNotMatch(source, /controlled|fixture|Arm tests?|Device A|staging claims|test deliveries/i);
+ assert.match(source, /Provider acceptance does not confirm visible display/);
+});
