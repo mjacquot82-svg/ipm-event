@@ -47,7 +47,7 @@ test('first meaningful Schedule visit overlays the already-loaded Schedule with 
 });
 
 test('modal blocks background interaction and supports accessible dismissal', () => {
-  assert.match(schedule, /onRequestClose=\{\(\) => void dismissScheduleOnboarding\(\)\}/);
+  assert.match(schedule, /onRequestClose=\{skipScheduleWalkthrough\}/);
   assert.match(schedule, /onboardingDismissRef[\s\S]*dismissButton\?\.focus\?\.\(\)/);
   assert.match(schedule, /accessibilityLabel="Got it, close Plan your day introduction"/);
   assert.doesNotMatch(schedule, /onboardingModalDismissArea|Dismiss Plan your day backdrop/);
@@ -66,7 +66,7 @@ test('onboarding acknowledgement persists, suppresses reopening, and has a versi
   assert.equal(await hasAcknowledgedScheduleOnboarding(storage), false);
   assert.match(schedule, /hasAcknowledgedScheduleOnboarding\(AsyncStorage\)/);
   assert.match(schedule, /acknowledgeScheduleOnboarding\(AsyncStorage\)/);
-  assert.match(schedule, /setShowScheduleOnboarding\(!acknowledged\)/);
+  assert.match(schedule, /if \(!acknowledged \|\| \(walkthroughPreview && !previewStarted.current\)\)[\s\S]*setShowScheduleOnboarding\(true\)/);
 });
 
 test('pre-cutover reminder wording is future-facing, approximate, and eligibility-qualified', () => {

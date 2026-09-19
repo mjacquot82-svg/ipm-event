@@ -1,9 +1,16 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import { usePathname } from 'expo-router';
+import { useLocalSearchParams, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EDUCATION_KEYS, MAP_TOUR_STEPS, type EducationKind } from '../services/mapEducationState';
+
+// Only staging can ignore this section's completion for a physical preview. No keys are removed.
+export function useWalkthroughPreview() {
+  const { previewWalkthrough } = useLocalSearchParams<{ previewWalkthrough?: string }>();
+  return Platform.OS === 'web' && typeof window !== 'undefined' &&
+    ['staging.theipm.ca', 'localhost', '127.0.0.1'].includes(window.location.hostname) && previewWalkthrough === '1';
+}
 
 export const ContextualEducationReplay = createContext<{ pending: Set<EducationKind> } | null>(null);
 
@@ -21,6 +28,8 @@ let owner: object | null = null;
 const remembered = new Set<EducationKind>();
 function useEducation(kind: EducationKind, eligible: boolean, autoStart = true) {
   const requestedReplay = useContext(ContextualEducationReplay);
+  const preview = useWalkthroughPreview();
+  const previewStarted = useRef(false);
   const pathname = usePathname();
   const focused = pathname.endsWith(kind === 'mapsTourSeen' ? '/map' : kind.startsWith('schedule') ? '/schedule' : '/vendors');
   const token = useRef({}).current;
@@ -38,6 +47,12 @@ function useEducation(kind: EducationKind, eligible: boolean, autoStart = true) 
         if (live && requestedReplay?.pending.has(kind) && (!owner || owner === token)) {
           requestedReplay.pending.delete(kind); owner = token; setVisible('manual'); return;
         }
+        if (kind === 'mapsTourSeen' && preview && !previewStarted.current && live && !owner) {
+          previewStarted.current = true; owner = token; setVisible('manual'); return;
+        }
+        // Schedule/Vendors launch a section sequence. Their individual tips only
+        // consume queued steps, so completion/skip cannot leave a surprise tip.
+        if (requestedReplay) return;
         const seen = remembered.has(kind) || await AsyncStorage.getItem(EDUCATION_KEYS[kind]) === 'true';
         if (live && !seen && (!owner || owner === token)) { owner = token; setVisible('automatic'); }
       } catch { /* Unavailable storage must never block the underlying app. */ }
@@ -45,7 +60,7 @@ function useEducation(kind: EducationKind, eligible: boolean, autoStart = true) 
     void check();
     const timer = setInterval(() => void check(), 700);
     return () => { live = false; clearInterval(timer); if (owner === token) owner = null; };
-  }, [eligible, focused, kind, token, autoStart, requestedReplay]);
+  }, [eligible, focused, kind, token, autoStart, requestedReplay, preview]);
   const dismiss = () => {
     remembered.add(kind);
     void AsyncStorage.setItem(EDUCATION_KEYS[kind], 'true').catch(() => {});
@@ -54,12 +69,12 @@ function useEducation(kind: EducationKind, eligible: boolean, autoStart = true) 
   };
   const replay = () => { if (!owner || owner === token) { owner = token; setVisible('manual'); } };
   // Gate automatic visibility during render as well: destination arrivals must never flash a tour.
-  return { visible: focused && eligible && (visible === 'manual' || (autoStart && visible === 'automatic')), dismiss, replay };
+  return { visible: focused && eligible && (visible === 'manual' || (autoStart && visible === 'automatic')), dismiss, replay, skip: () => { requestedReplay?.pending.clear(); dismiss(); } };
 }
 
-function EducationCallout({ title, body, progress, target, fallback, onNext, onDismiss, onTargetPress }: {
+function EducationCallout({ title, body, progress, target, fallback, onNext, onDismiss, onTargetPress, onSkip }: {
   title: string; body: string; progress?: string; target?: Anchor | null; fallback?: Anchor | null;
-  onNext?: () => void; onDismiss: () => void; onTargetPress?: () => void;
+  onNext?: () => void; onDismiss: () => void; onTargetPress?: () => void; onSkip?: () => void;
 }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -67,7 +82,7 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
   const [cardHeight, setCardHeight] = useState(210);
   const card = useRef<View>(null);
   const next = useRef<View>(null);
-  const dismissRef = useRef(onDismiss); dismissRef.current = onDismiss;
+  const dismissRef = useRef(onSkip || onDismiss); dismissRef.current = onSkip || onDismiss;
   useEffect(() => {
     const measure = () => (target || fallback)?.measureInWindow((x, y, w, h) => {
       if (w > 0 && h > 0 && y >= insets.top && y + h <= height - insets.bottom) {
@@ -106,7 +121,7 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
   const shownHeight = Math.min(cardHeight, maxHeight);
   const top = rect ? (useBelow ? rect.y + rect.height + gap : rect.y - gap - shownHeight) : minTop;
   const left = Math.max(margin, Math.min(width - cardWidth - margin, rect ? rect.x + rect.width / 2 - cardWidth / 2 : (width - cardWidth) / 2));
-  return <Modal transparent animationType="none" visible onRequestClose={onDismiss}>
+  return <Modal transparent animationType="none" visible onRequestClose={onSkip || onDismiss}>
     <View style={StyleSheet.absoluteFill} testID="map-education-overlay">
       {rect ? <>
         <View style={[styles.dim, { top: 0, left: 0, right: 0, height: rect.y }]} />
@@ -125,7 +140,7 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
           <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
           <View style={styles.actions}>
-            {onNext ? <TouchableOpacity accessibilityRole="button" accessibilityLabel="Skip Maps tour" style={styles.secondary} onPress={onDismiss}><Text style={styles.secondaryText}>Skip</Text></TouchableOpacity> : null}
+            {onNext || onSkip ? <TouchableOpacity accessibilityRole="button" accessibilityLabel={onSkip ? 'Skip walkthrough' : 'Skip Maps tour'} style={styles.secondary} onPress={onSkip || onDismiss}><Text style={styles.secondaryText}>Skip</Text></TouchableOpacity> : null}
             <TouchableOpacity ref={next} accessibilityRole="button" style={styles.primary} onPress={onNext || onDismiss}>
               <Text style={styles.primaryText}>{onNext ? 'Next' : 'Got it'}</Text>
             </TouchableOpacity>
@@ -140,8 +155,8 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
 export function ContextualHelpButton({ label, onPress }: { label: string; onPress: () => void }) {
   return <TouchableOpacity accessibilityRole="button" accessibilityLabel={label} style={[styles.help, { width: 'auto', paddingHorizontal: 12, alignSelf: 'flex-start' }]} onPress={onPress}><Text style={styles.helpText}>{label}</Text></TouchableOpacity>;
 }
-export function VendorHelpReplay({ onDismiss }: { onDismiss: () => void }) {
-  return <EducationCallout title="Find this vendor" body="Browse or search vendors; each card shows the available details. Use Find on Map to jump directly to a mapped vendor’s location." onDismiss={onDismiss} />;
+export function VendorHelpReplay({ onDismiss, onSkip }: { onDismiss: () => void; onSkip?: () => void }) {
+  return <EducationCallout title="Find this vendor" body="Browse or search vendors; each card shows the available details. Use Find on Map to jump directly to a mapped vendor’s location." onDismiss={onDismiss} onSkip={onSkip} />;
 }
 
 export function MapEducationHelpButton({ mode }: { mode: string }) {
@@ -214,7 +229,7 @@ export function ScheduleEventDetailsTip({ eligible, onOpen, children }: {
   return <View ref={anchor} collapsable={false}>
     {children}
     {state.visible ? <EducationCallout target={anchor.current} title="View event details"
-      body="Tap an event to see its time, description and location." onDismiss={state.dismiss}
+      body="Tap an event to see its time, description and location." onDismiss={state.skip}
       onTargetPress={() => { state.dismiss(); onOpen(); }} /> : null}
   </View>;
 }

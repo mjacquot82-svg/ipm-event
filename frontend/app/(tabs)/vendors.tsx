@@ -1,6 +1,6 @@
-import { FindOnMapTip, ContextualHelpButton, VendorHelpReplay, ContextualEducationReplay } from '../../src/components/MapEducation';
+import { FindOnMapTip, ContextualHelpButton, VendorHelpReplay, ContextualEducationReplay, useWalkthroughPreview } from '../../src/components/MapEducation';
 import { vendorMapTipEligible } from '../../src/services/mapEducationEligibility';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { EDUCATION_KEYS } from '../../src/services/mapEducationState';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
@@ -37,7 +39,24 @@ import { EXACT_MAP_UNAVAILABLE, vendorHasTrustedMapGeometry } from '../../src/co
 
 export default function VendorsScreen() {
   const [showVendorHelp, setShowVendorHelp] = useState(false);
-  const [helpReplay, setHelpReplay] = useState<React.ContextType<typeof ContextualEducationReplay>>(null);
+  const [helpReplay, setHelpReplay] = useState<React.ContextType<typeof ContextualEducationReplay>>({ pending: new Set() });
+  const walkthroughPreview = useWalkthroughPreview();
+  const previewStarted = useRef(false);
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    void AsyncStorage.getItem(EDUCATION_KEYS.vendorFindOnMapTipSeen).then(seen => {
+      if (active && (seen !== 'true' || (walkthroughPreview && !previewStarted.current))) {
+        previewStarted.current = true;
+        setShowVendorHelp(true);
+      }
+    }).catch(() => {});
+    return () => { active = false; setShowVendorHelp(false); setHelpReplay({ pending: new Set() }); };
+  }, [walkthroughPreview]));
+  const finishVendorIntroduction = (skip = false) => {
+    void AsyncStorage.setItem(EDUCATION_KEYS.vendorFindOnMapTipSeen, 'true').catch(() => {});
+    setShowVendorHelp(false);
+    setHelpReplay({ pending: new Set(skip ? [] : ['vendorFindOnMapTipSeen']) });
+  };
   usePageAnalytics('vendors', 'home_quick_action', 'vendor_directory_opened');
   const router = useRouter();
   const { frameStyle, sectionStyle } = useAttendeeLayout();
@@ -236,7 +255,7 @@ export default function VendorsScreen() {
 
   return (
     <ContextualEducationReplay.Provider value={helpReplay}><View style={styles.container}>
-      {showVendorHelp ? <VendorHelpReplay onDismiss={() => { setShowVendorHelp(false); setHelpReplay({ pending: new Set(['vendorFindOnMapTipSeen']) }); }} /> : null}
+      {showVendorHelp ? <VendorHelpReplay onDismiss={() => finishVendorIntroduction()} onSkip={() => finishVendorIntroduction(true)} /> : null}
       <FlatList
         style={styles.content}
         data={filteredVendors}

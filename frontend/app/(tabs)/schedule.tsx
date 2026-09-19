@@ -1,4 +1,4 @@
-import { FindOnMapTip, ScheduleEventDetailsTip, ContextualHelpButton, ContextualEducationReplay } from '../../src/components/MapEducation';
+import { FindOnMapTip, ScheduleEventDetailsTip, ContextualHelpButton, ContextualEducationReplay, useWalkthroughPreview } from '../../src/components/MapEducation';
 import { scheduleMapTipEligible } from '../../src/services/mapEducationEligibility';
 import { EventDetailMedia } from '@/src/components/EventDetailMedia';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
@@ -79,7 +79,9 @@ export default function ScheduleScreen() {
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showScheduleOnboarding, setShowScheduleOnboarding] = useState(false);
-  const [helpReplay, setHelpReplay] = useState<React.ContextType<typeof ContextualEducationReplay>>(null);
+  const [helpReplay, setHelpReplay] = useState<React.ContextType<typeof ContextualEducationReplay>>({ pending: new Set() });
+  const walkthroughPreview = useWalkthroughPreview();
+  const previewStarted = useRef(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const [visibleEducationEventId, setVisibleEducationEventId] = useState<string | null>(null);
   const educationViewability = useRef({ itemVisiblePercentThreshold: 100, minimumViewTime: 200 }).current;
@@ -159,20 +161,31 @@ export default function ScheduleScreen() {
   const selectedCategoryStyle = getScheduleCategoryStyle(selectedCategory);
   const selectedEventCategoryStyle = getScheduleCategoryStyle(selectedEvent?.category);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let active = true;
     const loadOnboardingState = async () => {
       const acknowledged = await hasAcknowledgedScheduleOnboarding(AsyncStorage);
-      if (active) { setShowScheduleOnboarding(!acknowledged); setOnboardingLoaded(true); }
+      if (!active) return;
+      if (!acknowledged || (walkthroughPreview && !previewStarted.current)) {
+        previewStarted.current = true;
+        setHelpReplay({ pending: new Set(['scheduleEventDetailsTipSeen', 'scheduleFindOnMapTipSeen']) });
+        setShowScheduleOnboarding(true);
+      }
+      setOnboardingLoaded(true);
     };
-    void loadOnboardingState();
-    return () => { active = false; };
-  }, []);
+    void loadOnboardingState().catch(() => { if (active) setOnboardingLoaded(true); });
+    return () => { active = false; setShowScheduleOnboarding(false); setHelpReplay({ pending: new Set() }); };
+  }, [walkthroughPreview]));
 
   const dismissScheduleOnboarding = useCallback(async () => {
     setShowScheduleOnboarding(false);
-    await acknowledgeScheduleOnboarding(AsyncStorage);
+    await acknowledgeScheduleOnboarding(AsyncStorage).catch(() => {});
   }, []);
+
+  const skipScheduleWalkthrough = () => {
+    setHelpReplay({ pending: new Set() });
+    void dismissScheduleOnboarding();
+  };
 
   useEffect(() => {
     if (!showScheduleOnboarding || loading) return;
@@ -880,7 +893,7 @@ export default function ScheduleScreen() {
         animationType="fade"
         transparent={true}
         statusBarTranslucent={true}
-        onRequestClose={() => void dismissScheduleOnboarding()}
+        onRequestClose={skipScheduleWalkthrough}
       >
         <View style={styles.onboardingModalOverlay}>
           <ScrollView
@@ -910,6 +923,9 @@ export default function ScheduleScreen() {
               <Text style={styles.onboardingModalSecondaryText}>
                 If notifications are enabled, we&apos;ll remind you approximately 30 minutes before each event starts.
               </Text>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Skip Schedule walkthrough" onPress={skipScheduleWalkthrough} style={{ minHeight: 44, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={styles.onboardingModalSecondaryText}>Skip</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 ref={onboardingDismissRef}
                 style={styles.onboardingModalDismiss}
