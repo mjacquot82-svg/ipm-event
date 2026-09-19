@@ -11,7 +11,7 @@ test('both routes use base map points, assembly entry and approved First Street 
   for (const route of Object.values(routes)) {
     assert.deepEqual(route.paths[0][0],[503,139]);
     const loop = route.paths[1];
-    assert.deepEqual(loop[0],[440,192]);
+    assert.deepEqual(loop[0],[444,192]);
     assert.deepEqual(loop.at(-1),loop[0]);
     assert.deepEqual(loop[1],[142,192]); // west onto First Street
     for (const path of route.paths) for (const [i,[x,y]] of path.entries()) {
@@ -30,9 +30,9 @@ test('both routes use base map points, assembly entry and approved First Street 
   }
 });
 test('Tuesday inner loop preserved; Mutual Square is excluded, not silently interpreted',()=>{
-  assert.deepEqual(routes.tuesday.paths[1],[[440,192],[142,192],[142,437],[241,437],[241,247.5],[344,247.5],[344,437],[440,437],[440,192]]);
-  assert.deepEqual(routes['wed-sat'].paths[1],[[440,192],[142,192],[142,437],[440,437],[440,192]]);
-  assert.deepEqual(pending,[[344,313],[440,313]]);
+  assert.deepEqual(routes.tuesday.paths[1],[[444,192],[142,192],[142,437],[241,437],[241,247.5],[344,247.5],[344,437],[444,437],[444,192]]);
+  assert.deepEqual(routes['wed-sat'].paths[1],[[444,192],[142,192],[142,437],[444,437],[444,192]]);
+  assert.deepEqual(pending,[[344,313],[444,313]]);
   assert(source.includes('PENDING ORGANIZER CLARIFICATION — CURRENTLY EXCLUDED'));
   assert.equal(paradePath([[1,2],[3,2]]),'M 1 2 L 3 2');
 });

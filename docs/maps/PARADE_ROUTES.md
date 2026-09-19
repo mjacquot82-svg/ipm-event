@@ -33,3 +33,9 @@ The controls start off, allow one route at a time, show a checkmark and label fo
 - Browser checks: `IPM_TEST_URL=https://staging.theipm.ca PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs IPM_TEST_OUTPUT=.artifacts/parade-route-review/staging node frontend/tests/tented-city-parade.browser.mjs` from repository root, using the workspace tool-cache wrapper.
 - Browser checks block all non-GET requests and external/provider calls. They verify off/default, exclusive switching, search/highlight, camera alignment, reset and Off at 390, 768 and 1440px. Comparison captures use the actual fitted map layer, with normal viewport screenshots captured separately.
 - Compare both rendered route images to their matching PDFs, applying only the approved exceptions above.
+
+## Validation recorded 2026-09-19
+
+91 relevant map unit/regression tests passed, including the two route-geometry tests. Production-style frontend export passed. Browser scenarios passed at phone (390), tablet (768) and desktop (1440) widths; touch pinch is exercised on phone/tablet. The route's bounding box is checked against both the transformed map layer and the base artwork during camera changes. Radio controls expose their selected state to assistive technology.
+
+TypeScript retains the unrelated pre-existing `app/(tabs)/itinerary.tsx:225` TS2367 error. The broader frontend baseline suite is not claimed clean. The authoritative vendor catalog, all three map vendor arrays, official SVG, semantic manifest and geometry configuration were verified byte-identical to the starting staging commit `249ef26eec3bf9fac865972b610da72edf0706aa`; the live staging catalog matched as well.

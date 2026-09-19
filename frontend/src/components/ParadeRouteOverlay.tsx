@@ -21,11 +21,11 @@ export function ParadeRouteOverlay({ routeId }: { routeId: ParadeRouteId | null 
 export function ParadeRouteControls({ value, onChange }: { value: ParadeRouteId | null; onChange: (id: ParadeRouteId | null) => void }) {
   const [expanded, setExpanded] = React.useState(false);
   return <View style={styles.controls}>
-    <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={styles.toggle}>
+    <TouchableOpacity accessibilityRole="button" aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={styles.toggle}>
       <Text style={styles.heading}>Parade Routes{value ? ` · ${PARADE_ROUTES[value].label}` : ''} {expanded ? '▴' : '▾'}</Text>
     </TouchableOpacity>
     {expanded && <View style={styles.options}>
-      {([{ id: null, label: 'Off' }, ...Object.values(PARADE_ROUTES)]).map(item => <TouchableOpacity key={item.id || 'off'} accessibilityRole="radio" accessibilityLabel={`Parade route: ${item.label}`} accessibilityState={{ checked: value === item.id }} onPress={() => onChange(item.id)} style={[styles.option, value === item.id && styles.selected]}>
+      {([{ id: null, label: 'Off' }, ...Object.values(PARADE_ROUTES)]).map(item => <TouchableOpacity key={item.id || 'off'} accessibilityRole="radio" accessibilityLabel={`Parade route: ${item.label}`} aria-checked={value === item.id} accessibilityState={{ checked: value === item.id }} onPress={() => onChange(item.id)} style={[styles.option, value === item.id && styles.selected]}>
         <Text style={[styles.text, value === item.id && styles.selectedText]}>{value === item.id ? '✓ ' : ''}{item.label}</Text>
       </TouchableOpacity>)}
     </View>}

@@ -26,9 +26,11 @@ try {
    const overlay=page.getByTestId(`parade-route-${id}`);await overlay.waitFor();
    assert.equal(await page.locator('[data-testid^="parade-route-"]').count(),1);
    assert.match(await page.getByRole('radio',{name:`Parade route: ${label}`,exact:true}).innerText(), /^✓ /);
+   assert.equal(await page.getByRole('radio',{name:`Parade route: ${label}`,exact:true}).getAttribute('aria-checked'),'true');
    const aligned=()=>overlay.evaluate(el=>{
     const a=el.getBoundingClientRect(),b=el.parentElement.getBoundingClientRect();
-    return ['x','y','width','height'].every(k=>Math.abs(a[k]-b[k])<1);
+    const artwork=el.parentElement.firstElementChild.getBoundingClientRect();
+    return ['x','y','width','height'].every(k=>Math.abs(a[k]-b[k])<1 && Math.abs(a[k]-artwork[k])<1);
    });
    assert(await aligned());
    await page.screenshot({path:`${output}/${width}-${id}.png`});
@@ -44,7 +46,8 @@ try {
   assert.equal(await page.getByTestId('parade-route-wed-sat').count(),1);
   const metrics=()=>page.getByTestId('parade-route-wed-sat').evaluate(el=>{
    const a=el.getBoundingClientRect(),b=el.parentElement.getBoundingClientRect();
-   return {aligned:['x','y','width','height'].every(k=>Math.abs(a[k]-b[k])<1),transform:getComputedStyle(el.parentElement).transform};
+   const artwork=el.parentElement.firstElementChild.getBoundingClientRect();
+   return {aligned:['x','y','width','height'].every(k=>Math.abs(a[k]-b[k])<1 && Math.abs(a[k]-artwork[k])<1),transform:getComputedStyle(el.parentElement).transform};
   });
   await page.waitForTimeout(600);assert((await metrics()).aligned);
   const before=(await metrics()).transform;
