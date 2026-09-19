@@ -86,7 +86,8 @@ export default function ScheduleScreen() {
   const [visibleEducationEventId, setVisibleEducationEventId] = useState<string | null>(null);
   const educationViewability = useRef({ itemVisiblePercentThreshold: 100, minimumViewTime: 200 }).current;
   const educationViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { item: ScheduleEvent; isViewable: boolean }[] }) => {
-    setVisibleEducationEventId(viewableItems.find(item => item.isViewable && item.item.id)?.item.id ?? null);
+    const visible = viewableItems.filter(item => item.isViewable && item.item.id);
+    setVisibleEducationEventId((visible.find(item => scheduleMapTipEligible(item.item.location_name, item.item.title)) || visible[0])?.item.id ?? null);
   }).current;
   const [showStarConfirmation, setShowStarConfirmation] = useState(false);
   const onboardingDismissRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
@@ -124,6 +125,23 @@ export default function ScheduleScreen() {
     setShowEventModal(false);
     setSelectedEvent(null);
   }, []);
+
+  const openSelectedEventOnMap = () => {
+    if (!selectedEvent?.location_name) return;
+    dismissEventModalForMap();
+    const mapLocation = resolvePlowingMapLocation(selectedEvent.location_name, selectedEvent.title) || selectedEvent.location_name;
+    router.replace({
+      pathname: '/(tabs)/map',
+      params: {
+        location: mapLocation,
+        showOnly: 'true',
+        source: 'schedule',
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
+        mapType: resolveMapTypeForLocation(mapLocation, tentedCityVendors),
+      },
+    });
+  };
 
   useEffect(() => {
     returnToItineraryRef.current = returnTo === 'itinerary';
@@ -1087,27 +1105,10 @@ export default function ScheduleScreen() {
 
                   {/* Location */}
                   {selectedEvent.location_name && (
-                    <FindOnMapTip kind="scheduleFindOnMapTipSeen" eligible={showEventModal && !showScheduleOnboarding && scheduleMapTipEligible(selectedEvent.location_name, selectedEvent.title)}>
+                    <FindOnMapTip kind="scheduleFindOnMapTipSeen" onOpen={openSelectedEventOnMap} eligible={showEventModal && !showScheduleOnboarding && scheduleMapTipEligible(selectedEvent.location_name, selectedEvent.title)}>
                     <TouchableOpacity testID="schedule-find-on-map"
                       style={[styles.detailSection, styles.locationClickable, { borderColor: selectedEventCategoryStyle.primary }]}
-                      onPress={() => {
-                        console.log('Location clicked:', selectedEvent.location_name);
-                        dismissEventModalForMap();
-                        const mapLocation =
-                          resolvePlowingMapLocation(selectedEvent.location_name, selectedEvent.title) ||
-                          selectedEvent.location_name;
-                        router.replace({
-                          pathname: '/(tabs)/map',
-                          params: {
-                            location: mapLocation,
-                            showOnly: 'true',
-                            source: 'schedule',
-                            eventId: selectedEvent.id,
-                            eventTitle: selectedEvent.title,
-                            mapType: resolveMapTypeForLocation(mapLocation, tentedCityVendors),
-                          }
-                        });
-                      }}
+                      onPress={openSelectedEventOnMap}
                       activeOpacity={0.7}
                     >
                       <View style={styles.detailRow}>

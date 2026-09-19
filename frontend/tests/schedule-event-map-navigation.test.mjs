@@ -49,7 +49,10 @@ test('Find on the Map dismisses the modal without replaying modal history', () =
   const locationStart = scheduleSource.indexOf('{/* Location */}');
   const categoryStart = scheduleSource.indexOf('{/* Category */}', locationStart);
   assert.ok(locationStart >= 0 && categoryStart > locationStart);
-  const locationSection = scheduleSource.slice(locationStart, categoryStart);
+  const locationUI = scheduleSource.slice(locationStart, categoryStart);
+  assert.match(locationUI, /onPress=\{openSelectedEventOnMap\}/);
+  assert.match(locationUI, /onOpen=\{openSelectedEventOnMap\}/);
+  const locationSection = scheduleSource.match(/const openSelectedEventOnMap = \(\) => \{[\s\S]*?^  \};/m)?.[0] || '';
 
   assert.match(locationSection, /dismissEventModalForMap\(\)/);
   assert.match(locationSection, /router\.replace\(/);
@@ -103,7 +106,10 @@ test('grounds destinations resolve mapType grounds', () => {
 test('MNP EAST-2 selection location survives navigation params (location preserved)', () => {
   const locationStart = scheduleSource.indexOf('{/* Location */}');
   const categoryStart = scheduleSource.indexOf('{/* Category */}', locationStart);
-  const locationSection = scheduleSource.slice(locationStart, categoryStart);
+  const locationUI = scheduleSource.slice(locationStart, categoryStart);
+  assert.match(locationUI, /onPress=\{openSelectedEventOnMap\}/);
+  assert.match(locationUI, /onOpen=\{openSelectedEventOnMap\}/);
+  const locationSection = scheduleSource.match(/const openSelectedEventOnMap = \(\) => \{[\s\S]*?^  \};/m)?.[0] || '';
   assert.match(locationSection, /location:\s*mapLocation/);
   assert.match(locationSection, /resolvePlowingMapLocation\(selectedEvent\.location_name,\s*selectedEvent\.title\)\s*\|\|\s*selectedEvent\.location_name/);
   assert.match(locationSection, /showOnly:\s*['"]true['"]/);

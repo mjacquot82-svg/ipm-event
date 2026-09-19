@@ -72,15 +72,17 @@ function useEducation(kind: EducationKind, eligible: boolean, autoStart = true) 
   return { visible: focused && eligible && (visible === 'manual' || (autoStart && visible === 'automatic')), dismiss, replay, skip: () => { requestedReplay?.pending.clear(); dismiss(); } };
 }
 
-function EducationCallout({ title, body, progress, target, fallback, onNext, onDismiss, onTargetPress, onSkip }: {
+function EducationCallout({ title, body, progress, target, fallback, onNext, onDismiss, onTargetPress, onSkip, targetLabel = 'Open highlighted event details', targetTestID = 'schedule-education-open-event' }: {
   title: string; body: string; progress?: string; target?: Anchor | null; fallback?: Anchor | null;
-  onNext?: () => void; onDismiss: () => void; onTargetPress?: () => void; onSkip?: () => void;
+  onNext?: () => void; onDismiss: () => void; onTargetPress?: () => void; onSkip?: () => void; targetLabel?: string; targetTestID?: string;
 }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [rect, setRect] = useState<Rect | null>(null);
   const [cardHeight, setCardHeight] = useState(210);
   const card = useRef<View>(null);
+  const overlay = useRef<View>(null);
+  const targetControl = useRef<View>(null);
   const next = useRef<View>(null);
   const dismissRef = useRef(onSkip || onDismiss); dismissRef.current = onSkip || onDismiss;
   useEffect(() => {
@@ -95,11 +97,11 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const previous = document.activeElement as HTMLElement | null;
-    const timer = setTimeout(() => (next.current as unknown as HTMLElement)?.focus(), 80);
+    const timer = setTimeout(() => ((onTargetPress ? targetControl.current || next.current : next.current) as unknown as HTMLElement)?.focus(), 80);
     const keydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); }
       if (event.key === 'Tab') {
-        const buttons = (card.current as unknown as HTMLElement)?.querySelectorAll<HTMLElement>('[role="button"]');
+        const buttons = ((onTargetPress ? overlay.current : card.current) as unknown as HTMLElement)?.querySelectorAll<HTMLElement>('[role="button"]');
         if (!buttons?.length) return;
         const first = buttons[0], last = buttons[buttons.length - 1];
         if (event.shiftKey && (document.activeElement === first || !Array.from(buttons).includes(document.activeElement as HTMLElement))) { event.preventDefault(); last.focus(); }
@@ -122,7 +124,7 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
   const top = rect ? (useBelow ? rect.y + rect.height + gap : rect.y - gap - shownHeight) : minTop;
   const left = Math.max(margin, Math.min(width - cardWidth - margin, rect ? rect.x + rect.width / 2 - cardWidth / 2 : (width - cardWidth) / 2));
   return <Modal transparent animationType="none" visible onRequestClose={onSkip || onDismiss}>
-    <View style={StyleSheet.absoluteFill} testID="map-education-overlay">
+    <View ref={overlay} accessibilityViewIsModal={Boolean(onTargetPress)} style={StyleSheet.absoluteFill} testID="map-education-overlay">
       {rect ? <>
         <View style={[styles.dim, { top: 0, left: 0, right: 0, height: rect.y }]} />
         <View style={[styles.dim, { top: rect.y, left: 0, width: rect.x, height: rect.height }]} />
@@ -130,20 +132,20 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
         <View style={[styles.dim, { top: rect.y + rect.height, left: 0, right: 0, bottom: 0 }]} />
         <View testID="map-education-spotlight" style={[styles.spotlight, { top: rect.y - 3, left: rect.x - 3, width: rect.width + 6, height: rect.height + 6 }]} />
       </> : <View style={[StyleSheet.absoluteFill, styles.dim]} />}
-      {rect && onTargetPress ? <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open highlighted event details"
-        testID="schedule-education-open-event" onPress={onTargetPress}
+      {rect && onTargetPress ? <TouchableOpacity ref={targetControl} accessibilityRole="button" accessibilityLabel={targetLabel}
+        testID={targetTestID} onPress={onTargetPress}
         style={{ position: 'absolute', top: rect.y, left: rect.x, width: rect.width, height: rect.height }} /> : null}
-      <View ref={card} role="dialog" accessibilityLabel={title} accessibilityViewIsModal testID="map-education-card"
+      <View ref={card} role="dialog" accessibilityLabel={title} accessibilityViewIsModal={!onTargetPress} testID="map-education-card"
         style={[styles.card, { top, left, width: cardWidth, maxHeight }]}>
         <ScrollView onContentSizeChange={(_, h) => setCardHeight(h)} contentContainerStyle={styles.content}>
           {progress ? <Text style={styles.progress}>{progress}</Text> : null}
           <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
           <View style={styles.actions}>
-            {onNext || onSkip ? <TouchableOpacity accessibilityRole="button" accessibilityLabel={onSkip ? 'Skip walkthrough' : 'Skip Maps tour'} style={styles.secondary} onPress={onSkip || onDismiss}><Text style={styles.secondaryText}>Skip</Text></TouchableOpacity> : null}
-            <TouchableOpacity ref={next} accessibilityRole="button" style={styles.primary} onPress={onNext || onDismiss}>
+            {onNext || onSkip || onTargetPress ? <TouchableOpacity ref={onTargetPress ? next : undefined} accessibilityRole="button" accessibilityLabel={onSkip || onTargetPress ? 'Skip walkthrough' : 'Skip Maps tour'} style={styles.secondary} onPress={onSkip || onDismiss}><Text style={styles.secondaryText}>Skip</Text></TouchableOpacity> : null}
+            {!onTargetPress ? <TouchableOpacity ref={next} accessibilityRole="button" style={styles.primary} onPress={onNext || onDismiss}>
               <Text style={styles.primaryText}>{onNext ? 'Next' : 'Got it'}</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> : null}
           </View>
         </ScrollView>
       </View>
@@ -190,7 +192,7 @@ export function MapsEducation({ mode, onShowMap, autoStart = true }: { mode: 'gr
   </>;
 }
 
-export function FindOnMapTip({ kind, eligible, children }: { kind: 'scheduleFindOnMapTipSeen' | 'vendorFindOnMapTipSeen'; eligible: boolean; children: React.ReactNode }) {
+export function FindOnMapTip({ kind, eligible, children, onOpen }: { kind: 'scheduleFindOnMapTipSeen' | 'vendorFindOnMapTipSeen'; eligible: boolean; children: React.ReactNode; onOpen?: () => void }) {
   const anchor = useRef<View>(null);
   const { height } = useWindowDimensions();
   const pathname = usePathname();
@@ -206,7 +208,9 @@ export function FindOnMapTip({ kind, eligible, children }: { kind: 'scheduleFind
   return <View ref={anchor} collapsable={false}>
     {children}
     {state.visible ? <EducationCallout target={anchor.current} title={event ? 'Find this event' : 'Find this vendor'}
-      body={event ? 'Tap here to see exactly where this event is on the map.' : "Tap here to jump directly to this vendor’s location on the map."} onDismiss={state.dismiss} /> : null}
+      body={event ? 'Here are the event’s time, date and location. Tap the highlighted location to find this event on the map.' : "Tap here to jump directly to this vendor’s location on the map."} onDismiss={state.dismiss}
+      targetLabel={event ? 'Open highlighted event on map' : undefined} targetTestID={event ? 'schedule-education-open-map' : undefined}
+      onTargetPress={event && onOpen ? () => { state.dismiss(); onOpen(); } : undefined} /> : null}
   </View>;
 }
 // Schedule-only bridge between the introduction and the existing location education.
@@ -229,7 +233,7 @@ export function ScheduleEventDetailsTip({ eligible, onOpen, children }: {
   return <View ref={anchor} collapsable={false}>
     {children}
     {state.visible ? <EducationCallout target={anchor.current} title="View event details"
-      body="Tap an event to see its time, description and location." onDismiss={state.skip}
+      body="Tap the highlighted event to see its time, description and location." onDismiss={state.skip}
       onTargetPress={() => { state.dismiss(); onOpen(); }} /> : null}
   </View>;
 }
