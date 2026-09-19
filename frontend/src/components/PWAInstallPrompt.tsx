@@ -242,17 +242,19 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
 
 function InstallDiagnosticPanel({ diagnostic }: { diagnostic: InstallDiagnostic }) {
   const rows: Array<[string, string | number | boolean]> = [
+    ['SUPPRESSION REASON', diagnostic.suppressionReason], ['INSTALL GUIDE ELIGIBLE', diagnostic.eligible], ['RENDER REQUESTED', diagnostic.renderRequested],
     ['BUILD', diagnostic.build], ['ROUTE', diagnostic.route], ['IS HOME', diagnostic.isHome ? 'YES' : 'NO'],
     ['COMPONENT MOUNTED', diagnostic.componentMounted ? 'YES' : 'NO'], ['PLATFORM', diagnostic.platform], ['BROWSER', diagnostic.browser],
     ['MOBILE', diagnostic.mobile ? 'YES' : 'NO'], ['DISPLAY-MODE STANDALONE', diagnostic.standalone ? 'YES' : 'NO'],
     ['NAVIGATOR.STANDALONE', diagnostic.navigatorStandalone ? 'YES' : 'NO'], ['BEFOREINSTALLPROMPT CAPTURED', diagnostic.beforeInstallPromptCaptured ? 'YES' : 'NO'],
     ['STORAGE READ STATUS', diagnostic.storageReadStatus], ['DISMISSAL VALUE', diagnostic.dismissalValue || '(none)'],
-    ['SESSION FALLBACK VALUE', diagnostic.sessionFallbackValue || '(none)'], ['INSTALL GUIDE ELIGIBLE', diagnostic.eligible],
-    ['RENDER REQUESTED', diagnostic.renderRequested], ['SUPPRESSION REASON', diagnostic.suppressionReason],
+    ['SESSION FALLBACK VALUE', diagnostic.sessionFallbackValue || '(none)'],
   ];
   return <View accessible accessibilityLabel="Install guidance diagnostic" style={styles.diagnosticPanel}>
     <Text style={styles.diagnosticHeading}>Install guidance diagnostic</Text>
-    {rows.map(([label, value]) => <Text key={label} style={styles.diagnosticRow}><Text style={styles.diagnosticLabel}>{label}: </Text>{String(value)}</Text>)}
+    <ScrollView style={styles.diagnosticScroll} nestedScrollEnabled showsVerticalScrollIndicator keyboardShouldPersistTaps="handled">
+      {rows.map(([label, value]) => <Text key={label} style={styles.diagnosticRow}><Text style={styles.diagnosticLabel}>{label}: </Text>{String(value)}</Text>)}
+    </ScrollView>
   </View>;
 }
 
@@ -294,7 +296,8 @@ const styles = StyleSheet.create({
   continueButton: { alignItems: 'center', justifyContent: 'center', marginTop: 10, minHeight: 50, paddingHorizontal: 10 },
   continueText: { color: colors.primary, fontSize: 16, fontWeight: '800', textAlign: 'center', textDecorationLine: 'underline' },
   optional: { color: colors.textMuted, fontSize: 16, lineHeight: 24, textAlign: 'center' },
-  diagnosticPanel: { position: 'absolute', left: 8, right: 8, bottom: 8, zIndex: 3000, backgroundColor: '#111827', borderRadius: 10, padding: 10 },
+  diagnosticPanel: { position: 'absolute', left: 8, right: 8, bottom: 56, zIndex: 3000, backgroundColor: '#111827', borderRadius: 10, padding: 8, maxHeight: '46%', paddingBottom: 10 },
+  diagnosticScroll: { maxHeight: 180 },
   diagnosticHeading: { color: '#FDE68A', fontSize: 14, fontWeight: '900', marginBottom: 4 },
   diagnosticRow: { color: '#FFFFFF', fontSize: 11, lineHeight: 16 },
   diagnosticLabel: { color: '#93C5FD', fontWeight: '800' },

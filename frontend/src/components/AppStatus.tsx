@@ -1,6 +1,6 @@
 import { PWA_RESUME_TEST_VERSION } from '../config/pwaResumeTestVersion';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
 
 // Read-only, explicit support snapshot. Never serialize worker URLs, push
@@ -43,7 +43,9 @@ export default function AppStatus() {
     {typeof window !== 'undefined' && window.location.hostname === 'staging.theipm.ca' && (window.location.search.includes('installDebug=1') || (window as any).__IPM_INSTALL_DEBUG__) ? (
       <View accessibilityLabel="Install guidance diagnostic" style={styles.debug}>
         <Text style={styles.debugHeading}>Install guidance diagnostic</Text>
-        {installDiagnostic ? Object.entries(installDiagnostic).map(([key, value]) => <Text key={key} style={styles.debugRow}><Text style={styles.debugLabel}>{key.replace(/[A-Z]/g, m => ` ${m}`).toUpperCase()}: </Text>{String(value ?? '(none)')}</Text>) : <Text style={styles.debugRow}>COMPONENT MOUNTED: NO DECISION SNAPSHOT RECEIVED</Text>}
+        <ScrollView style={styles.debugScroll} nestedScrollEnabled showsVerticalScrollIndicator keyboardShouldPersistTaps="handled">
+          {installDiagnostic ? Object.entries(installDiagnostic).sort(([a], [b]) => { const order = ['suppressionReason', 'eligible', 'renderRequested']; return (order.indexOf(a) < 0 ? 99 : order.indexOf(a)) - (order.indexOf(b) < 0 ? 99 : order.indexOf(b)); }).map(([key, value]) => <Text key={key} style={styles.debugRow}><Text style={styles.debugLabel}>{key.replace(/[A-Z]/g, m => ` ${m}`).toUpperCase()}: </Text>{String(value ?? '(none)')}</Text>) : <Text style={styles.debugRow}>COMPONENT MOUNTED: NO DECISION SNAPSHOT RECEIVED</Text>}
+        </ScrollView>
       </View>
     ) : null}
   </View>;
@@ -54,6 +56,7 @@ const styles = StyleSheet.create({
   status: { color: colors.textSecondary, fontSize: 14, lineHeight: 22 },
   debug: { backgroundColor: '#111827', borderRadius: 10, marginTop: 12, padding: 10 },
   debugHeading: { color: '#FDE68A', fontSize: 14, fontWeight: '900', marginBottom: 4 },
+  debugScroll: { maxHeight: 180 },
   debugRow: { color: '#FFFFFF', fontSize: 11, lineHeight: 16 },
   debugLabel: { color: '#93C5FD', fontWeight: '800' },
 });
