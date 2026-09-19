@@ -1,6 +1,6 @@
 import { useMapEducationAnchor, MapEducationHelpButton } from './MapEducation';
 import { GroundsTrafficOverlay } from './GroundsTrafficOverlay';
-import { DESKTOP_MAP_BREAKPOINT, desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
+import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Keyboard, LayoutChangeEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
@@ -8,7 +8,6 @@ import { Feather } from '@expo/vector-icons';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import colors from '../theme/colors';
-import { groundsPhoneLayerLayout } from '../config/groundsPhoneLayout';
 import { groundsLayerLayout, groundsPaintViewport } from '../config/groundsLayout';
 import { GROUNDS_MAP, GroundsZone, hitTestGroundsZone, resolveGroundsZone } from '../config/groundsZones';
 import { searchEventMap, type EventMapHit } from '../config/mapSearch';
@@ -96,7 +95,6 @@ export default function GroundsMap({ highlightedLocation, initialEventTitle, ini
   const artwork = useArtworkReveal('grounds');
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
-  const phone = windowSize.width < DESKTOP_MAP_BREAKPOINT;
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<GroundsZone | null>(null);
   const [eventSelectionTitle, setEventSelectionTitle] = useState<string | null>(null);
@@ -104,7 +102,7 @@ export default function GroundsMap({ highlightedLocation, initialEventTitle, ini
   const [focused, setFocused] = useState(false);
   const focusedKey = useRef<string | null>(null);
   const viewport = groundsPaintViewport(measured, windowSize);
-  const layer = useMemo(() => phone ? groundsPhoneLayerLayout(viewport) : { ...groundsLayerLayout(viewport), headerHeight: 0 }, [viewport.width, viewport.height, phone]);
+  const layer = useMemo(() => groundsLayerLayout(viewport), [viewport.width, viewport.height]);
   const scale = useSharedValue(1), tx = useSharedValue(0), ty = useSharedValue(0);
   const startScale = useSharedValue(1), startX = useSharedValue(0), startY = useSharedValue(0);
   const startFocalX = useSharedValue(0), startFocalY = useSharedValue(0);
@@ -188,9 +186,7 @@ export default function GroundsMap({ highlightedLocation, initialEventTitle, ini
   const map = (
     <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
-        {phone ? <View testID="grounds-artwork-crop" style={[StyleSheet.absoluteFillObject, { top: layer.headerHeight, overflow: 'hidden' }]}>
-          <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={[styles.image, { position: 'absolute', top: -layer.headerHeight, height: layer.height }]} />
-        </View> : <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />}
+        <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />
         <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
       </Animated.View>
