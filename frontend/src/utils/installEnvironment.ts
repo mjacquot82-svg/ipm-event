@@ -29,12 +29,13 @@ export function isInstallGuidanceEligible(dismissedAt: string | null, now: numbe
   return now - dismissedTime >= INSTALL_DISMISS_COOLDOWN_MS || promptIsNewer;
 }
 
-// One-time Home guidance. Keep historical choices; never revive a timed nag.
-export function shouldOfferInstallGuidance({ installed, installedHint, completed, dismissedAt }: {
-  installed: boolean; installedHint: boolean; completed: boolean; dismissedAt: string | null;
+// Current runtime installation state is authoritative. installedHint is retained for
+// diagnostics/backward-compatible callers but must never suppress a browser session.
+export function shouldOfferInstallGuidance({ installed, installedHint: _installedHint, completed, dismissedAt }: {
+  installed: boolean; installedHint?: boolean; completed: boolean; dismissedAt: string | null;
 }): boolean {
   const dismissed = dismissedAt !== null && Number.isFinite(Number(dismissedAt)) && Number(dismissedAt) > 0;
-  return !installed && !installedHint && !completed && !dismissed;
+  return !installed && !completed && !dismissed;
 }
 
 export function detectInstallEnvironment({

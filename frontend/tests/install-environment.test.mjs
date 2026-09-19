@@ -26,11 +26,13 @@ test('standalone mode bypasses guidance', () => { const e = detect(androidChrome
 test('unknown environment remains optional and non-blocking', () => { const e = detect(''); assert.equal(e.installState, 'unsupported_or_unknown'); assert.match(getInstallGuidance(e).intro, /use the app now/i); });
 test('decline is respected during cooldown and eligible later', () => { const now = 10 * INSTALL_DISMISS_COOLDOWN_MS; assert.equal(isInstallGuidanceEligible(String(now - 1000), now), false); assert.equal(isInstallGuidanceEligible(String(now - INSTALL_DISMISS_COOLDOWN_MS), now), true); assert.equal(isInstallGuidanceEligible(String(now - 1000), now, true), true); });
 
-test('one-time Home policy respects every historical choice without timed re-prompts', () => {
+test('current runtime state wins over a historical installed flag', () => {
  const fresh={installed:false,installedHint:false,completed:false,dismissedAt:null};
  assert.equal(shouldOfferInstallGuidance(fresh),true);
- for(const change of [{installed:true},{installedHint:true},{completed:true},{dismissedAt:'1'}])
-  assert.equal(shouldOfferInstallGuidance({...fresh,...change}),false);
+ assert.equal(shouldOfferInstallGuidance({...fresh,installedHint:true}),true);
+ assert.equal(shouldOfferInstallGuidance({...fresh,installed:true}),false);
+ assert.equal(shouldOfferInstallGuidance({...fresh,completed:true}),false);
+ assert.equal(shouldOfferInstallGuidance({...fresh,dismissedAt:'1'}),false);
 });
 test('iPad desktop-style agent is identified by MacIntel and touch support', () => {
  const e=detect('Mozilla/5.0 Macintosh Version/18.0 Safari/605.1.15',{platformHint:'MacIntel',maxTouchPoints:5});
