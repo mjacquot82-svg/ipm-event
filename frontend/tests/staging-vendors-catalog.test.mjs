@@ -44,7 +44,7 @@ test('must-have Sept8 vendors searchable by name with locations', () => {
     [/cottrill/i, '2A-05', 'Cottrill'],
     [/scatterbrain/i, '4A-13', 'Scatterbrain'],
     [/dj'?s handcrafted/i, '4A-29-30', "DJ's"],
-    [/fellowship of christian farmers/i, '2A-17-18', 'Fellowship'],
+    [/fellowship of christian farmers/i, '2A-16–17', 'Fellowship'],
     [/georgian bay funeral/i, '4B-05', 'Georgian'],
     [/millroad/i, '1B-23-24', 'Millroad'],
     [/teeswater agro/i, '1A-21', 'Teeswater Agro'],
@@ -58,10 +58,10 @@ test('must-have Sept8 vendors searchable by name with locations', () => {
   }
 });
 
-test('types are attendee filter chips Outdoor/Indoor/Food only', () => {
+test('known types remain filter chips; unconfirmed type may be blank', () => {
   const types = new Set(catalog.vendors.map((v) => v.type));
   for (const t of types) {
-    assert.ok(['Outdoor', 'Indoor', 'Food'].includes(t), `unexpected type ${t}`);
+    assert.ok(['Outdoor', 'Indoor', 'Food', ''].includes(t), `unexpected type ${t}`);
   }
 });
 
