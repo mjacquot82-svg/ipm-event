@@ -32,7 +32,7 @@ test('America/Toronto calendar day limits prompts to two and resets next day', (
 
 test('notification help never uses the retired recurring prompt policy', () => {
  assert.doesNotMatch(component, /isNotificationPromptEligible|nextNotificationPromptDailyState|setTimeout|setInterval/);
- assert.match(component, /const \[expanded, setExpanded\] = useState\(initiallyExpanded\)/);
+ assert.match(component, /const \[expanded, setExpanded\] = useState\(initiallyExpanded \|\| persistent\)/);
  assert.match(component, /initiallyExpanded = false/);
  assert.match(component, /Notification options/);
 });

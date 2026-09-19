@@ -1,5 +1,6 @@
-import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
+import { useMapEducationAnchor, MapEducationHelpButton } from './MapEducation';
 import { GroundsTrafficOverlay } from './GroundsTrafficOverlay';
+import { DESKTOP_MAP_BREAKPOINT, desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Keyboard, LayoutChangeEvent, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
@@ -7,6 +8,7 @@ import { Feather } from '@expo/vector-icons';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import colors from '../theme/colors';
+import { groundsPhoneLayerLayout } from '../config/groundsPhoneLayout';
 import { groundsLayerLayout, groundsPaintViewport } from '../config/groundsLayout';
 import { GROUNDS_MAP, GroundsZone, hitTestGroundsZone, resolveGroundsZone } from '../config/groundsZones';
 import { searchEventMap, type EventMapHit } from '../config/mapSearch';
@@ -84,22 +86,25 @@ function ZoneHighlight({ zone }: { zone: GroundsZone }) {
   );
 }
 
-export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSwitchToRv }: {
-  highlightedLocation?: string | null;
+export default function GroundsMap({ highlightedLocation, initialEventTitle, initialEventId, onSwitchToTented, onSwitchToRv }: {
+  highlightedLocation?: string | null; initialEventTitle?: string; initialEventId?: string;
   onSwitchToTented: (location?: string) => void;
   onSwitchToRv?: () => void;
 }) {
+  const educationSearchAnchor = useMapEducationAnchor('grounds-search');
   const desktop = useDesktopMapWorkspace('grounds');
   const artwork = useArtworkReveal('grounds');
   const viewportRef = useRef<View>(null);
   const windowSize = useWindowDimensions();
+  const phone = windowSize.width < DESKTOP_MAP_BREAKPOINT;
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<GroundsZone | null>(null);
+  const [eventSelectionTitle, setEventSelectionTitle] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const focusedKey = useRef<string | null>(null);
   const viewport = groundsPaintViewport(measured, windowSize);
-  const layer = useMemo(() => groundsLayerLayout(viewport), [viewport.width, viewport.height]);
+  const layer = useMemo(() => phone ? groundsPhoneLayerLayout(viewport) : { ...groundsLayerLayout(viewport), headerHeight: 0 }, [viewport.width, viewport.height, phone]);
   const scale = useSharedValue(1), tx = useSharedValue(0), ty = useSharedValue(0);
   const startScale = useSharedValue(1), startX = useSharedValue(0), startY = useSharedValue(0);
   const startFocalX = useSharedValue(0), startFocalY = useSharedValue(0);
@@ -131,6 +136,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
 
   const chooseZone = useCallback((zone: GroundsZone | null, opts?: { switchTented?: boolean }) => {
     if (!zone) return;
+    setEventSelectionTitle(null);
     setSelected(zone);
     flyTo(zone);
     if ((opts?.switchTented ?? true) && zone.action === 'switch-tented') setTimeout(() => onSwitchToTented(), 280);
@@ -154,6 +160,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   }, [chooseZone, layer.left, layer.top, layer.width, layer.height]);
 
   useEffect(() => {
+    setEventSelectionTitle(initialEventTitle || null);
     const zone = resolveGroundsZone(highlightedLocation);
     if (!zone) return;
     setSelected(zone);
@@ -161,7 +168,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     if (focusedKey.current === key) return;
     focusedKey.current = key;
     flyTo(zone);
-  }, [highlightedLocation, flyTo]);
+  }, [highlightedLocation, initialEventTitle, initialEventId, flyTo]);
 
   // Shared TC web gesture lifecycle (pinchAroundMovingFocal, finishWebGesture clamp-only-outside,
   // rubber-band pan, double-tap, optional single-tap zone hit). No Grounds-only constants.
@@ -181,7 +188,9 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   const map = (
     <Animated.View style={[styles.gestureRoot, webLock, { opacity: artwork.state === 'ready' ? 1 : 0 }]} pointerEvents={artwork.state === 'ready' ? 'auto' : 'none'} collapsable={false}>
       <Animated.View style={[styles.layer, { width: layer.width, height: layer.height, left: layer.left, top: layer.top, transformOrigin: 'top left' }, cameraStyle]}>
-        <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />
+        {phone ? <View testID="grounds-artwork-crop" style={[StyleSheet.absoluteFillObject, { top: layer.headerHeight, overflow: 'hidden' }]}>
+          <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={[styles.image, { position: 'absolute', top: -layer.headerHeight, height: layer.height }]} />
+        </View> : <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />}
         <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
       </Animated.View>
@@ -192,6 +201,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     [query, focused],
   );
   const reset = () => {
+    setEventSelectionTitle(null);
     setSelected(null);
     setQuery('');
     setFocused(false);
@@ -208,7 +218,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     <View style={[styles.searchWrap, desktop && desktopMapStyles.search]} pointerEvents="box-none">
       <View style={styles.searchCard}>
         <Feather name="search" size={18} color="#6B7280" />
-        <TextInput
+        <TextInput ref={educationSearchAnchor}
           value={query}
           onChangeText={(text) => { setQuery(text); setFocused(true); }}
           onFocus={() => setFocused(true)}
@@ -222,7 +232,8 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
           onSubmitEditing={() => { if (results[0]) selectHit(results[0]); }}
         />
         {query ? <TouchableOpacity onPress={() => { setQuery(''); setFocused(false); }} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
-      </View>
+      <MapEducationHelpButton mode="grounds" />
+          </View>
       {focused && query.trim().length > 0 ? (
         <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" nestedScrollEnabled testID="grounds-map-results">
           {results.map((hit) => (
@@ -241,15 +252,15 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     <TouchableOpacity style={[styles.reset, desktop && desktopMapStyles.fit]} onPress={reset} accessibilityLabel="Fit map to grounds" testID="grounds-fit-reset">
       <Feather name="maximize-2" size={18} color={colors.textPrimary} />
     </TouchableOpacity>
-    {selected?.action === 'info' || selected?.action === 'switch-rv' ? (
-      <View style={[styles.card, desktop && desktopMapStyles.groundsInfo]} pointerEvents="box-none" testID="grounds-info-card">
+    {selected && (eventSelectionTitle || selected.action === 'info' || selected.action === 'switch-rv') ? (
+      <View style={[styles.card, desktop && desktopMapStyles.groundsInfo, desktop && { bottom: 124 }]} pointerEvents="box-none" testID="grounds-info-card">
         <View style={styles.cardInner} pointerEvents="auto">
           <View style={styles.cardRow}>
             <View style={styles.cardCopy}>
-              <Text style={styles.title}>{selected.label}</Text>
-              <Text style={styles.fact}>{selected.fact}</Text>
+              <Text testID="map-selection-title" style={styles.title}>{eventSelectionTitle || selected.label}</Text>
+              <Text style={styles.fact}>{eventSelectionTitle ? selected.label : selected.fact}</Text>
             </View>
-            <TouchableOpacity onPress={() => setSelected(null)} accessibilityLabel="Dismiss">
+            <TouchableOpacity onPress={() => { setSelected(null); setEventSelectionTitle(null); }} accessibilityLabel="Dismiss">
               <Feather name="x" size={20} color={colors.textMuted} />
             </TouchableOpacity>
           </View>
@@ -288,9 +299,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: SELECTED_INNER,
   },
-  searchWrap: { position: 'absolute', top: 52, left: 12, right: 12, zIndex: 12 },
+  searchWrap: { position: 'absolute', top: 60, left: 12, right: 12, zIndex: 12 },
   searchCard: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-  searchInput: { flex: 1, fontSize: 16, color: '#111827', paddingVertical: 10 },
+  searchInput: { flex: 1, minWidth: 0, fontSize: 16, color: '#111827', paddingVertical: 10 },
   results: { marginTop: 6, backgroundColor: '#FFFFFF', borderRadius: 14, overflow: 'hidden', maxHeight: 260 },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E7EB', minHeight: 48 },
   resultName: { fontSize: 15, fontWeight: '700', color: '#111827' },

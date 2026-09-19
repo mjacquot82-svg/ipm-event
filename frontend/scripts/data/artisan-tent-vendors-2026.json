@@ -1,0 +1,84 @@
+{
+  "authority": "Pennie Wilhelm: 2026 IPM - Artisan's in the SHOW GUIDE; later location instruction and Marc's explicit resolution",
+  "location": "Indoors at the Artisan Tent",
+  "vendors": [
+    {
+      "id": "3ae7740c-f1c6-5e2c-b2ec-743f80879a0e",
+      "name": "Amabel Books, Allenford",
+      "authority_name": "Amabel Books",
+      "town": "Allenford",
+      "create_if_absent": true
+    },
+    {
+      "id": "f610134f-3c59-4bdf-98a9-39da2f155769",
+      "name": "Equestrian Elite, Durham",
+      "authority_name": "Equestrian Elite",
+      "town": "Durham",
+      "create_if_absent": false
+    },
+    {
+      "id": "e173b0f8-0a76-4bc9-9eef-b610dbbfaad8",
+      "name": "Flora and Fae, Tara",
+      "authority_name": "Flora and Fae",
+      "town": "Tara",
+      "create_if_absent": false
+    },
+    {
+      "id": "b1efb2e2-a52d-485a-93b7-f0e53f0486d7",
+      "name": "Mike's Wood, Elmwood",
+      "authority_name": "Mike\u2019s Wood",
+      "town": "Elmwood",
+      "create_if_absent": false
+    },
+    {
+      "id": "557385b5-4aac-424e-a00b-660800f0c543",
+      "name": "Nana's Sewing Basket, Walkerton",
+      "authority_name": "Nana\u2019s Sewing Basket",
+      "town": "Walkerton",
+      "create_if_absent": false
+    },
+    {
+      "id": "f2f40011-8138-4f50-bb92-48e0ce605ed3",
+      "name": "Natural Stitch Designs, Amaranth",
+      "authority_name": "Natural Stitch Designs",
+      "town": "Amaranth",
+      "create_if_absent": false
+    },
+    {
+      "id": "e3b3d8ca-c12b-485e-bf42-bc3ee2f605be",
+      "name": "Northern Flyer Design (Ken Thornburn), Tara",
+      "authority_name": "Northern Flyer Design (Ken Thornburn)",
+      "town": "Tara",
+      "create_if_absent": false
+    },
+    {
+      "id": "421f2f71-ea28-43c1-a7d2-e316b9e45842",
+      "name": "Paisley Drive Designs, Chesley",
+      "authority_name": "Paisley Drive Designs",
+      "town": "Chesley",
+      "create_if_absent": false
+    },
+    {
+      "id": "a4947094-8c16-5fcb-903f-d0073ae78023",
+      "name": "Rachel Joy Jewellery, Kincardine",
+      "authority_name": "Rachel Joy Jewellery",
+      "town": "Kincardine",
+      "create_if_absent": true
+    },
+    {
+      "id": "12b95efc-6dc2-4794-92a2-0fb3ac1d8c3c",
+      "name": "Susan Seitz, Walkerton",
+      "authority_name": "Susan Seitz",
+      "town": "Walkerton",
+      "create_if_absent": false
+    },
+    {
+      "id": "cda2170e-a9ca-4c58-b8ba-75884ec3579e",
+      "name": "Wildflower Designs, Shallow Lake",
+      "authority_name": "Wildflower Designs",
+      "town": "Shallow Lake",
+      "create_if_absent": false
+    }
+  ],
+  "identity_basis": "All 11 current production/main catalog IDs and names retained; nine also present in production DB, two absent DB rows prepared with existing catalog IDs."
+}

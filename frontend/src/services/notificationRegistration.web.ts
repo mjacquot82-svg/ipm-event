@@ -230,7 +230,7 @@ function wait(delayMs: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, delayMs));
 }
 
-export async function ensureNotificationRegistration(): Promise<NotificationRegistrationResult> {
+export async function ensureNotificationRegistration(_options: { allowEnrollment?: boolean } = {}): Promise<NotificationRegistrationResult> {
   // Existing pilot identity never enters legacy resubscribe/rebind recovery.
   // Unavailable membership fails closed; confirmed non-pilots retain baseline setup.
   let pilot: boolean;

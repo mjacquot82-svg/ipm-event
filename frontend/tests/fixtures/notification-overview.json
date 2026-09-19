@@ -1,0 +1,311 @@
+{
+  "empty": {
+    "scope": "all_time",
+    "snapshot_at": "2026-09-18T23:00:00+00:00",
+    "accepted_sends": 0,
+    "failed_requests": 0,
+    "pending_requests": 0,
+    "metrics": {
+      "targeted_devices": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 0
+      },
+      "receipts": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 0
+      },
+      "opens": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 0
+      },
+      "visits": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 0
+      },
+      "failures": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 0
+      }
+    },
+    "latest_statistics_check": null,
+    "rates": null,
+    "recent": []
+  },
+  "historical": {
+    "scope": "all_time",
+    "snapshot_at": "2026-09-18T23:00:00+00:00",
+    "accepted_sends": 2,
+    "failed_requests": 0,
+    "pending_requests": 0,
+    "metrics": {
+      "targeted_devices": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 2
+      },
+      "receipts": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 2
+      },
+      "opens": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 2
+      },
+      "visits": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 2
+      },
+      "failures": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 2
+      }
+    },
+    "latest_statistics_check": null,
+    "rates": null,
+    "recent": [
+      {
+        "title": "[STAGING FIXTURE] Example announcement",
+        "requested_at": "2026-09-18T23:00:00+00:00",
+        "provider_accepted": true
+      },
+      {
+        "title": "[STAGING FIXTURE] Example announcement",
+        "requested_at": "2026-09-18T23:00:00+00:00",
+        "provider_accepted": true
+      }
+    ]
+  },
+  "full": {
+    "scope": "all_time",
+    "snapshot_at": "2026-09-18T23:00:00+00:00",
+    "accepted_sends": 1,
+    "failed_requests": 0,
+    "pending_requests": 0,
+    "metrics": {
+      "targeted_devices": {
+        "value": 100,
+        "covered_sends": 1,
+        "total_sends": 1
+      },
+      "receipts": {
+        "value": 80,
+        "covered_sends": 1,
+        "total_sends": 1
+      },
+      "opens": {
+        "value": 20,
+        "covered_sends": 1,
+        "total_sends": 1
+      },
+      "visits": {
+        "value": 10,
+        "covered_sends": 1,
+        "total_sends": 1
+      },
+      "failures": {
+        "value": 2,
+        "covered_sends": 1,
+        "total_sends": 1
+      }
+    },
+    "latest_statistics_check": null,
+    "rates": null,
+    "recent": [
+      {
+        "title": "[STAGING FIXTURE] Example announcement",
+        "requested_at": "2026-09-18T23:00:00+00:00",
+        "provider_accepted": true
+      }
+    ]
+  },
+  "mixed": {
+    "scope": "all_time",
+    "snapshot_at": "2026-09-18T23:00:00+00:00",
+    "accepted_sends": 2,
+    "failed_requests": 0,
+    "pending_requests": 0,
+    "metrics": {
+      "targeted_devices": {
+        "value": 100,
+        "covered_sends": 1,
+        "total_sends": 2
+      },
+      "receipts": {
+        "value": 80,
+        "covered_sends": 1,
+        "total_sends": 2
+      },
+      "opens": {
+        "value": 20,
+        "covered_sends": 1,
+        "total_sends": 2
+      },
+      "visits": {
+        "value": 10,
+        "covered_sends": 1,
+        "total_sends": 2
+      },
+      "failures": {
+        "value": 2,
+        "covered_sends": 1,
+        "total_sends": 2
+      }
+    },
+    "latest_statistics_check": null,
+    "rates": null,
+    "recent": [
+      {
+        "title": "[STAGING FIXTURE] Example announcement",
+        "requested_at": "2026-09-18T23:00:00+00:00",
+        "provider_accepted": true
+      },
+      {
+        "title": "[STAGING FIXTURE] Example announcement",
+        "requested_at": "2026-09-18T23:00:00+00:00",
+        "provider_accepted": true
+      }
+    ]
+  },
+  "failures": {
+    "scope": "all_time",
+    "snapshot_at": "2026-09-18T23:00:00+00:00",
+    "accepted_sends": 1,
+    "failed_requests": 1,
+    "pending_requests": 1,
+    "metrics": {
+      "targeted_devices": {
+        "value": 100,
+        "covered_sends": 1,
+        "total_sends": 1
+      },
+      "receipts": {
+        "value": 80,
+        "covered_sends": 1,
+        "total_sends": 1
+      },
+      "opens": {
+        "value": 20,
+        "covered_sends": 1,
+        "total_sends": 1
+      },
+      "visits": {
+        "value": 10,
+        "covered_sends": 1,
+        "total_sends": 1
+      },
+      "failures": {
+        "value": 2,
+        "covered_sends": 1,
+        "total_sends": 1
+      }
+    },
+    "latest_statistics_check": null,
+    "rates": null,
+    "recent": [
+      {
+        "title": "[STAGING FIXTURE] Example announcement",
+        "requested_at": "2026-09-18T23:00:00+00:00",
+        "provider_accepted": true
+      }
+    ]
+  },
+  "reminders": {
+    "scope": "all_time",
+    "snapshot_at": "2026-09-18T23:00:00+00:00",
+    "accepted_sends": 0,
+    "failed_requests": 0,
+    "pending_requests": 0,
+    "metrics": {
+      "targeted_devices": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 0
+      },
+      "receipts": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 0
+      },
+      "opens": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 0
+      },
+      "visits": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 0
+      },
+      "failures": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 0
+      }
+    },
+    "latest_statistics_check": null,
+    "rates": null,
+    "recent": []
+  },
+  "partial": {
+    "scope": "all_time",
+    "snapshot_at": "2026-09-18T23:00:00+00:00",
+    "accepted_sends": 3,
+    "failed_requests": 0,
+    "pending_requests": 0,
+    "metrics": {
+      "targeted_devices": {
+        "value": 100,
+        "covered_sends": 1,
+        "total_sends": 3
+      },
+      "receipts": {
+        "value": 9,
+        "covered_sends": 1,
+        "total_sends": 3
+      },
+      "opens": {
+        "value": 20,
+        "covered_sends": 2,
+        "total_sends": 3
+      },
+      "visits": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 3
+      },
+      "failures": {
+        "value": null,
+        "covered_sends": 0,
+        "total_sends": 3
+      }
+    },
+    "latest_statistics_check": null,
+    "rates": null,
+    "recent": [
+      {
+        "title": "[STAGING FIXTURE] Example announcement",
+        "requested_at": "2026-09-18T23:00:00+00:00",
+        "provider_accepted": true
+      },
+      {
+        "title": "[STAGING FIXTURE] Example announcement",
+        "requested_at": "2026-09-18T23:00:00+00:00",
+        "provider_accepted": true
+      },
+      {
+        "title": "[STAGING FIXTURE] Example announcement",
+        "requested_at": "2026-09-18T23:00:00+00:00",
+        "provider_accepted": true
+      }
+    ]
+  }
+}

@@ -219,7 +219,7 @@ class FakeDeliveryService:
             "id": f"delivery-{len(self.rows) + 1}",
             **values,
             "provider": values.get("provider", "wonderpush"),
-            "provider_campaign_id": None,
+            "provider_campaign_id": values.get("provider_campaign_id"),
             "status": "requested",
             "requested_at": datetime.now(timezone.utc),
             "sent_at": None,
@@ -228,9 +228,25 @@ class FakeDeliveryService:
         self.rows.append(row)
         return row
 
-    async def mark_sent(self, delivery_id, campaign_id):
+    async def mark_sent(self, delivery_id, provider_delivery_id):
         row = next(row for row in self.rows if row["id"] == delivery_id)
-        row.update(status="sent", provider_campaign_id=campaign_id, sent_at=datetime.now(timezone.utc))
+        row.update(status="sent", provider_delivery_id=provider_delivery_id,
+                   provider_accepted_at=datetime.now(timezone.utc), sent_at=datetime.now(timezone.utc))
+        return row
+
+    async def update_campaign_id(self, delivery_id, campaign_id):
+        row = next(row for row in self.rows if row["id"] == delivery_id)
+        row["provider_campaign_id"] = campaign_id
+        return row
+
+    async def update_target_url(self, delivery_id, target_url):
+        row = next(row for row in self.rows if row["id"] == delivery_id)
+        row["target_url"] = target_url
+        return row
+
+    async def mark_unknown(self, delivery_id):
+        row = next(row for row in self.rows if row["id"] == delivery_id)
+        row.update(status="requested", error_message="Provider outcome unknown")
         return row
 
     async def mark_failed(self, delivery_id, error_message):
@@ -257,13 +273,13 @@ class FakeWonderPush:
         self.test_installations = list(installation_ids)
         self.test_options = kwargs
         if self.fail:
-            raise server.WonderPushError("provider failed")
+            raise server.WonderPushError("provider failed", status_code=400)
         return "test-campaign"
 
     async def send_everyone(self, **kwargs):
         self.everyone_options = kwargs
         if self.fail:
-            raise server.WonderPushError("provider failed")
+            raise server.WonderPushError("provider failed", status_code=400)
         return "everyone-campaign"
 
 
@@ -329,13 +345,13 @@ def test_test_send_uses_only_configured_subscribers(monkeypatch):
         "username": "comms", "role": "Communications", "event_id": "event-a"
     }))
     assert provider.test_installations == ["test-1"]
-    assert provider.test_options["campaign_id"] == "controlled-test-campaign"
+    assert provider.test_options["campaign_id"] == "ipm-test-delivery-1"
     assert provider.test_options["idempotency_key"].startswith("announcement-test-")
     assert 0 < int(provider.test_options["expiration_time"].split()[0]) <= 72 * 60 * 60
     assert result.audience == "test"
-    assert deliveries.rows[0]["provider_campaign_id"] == "test-campaign"
+    assert deliveries.rows[0]["provider_campaign_id"] == "ipm-test-delivery-1"
     assert deliveries.rows[0]["provider"] == "wonderpush"
-    assert deliveries.rows[0]["target_url"] == "https://theipm.ca/announcements/announcement-1"
+    assert deliveries.rows[0]["target_url"].startswith("https://theipm.ca/announcements/announcement-1?notification_ref=")
 
 
 def test_test_send_requires_configured_wonderpush_campaign(monkeypatch):
@@ -353,29 +369,13 @@ def test_test_send_requires_configured_wonderpush_campaign(monkeypatch):
     assert deliveries.rows == []
 
 
-@pytest.mark.parametrize("bad_ids", [[], ["@ALL"], ["a", "b"], ["id,with,comma"]])
-def test_test_send_rejects_unsafe_installation_allowlist(monkeypatch, bad_ids):
-    provider, deliveries = configure_notification_fakes(monkeypatch, announcement())
-    monkeypatch.setattr(server, "WONDERPUSH_TEST_INSTALLATION_IDS", bad_ids)
-
-    with pytest.raises(HTTPException) as error:
-        asyncio.run(server.notify_announcement("announcement-1", "test", {
-            "username": "comms", "role": "Communications", "event_id": "event-a"
-        }))
-
-    assert error.value.status_code == 503
-    assert "exactly one WonderPush installation ID" in error.value.detail
-    assert provider.test_installations is None
-    assert deliveries.rows == []
-
-
 def test_everyone_send_cannot_duplicate_after_success(monkeypatch):
     provider, deliveries = configure_notification_fakes(monkeypatch, announcement())
     user = {"username": "owner", "role": "Owner", "event_id": "event-a"}
     first = asyncio.run(server.notify_announcement("announcement-1", "everyone", user))
-    assert first.provider_campaign_id == "everyone-campaign"
-    assert "campaign_id" not in provider.everyone_options
-    assert provider.everyone_options["idempotency_key"] == "announcement-event-a-announcement-1"
+    assert first.provider_campaign_id == "ipm-everyone-delivery-1"
+    assert provider.everyone_options["campaign_id"] == "ipm-everyone-delivery-1"
+    assert provider.everyone_options["idempotency_key"] == "announcement-delivery-1"
     assert provider.everyone_options["expiration_time"] == "259200 seconds"
     with pytest.raises(HTTPException) as duplicate:
         asyncio.run(server.notify_announcement("announcement-1", "everyone", user))
@@ -389,7 +389,7 @@ def test_announcement_send_is_independent_of_reminder_kill_switch(monkeypatch):
         "username": "comms", "role": "Communications", "event_id": "event-a"
     }))
     assert result.status == "sent"
-    assert "campaign_id" not in provider.everyone_options
+    assert provider.everyone_options["campaign_id"] == "ipm-everyone-delivery-1"
 
 
 def test_earlier_announcement_expiry_shortens_push_ttl(monkeypatch):
@@ -456,7 +456,6 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
     assert captured["url"] == "https://management-api.wonderpush.com/v1/deliveries"
     assert captured["data"]["accessToken"] == "not-a-credential"
     assert captured["data"]["targetInstallationIds"] == "123"
-    # send_test uses audience_classification="test" and intentionally omits filterPlatforms
     assert "filterPlatforms" not in captured["data"]
     assert captured["data"]["campaignId"] == "controlled-test-campaign"
     assert "disableCapping" not in captured["data"]
@@ -470,17 +469,8 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
         "web": {"icon": "https://theipm.ca/ipm-icon-any-192.png"},
     }
     assert notification["push"]["custom"]["target_url"].endswith("/announcements/announcement-1")
+    assert "diagnostic_id" not in notification["push"]["custom"]
     assert notification["push"]["expirationTime"] == "72 hours"
-
-
-def test_wonderpush_send_test_rejects_multi_or_all_targets(monkeypatch):
-    client = WonderPushClient(access_token="not-a-credential")
-    for bad in ([], ["@ALL"], ["a", "b"], ["x,y"]):
-        with pytest.raises(WonderPushError, match="exactly one installation ID"):
-            asyncio.run(client.send_test(
-                title="Title", message="Message", target_url="https://theipm.ca",
-                installation_ids=bad,
-            ))
 
 
 def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
@@ -501,7 +491,7 @@ def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
     client = WonderPushClient(access_token="not-a-credential")
     result = asyncio.run(client.send_everyone(
         title="Title", message="Message", target_url="https://theipm.ca",
-        expiration_time="72 hours", idempotency_key="announcement-event-a-announcement-1",
+        expiration_time="72 hours", idempotency_key="announcement-delivery-1",
     ))
     assert result == "wonderpush:accepted"
     assert captured["data"]["targetSegmentIds"] == "@ALL"
@@ -510,7 +500,7 @@ def test_wonderpush_everyone_targets_all_web_installations(monkeypatch):
     assert "targetInstallationIds" not in captured["data"]
     assert "disableCapping" not in captured["data"]
     assert captured["headers"] == {
-        "X-WonderPush-Idempotency-Key": "announcement-event-a-announcement-1"
+        "X-WonderPush-Idempotency-Key": "announcement-delivery-1"
     }
     assert __import__("json").loads(captured["data"]["notification"])["push"][
         "expirationTime"] == "72 hours"

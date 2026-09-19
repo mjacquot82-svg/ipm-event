@@ -95,7 +95,25 @@ def test_delivery_snapshot_is_immutable_and_stats_are_announcement_scoped():
     serialized = str(stats)
     assert "wonderpush_installation_id" not in serialized
     assert "pushToken" not in serialized
-    assert "provider_campaign_id" not in params["select"]
+    assert "provider_campaign_id" in params["select"]
+
+
+def test_test_delivery_omits_optional_audience_snapshot_columns():
+    service = SupabaseNotificationDeliveryService(
+        supabase_url="https://example.supabase.co", service_role_key="test", event_slug="ipm-staging")
+    service.client = DeliveryClient()
+
+    created = asyncio.run(service.create_requested(
+        event_id="ipm-staging", announcement_id="announcement-a", audience="test",
+        requested_by="Organizer", target_url="https://staging.theipm.ca/announcements/announcement-a",
+        notification_title="Title", notification_message="Message"))
+
+    assert created["audience"] == "test"
+    payload = service.client.calls[-1][3]
+    assert "audience_device_count" not in payload
+    assert "audience_count_basis" not in payload
+    assert "audience_snapshot_at" not in payload
+    assert "audience_stale_device_count" not in payload
 
 
 def test_historical_delivery_missing_snapshot_remains_unavailable():

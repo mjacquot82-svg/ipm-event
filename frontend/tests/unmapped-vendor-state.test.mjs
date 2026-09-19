@@ -32,13 +32,14 @@ test('raw stale geometry cannot make unavailable footprint trusted',()=>{
  const v=tentedCityVendors.find(v=>/Valard/.test(v.name));assert.equal(hasTrustedMapGeometry({kind:'vendor',vendor:{...v,rect:{x:1,y:1,w:5,h:5}}}),false);
  for(const name of ['Hanover','Maitland Valley Conservation'])assert.equal(vendorHasTrustedMapGeometry(name),false);
 });
-test('canonical known-location scan is limited to eight unavailable records',()=>{
- const rows=catalog.filter(v=>v.location.trim()&&!vendorHasTrustedMapGeometry(v.name));assert.equal(rows.length,8);
- assert.deepEqual(rows.map(v=>v.name),['Bell Cell Tower','Can-Am Demo Area, Montreal, QC','DODGE DEALERS',"Gilligan's Juice Bar",'Hanover','Maitland Valley Conservation','Rogers Cell Tower','Valard Construction, Vaughan']);
+test('unavailable core locations stay untrusted in the production catalog',()=>{
+ for(const term of ['Can-Am','Valard','Bell Cell Tower','Rogers Cell Tower']) {
+  const row=catalog.find(v=>v.name.includes(term));assert(row,term);assert.equal(vendorHasTrustedMapGeometry(row.name),false,term);
+ }
 });
 test('both attendee surfaces show the generic message and map selection clears untrusted parent state',()=>{
  const ui=fs.readFileSync(new URL('../app/(tabs)/vendors.tsx',import.meta.url),'utf8');const map=fs.readFileSync(new URL('../src/components/TentedCityMap.tsx',import.meta.url),'utf8');
- assert.match(ui,/item.location\?\.trim\(\) && !vendorHasTrustedMapGeometry\(item.name\) \? \(/);
+ assert.match(ui,/mapLocation\?\.trim\(\) && !hasMap \? \(/);
  assert.match(ui,/EXACT_MAP_UNAVAILABLE/);assert.match(map,/selectedWithoutGeometry \? <Text[^>]*>\{EXACT_MAP_UNAVAILABLE\}/);
  assert.match(map,/setSelectedSemanticArea\(hasTrustedMapGeometry\(place\) \? semanticArea : null\)/);
 });

@@ -130,3 +130,57 @@ def test_admin_authorization_event_scope_and_no_store(monkeypatch):
         assert response.status_code == 503 and 'PRIVATE' not in response.text
     finally:
         server.app.dependency_overrides.clear()
+
+
+def test_organizer_summary_readiness_is_not_delivery_and_categories_are_not_added():
+    from backend.notification_health import organizer_health_summary
+    health=build_health([row('VERIFIED', provider_ready=True, provider_checked_at=NOW.isoformat(), verification_expires_at=FUTURE) for _ in range(3)],{},now=NOW)
+    summary=organizer_health_summary(health)
+    assert summary['ready_devices']==3 and summary['status']=='healthy'
+    assert summary['message']=='No known notification problems.'
+    # One registration can appear in several issue categories: never invent a sum.
+    health.update(key_mismatch=1,uncertain=1,current_check_failures=1)
+    summary=organizer_health_summary(health)
+    assert summary['status']=='attention' and not any(c.isdigit() for c in summary['message'])
+    assert set(summary)=={'ready_devices','readiness_outdated','status','message','snapshot_at'}
+
+
+@pytest.mark.parametrize('overrides,expected', [
+    ({},'empty'), ({'registrations':2,'not_yet_checked':2},'incomplete'),
+    ({'registrations':2,'provider_ready':2,'provider_ready_stale':1},'incomplete'),
+    ({'registrations':2,'verified_expired':1},'incomplete'),
+    ({'circuit':'UNKNOWN'},'incomplete'), ({'circuit':'OPEN'},'attention'),
+    ({'registrations':2,'current_check_failures':1},'attention'),
+])
+def test_organizer_summary_does_not_claim_clear_health_for_incomplete_evidence(overrides,expected):
+    from backend.notification_health import organizer_health_summary
+    health=build_health([],{},now=NOW);health.update(overrides)
+    assert organizer_health_summary(health)['status']==expected
+    assert organizer_health_summary(health)['ready_devices']==health['provider_ready']
+
+
+def test_summary_role_access_and_owner_diagnostics_preserve_exact_values(monkeypatch):
+    import backend.notification_health as module
+    health=build_health([row('MISMATCH'),row('INELIGIBLE',outcome='KEY_MISMATCH')],{},now=NOW)
+    async def report(repository):return health
+    monkeypatch.setattr(module,'health_report',report)
+    monkeypatch.setattr(server,'analytics_reporting_repository',object())
+    monkeypatch.setattr(server,'notification_registration_repository',object())
+    monkeypatch.setattr(server,'db',object())
+    client=TestClient(server.app);path='/api/admin/analytics/notification-health'
+    assert client.get(path+'?view=summary').status_code==401
+    try:
+        for role in ['Communications','Vendor']:
+            server.app.dependency_overrides[server.get_current_organizer_user]=lambda role=role:{'event_id':'ipm-2026','role':role}
+            assert client.get(path).status_code==403
+            assert client.get(path+'?view=diagnostics').status_code==403
+            response=client.get(path+'?view=summary')
+            assert response.status_code==200 and response.headers['cache-control']=='no-store'
+            assert response.json()==module.organizer_health_summary(health)
+            assert 'lease' not in response.text and 'circuit' not in response.text
+        server.app.dependency_overrides[server.get_current_organizer_user]=lambda:{'event_id':'ipm-2026','role':'Owner'}
+        assert client.get(path).json()==health
+        assert client.get(path+'?view=invalid').status_code==422
+        server.app.dependency_overrides[server.get_current_organizer_user]=lambda:{'event_id':'wrong','role':'Communications'}
+        assert client.get(path+'?view=summary').status_code==403
+    finally:server.app.dependency_overrides.clear()

@@ -1,3 +1,4 @@
+import { NotificationMetrics, NotificationAnalyticsDetails } from '../../src/components/admin/NotificationMetrics';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -170,6 +171,7 @@ export default function AdminDashboardScreen() {
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
   const [announcementsError, setAnnouncementsError] = useState<string | null>(null);
   const [announcementDeliveryStats, setAnnouncementDeliveryStats] = useState<Record<string, AnnouncementDeliveryStats>>({});
+  const [announcementStatsAvailable, setAnnouncementStatsAvailable] = useState(false);
   const [announcementSearch, setAnnouncementSearch] = useState('');
   const [announcementEditorMode, setAnnouncementEditorMode] = useState<AnnouncementEditorMode>('closed');
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
@@ -213,10 +215,12 @@ export default function AdminDashboardScreen() {
       setAnnouncements(result.announcements);
       try {
         const stats = await listAnnouncementDeliveryStats();
-        setAnnouncementDeliveryStats(Object.fromEntries(stats.deliveries.map((delivery) => [delivery.announcement_id, delivery])));
+        setAnnouncementDeliveryStats(Object.fromEntries([...stats.deliveries].reverse().map((delivery) => [delivery.announcement_id, delivery])));
+        setAnnouncementStatsAvailable(true);
       } catch {
         // Delivery analytics is additive; an older backend must not block Announcements.
         setAnnouncementDeliveryStats({});
+        setAnnouncementStatsAvailable(false);
       }
     } catch (err) {
       setAnnouncementsError(err instanceof Error ? err.message : 'Unable to load announcements');
@@ -224,6 +228,22 @@ export default function AdminDashboardScreen() {
       setAnnouncementsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || activeSection !== 'communications') return;
+    let busy = false;
+    const timer = setInterval(async () => {
+      if (busy || (typeof document !== 'undefined' && document.visibilityState !== 'visible')) return;
+      busy = true;
+      try {
+        const stats = await listAnnouncementDeliveryStats();
+        setAnnouncementDeliveryStats(Object.fromEntries([...stats.deliveries].reverse().map((row) => [row.announcement_id, row])));
+        setAnnouncementStatsAvailable(true);
+      } catch { /* Keep the last known aggregate; sending is independent. */ }
+      finally { busy = false; }
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [isAuthenticated, activeSection]);
 
   useEffect(() => {
     let isMounted = true;
@@ -431,7 +451,7 @@ export default function AdminDashboardScreen() {
         audience,
         status: 'sent',
         message: audience === 'test'
-          ? 'Test notification sent to configured test subscribers.'
+          ? 'Provider accepted the test notification request.'
           : 'Notification accepted by WonderPush.',
       });
       if (audience === 'everyone') await loadAnnouncements();
@@ -657,11 +677,11 @@ export default function AdminDashboardScreen() {
       )}
 
       {activeSection === 'analytics' && (
-        <AnalyticsDashboard onAuthenticationExpired={() => {
+        <AnalyticsDashboard canViewNotificationDiagnostics={currentUser?.role === 'Owner'} onAuthenticationExpired={() => {
           setIsAuthenticated(false);
           setCurrentUser(null);
           router.replace('/admin/login');
-        }} />
+        }} onOpenAnnouncements={() => setActiveSection('communications')} />
       )}
 
       {activeSection === 'vendors' && (
@@ -740,6 +760,7 @@ export default function AdminDashboardScreen() {
           saveMessage={announcementSaveMessage}
           notificationAction={notificationAction}
           deliveryStats={announcementDeliveryStats}
+          deliveryStatsAvailable={announcementStatsAvailable}
           editingAnnouncement={editingAnnouncement}
           showTestAction={currentUser?.role === 'Owner'}
           onSearchChange={setAnnouncementSearch}
@@ -1631,7 +1652,7 @@ function VendorEditor({
 
 function AnnouncementsPage({
   announcements, totalCount, loading, error, search, editorMode, form, saving,
-  saveMessage, notificationAction, deliveryStats,
+  saveMessage, notificationAction, deliveryStats, deliveryStatsAvailable,
   editingAnnouncement, showTestAction, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
   onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone, onPreviewSendBlocked, onPreviewPublishBlocked, onUploadImage, onRemoveImage,
 }: {
@@ -1639,6 +1660,7 @@ function AnnouncementsPage({
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
   deliveryStats: Record<string, AnnouncementDeliveryStats>;
+  deliveryStatsAvailable: boolean;
   editingAnnouncement: Announcement | null; showTestAction: boolean; onSearchChange: (value: string) => void;
   onRefresh: () => void; onCreate: () => void; onEdit: (item: Announcement) => void;
   onStatusChange: (item: Announcement, status: AnnouncementStatus) => void;
@@ -1663,6 +1685,7 @@ function AnnouncementsPage({
         onSearchChange={onSearchChange}
         secondaryAction={{ label: 'Refresh', icon: 'refresh-cw', onPress: onRefresh, disabled: loading }}
       />
+      <NotificationAnalyticsDetails />
       {error && <ErrorState message={error} onRetry={onRefresh} />}
       {editorMode !== 'closed' && (
         <AnnouncementEditor
@@ -1696,15 +1719,7 @@ function AnnouncementsPage({
                   {`Created by ${item.created_by} · ${new Date(item.created_at).toLocaleString()}`}
                   {item.expires_at ? ` · Expires ${new Date(item.expires_at).toLocaleString()}` : ''}
                 </Text>
-                {deliveryStats[item.id] ? <Text style={styles.deliveryMeta}>
-                  {deliveryStats[item.id].sent_at
-                    ? `Notification sent ${new Date(deliveryStats[item.id].sent_at as string).toLocaleString()}`
-                    : `Notification ${deliveryStats[item.id].status}`}
-                  {deliveryStats[item.id].audience_device_count === null
-                    ? ' · Audience at send: Not available'
-                    : ` · Known deliverable devices at send: ${deliveryStats[item.id].audience_device_count}`}
-                  {deliveryStats[item.id].provider_accepted ? ' · Provider accepted: Yes' : ''}
-                </Text> : null}
+                <NotificationMetrics stats={deliveryStats[item.id]} available={deliveryStatsAvailable} />
               </View>
               <View style={[styles.announcementActions, isMobile && styles.announcementActionsMobile]}>
                 <Pressable style={styles.iconButton} onPress={() => onEdit(item)}><Feather name="edit-2" size={16} color={colors.textSecondary} /></Pressable>
@@ -1895,7 +1910,7 @@ function AnnouncementEditor({
           {/* The legacy "Notify Everyone" wording remains only for regression/diagnostic compatibility. */}
           {showTestAction && isPublished && <Pressable style={[styles.secondaryButton, notificationDisabled && styles.buttonDisabled]} onPress={onSendTest} disabled={notificationDisabled}>
             {isSending && notificationAction.audience === 'test' ? <ActivityIndicator color={colors.textPrimary} /> : <Feather name="send" size={17} color={colors.textPrimary} />}
-            <Text style={styles.secondaryButtonText}>{isSending && notificationAction.audience === 'test' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'test' ? 'Sent' : notificationAction.status === 'failed' && notificationAction.audience === 'test' ? 'Failed — Try Again' : 'Send Test Notification'}</Text>
+            <Text style={styles.secondaryButtonText}>{isSending && notificationAction.audience === 'test' ? 'Sending...' : notificationAction.status === 'sent' && notificationAction.audience === 'test' ? 'Provider accepted' : notificationAction.status === 'failed' && notificationAction.audience === 'test' ? 'Failed — Try Again' : 'Send Test Notification'}</Text>
           </Pressable>}
         </>}
       </View>

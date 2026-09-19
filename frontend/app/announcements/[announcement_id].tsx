@@ -10,12 +10,14 @@ import { attendeePageContent, useAttendeeLayout } from '../../src/theme/attendee
 import colors from '../../src/theme/colors';
 import { useAnnouncementReadState } from '../../src/context/AnnouncementReadContext';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
+import { notificationNavigationId } from '../../src/analytics/notificationAttribution';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 
 export default function AnnouncementDetailScreen() {
   const router = useRouter();
-  const { announcement_id: rawAnnouncementId, source } = useLocalSearchParams<{ announcement_id?: string | string[]; source?: string }>();
+  const { announcement_id: rawAnnouncementId, source, notification_ref: notificationRef } = useLocalSearchParams<{ announcement_id?: string | string[]; source?: string; notification_ref?: string | string[] }>();
   const announcementId = Array.isArray(rawAnnouncementId) ? rawAnnouncementId[0] : rawAnnouncementId;
+  const deliveryRef = Array.isArray(notificationRef) ? notificationRef[0] : notificationRef;
   const { frameStyle, sectionStyle } = useAttendeeLayout();
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,7 +56,15 @@ export default function AnnouncementDetailScreen() {
         if (trackedOpenId.current !== result.id) {
           trackedOpenId.current = result.id;
           void queueAnalyticsEvent('announcement_opened', {
-            announcement_id: result.id, source: source || 'other', load_status: 'success',
+            announcement_id: result.id, source: deliveryRef ? 'notification' : source || 'other',
+            ...(deliveryRef ? { notification_id: deliveryRef } : {}), load_status: 'success',
+          });
+        }
+        const navigationId = notificationNavigationId(deliveryRef);
+        if (deliveryRef && navigationId) {
+          void queueAnalyticsEvent('notification_origin_visit', {
+            delivery_id: deliveryRef, announcement_id: result.id, navigation_id: navigationId,
+            destination: 'announcement_detail', source: 'notification', navigation_type: 'deep_link',
           });
         }
       }
@@ -63,7 +73,7 @@ export default function AnnouncementDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [announcementId, markAnnouncementRead, source]);
+  }, [announcementId, markAnnouncementRead, source, deliveryRef]);
 
   useEffect(() => { void load(); }, [load]);
 

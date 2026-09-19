@@ -1,0 +1,36 @@
+{
+  "events": [
+    {
+      "event_image": null,
+      "external_links": [],
+      "id": "3c69ff36-6271-4afa-973c-b8609db8dc24",
+      "title": "Christie Thomson \u2014 Definition Fitness",
+      "description": "Christie will be kicking off our morning movement Tuesday and Thursday mornings. Please come bring a friend, enjoy a free coffee and get that body moving and warmed up for the day at The IPM!",
+      "start_date": "2026-09-22",
+      "start_time": "10:00 AM",
+      "end_time": "10:15 AM",
+      "category": "MNP Lifestyles Tent Events",
+      "latitude": null,
+      "longitude": null,
+      "days_active": "Tuesday",
+      "location_name": "The Beyond Wireless Stage"
+    },
+    {
+      "event_image": null,
+      "external_links": [],
+      "id": "3cea3c17-bf88-4439-aff1-65fe5f753b34",
+      "title": "Bruce Power Opening Day Parade",
+      "description": "Celebrate the people who lead and support our rural communities. Featuring dignitaries, agricultural leaders, sponsors, exhibitors, farm families, and honoured guests, this parade highlights the pride and spirit that keep Ontario and Bruce County strong.",
+      "start_date": "2026-09-22",
+      "start_time": "10:00 AM",
+      "end_time": "",
+      "category": "Parade Week",
+      "latitude": null,
+      "longitude": null,
+      "days_active": "Tuesday",
+      "location_name": "Parade route coming soon"
+    }
+  ],
+  "last_updated": "2026-09-14T10:28:41.389224",
+  "total_count": 219
+}

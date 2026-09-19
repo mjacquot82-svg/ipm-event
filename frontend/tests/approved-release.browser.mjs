@@ -1,6 +1,8 @@
 // Release UI checks with providers and all external writes blocked; favorites are synthetic and browser-local.
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const output=process.env.IPM_TEST_OUTPUT||'.artifacts/approved-release';fs.mkdirSync(output,{recursive:true});
 const base=process.env.IPM_TEST_URL||'http://localhost:8097';
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH,headless:true,args:['--no-sandbox']});
 for(const width of [390,1440]){
@@ -26,7 +28,7 @@ for(const width of [390,1440]){
  await page.getByText('Your itinerary is saved.',{exact:false}).waitFor();
  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('@event_navigator_favorites')).sessionIds),['11111111-1111-4111-8111-111111111111','11111111-1111-4111-8111-111111111112']);
  await page.waitForTimeout(2900);
- await page.screenshot({path:`/tmp/ipm-approved-suggestion-${width}.png`});
+ await page.screenshot({path:`${output}/suggestion-${width}.png`});
  await page.getByText('Not now',{exact:true}).click();
  await page.getByRole('button',{name:'Add Fixture event 3 to itinerary',exact:true}).click();
  assert.equal(await page.getByText('Not now',{exact:true}).count(),0);

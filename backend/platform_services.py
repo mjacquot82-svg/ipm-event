@@ -7,7 +7,7 @@ the providers without changing frontend API contracts.
 """
 
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import logging
 import re
@@ -19,6 +19,16 @@ import httpx
 
 
 logger = logging.getLogger(__name__)
+
+
+class _StatisticsRequestLogFilter(logging.Filter):
+    def filter(self, record):
+        # WonderPush requires query authentication. HTTPX otherwise logs that
+        # URL at INFO, including the credential. Keep only our sanitized status.
+        return "management-api.wonderpush.com/v1/stats/reports" not in record.getMessage()
+
+
+logging.getLogger("httpx").addFilter(_StatisticsRequestLogFilter())
 
 class WonderPushError(Exception):
     """Normalized provider error safe to expose through the admin API."""
@@ -323,6 +333,31 @@ class WonderPushClient:
                 status_code=response.status_code,
             )
         return result
+
+    async def get_campaign_statistics(self, campaign_id: str, *, requested_at=None) -> dict[str, Any]:
+        """Read-only, exact-campaign cumulative event statistics; never a send."""
+        try:
+            from backend.notification_analytics import normalize_report_statistics, timestamp, REPORT_METRICS
+        except ModuleNotFoundError:
+            from notification_analytics import normalize_report_statistics, timestamp, REPORT_METRICS
+        started = timestamp(requested_at)
+        if not campaign_id or campaign_id.startswith("wonderpush:") or not started:
+            raise WonderPushError("A stable campaign identity and request time are required")
+        # A fixed lifetime window, not a shrinking last-24h total. The reports
+        # endpoint is observational despite using POST; it never sends a push.
+        end = datetime.now(timezone.utc)
+        reports = [{"metric": "campaign.events.type", "params": {"campaignId": campaign_id, "type": event},
+                    "fromDate": started.isoformat(), "toDate": end.isoformat()}
+                   for event, _ in REPORT_METRICS]
+        try:
+            async with httpx.AsyncClient(timeout=min(self.timeout, 8)) as client:
+                response = await client.post("https://management-api.wonderpush.com/v1/stats/reports",
+                    params={"accessToken": self.access_token}, json={"bulk": reports})
+            if response.status_code != 200:
+                raise WonderPushError("Statistics lookup failed", status_code=response.status_code)
+            return normalize_report_statistics(response.json())
+        except (httpx.RequestError, ValueError) as exc:
+            raise WonderPushError("Statistics lookup unavailable") from exc
 
     async def list_installations(self, *, updated_since: datetime | None = None,
         page_size: int = 1000) -> tuple[list[dict[str, Any]], int]:
@@ -1184,39 +1219,145 @@ class SupabaseNotificationDeliveryService:
         notification_title: str,
         notification_message: str,
         provider: str = "wonderpush",
+        provider_campaign_id: str | None = None,
+        audience_device_count: int | None = None,
+        audience_stale_device_count: int | None = None,
+        audience_snapshot_at: str | None = None,
     ) -> dict[str, Any]:
         resolved_event_id = await self._get_event_id(event_id)
+        payload = {
+            "event_id": resolved_event_id,
+            "announcement_id": announcement_id,
+            "audience": audience,
+            "provider": provider,
+            "status": "requested",
+            "requested_by": requested_by,
+            "target_url": target_url,
+            "notification_title": notification_title,
+            "notification_message": notification_message,
+            "provider_requested_at": datetime.now(timezone.utc).isoformat(),
+            **({"provider_campaign_id": provider_campaign_id} if provider_campaign_id else {}),
+        }
+        # Audience snapshots are optional; unknown device counts remain null.
+        if audience_device_count is not None:
+            payload.update({
+                "audience_device_count": audience_device_count,
+                "audience_count_basis": "verified_deliverable_registrations",
+                "audience_snapshot_at": audience_snapshot_at,
+                "audience_stale_device_count": audience_stale_device_count,
+            })
         rows = await self.client.request(
             "POST",
             "/notification_deliveries",
-            json={
-                "event_id": resolved_event_id,
-                "announcement_id": announcement_id,
-                "audience": audience,
-                "provider": provider,
-                "status": "requested",
-                "requested_by": requested_by,
-                "target_url": target_url,
-                "notification_title": notification_title,
-                "notification_message": notification_message,
-            },
+            json=payload,
             headers={"Prefer": "return=representation"},
         )
         return rows[0]
 
-    async def mark_sent(self, delivery_id: str, provider_campaign_id: str) -> dict[str, Any]:
+    async def list_announcement_stats(self, *, event_id: str) -> list[dict[str, Any]]:
+        resolved_event_id = await self._get_event_id(event_id)
+        return await self.client.request(
+            "GET", "/notification_deliveries", params={
+                "select": (
+                    "id,announcement_id,audience,status,requested_at,target_url,sent_at,audience_device_count,"
+                    "audience_count_basis,audience_snapshot_at,audience_stale_device_count,"
+                    "provider_campaign_id,provider_delivery_id,provider_targeted_device_count,"
+                    "provider_sent_count,provider_confirmed_receipt_count,provider_failure_count,"
+                    "provider_open_count,notification_origin_visit_count,provider_statistics_status,provider_statistics_refreshed_at"
+                ),
+                "event_id": f"eq.{resolved_event_id}",
+                "audience": "eq.everyone",
+                "order": "requested_at.desc",
+            },
+        )
+
+    async def list_overview_rows(self, *, event_id: str, now: datetime) -> list[dict[str, Any]]:
+        resolved = await self._get_event_id(event_id)
+        result = []
+        # Stable ordering and a request-time cutoff prevent new sends shifting pages.
+        # Read until an empty page, even if PostgREST returns less than requested.
+        for _ in range(201):
+            page = await self.client.request("GET", "/notification_deliveries", params={
+                "select": "id,audience,status,requested_at,notification_title,target_url,provider_campaign_id,provider_targeted_device_count,provider_confirmed_receipt_count,provider_open_count,provider_failure_count,notification_origin_visit_count,provider_statistics_refreshed_at",
+                "event_id": f"eq.{resolved}", "audience": "eq.everyone",
+                "requested_at": f"lte.{now.isoformat()}",
+                "order": "requested_at.asc,id.asc", "limit": "500", "offset": str(len(result)),
+            })
+            if not page:
+                return result
+            result.extend(page)
+            if len(result) > 100000:
+                break
+        raise ValueError("Notification overview exceeds bounded read limit")
+
+    async def mark_sent(self, delivery_id: str, provider_delivery_id: str) -> dict[str, Any]:
         rows = await self.client.request(
             "PATCH",
             "/notification_deliveries",
             params={"id": f"eq.{delivery_id}"},
             json={
                 "status": "sent",
-                "provider_campaign_id": provider_campaign_id,
+                "provider_delivery_id": provider_delivery_id,
+                "provider_accepted_at": datetime.now(timezone.utc).isoformat(),
                 "sent_at": datetime.now(timezone.utc).isoformat(),
                 "error_message": None,
             },
             headers={"Prefer": "return=representation"},
         )
+        return rows[0]
+
+    async def update_target_url(self, delivery_id: str, target_url: str) -> dict[str, Any]:
+        rows = await self.client.request("PATCH", "/notification_deliveries",
+            params={"id": f"eq.{delivery_id}"}, json={"target_url": target_url},
+            headers={"Prefer": "return=representation"})
+        return rows[0]
+
+    async def update_campaign_id(self, delivery_id: str, campaign_id: str) -> dict[str, Any]:
+        rows = await self.client.request("PATCH", "/notification_deliveries",
+            params={"id": f"eq.{delivery_id}"}, json={"provider_campaign_id": campaign_id},
+            headers={"Prefer": "return=representation"})
+        return rows[0]
+
+    async def claim_statistics_refresh(self, row, now):
+        previous = row.get("provider_statistics_refreshed_at")
+        rows = await self.client.request("PATCH", "/notification_deliveries", params={
+            "id": f"eq.{row['id']}",
+            "provider_statistics_refreshed_at": f"eq.{previous}" if previous else "is.null",
+        }, json={"provider_statistics_refreshed_at": now.isoformat(), "provider_statistics_status": "refreshing"},
+            headers={"Prefer": "return=representation"})
+        return bool(rows)
+
+    async def update_provider_statistics(self, delivery_id, values, *, lease_at=None):
+        params = {"id": f"eq.{delivery_id}"}
+        if "notification_origin_visit_count" in values:
+            count = values["notification_origin_visit_count"]
+            params["or"] = f"(notification_origin_visit_count.is.null,notification_origin_visit_count.lt.{count})"
+        if lease_at:
+            params["provider_statistics_refreshed_at"] = f"eq.{lease_at}"
+        rows = await self.client.request("PATCH", "/notification_deliveries", params=params,
+            json=values, headers={"Prefer": "return=representation"})
+        return rows[0] if rows else None
+
+    async def get_delivery(self, delivery_id, *, event_id):
+        resolved = await self._get_event_id(event_id)
+        rows = await self.client.request("GET", "/notification_deliveries", params={
+            "select": "id,announcement_id,status,target_url,requested_at", "id": f"eq.{delivery_id}",
+            "event_id": f"eq.{resolved}", "limit": "1"})
+        return rows[0] if rows else None
+
+    async def list_deliveries(self, *, announcement_id: str, event_id: str) -> list[dict[str, Any]]:
+        resolved_event_id = await self._get_event_id(event_id)
+        return await self.client.request("GET", "/notification_deliveries", params={
+            "select": "*", "announcement_id": f"eq.{announcement_id}",
+            "event_id": f"eq.{resolved_event_id}", "order": "requested_at.desc"})
+
+    async def mark_unknown(self, delivery_id: str):
+        # Keep the existing active-everyone uniqueness guard after an ambiguous
+        # timeout/5xx; a user retry must not become an unrelated second broadcast.
+        rows = await self.client.request("PATCH", "/notification_deliveries",
+            params={"id": f"eq.{delivery_id}"},
+            json={"status": "requested", "error_message": "Provider outcome unknown; reconciliation required before another broadcast."},
+            headers={"Prefer": "return=representation"})
         return rows[0]
 
     async def mark_failed(self, delivery_id: str, error_message: str) -> dict[str, Any]:
@@ -1228,3 +1369,9 @@ class SupabaseNotificationDeliveryService:
             headers={"Prefer": "return=representation"},
         )
         return rows[0]
+
+
+def normalize_wonderpush_statistics(payload):
+    # Compatibility alias; receipts are deliberately unavailable on /stats/events.
+    from backend.notification_analytics import normalize_event_statistics
+    return normalize_event_statistics(payload)

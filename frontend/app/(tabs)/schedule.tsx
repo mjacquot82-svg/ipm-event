@@ -1,3 +1,5 @@
+import { FindOnMapTip, ScheduleEventDetailsTip, ContextualHelpButton, ContextualEducationReplay, useWalkthroughPreview } from '../../src/components/MapEducation';
+import { scheduleMapTipEligible } from '../../src/services/mapEducationEligibility';
 import { EventDetailMedia } from '@/src/components/EventDetailMedia';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
@@ -16,7 +18,8 @@ import {
   useWindowDimensions,
   Platform,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import colors from '../../src/theme/colors';
 import { getScheduleCategoryStyle } from '../../src/theme/scheduleCategoryStyles';
@@ -29,6 +32,7 @@ import {
 import { getFavorites, toggleFavorite } from '../../src/utils/favoritesStorage';
 import { syncStarredEventsWithBackend } from '../../src/utils/notificationService';
 import ItineraryNotificationSuggestion from '../../src/components/ItineraryNotificationSuggestion';
+import { reconcileAttendeeItineraryReminders } from '../../src/services/reminderUxService';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
@@ -39,10 +43,15 @@ import {
   getScheduleData,
 } from '../../src/services/spreadsheetDataService';
 import { compareScheduleDates, formatScheduleDate, getScheduleWeekday } from '../../src/utils/scheduleDate';
+import { formatScheduleTimeRange } from '../../src/utils/scheduleTime';
 import { usePageAnalytics } from '../../src/analytics/usePageAnalytics';
 import { queueAnalyticsEvent } from '../../src/analytics/analyticsClient';
 import { buildSearchAnalyticsProperties } from '../../src/analytics/analyticsCore';
 import { resolveScheduleCategory } from '../../src/utils/scheduleCategoryDeepLink';
+import {
+  acknowledgeScheduleOnboarding,
+  hasAcknowledgedScheduleOnboarding,
+} from '../../src/services/scheduleOnboardingState';
 import { resolveMapTypeForLocation } from '../../src/config/tentedCitySearch';
 import { resolvePlowingMapLocation } from '../../src/config/groundsZones';
 import { tentedCityVendors } from '../../src/data/tentedCityVendors';
@@ -56,6 +65,7 @@ export default function ScheduleScreen() {
   const { eventId, returnTo } = useLocalSearchParams<{ eventId?: string; returnTo?: string }>();
   usePageAnalytics('schedule', source || 'other', 'schedule_viewed');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const hasUsableScheduleRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,20 +75,31 @@ export default function ScheduleScreen() {
   const [showCategorySelector, setShowCategorySelector] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showStarConfirmation, setShowStarConfirmation] = useState(false);
-  const [successfulAddition, setSuccessfulAddition] = useState(0);
-  const [confirmationText, setConfirmationText] = useState('Added to Personal Itinerary');
-  const starConfirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current); }, []);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [showScheduleOnboarding, setShowScheduleOnboarding] = useState(false);
+  const [helpReplay, setHelpReplay] = useState<React.ContextType<typeof ContextualEducationReplay>>({ pending: new Set() });
+  const walkthroughPreview = useWalkthroughPreview();
+  const previewStarted = useRef(false);
+  const scheduleList = useRef<SectionList<ScheduleEvent>>(null);
+  const visibleEvents = useRef<string[]>([]);
+  const [walkthroughTarget, setWalkthroughTarget] = useState<string | null>(null);
+  const [walkthroughNeedsEvent, setWalkthroughNeedsEvent] = useState(false);
+  const onVisibleEventsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ item: ScheduleEvent; isViewable: boolean }> }) => {
+    visibleEvents.current = viewableItems.filter(item => item.isViewable && item.item?.id).map(item => item.item.id);
+  }).current;
+  const [onboardingLoaded, setOnboardingLoaded] = useState(false);
+  const [showStarConfirmation, setShowStarConfirmation] = useState(false);
+  const onboardingDismissRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+  const [successfulAddition, setSuccessfulAddition] = useState(0);
+  const [confirmationText, setConfirmationText] = useState('Added to Personal Itinerary');
+  const starConfirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventModalHistoryRef = useRef(false);
   const openedEventParamRef = useRef<string | null>(null);
   const returnToItineraryRef = useRef(returnTo === 'itinerary');
   const isFetchingScheduleRef = useRef(false);
-  const hasUsableScheduleRef = useRef(false);
   const hasFocusedScheduleRef = useRef(false);
   const appliedCategoryQueryRef = useRef<string | string[] | undefined>(undefined);
 
@@ -106,6 +127,24 @@ export default function ScheduleScreen() {
     setShowEventModal(false);
     setSelectedEvent(null);
   }, []);
+
+  const openSelectedEventOnMap = (continueWalkthrough = false) => {
+    if (!selectedEvent?.location_name) return;
+    dismissEventModalForMap();
+    const mapLocation = resolvePlowingMapLocation(selectedEvent.location_name, selectedEvent.title) || selectedEvent.location_name;
+    router.replace({
+      pathname: '/(tabs)/map',
+      params: {
+        location: mapLocation,
+        showOnly: 'true',
+        source: 'schedule',
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
+        ...(continueWalkthrough ? { scheduleWalkthrough: String(Date.now()) } : {}),
+        mapType: resolveMapTypeForLocation(mapLocation, tentedCityVendors),
+      },
+    });
+  };
 
   useEffect(() => {
     returnToItineraryRef.current = returnTo === 'itinerary';
@@ -142,6 +181,45 @@ export default function ScheduleScreen() {
 
   const selectedCategoryStyle = getScheduleCategoryStyle(selectedCategory);
   const selectedEventCategoryStyle = getScheduleCategoryStyle(selectedEvent?.category);
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    const loadOnboardingState = async () => {
+      const acknowledged = await hasAcknowledgedScheduleOnboarding(AsyncStorage);
+      if (!active) return;
+      if (!acknowledged || (walkthroughPreview && !previewStarted.current)) {
+        previewStarted.current = true;
+        setHelpReplay({ pending: new Set(['scheduleEventDetailsTipSeen', 'scheduleFindOnMapTipSeen']) });
+        setShowScheduleOnboarding(true);
+      }
+      setOnboardingLoaded(true);
+    };
+    void loadOnboardingState().catch(() => { if (active) setOnboardingLoaded(true); });
+    return () => { active = false; setShowScheduleOnboarding(false); setHelpReplay({ pending: new Set() }); setWalkthroughNeedsEvent(false); setWalkthroughTarget(null); };
+  }, [walkthroughPreview]));
+
+  const dismissScheduleOnboarding = useCallback(async () => {
+    setWalkthroughNeedsEvent(true);
+    setShowScheduleOnboarding(false);
+    await acknowledgeScheduleOnboarding(AsyncStorage).catch(() => {});
+  }, []);
+
+  const skipScheduleWalkthrough = () => {
+    setHelpReplay({ pending: new Set() });
+    setWalkthroughNeedsEvent(false);
+    setWalkthroughTarget(null);
+    setShowScheduleOnboarding(false);
+    void acknowledgeScheduleOnboarding(AsyncStorage).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!showScheduleOnboarding || loading) return;
+    const focusTimer = setTimeout(() => {
+      const dismissButton = onboardingDismissRef.current as unknown as { focus?: () => void } | null;
+      dismissButton?.focus?.();
+    }, 0);
+    return () => clearTimeout(focusTimer);
+  }, [loading, showScheduleOnboarding]);
 
   const applyScheduleResult = useCallback((result: CachedApiResult<ScheduleResponse>) => {
     if (!Array.isArray(result.data.events)) {
@@ -184,8 +262,6 @@ export default function ScheduleScreen() {
       applyScheduleResult(result);
     } catch (err) {
       console.error('Error fetching schedule:', err);
-      // Keep usable saved events visible without presenting a contradictory
-      // load failure. A genuine failure with no events still gets the retry UI.
       if (!hasUsableScheduleRef.current) {
         setError("We couldn't load the schedule. Please check your connection and try again.");
       }
@@ -206,6 +282,7 @@ export default function ScheduleScreen() {
     setFavorites(storedFavorites);
     // Sync with backend for notifications
     syncStarredEventsWithBackend(storedFavorites);
+    void reconcileAttendeeItineraryReminders(storedFavorites);
   }, []);
 
   // Refresh on focus
@@ -228,6 +305,7 @@ export default function ScheduleScreen() {
     });
     // Sync with backend for notifications
     syncStarredEventsWithBackend(result.favorites);
+    void reconcileAttendeeItineraryReminders(result.favorites);
     const starSucceeded = result.isFavorite && result.favorites.includes(eventId);
     if (starSucceeded || (!result.isFavorite && !result.favorites.includes(eventId))) {
       setConfirmationText(starSucceeded ? 'Added to Personal Itinerary' : 'Removed from your itinerary');
@@ -237,6 +315,10 @@ export default function ScheduleScreen() {
       starConfirmationTimerRef.current = setTimeout(() => setShowStarConfirmation(false), 2800);
     }
   };
+
+  useEffect(() => () => {
+    if (starConfirmationTimerRef.current) clearTimeout(starConfirmationTimerRef.current);
+  }, []);
 
   const onRefresh = useCallback(() => {
     fetchSchedule(true);
@@ -402,6 +484,28 @@ export default function ScheduleScreen() {
     [filteredGroupedEvents],
   );
 
+  const walkthroughCandidates = useMemo(() => scheduleSections.flatMap(section => section.data)
+    .filter(event => scheduleMapTipEligible(event.location_name, event.title)), [scheduleSections]);
+  const walkthroughCandidate = walkthroughCandidates.find(event => visibleEvents.current.includes(event.id)) || walkthroughCandidates[0];
+  useEffect(() => {
+    if (!walkthroughNeedsEvent || showScheduleOnboarding || loading || !walkthroughCandidate) return;
+    setWalkthroughTarget(walkthroughCandidate.id);
+    setWalkthroughNeedsEvent(false);
+  }, [walkthroughNeedsEvent, showScheduleOnboarding, loading, walkthroughCandidate]);
+
+  const revealWalkthroughTarget = () => {
+    if (!walkthroughTarget) return;
+    const sectionIndex = scheduleSections.findIndex(section => section.data.some(event => event.id === walkthroughTarget));
+    if (sectionIndex < 0) return;
+    const itemIndex = scheduleSections[sectionIndex].data.findIndex(event => event.id === walkthroughTarget);
+    scheduleList.current?.scrollToLocation({ sectionIndex, itemIndex, viewPosition: 0.3, animated: false });
+  };
+  useEffect(() => {
+    if (!walkthroughTarget || showScheduleOnboarding || showEventModal) return;
+    const timer = setTimeout(revealWalkthroughTarget, 350);
+    return () => clearTimeout(timer);
+  }, [walkthroughTarget, showScheduleOnboarding, showEventModal]);
+
   useEffect(() => {
     const query = searchQuery.trim();
     if (!query) return undefined;
@@ -481,8 +585,14 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ContextualEducationReplay.Provider value={helpReplay}><View style={styles.container}>
       <SectionList
+        ref={scheduleList}
+        onViewableItemsChanged={onVisibleEventsChanged}
+        onScrollToIndexFailed={({ averageItemLength, index }) => {
+          scheduleList.current?.getScrollResponder()?.scrollTo({ y: averageItemLength * index, animated: false });
+          setTimeout(revealWalkthroughTarget, 300);
+        }}
         style={styles.content}
         contentContainerStyle={styles.listContent}
         sections={scheduleSections}
@@ -504,6 +614,12 @@ export default function ScheduleScreen() {
               {/* Header */}
               <View style={styles.header}>
         <Text style={styles.title}>Schedule</Text>
+        <ContextualHelpButton label="Schedule Help" onPress={() => {
+          setHelpReplay({ pending: new Set(['scheduleEventDetailsTipSeen', 'scheduleFindOnMapTipSeen']) });
+          setWalkthroughTarget(null);
+          setWalkthroughNeedsEvent(false);
+          setShowScheduleOnboarding(true);
+        }} />
         <View style={styles.headerSubtitle}>
           <Text style={styles.subtitle}>{events.length} events</Text>
           {favorites.length > 0 && (
@@ -737,17 +853,20 @@ export default function ScheduleScreen() {
           const isFavorite = favorites.includes(event.id);
           const categoryStyle = getScheduleCategoryStyle(event.category);
 
+          const openEvent = () => {
+            void queueAnalyticsEvent('schedule_event_opened', {
+              schedule_item_id: event.id, category: event.category || 'uncategorized', source: 'schedule',
+            });
+            setSelectedEvent(event);
+            setShowEventModal(true);
+          };
+
           return (
             <View style={sectionStyle}>
-                  <TouchableOpacity 
+              <ScheduleEventDetailsTip eligible={event.id === walkthroughTarget && onboardingLoaded && !showScheduleOnboarding && !showEventModal && !showCategorySelector && !loading && !refreshing && scheduleMapTipEligible(event.location_name, event.title)} onOpen={openEvent}>
+                  <TouchableOpacity
                     style={[styles.eventCard, { backgroundColor: categoryStyle.tint }]}
-                    onPress={() => {
-                      void queueAnalyticsEvent('schedule_event_opened', {
-                        schedule_item_id: event.id, category: event.category || 'uncategorized', source: 'schedule',
-                      });
-                      setSelectedEvent(event);
-                      setShowEventModal(true);
-                    }}
+                    onPress={openEvent}
                     activeOpacity={0.7}
                   >
                     <View
@@ -766,7 +885,7 @@ export default function ScheduleScreen() {
                             color={categoryStyle.tintForeground}
                           />
                           <Text style={[styles.eventTime, { color: categoryStyle.tintForeground }]}>
-                            {[event.start_time, event.end_time].filter(Boolean).join(' - ')}
+                            {formatScheduleTimeRange(event.start_time, event.end_time)}
                           </Text>
                         </View>
                         <TouchableOpacity
@@ -774,14 +893,15 @@ export default function ScheduleScreen() {
                             e.stopPropagation();
                             handleToggleFavorite(event.id);
                           }}
+                          style={[styles.favoriteButton, isFavorite && styles.favoriteButtonStarred]}
                           accessibilityRole="button"
-                          accessibilityLabel={`${isFavorite ? 'Remove' : 'Add'} ${event.title} ${isFavorite ? 'from' : 'to'} itinerary`}
-                          style={styles.favoriteButton}
+                          accessibilityLabel={isFavorite ? `Remove ${event.title} from itinerary` : `Add ${event.title} to itinerary`}
+                          accessibilityState={{ selected: isFavorite }}
                         >
-                          <Feather
-                            name={isFavorite ? 'star' : 'star'}
+                          <FontAwesome
+                            name={isFavorite ? 'star' : 'star-o'}
                             size={20}
-                            color={isFavorite ? colors.accent : colors.textMuted}
+                            color={isFavorite ? colors.accentLight : colors.textSecondary}
                           />
                         </TouchableOpacity>
                       </View>
@@ -817,10 +937,78 @@ export default function ScheduleScreen() {
                       </View>
                     </View>
                   </TouchableOpacity>
+              </ScheduleEventDetailsTip>
             </View>
           );
         }}
       />
+
+      {walkthroughNeedsEvent && !showScheduleOnboarding && !loading && !walkthroughCandidate ? (
+        <Modal transparent visible animationType="fade" onRequestClose={skipScheduleWalkthrough}>
+          <View style={styles.onboardingModalOverlay}>
+            <View style={styles.onboardingModalCard}>
+              <Text style={styles.emptyTitle}>Find an event to explore</Text>
+              <Text style={styles.emptyText}>{hasActiveFilters
+                ? 'There are no mapped events in these filters. Show all events to continue the walkthrough.'
+                : 'No mapped events are available right now. You can replay Schedule Help when they are published.'}</Text>
+              {hasActiveFilters ? <TouchableOpacity accessibilityRole="button" accessibilityLabel="Show all events and continue walkthrough" onPress={clearFilters} style={styles.onboardingModalDismiss}><Text style={styles.retryButtonText}>Show all events</Text></TouchableOpacity> : null}
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Skip tutorial" onPress={skipScheduleWalkthrough} style={styles.onboardingModalDismiss}><Text style={styles.retryButtonText}>Skip tutorial</Text></TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+      {/* First-visit education overlays the loaded Schedule without delaying it. */}
+      <Modal
+        visible={showScheduleOnboarding}
+        animationType="fade"
+        transparent={true}
+        statusBarTranslucent={true}
+        onRequestClose={skipScheduleWalkthrough}
+      >
+        <View style={styles.onboardingModalOverlay}>
+          <ScrollView
+            style={styles.onboardingModalScroll}
+            contentContainerStyle={styles.onboardingModalScrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View
+              style={styles.onboardingModalCard}
+              role="dialog"
+              accessibilityViewIsModal={true}
+              accessibilityLabel="Plan your day"
+            >
+              <View style={styles.onboardingModalIcon} accessible={false}>
+                <Feather name="star" size={34} color={colors.accentDark} />
+              </View>
+              <Text nativeID="schedule-onboarding-title" style={styles.onboardingModalTitle}>
+                Plan your day
+              </Text>
+              <Text style={styles.onboardingModalText}>
+                Star events to add them to your itinerary.
+              </Text>
+              <Text style={styles.onboardingModalSecondaryText}>
+                Browse events, choose a day or search. Tap an event for its details and location.
+              </Text>
+              <Text style={styles.onboardingModalSecondaryText}>
+                If notifications are enabled, we&apos;ll remind you approximately 30 minutes before each event starts.
+              </Text>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Skip tutorial" onPress={skipScheduleWalkthrough} style={{ minHeight: 44, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={styles.onboardingModalSecondaryText}>Skip tutorial</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                ref={onboardingDismissRef}
+                style={styles.onboardingModalDismiss}
+                onPress={() => void dismissScheduleOnboarding()}
+                accessibilityRole="button"
+                accessibilityLabel="Got it, close Plan your day introduction"
+              >
+                <Text style={styles.onboardingModalDismissText}>Got it</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* Compact category selector for mobile widths. */}
       <Modal
@@ -916,12 +1104,12 @@ export default function ScheduleScreen() {
                       onPress={() => {
                         handleToggleFavorite(selectedEvent.id);
                       }}
-                      style={styles.modalStarButton}
+                      style={[styles.modalStarButton, favorites.includes(selectedEvent.id) && styles.favoriteButtonStarred]}
                     >
-                      <Feather
-                        name="star"
+                      <FontAwesome
+                        name={favorites.includes(selectedEvent.id) ? 'star' : 'star-o'}
                         size={24}
-                        color={favorites.includes(selectedEvent.id) ? colors.accent : colors.textMuted}
+                        color={favorites.includes(selectedEvent.id) ? colors.accentLight : colors.textSecondary}
                       />
                     </TouchableOpacity>
                   </View>
@@ -944,7 +1132,7 @@ export default function ScheduleScreen() {
                       <View style={styles.detailTextContainer}>
                         <Text style={styles.detailLabel}>Time</Text>
                         <Text style={styles.detailValue}>
-                          {[selectedEvent.start_time, selectedEvent.end_time].filter(Boolean).join(' - ')}
+                          {formatScheduleTimeRange(selectedEvent.start_time, selectedEvent.end_time)}
                         </Text>
                       </View>
                     </View>
@@ -969,24 +1157,10 @@ export default function ScheduleScreen() {
 
                   {/* Location */}
                   {selectedEvent.location_name && (
-                    <TouchableOpacity 
+                    <FindOnMapTip kind="scheduleFindOnMapTipSeen" onOpen={() => openSelectedEventOnMap(true)} eligible={showEventModal && !showScheduleOnboarding && scheduleMapTipEligible(selectedEvent.location_name, selectedEvent.title)}>
+                    <TouchableOpacity testID="schedule-find-on-map"
                       style={[styles.detailSection, styles.locationClickable, { borderColor: selectedEventCategoryStyle.primary }]}
-                      onPress={() => {
-                        console.log('Location clicked:', selectedEvent.location_name);
-                        dismissEventModalForMap();
-                        const mapLocation =
-                          resolvePlowingMapLocation(selectedEvent.location_name, selectedEvent.title) ||
-                          selectedEvent.location_name;
-                        router.replace({
-                          pathname: '/(tabs)/map',
-                          params: {
-                            location: mapLocation,
-                            showOnly: 'true',
-                            source: 'schedule',
-                            mapType: resolveMapTypeForLocation(mapLocation, tentedCityVendors),
-                          }
-                        });
-                      }}
+                      onPress={() => openSelectedEventOnMap()}
                       activeOpacity={0.7}
                     >
                       <View style={styles.detailRow}>
@@ -1003,6 +1177,7 @@ export default function ScheduleScreen() {
                         <Feather name="chevron-right" size={20} color={selectedEventCategoryStyle.primary} />
                       </View>
                     </TouchableOpacity>
+                    </FindOnMapTip>
                   )}
 
                   {/* Category */}
@@ -1051,7 +1226,7 @@ export default function ScheduleScreen() {
                       color="#FFFFFF"
                     />
                     <Text style={styles.addToItineraryText}>
-                      {favorites.includes(selectedEvent.id) ? 'Added to Itinerary' : 'Add to Itinerary'}
+                      {favorites.includes(selectedEvent.id) ? 'Remove from Itinerary' : 'Add to Itinerary'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1064,22 +1239,19 @@ export default function ScheduleScreen() {
       {showStarConfirmation ? (
         <View style={styles.starConfirmation} accessibilityLiveRegion="polite" accessibilityRole="alert">
           <Feather name="check-circle" size={20} color="#FFFFFF" />
-          <Text style={styles.starConfirmationText}>{confirmationText}</Text>
+<View style={styles.starConfirmationCopy}>
+            <Text style={styles.starConfirmationText}>{confirmationText}</Text>
+            <Text style={styles.starConfirmationDetail}>
+              Reminder approximately 30 minutes before the event when notifications are enabled.
+            </Text>
+          </View>
         </View>
       ) : null}
-    </View>
+    </View></ContextualEducationReplay.Provider>
   );
 }
 
 const styles = StyleSheet.create({
-  starConfirmation: {
-    position: 'absolute', left: 16, right: 16, bottom: 82, minHeight: 72,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    paddingHorizontal: 18, backgroundColor: '#1F2937',
-    borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 }, elevation: 8,
-  },
-  starConfirmationText: { color: '#FFFFFF', fontSize: 15, lineHeight: 20, fontWeight: '800' },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -1396,8 +1568,90 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   favoriteButton: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(45, 41, 38, 0.14)',
   },
+  favoriteButtonStarred: {
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.accentDark,
+  },
+  onboardingModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(20, 28, 23, 0.58)',
+  },
+  onboardingModalScroll: { flex: 1 },
+  onboardingModalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 28,
+  },
+  onboardingModalCard: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 440,
+    paddingHorizontal: 24,
+    paddingVertical: 26,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 22,
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.24,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  onboardingModalIcon: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceHighlight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
+  },
+  onboardingModalTitle: {
+    color: colors.textPrimary,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  onboardingModalText: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  onboardingModalSecondaryText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  onboardingModalDismiss: {
+    alignSelf: 'stretch',
+    minHeight: 52,
+    marginTop: 22,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+  },
+  onboardingModalDismissText: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
   eventTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -1511,7 +1765,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalStarButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(45, 41, 38, 0.14)',
   },
   modalCategoryBadge: {
     alignSelf: 'flex-start',
@@ -1525,7 +1786,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   modalCloseButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    marginLeft: 12,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalBody: {
     flex: 1,
@@ -1602,6 +1868,7 @@ const styles = StyleSheet.create({
     paddingBottom: 34,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    gap: 10,
   },
   addToItineraryButton: {
     backgroundColor: colors.primary,
@@ -1620,4 +1887,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  starConfirmation: {
+    position: 'absolute', left: 16, right: 16, bottom: 82, minHeight: 72,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    paddingHorizontal: 18, backgroundColor: '#1F2937',
+    borderRadius: 16, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 }, elevation: 8,
+  },
+  starConfirmationCopy: { flex: 1, gap: 2 },
+  starConfirmationText: { color: '#FFFFFF', fontSize: 15, lineHeight: 20, fontWeight: '800' },
+  starConfirmationDetail: { color: '#E5E7EB', fontSize: 12, lineHeight: 16 },
 });

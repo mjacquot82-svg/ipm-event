@@ -71,7 +71,7 @@ test('candidate preserves consolidated data after four confirmed cancellations',
     const hits = catalog.filter((vendor) => vendor.name === name);
     assert.equal(hits.length, 1, name);
     assert.equal(hits[0].type, 'Indoor');
-    assert.equal(hits[0].location, location);
+    assert.equal(hits[0].location, 'Indoors at the Artisan Tent');
   }
 });
 
@@ -130,8 +130,8 @@ test('multi-location navigation is structured while ambiguous free-text remains 
   const mapComponent = fs.readFileSync(new URL('../src/components/TentedCityMap.tsx', import.meta.url), 'utf8');
   const searchSource = fs.readFileSync(new URL('../src/config/tentedCitySearch.ts', import.meta.url), 'utf8');
   const resolverSource = fs.readFileSync(new URL('../src/config/vendorMapCrosswalk.ts', import.meta.url), 'utf8');
-  assert.match(vendorsSource, /vendorName: record\.name/);
-  assert.match(vendorsSource, /vendorLocation: mapLocation/);
+  assert.match(vendorsSource, /vendorName: vendor\.name/);
+  assert.match(vendorsSource, /vendorLocation: vendor\.location/);
   assert.match(vendorsSource, /item\.locations\.length > 1/);
   assert.match(mapSourceFile, /initialVendorName={vendorName}/);
   assert.match(mapComponent, /findTentedCityPlaceByIdentity/);

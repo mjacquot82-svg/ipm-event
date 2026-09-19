@@ -1,0 +1,44 @@
+-- REVIEW ONLY. Requires separate production data-write authorization.
+-- Production project hppboivlpqkfhhzfftuu; no schema changes or provider calls.
+BEGIN;
+DO $patch$
+DECLARE item jsonb; existing_id uuid;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.events WHERE id='5119d9d0-ea63-4677-9bea-36e32dbcfa46' AND slug='ipm-2026') THEN
+    RAISE EXCEPTION 'Production event identity mismatch';
+  END IF;
+  LOCK TABLE public.schedule_items, public.vendors IN SHARE ROW EXCLUSIVE MODE;
+  FOR item IN SELECT value FROM jsonb_array_elements($schedule$[{"id": "8a65efe2-0a54-5e27-8a96-cab316f39e35", "event_id": "5119d9d0-ea63-4677-9bea-36e32dbcfa46", "title": "Wool Painting with fibre", "description": "Presenter: Susan Sietz", "starts_at": "2026-09-22T14:00:00-04:00", "ends_at": null, "timezone": "America/Toronto", "category": "Artisan Tent Presentations", "location_name": "Artisan Tent Presentation Area", "days_active": "Tuesday", "source": "artisan_approved_20260919", "external_id": "2026-09-22-susan-sietz-wool-painting", "status": "published", "sort_order": 1400}, {"id": "f582c3c3-4d73-5055-a0d7-54466f99e4de", "event_id": "5119d9d0-ea63-4677-9bea-36e32dbcfa46", "title": "Wool Painting with fibre", "description": "Presenter: Susan Sietz", "starts_at": "2026-09-24T14:00:00-04:00", "ends_at": null, "timezone": "America/Toronto", "category": "Artisan Tent Presentations", "location_name": "Artisan Tent Presentation Area", "days_active": "Thursday", "source": "artisan_approved_20260919", "external_id": "2026-09-24-susan-sietz-wool-painting", "status": "published", "sort_order": 1401}, {"id": "d62f3f20-743c-5155-bbce-2e23582fc817", "event_id": "5119d9d0-ea63-4677-9bea-36e32dbcfa46", "title": "Wool Painting with fibre", "description": "Presenter: Susan Sietz", "starts_at": "2026-09-25T14:00:00-04:00", "ends_at": null, "timezone": "America/Toronto", "category": "Artisan Tent Presentations", "location_name": "Artisan Tent Presentation Area", "days_active": "Friday", "source": "artisan_approved_20260919", "external_id": "2026-09-25-susan-sietz-wool-painting", "status": "published", "sort_order": 1402}, {"id": "b5155438-2b06-54e6-9427-e2101e9914e6", "event_id": "5119d9d0-ea63-4677-9bea-36e32dbcfa46", "title": "Wool Painting with fibre", "description": "Presenter: Susan Sietz", "starts_at": "2026-09-26T14:00:00-04:00", "ends_at": null, "timezone": "America/Toronto", "category": "Artisan Tent Presentations", "location_name": "Artisan Tent Presentation Area", "days_active": "Saturday", "source": "artisan_approved_20260919", "external_id": "2026-09-26-susan-sietz-wool-painting", "status": "published", "sort_order": 1403}, {"id": "c52cf5d6-2ed4-531f-b56c-3209daa3a2ae", "event_id": "5119d9d0-ea63-4677-9bea-36e32dbcfa46", "title": "Long ago Cures", "description": "Presenter: Shannon Woods", "starts_at": "2026-09-23T13:00:00-04:00", "ends_at": null, "timezone": "America/Toronto", "category": "Artisan Tent Presentations", "location_name": "Artisan Tent Presentation Area", "days_active": "Wednesday", "source": "artisan_approved_20260919", "external_id": "2026-09-23-shannon-woods-long-ago-cures", "status": "published", "sort_order": 1404}, {"id": "ad2efd29-50e2-5284-bc5c-58a2bf34a722", "event_id": "5119d9d0-ea63-4677-9bea-36e32dbcfa46", "title": "Greenock Swamp Tours", "description": "Presenter: Shannon Woods", "starts_at": "2026-09-25T13:00:00-04:00", "ends_at": null, "timezone": "America/Toronto", "category": "Artisan Tent Presentations", "location_name": "Artisan Tent Presentation Area", "days_active": "Friday", "source": "artisan_approved_20260919", "external_id": "2026-09-25-shannon-woods-greenock-swamp-tours", "status": "published", "sort_order": 1405}, {"id": "5a92c5e2-99cc-544a-aea9-c4b9491605a8", "event_id": "5119d9d0-ea63-4677-9bea-36e32dbcfa46", "title": "Her Experiences as Queen of the Furrow", "description": "Presenter: Victoria Kolb - Queen of the Furrow", "starts_at": "2026-09-22T14:30:00-04:00", "ends_at": null, "timezone": "America/Toronto", "category": "Artisan Tent Presentations", "location_name": "Artisan Tent Presentation Area", "days_active": "Tuesday", "source": "artisan_approved_20260919", "external_id": "2026-09-22-victoria-kolb-experiences", "status": "published", "sort_order": 1406}, {"id": "a7df1ac3-a312-5c7f-beae-70faebe81830", "event_id": "5119d9d0-ea63-4677-9bea-36e32dbcfa46", "title": "Wild Side Art Gallery - my sketches", "description": "Presenter: Ken Thornburn", "starts_at": "2026-09-24T13:30:00-04:00", "ends_at": null, "timezone": "America/Toronto", "category": "Artisan Tent Presentations", "location_name": "Artisan Tent Presentation Area", "days_active": "Thursday", "source": "artisan_approved_20260919", "external_id": "2026-09-24-ken-thornburn-sketches", "status": "published", "sort_order": 1407}, {"id": "5cc1c5ac-b7f1-5945-93f2-a2e0f60d7588", "event_id": "5119d9d0-ea63-4677-9bea-36e32dbcfa46", "title": "Flossie Mae Hats - & Feather Farmer Hats", "description": "Presenter: Angie Smith-Eckensweiler", "starts_at": "2026-09-23T14:00:00-04:00", "ends_at": null, "timezone": "America/Toronto", "category": "Artisan Tent Presentations", "location_name": "Artisan Tent Presentation Area", "days_active": "Wednesday", "source": "artisan_approved_20260919", "external_id": "2026-09-23-angie-smith-eckensweiler-hats", "status": "published", "sort_order": 1408}]$schedule$::jsonb) LOOP
+    IF (SELECT count(*) FROM public.schedule_items WHERE event_id='5119d9d0-ea63-4677-9bea-36e32dbcfa46'
+        AND title=item->>'title' AND starts_at=(item->>'starts_at')::timestamptz) > 1 THEN
+      RAISE EXCEPTION 'Duplicate presentation: re-audit before applying';
+    END IF;
+    SELECT id INTO existing_id FROM public.schedule_items WHERE event_id='5119d9d0-ea63-4677-9bea-36e32dbcfa46'
+      AND title=item->>'title' AND starts_at=(item->>'starts_at')::timestamptz;
+    IF existing_id IS NOT NULL THEN
+      IF NOT EXISTS (SELECT 1 FROM public.schedule_items WHERE id=existing_id AND status='published'
+          AND location_name=item->>'location_name' AND description=item->>'description') THEN
+        RAISE EXCEPTION 'Existing presentation conflicts: preserve identity and re-audit';
+      END IF;
+    ELSE
+      INSERT INTO public.schedule_items (id,event_id,title,description,starts_at,ends_at,timezone,category,location_name,days_active,source,external_id,status,sort_order)
+      SELECT id,event_id,title,description,starts_at,ends_at,timezone,category,location_name,days_active,source,external_id,status,sort_order
+      FROM jsonb_populate_record(NULL::public.schedule_items,item);
+    END IF;
+  END LOOP;
+  FOR item IN SELECT value FROM jsonb_array_elements($vendors$[{"id": "3ae7740c-f1c6-5e2c-b2ec-743f80879a0e", "name": "Amabel Books, Allenford", "create_if_absent": true}, {"id": "f610134f-3c59-4bdf-98a9-39da2f155769", "name": "Equestrian Elite, Durham", "create_if_absent": false}, {"id": "e173b0f8-0a76-4bc9-9eef-b610dbbfaad8", "name": "Flora and Fae, Tara", "create_if_absent": false}, {"id": "b1efb2e2-a52d-485a-93b7-f0e53f0486d7", "name": "Mike's Wood, Elmwood", "create_if_absent": false}, {"id": "557385b5-4aac-424e-a00b-660800f0c543", "name": "Nana's Sewing Basket, Walkerton", "create_if_absent": false}, {"id": "f2f40011-8138-4f50-bb92-48e0ce605ed3", "name": "Natural Stitch Designs, Amaranth", "create_if_absent": false}, {"id": "e3b3d8ca-c12b-485e-bf42-bc3ee2f605be", "name": "Northern Flyer Design (Ken Thornburn), Tara", "create_if_absent": false}, {"id": "421f2f71-ea28-43c1-a7d2-e316b9e45842", "name": "Paisley Drive Designs, Chesley", "create_if_absent": false}, {"id": "a4947094-8c16-5fcb-903f-d0073ae78023", "name": "Rachel Joy Jewellery, Kincardine", "create_if_absent": true}, {"id": "12b95efc-6dc2-4794-92a2-0fb3ac1d8c3c", "name": "Susan Seitz, Walkerton", "create_if_absent": false}, {"id": "cda2170e-a9ca-4c58-b8ba-75884ec3579e", "name": "Wildflower Designs, Shallow Lake", "create_if_absent": false}]$vendors$::jsonb) LOOP
+    SELECT id INTO existing_id FROM public.vendors WHERE id=(item->>'id')::uuid AND event_id='5119d9d0-ea63-4677-9bea-36e32dbcfa46';
+    IF existing_id IS NULL THEN
+      IF NOT (item->>'create_if_absent')::boolean OR EXISTS (SELECT 1 FROM public.vendors
+          WHERE event_id='5119d9d0-ea63-4677-9bea-36e32dbcfa46' AND lower(name)=lower(item->>'name')) THEN
+        RAISE EXCEPTION 'Vendor identity changed: re-audit before applying';
+      END IF;
+      INSERT INTO public.vendors(id,event_id,name,type,location,source,external_id,status)
+      VALUES((item->>'id')::uuid,'5119d9d0-ea63-4677-9bea-36e32dbcfa46',item->>'name','Indoor','Indoors at the Artisan Tent',
+          'artisan_approved_20260919',item->>'id','published');
+    ELSE
+      UPDATE public.vendors SET location='Indoors at the Artisan Tent' WHERE id=existing_id;
+    END IF;
+  END LOOP;
+END $patch$;
+COMMIT;

@@ -1,0 +1,148 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSubscribedInstallationId, getWonderPushClientReadiness } from './wonderPushService.web';
+
+const CAPABILITY_KEY = '@ipm_itinerary_reminder_capability_v1';
+const ENABLED_KEY = '@ipm_itinerary_reminders_enabled_v1';
+const READINESS_VERIFIED_AT_KEY = '@ipm_itinerary_reminder_readiness_verified_at_v1';
+// An enabled attendee may revisit My Itinerary often. Keep the explicit
+// reconciliation idempotent without performing a provider lookup on every
+// render or favourite change.
+const READINESS_FRESHNESS_MS = 5 * 60 * 1000;
+const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
+class ApiSyncError extends Error {
+  constructor(public status: number) { super(`Itinerary reminder synchronization failed (${status}).`); }
+}
+
+function base64Url(bytes: Uint8Array): string {
+  let binary = '';
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+}
+
+export async function getOrCreateDeviceCapability(): Promise<string> {
+  const stored = await AsyncStorage.getItem(CAPABILITY_KEY);
+  if (stored) return stored;
+  if (!globalThis.crypto?.getRandomValues) throw new Error('Secure random generation is unavailable.');
+  const capability = base64Url(globalThis.crypto.getRandomValues(new Uint8Array(32)));
+  await AsyncStorage.setItem(CAPABILITY_KEY, capability);
+  return capability;
+}
+
+async function credentials(): Promise<{ installationId: string; capability: string } | null> {
+  const installationId = await getSubscribedInstallationId();
+  if (!installationId) return null;
+  return { installationId, capability: await getOrCreateDeviceCapability() };
+}
+
+async function request(path: string, method: string, body?: unknown) {
+  const auth = await credentials();
+  if (!auth) throw new Error('A subscribed WonderPush installation is required.');
+  const response = await fetch(`${API_BASE_URL}/api/itinerary-reminders${path}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-WonderPush-Installation-Id': auth.installationId,
+      'X-Itinerary-Device-Capability': auth.capability,
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!response.ok) throw new ApiSyncError(response.status);
+  return response.json();
+}
+
+async function verifyReadinessIfStale(force = false): Promise<void> {
+  const stored = await AsyncStorage.getItem(READINESS_VERIFIED_AT_KEY);
+  const verifiedAt = stored ? Number(stored) : 0;
+  if (!force && Number.isFinite(verifiedAt) && Date.now() - verifiedAt < READINESS_FRESHNESS_MS) return;
+  // Only record freshness after the backend has completed the real,
+  // exact-registration provider verification successfully.
+  await request('/readiness/verify', 'POST');
+  await AsyncStorage.setItem(READINESS_VERIFIED_AT_KEY, String(Date.now()));
+}
+
+async function statusByCapability() {
+  const capability = await AsyncStorage.getItem(CAPABILITY_KEY);
+  if (!capability) return null;
+  const response = await fetch(`${API_BASE_URL}/api/itinerary-reminders/status-by-capability`, {
+    headers: { 'X-Itinerary-Device-Capability': capability },
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new ApiSyncError(response.status);
+  return response.json();
+}
+
+export async function getItineraryReminderReadiness() {
+  const client = await getWonderPushClientReadiness();
+  const existing = await statusByCapability().catch(() => null);
+  if (!client.clientReady) {
+    return { client, registration: existing, currentInstallationMatch: 'unavailable', reminderReady: false,
+      staleReason: existing?.registered ? 'current_installation_unavailable' : null };
+  }
+  const current = await request('/status', 'GET');
+  const match = existing
+    ? existing.registration_fingerprint === current.registration_fingerprint
+    : true;
+  return { client, registration: current, currentInstallationMatch: match ? 'match' : 'mismatch',
+    reminderReady: Boolean(match && current.reminders_enabled && current.provider_deliverable),
+    staleReason: match ? (current.provider_deliverable ? null : 'provider_unreachable') : 'installation_mismatch' };
+}
+
+export async function configureItineraryReminderSync(starredScheduleIds: string[]): Promise<void> {
+  const client = await getWonderPushClientReadiness();
+  if (!client.clientReady) throw new Error('The current browser is not notification-ready.');
+  // Re-register is idempotent and refreshes this exact itinerary registration
+  // after the generic notification registration has reconciled WonderPush.
+  await request('/register', 'POST');
+  await verifyReadinessIfStale(true);
+  const readiness = await getItineraryReminderReadiness();
+  if (readiness.currentInstallationMatch !== 'match') throw new Error('The current installation does not match its registration.');
+  if (!readiness.registration?.provider_deliverable) throw new Error('The current installation is not provider-reachable.');
+  const completeSet = [...new Set(starredScheduleIds)];
+  await request('/enabled', 'PUT', { enabled: true });
+  try {
+    await request('/stars', 'PUT', { schedule_ids: completeSet });
+    await AsyncStorage.setItem(ENABLED_KEY, 'true');
+  } catch (error) {
+    await request('/enabled', 'PUT', { enabled: false }).catch(() => undefined);
+    await AsyncStorage.setItem(ENABLED_KEY, 'false');
+    throw error;
+  }
+}
+
+export async function enableItineraryRemindersForTesting(starredScheduleIds: string[]) {
+  await configureItineraryReminderSync(starredScheduleIds);
+  return getItineraryReminderReadiness();
+}
+
+export async function disableItineraryReminderSync(): Promise<void> {
+  await request('/enabled', 'PUT', { enabled: false });
+  await AsyncStorage.setItem(ENABLED_KEY, 'false');
+}
+
+/** Explicitly refresh an already-enabled attendee's exact provider readiness. */
+export async function refreshEnabledItineraryReminderReadiness() {
+  if (await AsyncStorage.getItem(ENABLED_KEY) !== 'true') return getItineraryReminderReadiness();
+  await verifyReadinessIfStale(true);
+  return getItineraryReminderReadiness();
+}
+
+export async function disableItineraryRemindersForTesting() {
+  await disableItineraryReminderSync();
+  return getItineraryReminderReadiness();
+}
+
+export async function reconcileItineraryReminderStars(starredScheduleIds: string[]): Promise<void> {
+  try {
+    if (await AsyncStorage.getItem(ENABLED_KEY) !== 'true') {
+      const readiness = await getWonderPushClientReadiness();
+      if (!readiness.clientReady) return;
+      await configureItineraryReminderSync(starredScheduleIds);
+      return;
+    }
+    await verifyReadinessIfStale();
+    await request('/stars', 'PUT', { schedule_ids: [...new Set(starredScheduleIds)] });
+  } catch {
+    // Local favorites remain authoritative for UX; the next focus/toggle retries the full set.
+  }
+}
