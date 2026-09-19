@@ -17,7 +17,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import colors from '../theme/colors';
 import { tentedCityVendors } from '../data/tentedCityVendors';
-import { tentedCityVenues } from '../config/tentedCityVenues';
 import type { Rect, TentedCityPlace } from '../config/tentedCityTypes';
 import { findTentedCityPlace, placeRect, placeTitle } from '../config/tentedCitySearch';
 import { searchEventMap, type EventMapHit } from '../config/mapSearch';
@@ -72,11 +71,6 @@ function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, t
   </View>;
 }
 
-type FilterId = 'all' | 'food' | 'stages' | 'vendors';
-const FILTERS: { id: FilterId; label: string }[] = [
-  { id: 'all', label: 'All' }, { id: 'vendors', label: 'Vendors' }, { id: 'food', label: 'Food' }, { id: 'stages', label: 'Stages' },
-];
-
 export default function TentedCityMap({
   initialQuery = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds, hideModeSelector = false,
 }: {
@@ -89,7 +83,6 @@ export default function TentedCityMap({
   const [selectedSemanticArea, setSelectedSemanticArea] = useState<SemanticMapArea | null>(null);
   const [selectedBoothId, setSelectedBoothId] = useState<string | null>(null);
   const [paradeRoute, setParadeRoute] = useState<ParadeRouteId | null>(null);
-  const [filter, setFilter] = useState<FilterId>('all');
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [unavailable, setUnavailable] = useState(Boolean(mapUnavailable));
   const [unmappedInitialLocation, setUnmappedInitialLocation] = useState(false);
@@ -280,32 +273,14 @@ export default function TentedCityMap({
   }, [viewport.width, viewport.height, cam]);
 
   const results = useMemo(
-    () => (focused || query.trim() ? searchEventMap(query, tentedCityVendors, filter) : []),
-    [query, filter, focused],
+    () => (focused || query.trim() ? searchEventMap(query, tentedCityVendors) : []),
+    [query, focused],
   );
   const stageEvents = useMemo(() => {
     if (selected?.kind !== 'stage') return [];
     const names = new Set(selected.venue.names.map((n) => n.toLowerCase().replace(/[\u2019']/g, "'").replace(/\s+/g, ' ').trim()));
     return events.filter((e) => e.location_name && names.has(e.location_name.toLowerCase().replace(/[\u2019']/g, "'").replace(/\s+/g, ' ').trim())).slice(0, 4);
   }, [events, selected]);
-  const filterDots = useMemo(() => {
-    if (filter === 'food') {
-      return tentedCityVendors.flatMap((v) => {
-        if (v.category !== 'food') return [];
-        const fp = footprintForVendor(v);
-        if (!fp) return [];
-        return [{ key: v.name, rect: fp.rect, place: { kind: 'vendor' as const, vendor: v } }];
-      });
-    }
-    if (filter === 'stages') {
-      // Keep only stages with their own rect. Parent-fallback stages (MNP Lifestyles
-      // children) stay omitted so three dots do not stack on the same parent footprint.
-      // Find-on-Map still works via placeRect parent fallback.
-      return tentedCityVenues.filter((v) => v.kind === 'stage' && v.rect).map((v) => ({ key: v.id, rect: v.rect!, place: { kind: 'stage' as const, venue: v } }));
-    }
-    return [];
-  }, [filter]);
-
   const composed = useMemo(() => createMapNativeGestures(cam), [cam]);
   const mapStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }] }));
   const boothDividerStyle = useAnimatedStyle(() => ({
@@ -458,9 +433,6 @@ export default function TentedCityMap({
             ) : null}
           </React.Fragment>;
         })}
-        {filterDots.map((dot) => (
-          <TouchableOpacity key={dot.key} activeOpacity={0.8} onPress={() => selectPlace(dot.place)} style={[styles.filterDot, { left: `${dot.rect.x + dot.rect.w / 2}%`, top: `${dot.rect.y + dot.rect.h / 2}%` }]} />
-        ))}
         {verify1A ? TENTED_CITY_VERIFY_PARENTS.map((parent) => (
           <View key={parent.id} pointerEvents="none" style={[styles.verifyParent, { left: `${parent.rect.x}%`, top: `${parent.rect.y}%`, width: `${parent.rect.w}%`, height: `${parent.rect.h}%` }]}>
             <Text style={styles.verifyParentLabel}>{parent.label}</Text>
@@ -566,12 +538,6 @@ export default function TentedCityMap({
           {query ? <TouchableOpacity onPress={clearSelection} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
         <MapEducationHelpButton mode="tented" />
           </View>
-        <View style={styles.filters}>
-          {FILTERS.map((item) => {
-            const on = filter === item.id;
-            return <TouchableOpacity key={item.id} style={[styles.chip, on && styles.chipOn]} onPress={() => setFilter(item.id)}><Text style={[styles.chipText, on && styles.chipTextOn]}>{item.label}</Text></TouchableOpacity>;
-          })}
-        </View>
         <ParadeRouteControls value={paradeRoute} onChange={setParadeRoute} />
         {verify1A ? <View style={styles.verifyBanner} pointerEvents="none"><Text style={styles.verifyBannerText}>Tented City geometry overlay on. Five taps on Tented City to hide.</Text></View> : null}
         {focused && query.trim().length > 0 ? (
@@ -656,7 +622,6 @@ const styles = StyleSheet.create({
     borderWidth: SELECTED_STAGE_INNER_BORDER_WIDTH,
     borderColor: SELECTED_STAGE_INNER_BORDER,
   },
-  filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
   topOverlayWithParentSelector: { paddingTop: 52 },
   verifyTapTarget: { height: 44, alignSelf: 'stretch' },
   topOverlay: { position: 'absolute', top: 8, left: 12, right: 12, zIndex: 20 },
@@ -667,11 +632,6 @@ const styles = StyleSheet.create({
   modeBtnTextOn: { color: colors.primary },
   searchCard: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' },
   searchInput: { flex: 1, fontSize: 16, color: '#111827', paddingVertical: 10 },
-  filters: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  chip: { minHeight: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.92)', justifyContent: 'center', borderWidth: 1, borderColor: '#E5E7EB' },
-  chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 13, fontWeight: '700', color: '#4B5563' },
-  chipTextOn: { color: '#FFFFFF' },
   results: { marginTop: 6, backgroundColor: '#FFFFFF', borderRadius: 14, overflow: 'hidden', maxHeight: 260 },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E7EB', minHeight: 48 },
   resultName: { fontSize: 15, fontWeight: '700', color: '#111827' },

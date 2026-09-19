@@ -1,4 +1,5 @@
 import React from 'react';
+import { Feather } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { PARADE_ROUTES, PARADE_VIEWBOX, PARADE_ASSEMBLY, paradePath, type ParadeRouteId } from '../config/tentedCityParadeRoutes';
 const BLUE = '#0078BD';
@@ -21,8 +22,13 @@ export function ParadeRouteOverlay({ routeId }: { routeId: ParadeRouteId | null 
 export function ParadeRouteControls({ value, onChange }: { value: ParadeRouteId | null; onChange: (id: ParadeRouteId | null) => void }) {
   const [expanded, setExpanded] = React.useState(false);
   return <View style={styles.controls}>
-    <TouchableOpacity accessibilityRole="button" aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={styles.toggle}>
-      <Text style={styles.heading}>Parade Routes{value ? ` · ${PARADE_ROUTES[value].label}` : ''} {expanded ? '▴' : '▾'}</Text>
+    <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Parade Routes · ${value ? PARADE_ROUTES[value].label : 'Off'} · ${expanded ? 'Collapse' : 'Choose a day'}`} aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={[styles.toggle, (expanded || value !== null) && styles.toggleActive]}>
+      <Feather name="map" size={18} color="#004B76" />
+      <View style={styles.toggleLabel}>
+        <Text style={styles.heading}>Parade Routes</Text>
+        <Text style={styles.status}>{value ? PARADE_ROUTES[value].label : 'Off · Choose a day'}</Text>
+      </View>
+      <Feather name={expanded ? 'chevron-up' : 'chevron-down'} size={22} color="#004B76" />
     </TouchableOpacity>
     {expanded && <View style={styles.options}>
       {([{ id: null, label: 'Off' }, ...Object.values(PARADE_ROUTES)]).map(item => <TouchableOpacity key={item.id || 'off'} accessibilityRole="radio" accessibilityLabel={`Parade route: ${item.label}`} aria-checked={value === item.id} accessibilityState={{ checked: value === item.id }} onPress={() => onChange(item.id)} style={[styles.option, value === item.id && styles.selected]}>
@@ -32,10 +38,13 @@ export function ParadeRouteControls({ value, onChange }: { value: ParadeRouteId 
   </View>;
 }
 const styles = StyleSheet.create({
-  controls: { alignSelf: 'flex-start', maxWidth: '100%', backgroundColor: '#FFFFFF', borderRadius: 12, marginTop: 6, padding: 4 },
-  toggle: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 10 },
+  controls: { alignSelf: 'flex-start', maxWidth: '100%', backgroundColor: '#FFFFFF', borderRadius: 12, marginTop: 6, padding: 0 },
+  toggle: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#7AAAC4', borderRadius: 10, backgroundColor: '#F0F8FC' },
+  toggleActive: { borderColor: '#005F96', backgroundColor: '#DDEFF9' },
+  toggleLabel: { flexShrink: 1 },
+  status: { color: '#365B70', fontSize: 12, marginTop: 2 },
   heading: { color: '#004B76', fontSize: 13, fontWeight: '700' },
-  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, padding: 4 },
   option: { paddingHorizontal: 10, minHeight: 44, justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: '#CBD5E1' },
   selected: { backgroundColor: '#005F96', borderColor: '#005F96' },
   text: { color: '#334155', fontSize: 13 }, selectedText: { color: 'white', fontWeight: '700' },

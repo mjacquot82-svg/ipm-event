@@ -20,7 +20,12 @@ try {
   await page.goto(`${base}/map?mapType=tented`);
   const toggle=page.getByRole('button',{name:/^Parade Routes/});await toggle.waitFor();
   assert.equal(await page.locator('[data-testid^="parade-route-"]').count(),0);
+  assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+  assert.equal(await page.getByRole('radio').count(),0);
+  for (const label of ['All','Vendors','Food','Stages']) assert.equal(await page.getByText(label,{exact:true}).count(),0);
+  const bounds=await toggle.boundingBox();assert(bounds.width>150 && bounds.height>=44);
   await toggle.click();
+  assert.equal(await toggle.getAttribute('aria-expanded'),'true');
   for(const [id,label] of [['tuesday','Tuesday'],['wed-sat','Wednesday–Saturday']]) {
    await page.getByRole('radio',{name:`Parade route: ${label}`,exact:true}).click();
    const overlay=page.getByTestId(`parade-route-${id}`);await overlay.waitFor();
@@ -39,6 +44,11 @@ try {
     await overlay.locator('..').screenshot({path:`${output}/comparison-${id}.png`});
    }
   }
+  await toggle.click();
+  assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+  assert.equal(await page.getByRole('radio').count(),0);
+  assert.equal(await page.getByTestId('parade-route-wed-sat').count(),1);
+  await toggle.click();
   // Search moves camera and keeps the route attached to the map with the highlight.
   const input=page.getByPlaceholder('Find a vendor, booth, stage, or place');
   await input.fill('ACE');await page.getByText('ACE / JCB, Harriston',{exact:true}).first().click();
