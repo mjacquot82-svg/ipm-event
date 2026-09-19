@@ -194,20 +194,27 @@ export function MapsEducation({ mode, onShowMap, autoStart = true }: { mode: 'gr
 
 export function FindOnMapTip({ kind, eligible, children, onOpen }: { kind: 'scheduleFindOnMapTipSeen' | 'vendorFindOnMapTipSeen'; eligible: boolean; children: React.ReactNode; onOpen?: () => void }) {
   const anchor = useRef<View>(null);
+  const requestedReplay = useContext(ContextualEducationReplay);
   const { height } = useWindowDimensions();
   const pathname = usePathname();
   const focused = pathname.endsWith(kind === 'scheduleFindOnMapTipSeen' ? '/schedule' : '/vendors');
   const [inView, setInView] = useState(false);
   useEffect(() => {
     if (!eligible || !focused) { setInView(false); return; }
-    const check = () => anchor.current?.measureInWindow((x, y, w, h) => setInView(w > 0 && h > 0 && y >= 0 && y + h < height - 60));
+    const check = () => anchor.current?.measureInWindow((x, y, w, h) => {
+      const visible = w > 0 && h > 0 && y >= 0 && y + h < height - 60;
+      setInView(visible);
+      if (!visible && requestedReplay?.pending.has(kind) && kind === 'scheduleFindOnMapTipSeen' && Platform.OS === 'web') {
+        (anchor.current as unknown as HTMLElement)?.scrollIntoView?.({ block: 'center' });
+      }
+    });
     check(); const timer = setInterval(check, 400); return () => clearInterval(timer);
-  }, [eligible, height, focused]);
+  }, [eligible, height, focused, kind, requestedReplay]);
   const state = useEducation(kind, eligible && inView);
   const event = kind === 'scheduleFindOnMapTipSeen';
   return <View ref={anchor} collapsable={false}>
     {children}
-    {state.visible ? <EducationCallout target={anchor.current} title={event ? 'Find this event' : 'Find this vendor'}
+    {state.visible ? <EducationCallout target={anchor.current} title={event ? 'View event details' : 'Find this vendor'}
       body={event ? 'Here are the event’s time, date and location. Tap the highlighted location to find this event on the map.' : "Tap here to jump directly to this vendor’s location on the map."} onDismiss={state.dismiss}
       targetLabel={event ? 'Open highlighted event on map' : undefined} targetTestID={event ? 'schedule-education-open-map' : undefined}
       onTargetPress={event && onOpen ? () => { state.dismiss(); onOpen(); } : undefined} /> : null}
@@ -223,6 +230,9 @@ export function ScheduleEventDetailsTip({ eligible, onOpen, children }: {
   useEffect(() => {
     setStable(false);
     if (!eligible) return;
+    if (Platform.OS === 'web') {
+      (anchor.current as unknown as HTMLElement)?.scrollIntoView?.({ block: 'center' });
+    }
     // Measure current cards rather than retaining a virtualized-list item ID.
     // Search/filter changes and scrolling can move a target after the intro fades.
     const measure = () => anchor.current?.measureInWindow((x, y, w, h) => {
@@ -235,7 +245,7 @@ export function ScheduleEventDetailsTip({ eligible, onOpen, children }: {
   const state = useEducation('scheduleEventDetailsTipSeen', eligible && stable);
   return <View ref={anchor} collapsable={false}>
     {children}
-    {state.visible ? <EducationCallout target={anchor.current} title="View event details"
+    {state.visible ? <EducationCallout target={anchor.current} title="Tap an event"
       body="Tap the highlighted event to see its time, description and location." onDismiss={state.skip}
       onTargetPress={() => { state.dismiss(); onOpen(); }} /> : null}
   </View>;
@@ -256,3 +266,13 @@ const styles = StyleSheet.create({
   help: { flexShrink: 0, width: 94, height: 44, borderRadius: 10, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#8B1538', alignItems: 'center', justifyContent: 'center' },
   helpText: { color: '#8B1538', fontWeight: '700', fontSize: 14 },
 });
+
+// Schedule arrival guidance is separate from the approved Maps tour and its completion state.
+export function ScheduleMapArrival({ token, title, onComplete }: { token?: string; title?: string; onComplete: () => void }) {
+  const pathname = usePathname();
+  const [completed, setCompleted] = useState<string>();
+  if (!token || completed === token || !pathname.endsWith('/map')) return null;
+  return <EducationCallout title="Find this event"
+    body={`${title || 'Your event'} is highlighted on the map. Use the map to find its location.`}
+    onDismiss={() => { setCompleted(token); onComplete(); }} />;
+}

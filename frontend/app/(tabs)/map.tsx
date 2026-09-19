@@ -1,11 +1,11 @@
 import EntrancesParkingMap from '../../src/components/EntrancesParkingMap';
-import { MapEducationAnchors, MapEducationMode, MapEducationReplay, MapsEducation } from '../../src/components/MapEducation';
+import { MapEducationAnchors, MapEducationMode, MapEducationReplay, MapsEducation, ScheduleMapArrival } from '../../src/components/MapEducation';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { desktopMapStyles, useDesktopMapWorkspace } from '../../src/theme/desktopMapWorkspace';
 import { View, StyleSheet, StatusBar } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import GroundsMap from '../../src/components/GroundsMap';
 import TentedCityMap from '../../src/components/TentedCityMap';
 import RvParkDetailMap from '../../src/components/RvParkDetailMap';
@@ -48,9 +48,11 @@ export default function MapScreen() {
   return <MapEducationReplay.Provider value={replay}><MapEducationAnchors.Provider value={anchors}><MapContent /></MapEducationAnchors.Provider></MapEducationReplay.Provider>;
 }
 function MapContent() {
+  const router = useRouter();
   const params = useLocalSearchParams<{
     location?: string | string[];
     eventId?: string | string[];
+    scheduleWalkthrough?: string | string[];
     eventTitle?: string | string[];
     showOnly?: string | string[];
     source?: string | string[];
@@ -151,6 +153,7 @@ function MapContent() {
       ) : null}
       {mode === 'entrances' ? <View style={[styles.entrances, entrancesDesktop && desktopMapStyles.host, entrancesDesktop]}><EntrancesParkingMap /></View> : null}
       {selector}
+      <ScheduleMapArrival token={source === 'schedule' ? paramStr(params.scheduleWalkthrough) : undefined} title={eventTitle} onComplete={() => router.setParams({ scheduleWalkthrough: undefined })} />
       {/* Existing destination params defer auto-onboarding for this visit, without changing routing or seen state. */}
       <MapsEducation mode={mode} onShowMap={setMode} autoStart={!Boolean(location || paramStr(params.showOnly) === 'true' || unavailable || verify1A)} />
     </View></MapEducationMode.Provider>

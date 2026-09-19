@@ -82,6 +82,13 @@ export default function ScheduleScreen() {
   const [helpReplay, setHelpReplay] = useState<React.ContextType<typeof ContextualEducationReplay>>({ pending: new Set() });
   const walkthroughPreview = useWalkthroughPreview();
   const previewStarted = useRef(false);
+  const scheduleList = useRef<SectionList<ScheduleEvent>>(null);
+  const visibleEvents = useRef<string[]>([]);
+  const [walkthroughTarget, setWalkthroughTarget] = useState<string | null>(null);
+  const [walkthroughNeedsEvent, setWalkthroughNeedsEvent] = useState(false);
+  const onVisibleEventsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ item: ScheduleEvent; isViewable: boolean }> }) => {
+    visibleEvents.current = viewableItems.filter(item => item.isViewable && item.item?.id).map(item => item.item.id);
+  }).current;
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const [showStarConfirmation, setShowStarConfirmation] = useState(false);
   const onboardingDismissRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
@@ -120,7 +127,7 @@ export default function ScheduleScreen() {
     setSelectedEvent(null);
   }, []);
 
-  const openSelectedEventOnMap = () => {
+  const openSelectedEventOnMap = (continueWalkthrough = false) => {
     if (!selectedEvent?.location_name) return;
     dismissEventModalForMap();
     const mapLocation = resolvePlowingMapLocation(selectedEvent.location_name, selectedEvent.title) || selectedEvent.location_name;
@@ -132,6 +139,7 @@ export default function ScheduleScreen() {
         source: 'schedule',
         eventId: selectedEvent.id,
         eventTitle: selectedEvent.title,
+        ...(continueWalkthrough ? { scheduleWalkthrough: String(Date.now()) } : {}),
         mapType: resolveMapTypeForLocation(mapLocation, tentedCityVendors),
       },
     });
@@ -186,17 +194,21 @@ export default function ScheduleScreen() {
       setOnboardingLoaded(true);
     };
     void loadOnboardingState().catch(() => { if (active) setOnboardingLoaded(true); });
-    return () => { active = false; setShowScheduleOnboarding(false); setHelpReplay({ pending: new Set() }); };
+    return () => { active = false; setShowScheduleOnboarding(false); setHelpReplay({ pending: new Set() }); setWalkthroughNeedsEvent(false); setWalkthroughTarget(null); };
   }, [walkthroughPreview]));
 
   const dismissScheduleOnboarding = useCallback(async () => {
+    setWalkthroughNeedsEvent(true);
     setShowScheduleOnboarding(false);
     await acknowledgeScheduleOnboarding(AsyncStorage).catch(() => {});
   }, []);
 
   const skipScheduleWalkthrough = () => {
     setHelpReplay({ pending: new Set() });
-    void dismissScheduleOnboarding();
+    setWalkthroughNeedsEvent(false);
+    setWalkthroughTarget(null);
+    setShowScheduleOnboarding(false);
+    void acknowledgeScheduleOnboarding(AsyncStorage).catch(() => {});
   };
 
   useEffect(() => {
@@ -468,6 +480,28 @@ export default function ScheduleScreen() {
     [filteredGroupedEvents],
   );
 
+  const walkthroughCandidates = useMemo(() => scheduleSections.flatMap(section => section.data)
+    .filter(event => scheduleMapTipEligible(event.location_name, event.title)), [scheduleSections]);
+  const walkthroughCandidate = walkthroughCandidates.find(event => visibleEvents.current.includes(event.id)) || walkthroughCandidates[0];
+  useEffect(() => {
+    if (!walkthroughNeedsEvent || showScheduleOnboarding || loading || !walkthroughCandidate) return;
+    setWalkthroughTarget(walkthroughCandidate.id);
+    setWalkthroughNeedsEvent(false);
+  }, [walkthroughNeedsEvent, showScheduleOnboarding, loading, walkthroughCandidate]);
+
+  const revealWalkthroughTarget = () => {
+    if (!walkthroughTarget) return;
+    const sectionIndex = scheduleSections.findIndex(section => section.data.some(event => event.id === walkthroughTarget));
+    if (sectionIndex < 0) return;
+    const itemIndex = scheduleSections[sectionIndex].data.findIndex(event => event.id === walkthroughTarget);
+    scheduleList.current?.scrollToLocation({ sectionIndex, itemIndex, viewPosition: 0.3, animated: false });
+  };
+  useEffect(() => {
+    if (!walkthroughTarget || showScheduleOnboarding || showEventModal) return;
+    const timer = setTimeout(revealWalkthroughTarget, 350);
+    return () => clearTimeout(timer);
+  }, [walkthroughTarget, showScheduleOnboarding, showEventModal]);
+
   useEffect(() => {
     const query = searchQuery.trim();
     if (!query) return undefined;
@@ -549,6 +583,12 @@ export default function ScheduleScreen() {
   return (
     <ContextualEducationReplay.Provider value={helpReplay}><View style={styles.container}>
       <SectionList
+        ref={scheduleList}
+        onViewableItemsChanged={onVisibleEventsChanged}
+        onScrollToIndexFailed={({ averageItemLength, index }) => {
+          scheduleList.current?.getScrollResponder()?.scrollTo({ y: averageItemLength * index, animated: false });
+          setTimeout(revealWalkthroughTarget, 300);
+        }}
         style={styles.content}
         contentContainerStyle={styles.listContent}
         sections={scheduleSections}
@@ -572,6 +612,8 @@ export default function ScheduleScreen() {
         <Text style={styles.title}>Schedule</Text>
         <ContextualHelpButton label="Schedule Help" onPress={() => {
           setHelpReplay({ pending: new Set(['scheduleEventDetailsTipSeen', 'scheduleFindOnMapTipSeen']) });
+          setWalkthroughTarget(null);
+          setWalkthroughNeedsEvent(false);
           setShowScheduleOnboarding(true);
         }} />
         <View style={styles.headerSubtitle}>
@@ -817,7 +859,7 @@ export default function ScheduleScreen() {
 
           return (
             <View style={sectionStyle}>
-              <ScheduleEventDetailsTip eligible={onboardingLoaded && !showScheduleOnboarding && !showEventModal && !showCategorySelector && !loading && !refreshing && scheduleMapTipEligible(event.location_name, event.title)} onOpen={openEvent}>
+              <ScheduleEventDetailsTip eligible={event.id === walkthroughTarget && onboardingLoaded && !showScheduleOnboarding && !showEventModal && !showCategorySelector && !loading && !refreshing && scheduleMapTipEligible(event.location_name, event.title)} onOpen={openEvent}>
                   <TouchableOpacity
                     style={[styles.eventCard, { backgroundColor: categoryStyle.tint }]}
                     onPress={openEvent}
@@ -897,6 +939,20 @@ export default function ScheduleScreen() {
         }}
       />
 
+      {walkthroughNeedsEvent && !showScheduleOnboarding && !loading && !walkthroughCandidate ? (
+        <Modal transparent visible animationType="fade" onRequestClose={skipScheduleWalkthrough}>
+          <View style={styles.onboardingModalOverlay}>
+            <View style={styles.onboardingModalCard}>
+              <Text style={styles.emptyTitle}>Find an event to explore</Text>
+              <Text style={styles.emptyText}>{hasActiveFilters
+                ? 'There are no mapped events in these filters. Show all events to continue the walkthrough.'
+                : 'No mapped events are available right now. You can replay Schedule Help when they are published.'}</Text>
+              {hasActiveFilters ? <TouchableOpacity accessibilityRole="button" accessibilityLabel="Show all events and continue walkthrough" onPress={clearFilters} style={styles.onboardingModalDismiss}><Text style={styles.retryButtonText}>Show all events</Text></TouchableOpacity> : null}
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Skip Schedule walkthrough" onPress={skipScheduleWalkthrough} style={styles.onboardingModalDismiss}><Text style={styles.retryButtonText}>Skip</Text></TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
       {/* First-visit education overlays the loaded Schedule without delaying it. */}
       <Modal
         visible={showScheduleOnboarding}
@@ -1097,10 +1153,10 @@ export default function ScheduleScreen() {
 
                   {/* Location */}
                   {selectedEvent.location_name && (
-                    <FindOnMapTip kind="scheduleFindOnMapTipSeen" onOpen={openSelectedEventOnMap} eligible={showEventModal && !showScheduleOnboarding && scheduleMapTipEligible(selectedEvent.location_name, selectedEvent.title)}>
+                    <FindOnMapTip kind="scheduleFindOnMapTipSeen" onOpen={() => openSelectedEventOnMap(true)} eligible={showEventModal && !showScheduleOnboarding && scheduleMapTipEligible(selectedEvent.location_name, selectedEvent.title)}>
                     <TouchableOpacity testID="schedule-find-on-map"
                       style={[styles.detailSection, styles.locationClickable, { borderColor: selectedEventCategoryStyle.primary }]}
-                      onPress={openSelectedEventOnMap}
+                      onPress={() => openSelectedEventOnMap()}
                       activeOpacity={0.7}
                     >
                       <View style={styles.detailRow}>
