@@ -29,13 +29,14 @@ export function isInstallGuidanceEligible(dismissedAt: string | null, now: numbe
   return now - dismissedTime >= INSTALL_DISMISS_COOLDOWN_MS || promptIsNewer;
 }
 
-// Current runtime installation state is authoritative. installedHint is retained for
-// diagnostics/backward-compatible callers but must never suppress a browser session.
-export function shouldOfferInstallGuidance({ installed, installedHint: _installedHint, completed, dismissedAt }: {
-  installed: boolean; installedHint?: boolean; completed: boolean; dismissedAt: string | null;
+// Current runtime installation state and explicit install-guidance dismissal are
+// authoritative. Legacy installed/entry markers remain readable for diagnostics
+// but must not suppress a normal browser session.
+export function shouldOfferInstallGuidance({ installed, installedHint: _installedHint, completed: _completed, dismissedAt }: {
+  installed: boolean; installedHint?: boolean; completed?: boolean; dismissedAt: string | null;
 }): boolean {
   const dismissed = dismissedAt !== null && Number.isFinite(Number(dismissedAt)) && Number(dismissedAt) > 0;
-  return !installed && !completed && !dismissed;
+  return !installed && !dismissed;
 }
 
 export function detectInstallEnvironment({

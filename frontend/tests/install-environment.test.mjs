@@ -31,8 +31,12 @@ test('current runtime state wins over a historical installed flag', () => {
  assert.equal(shouldOfferInstallGuidance(fresh),true);
  assert.equal(shouldOfferInstallGuidance({...fresh,installedHint:true}),true);
  assert.equal(shouldOfferInstallGuidance({...fresh,installed:true}),false);
- assert.equal(shouldOfferInstallGuidance({...fresh,completed:true}),false);
+ assert.equal(shouldOfferInstallGuidance({...fresh,completed:true}),true);
  assert.equal(shouldOfferInstallGuidance({...fresh,dismissedAt:'1'}),false);
+});
+test('legacy installed and entry-completed markers do not suppress ordinary browser guidance', () => {
+ assert.equal(shouldOfferInstallGuidance({installed:false, installedHint:true, completed:true, dismissedAt:null}), true);
+ assert.equal(shouldOfferInstallGuidance({installed:true, installedHint:true, completed:true, dismissedAt:null}), false);
 });
 test('iPad desktop-style agent is identified by MacIntel and touch support', () => {
  const e=detect('Mozilla/5.0 Macintosh Version/18.0 Safari/605.1.15',{platformHint:'MacIntel',maxTouchPoints:5});

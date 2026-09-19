@@ -144,7 +144,7 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
       return;
     }
     const eligible = shouldOfferInstallGuidance({ installed: currentEnvironment().installState === 'installed', installedHint: installed === 'true', completed: completed === 'true', dismissedAt });
-    const suppressionReason = eligible ? 'none' : currentEnvironment().installState === 'installed' ? 'reliable standalone/installed state' : completed === 'true' ? 'stored entry-completed flag' : dismissedAt ? 'stored dismissal timestamp' : 'eligibility returned false';
+    const suppressionReason = eligible ? 'none' : currentEnvironment().installState === 'installed' ? 'reliable standalone/installed state' : dismissedAt ? 'stored dismissal timestamp' : 'eligibility returned false';
     if (debug) { const snapshot = baseDiagnostic({ storageReadStatus, dismissalValue: dismissedAt, eligible: eligible ? 'yes' : 'no', renderRequested: eligible ? 'yes' : 'no', suppressionReason }); setDiagnostic(snapshot); publishDiagnostic(snapshot); }
     setVisible(eligible);
   }, [automatic]);
