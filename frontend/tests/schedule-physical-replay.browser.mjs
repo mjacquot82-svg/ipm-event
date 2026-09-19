@@ -1,5 +1,6 @@
 // Real public Schedule data; no preview flag, fixtures, test-side scrolling or server writes.
 import assert from 'node:assert/strict';
+import { assertClickCue, assertNoClickCue } from './tutorial-click-cue-assertions.mjs';
 import fs from 'node:fs';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const base = process.env.IPM_TEST_URL || 'https://staging.theipm.ca';
@@ -8,7 +9,7 @@ fs.mkdirSync(out, { recursive: true });
 const browser = await chromium.launch();
 let page;
 try {
-  for (const [width, height] of [[390, 844], [390, 667], [320, 568]]) {
+  for (const [width, height] of (process.env.IPM_TEST_VIEWPORTS ? JSON.parse(process.env.IPM_TEST_VIEWPORTS) : [[390, 844], [390, 667], [320, 568]])) {
     const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true });
     await context.route('**/*', async route => {
       const request = route.request();
@@ -33,11 +34,13 @@ try {
     async function noAuto() {
       await help.waitFor(); await page.waitForTimeout(1000);
       assert.equal(await tip.count(), 0);
+      await assertNoClickCue(page);
       assert.equal(await page.getByText('Plan your day', { exact: true }).count(), 0);
     }
     async function follow(label, recovery = false) {
       await help.click();
       await page.getByText('Plan your day', { exact: true }).waitFor();
+      await assertNoClickCue(page);
       await page.getByRole('button', { name: 'Got it, close Plan your day introduction' }).click();
       if (recovery) {
         await page.getByRole('button', { name: 'Show all events and continue walkthrough' }).waitFor();
@@ -46,14 +49,17 @@ try {
       }
       await page.getByTestId('schedule-education-open-event').waitFor();
       await tip.getByText('Tap an event', { exact: true }).waitFor();
+      await assertClickCue(page, 'schedule-education-open-event');
       assert.equal(await tip.getByRole('button', { name: /Got it|Next/ }).count(), 0);
       await page.touchscreen.tap(2, 2); await page.waitForTimeout(350);
       await tip.getByText('Tap an event', { exact: true }).waitFor();
+      await assertClickCue(page, 'schedule-education-open-event');
       await page.screenshot({ path: `${out}/${width}-${height}-${label}-event.png` });
       await page.getByTestId('schedule-education-open-event').tap();
       await tip.getByText('View event details', { exact: true }).waitFor();
       const action = page.getByTestId('schedule-education-open-map');
       await action.waitFor();
+      await assertClickCue(page, 'schedule-education-open-map');
       const real = await page.getByTestId('schedule-find-on-map').boundingBox(), highlighted = await action.boundingBox();
       assert(real && highlighted && Math.abs(real.y - highlighted.y) < 5, 'spotlight covers the actual location action');
       await page.touchscreen.tap(2, 2); await page.waitForTimeout(350);
@@ -62,6 +68,7 @@ try {
       await action.tap();
       await page.waitForURL(/\/map\?/);
       await tip.getByText('Find this event', { exact: true }).waitFor();
+      await assertNoClickCue(page);
       const title = new URL(page.url()).searchParams.get('eventTitle');
       assert(title); assert.match(await tip.innerText(), new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
       await page.getByTestId('map-selection-title').waitFor();
@@ -69,6 +76,7 @@ try {
       await page.screenshot({ path: `${out}/${width}-${height}-${label}-map.png` });
       await tip.getByRole('button', { name: 'Got it', exact: true }).tap();
       assert.equal(await tip.count(), 0);
+      await assertNoClickCue(page);
       await page.waitForFunction(() => !new URL(location.href).searchParams.has('scheduleWalkthrough'));
       return title;
     }
@@ -92,7 +100,9 @@ try {
     await page.reload(); await page.getByText('Plan your day', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Got it, close Plan your day introduction' }).click();
     await page.getByTestId('schedule-education-open-event').waitFor();
+    await assertClickCue(page, 'schedule-education-open-event');
     await page.getByRole('button', { name: 'Skip walkthrough', exact: true }).click();
+    await assertNoClickCue(page);
     await page.reload(); await noAuto();
     console.log(`PASS ${width}x${height}: completed returning attendee manual replay; unfiltered/filtered/empty recovery; event/detail/map guidance; unrelated taps blocked; first visit and skip persistence`);
     await context.close();

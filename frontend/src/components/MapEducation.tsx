@@ -3,6 +3,7 @@ import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useWin
 import { useLocalSearchParams, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CUE_ARROW, placeTutorialCue } from '../services/tutorialCueLayout';
 import { EDUCATION_KEYS, MAP_TOUR_STEPS, type EducationKind } from '../services/mapEducationState';
 
 // Only staging can ignore this section's completion for a physical preview. No keys are removed.
@@ -80,6 +81,7 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
   const insets = useSafeAreaInsets();
   const [rect, setRect] = useState<Rect | null>(null);
   const [cardHeight, setCardHeight] = useState(210);
+  const [cueSize, setCueSize] = useState({ width: 112, height: 34 });
   const card = useRef<View>(null);
   const overlay = useRef<View>(null);
   const targetControl = useRef<View>(null);
@@ -114,15 +116,27 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
     window.addEventListener('keydown', keydown, true);
     return () => { clearTimeout(timer); window.removeEventListener('keydown', keydown, true); window.removeEventListener('keyup', keyup, true); if (previous?.isConnected) previous.focus(); };
   }, []);
-  const margin = 12, gap = 12, cardWidth = Math.min(340, width - margin * 2);
+  const margin = 12, cardWidth = Math.min(340, width - margin * 2);
   const minTop = Math.max(margin, insets.top + margin), maxBottom = height - Math.max(margin, insets.bottom + margin);
-  const below = rect ? maxBottom - (rect.y + rect.height + gap) : maxBottom - minTop;
-  const above = rect ? rect.y - gap - minTop : 0;
-  const useBelow = !rect || below >= cardHeight || below >= above;
-  const maxHeight = Math.max(80, rect ? (useBelow ? below : above) : maxBottom - minTop);
-  const shownHeight = Math.min(cardHeight, maxHeight);
-  const top = rect ? (useBelow ? rect.y + rect.height + gap : rect.y - gap - shownHeight) : minTop;
-  const left = Math.max(margin, Math.min(width - cardWidth - margin, rect ? rect.x + rect.width / 2 - cardWidth / 2 : (width - cardWidth) / 2));
+  const layoutCard = (gap: number) => {
+    const below = rect ? maxBottom - (rect.y + rect.height + gap) : maxBottom - minTop;
+    const above = rect ? rect.y - gap - minTop : 0;
+    const useBelow = !rect || below >= cardHeight || below >= above;
+    const maxHeight = Math.max(80, rect ? (useBelow ? below : above) : maxBottom - minTop);
+    const shownHeight = Math.min(cardHeight, maxHeight);
+    const top = rect ? (useBelow ? rect.y + rect.height + gap : rect.y - gap - shownHeight) : minTop;
+    const left = Math.max(margin, Math.min(width - cardWidth - margin, rect ? rect.x + rect.width / 2 - cardWidth / 2 : (width - cardWidth) / 2));
+    return { top, left, maxHeight, bounds: { x: left, y: top, width: cardWidth, height: shownHeight } };
+  };
+  const safe = { x: insets.left + margin, y: minTop, width: width - insets.left - insets.right - margin * 2, height: maxBottom - minTop };
+  let layout = layoutCard(12);
+  let cue = rect && onTargetPress ? placeTutorialCue(rect, safe, layout.bounds, cueSize) : null;
+  if (rect && onTargetPress && !cue) {
+    // On tight phones reserve a strip between the target and the scrollable card.
+    layout = layoutCard(cueSize.height + CUE_ARROW + 22);
+    cue = placeTutorialCue(rect, safe, layout.bounds, cueSize);
+  }
+  const { top, left, maxHeight } = layout;
   return <Modal transparent animationType="none" visible onRequestClose={onSkip || onDismiss}>
     <View ref={overlay} accessibilityViewIsModal={Boolean(onTargetPress)} style={StyleSheet.absoluteFill} testID="map-education-overlay">
       {rect ? <>
@@ -135,6 +149,19 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
       {rect && onTargetPress ? <TouchableOpacity ref={targetControl} accessibilityRole="button" accessibilityLabel={targetLabel}
         testID={targetTestID} onPress={onTargetPress}
         style={{ position: 'absolute', top: rect.y, left: rect.x, width: rect.width, height: rect.height }} /> : null}
+      {cue ? <View pointerEvents="none" aria-hidden={true} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
+        <View testID="tutorial-click-cue" onLayout={({ nativeEvent: { layout: measured } }) => {
+          if (measured.width !== cueSize.width || measured.height !== cueSize.height) setCueSize({ width: measured.width, height: measured.height });
+        }} style={[styles.clickCue, { left: cue.x, top: cue.y }]}>
+          <Text style={styles.clickCueText}>Click here</Text>
+        </View>
+        <View testID={`tutorial-click-arrow-${cue.side}`} style={[
+          styles.clickArrow,
+          cue.side === 'above' || cue.side === 'below'
+            ? { left: cue.arrowX - 7, top: cue.arrowY, borderLeftWidth: 7, borderRightWidth: 7, ...(cue.side === 'above' ? { borderTopWidth: CUE_ARROW, borderTopColor: '#FBBF24' } : { borderBottomWidth: CUE_ARROW, borderBottomColor: '#FBBF24' }) }
+            : { left: cue.arrowX, top: cue.arrowY - 7, borderTopWidth: 7, borderBottomWidth: 7, ...(cue.side === 'left' ? { borderLeftWidth: CUE_ARROW, borderLeftColor: '#FBBF24' } : { borderRightWidth: CUE_ARROW, borderRightColor: '#FBBF24' }) },
+        ]} />
+      </View> : null}
       <View ref={card} role="dialog" accessibilityLabel={title} accessibilityViewIsModal={!onTargetPress} testID="map-education-card"
         style={[styles.card, { top, left, width: cardWidth, maxHeight }]}>
         <ScrollView onContentSizeChange={(_, h) => setCardHeight(h)} contentContainerStyle={styles.content}>
@@ -251,6 +278,9 @@ export function ScheduleEventDetailsTip({ eligible, onOpen, children }: {
   </View>;
 }
 const styles = StyleSheet.create({
+  clickCue: { position: 'absolute', width: 112, minHeight: 34, paddingVertical: 7, paddingHorizontal: 10, borderRadius: 9, backgroundColor: '#FBBF24' },
+  clickCueText: { fontSize: 14, lineHeight: 20, fontWeight: '800', color: '#111827', textAlign: 'center' },
+  clickArrow: { position: 'absolute', width: 0, height: 0, borderColor: 'transparent', borderStyle: 'solid' },
   dim: { position: 'absolute', backgroundColor: 'rgba(15,23,42,0.48)' },
   spotlight: { position: 'absolute', borderWidth: 3, borderColor: '#FBBF24', borderRadius: 10 },
   card: { position: 'absolute', backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#D1D5DB', overflow: 'hidden' },
