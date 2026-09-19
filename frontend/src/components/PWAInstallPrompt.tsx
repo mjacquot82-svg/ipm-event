@@ -104,7 +104,7 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
     const route = typeof window !== 'undefined' ? window.location.pathname : 'unknown';
     const isHome = route === '/' || route === '';
     const baseDiagnostic = (patch: Partial<InstallDiagnostic> = {}): InstallDiagnostic => ({
-      build: (typeof window !== 'undefined' && (window as any).__IPM_BUILD__) || 'unknown',
+      build: process.env.EXPO_PUBLIC_IPM_BUILD_NUMBER || 'unknown',
       route, isHome, componentMounted: true, platform: next.platform, browser: next.browser,
       mobile: next.platform === 'android' || next.platform === 'ios', standalone: next.installState === 'installed',
       navigatorStandalone: typeof navigator !== 'undefined' && navigator.standalone === true,
