@@ -16,6 +16,20 @@ test('authoritative Schedule uses the final Beyond Wireless stage name', () => {
   assert.equal(locations.includes('Foodland - Main Stage'), false);
 });
 
+test('release schedule data excludes known staging T-30 fixture signatures', () => {
+  const serialized = JSON.stringify(scheduleManifest).toLowerCase();
+  for (const marker of [
+    'staging-only controlled itinerary reminder test',
+    'staging-only controlled itinerary reminder delivery test',
+    't-30 reminder final physical proof',
+    't-30 reminder physical delivery proof',
+    't-30 reminder live delivery test',
+    'ceb64653-dcb4-41c6-8bb7-a4fa34f0f9a3',
+    'd51897e1-bc7d-481f-bf1f-87b7ae20942e',
+    '193d4517-19ea-41e3-ba94-4954ed3ce4e3',
+  ]) assert.equal(serialized.includes(marker), false, `staging fixture leaked: ${marker}`);
+});
+
 test('attendee schedule derives real category filters and combines them with day, search, and Starred', () => {
   assert.match(scheduleSource, /new Set\(events\.map\(\(event\) => event\.category\)\.filter\(Boolean\)\)/);
   assert.match(scheduleSource, /event\.category !== selectedCategory/);

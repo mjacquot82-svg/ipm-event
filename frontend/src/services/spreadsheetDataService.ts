@@ -10,8 +10,9 @@ const DEFAULT_RETRY_DELAY_MS = 1500;
 // at least every 15 minutes when connectivity is available. Web reads refresh
 // immediately so reconnects do not leave a stale schedule or vendor catalog.
 const CACHE_MAX_AGE_MS = 15 * 60 * 1000;
-const CACHE_KEY_PREFIX = 'ipm_supabase_cache:ipm-2026-production';
-const EXISTING_SHARED_CACHE_KEY_PREFIX = 'ipm_supabase_cache:v1';
+// Server-backed content must be isolated by backend origin. The old v1 and
+// production namespaces were shared by staging and production.
+const CACHE_KEY_PREFIX = 'ipm_supabase_cache:v2';
 const LEGACY_CACHE_KEY_PREFIX = 'ipm_spreadsheet_cache';
 const DEFAULT_API_BASE_URL = 'https://ipm-backend-eoiw.onrender.com';
 
@@ -126,16 +127,26 @@ function getApiBaseUrl() {
   return process.env.EXPO_PUBLIC_BACKEND_URL || DEFAULT_API_BASE_URL;
 }
 
-function getCacheKey(cacheKey: string) {
-  // Do not reuse the old backend vendor feed for the canonical web catalog.
-  if (cacheKey === 'vendors' && Platform.OS === 'web') {
-    return `${CACHE_KEY_PREFIX}:vendors:canonical-v1`;
+function getEnvironmentCacheIdentity() {
+  const configuredApiBaseUrl = getApiBaseUrl();
+  try {
+    const parsed = new URL(configuredApiBaseUrl);
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return configuredApiBaseUrl || 'unknown-backend';
   }
-  const prefix = cacheKey === 'schedule' || cacheKey === 'vendors'
-    ? CACHE_KEY_PREFIX
-    : EXISTING_SHARED_CACHE_KEY_PREFIX;
+}
 
-  return `${prefix}:${cacheKey}`;
+function getCacheKey(cacheKey: string) {
+  const identity = getEnvironmentCacheIdentity()
+    .replace(/[^a-z0-9]+/gi, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase();
+  // Never read the legacy environment-ambiguous namespace.
+  if (cacheKey === 'vendors' && Platform.OS === 'web') {
+    return `${CACHE_KEY_PREFIX}:${identity}:vendors:canonical-v2`;
+  }
+  return `${CACHE_KEY_PREFIX}:${identity}:${cacheKey}`;
 }
 
 function getCacheAge(lastSuccessfulUpdate: string) {

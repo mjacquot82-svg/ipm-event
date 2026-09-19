@@ -11,7 +11,7 @@ const { chromium } = require(process.env.IPM_PLAYWRIGHT_MODULE || 'playwright');
     const vendorUrls = [];
     let rawCount;
     await page.addInitScript(() => {
-      localStorage.setItem('ipm_supabase_cache:ipm-2026-production:vendors', JSON.stringify({
+      localStorage.setItem('ipm_supabase_cache:v2:https_ipm_backend_eoiw_onrender_com:vendors:canonical-v2', JSON.stringify({
         data: { vendors: [] }, lastSuccessfulUpdate: new Date().toISOString(), cacheAge: 0,
       }));
     });
