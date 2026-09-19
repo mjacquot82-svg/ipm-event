@@ -1,4 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { findTentedCityPlaceByIdentity } from '../../src/config/tentedCitySearch';
+import { tentedCityVendors } from '../../src/data/tentedCityVendors';
+import { VendorTutorialTarget, VendorTutorialUnavailable } from '../../src/components/VendorTutorial';
+import { ContextualHelpButton, useWalkthroughPreview } from '../../src/components/MapEducation';
+import { vendorMapTipEligible } from '../../src/services/mapEducationEligibility';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +16,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { EDUCATION_KEYS } from '../../src/services/mapEducationState';
 import CachedDataBanner from '../../src/components/CachedDataBanner';
 import { AttendeeAttribution } from '../../src/components/AttendeeAttribution';
 import {
@@ -35,6 +42,36 @@ import { EXACT_MAP_UNAVAILABLE, vendorHasTrustedMapGeometry, vendorHasTrustedMap
 import { groupVendorsForAttendees, vendorGroupMatchesSearch, type AttendeeVendorGroup } from '../../src/config/vendorPresentation';
 
 export default function VendorsScreen() {
+  const [showVendorHelp, setShowVendorHelp] = useState(false);
+  const [tutorialVendorId, setTutorialVendorId] = useState<string | null>(null);
+  const [tutorialNotice, setTutorialNotice] = useState('');
+  const list = useRef<FlatList<AttendeeVendorGroup>>(null);
+  const visibleVendors = useRef<string[]>([]);
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ item: AttendeeVendorGroup; isViewable: boolean }> }) => {
+    visibleVendors.current = viewableItems.filter(entry => entry.isViewable).flatMap(entry => entry.item.locations.map(({ record }) => record.id));
+  }).current;
+  const startVendorTutorial = () => {
+    setTutorialVendorId(null);
+    setTutorialNotice('');
+    setShowVendorHelp(true);
+  };
+  const walkthroughPreview = useWalkthroughPreview();
+  const previewStarted = useRef(false);
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    void AsyncStorage.getItem(EDUCATION_KEYS.vendorFindOnMapTipSeen).then(seen => {
+      if (active && (seen !== 'true' || (walkthroughPreview && !previewStarted.current))) {
+        previewStarted.current = true;
+        startVendorTutorial();
+      }
+    }).catch(() => {});
+    return () => { active = false; setShowVendorHelp(false); setTutorialVendorId(null); };
+  }, [walkthroughPreview]));
+  const finishVendorTutorial = () => {
+    void AsyncStorage.setItem(EDUCATION_KEYS.vendorFindOnMapTipSeen, 'true').catch(() => {});
+    setShowVendorHelp(false);
+    setTutorialVendorId(null);
+  };
   usePageAnalytics('vendors', 'home_quick_action', 'vendor_directory_opened');
   const router = useRouter();
   const { frameStyle, sectionStyle } = useAttendeeLayout();
@@ -101,6 +138,43 @@ export default function VendorsScreen() {
   }, [attendeeGroups, searchQuery, selectedType]);
 
   const hasActiveFilters = Boolean(searchQuery.trim() || selectedType);
+  const mappedVendors = useMemo(() => vendors.filter(vendor => vendorMapTipEligible(vendor.name, vendor.location)), [vendors]);
+  useEffect(() => {
+    if (!showVendorHelp || loading) return;
+    const candidates = filteredVendors.flatMap(group => group.locations.map(({ record }) => record)).filter(vendor => mappedVendors.some(mapped => mapped.id === vendor.id));
+    if (candidates.some(vendor => vendor.id === tutorialVendorId)) return;
+    if (candidates.length) {
+      setTutorialVendorId((candidates.find(vendor => visibleVendors.current.includes(vendor.id)) || candidates[0]).id);
+    } else if (mappedVendors.length) {
+      setSearchQuery('');
+      setSelectedType(null);
+      setTutorialNotice('Showing a mapped vendor from all vendors.');
+      setTutorialVendorId(mappedVendors[0].id);
+    } else setTutorialVendorId(null);
+  }, [showVendorHelp, loading, filteredVendors, mappedVendors, tutorialVendorId]);
+
+  const revealTutorialVendor = () => {
+    if (!showVendorHelp || !tutorialVendorId) return;
+    const index = filteredVendors.findIndex(group => group.locations.some(({ record }) => record.id === tutorialVendorId));
+    if (index >= 0) list.current?.scrollToIndex({ index, viewPosition: 0.3, animated: false });
+  };
+  useEffect(() => {
+    if (!showVendorHelp || !tutorialVendorId || loading) return;
+    const timer = setTimeout(revealTutorialVendor, 150);
+    return () => clearTimeout(timer);
+  }, [showVendorHelp, tutorialVendorId, loading, filteredVendors]);
+
+  const openVendorOnMap = (vendor: Vendor, walkthrough = false) => {
+    if (walkthrough) finishVendorTutorial();
+    const exact = findTentedCityPlaceByIdentity(vendor.name, vendor.location, tentedCityVendors, vendor.type);
+    const resolved = resolveVendorMapQuery(vendor.name, vendor.location);
+    router.push({ pathname: '/(tabs)/map', params: {
+      location: exact ? vendor.location : resolved.status === 'mapped' ? resolved.query : vendor.location,
+      ...(exact ? { vendorName: vendor.name, vendorLocation: vendor.location, vendorType: vendor.type } : {}),
+      showOnly: 'true', source: 'vendors', mapType: 'tented',
+      ...(walkthrough ? { vendorWalkthrough: String(Date.now()), vendorTutorialName: exact ? vendor.name : resolved.status === 'mapped' ? resolved.query : vendor.name } : {}),
+    }});
+  };
 
   useEffect(() => {
     const query = searchQuery.trim();
@@ -156,6 +230,7 @@ export default function VendorsScreen() {
       <PageHeader title="Vendors" />
       <View style={styles.header}>
         <Text style={styles.title}>Vendors</Text>
+        <ContextualHelpButton label="Vendors Help" onPress={startVendorTutorial} />
         <Text style={styles.subtitle}>
           {hasActiveFilters
             ? `${filteredVendors.length} of ${attendeeGroups.length} exhibitors`
@@ -234,7 +309,14 @@ export default function VendorsScreen() {
 
   return (
     <View style={styles.container}>
+      {showVendorHelp && mappedVendors.length === 0 ? <VendorTutorialUnavailable onSkip={finishVendorTutorial} /> : null}
       <FlatList
+        ref={list}
+        onViewableItemsChanged={onViewableItemsChanged}
+        onScrollToIndexFailed={({ averageItemLength, index }) => {
+          list.current?.scrollToOffset({ offset: averageItemLength * index, animated: false });
+          setTimeout(revealTutorialVendor, 300);
+        }}
         style={styles.content}
         data={filteredVendors}
         keyExtractor={(item) => item.key}
@@ -265,24 +347,12 @@ export default function VendorsScreen() {
                       >
                         <Text style={styles.meta}>{EXACT_MAP_UNAVAILABLE}</Text>
                       </TouchableOpacity>
-                    ) : <TouchableOpacity
-                      style={styles.mapLink}
-                      onPress={() => router.push({
-                        pathname: '/(tabs)/map',
-                        params: {
-                          location: mapLocation,
-                          vendorName: record.name,
-                          vendorLocation: mapLocation,
-                          vendorType: record.type,
-                          showOnly: 'true',
-                          source: 'vendors',
-                          mapType: 'tented',
-                        },
-                      })}
-                    >
+                    ) : <VendorTutorialTarget active={showVendorHelp && tutorialVendorId === record.id}
+                      style={styles.mapLink} notice={tutorialNotice} onSkip={finishVendorTutorial}
+                      onOpen={() => openVendorOnMap(record, showVendorHelp && tutorialVendorId === record.id)}>
                       <Feather name="map-pin" size={16} color="#8B1538" />
                       <Text style={styles.mapLinkText}>Find on Map</Text>
-                    </TouchableOpacity>}
+                    </VendorTutorialTarget>}
                   </View>
                 );
               })}

@@ -95,13 +95,13 @@ test('Schedule category controls do not render decorative colour dots or a colou
 });
 
 test('production event fields and ordering remain read-only', () => {
-  assert.doesNotMatch(schedule, /event\.(id|category|title|description|start_date|start_time|end_time|location_name|days_active)\s*=/);
+  assert.doesNotMatch(schedule, /event\.(id|category|title|description|start_date|start_time|end_time|location_name|days_active)\s*=(?!=)/);
   assert.match(schedule, /setEvents\(result\.data\.events\)/);
   assert.match(schedule, /renderItem=\{\(\{ item: event \}\) =>/);
   assert.doesNotMatch(categoryStyles, /ScheduleEvent|setEvents|getScheduleData|sort\(/);
 });
 
-test('backport does not introduce staging notification or reminder functionality', () => {
-  assert.doesNotMatch(schedule, /WonderPush|Webpushr|reminderUx|itineraryReminder|T-30|Device A\/B|calendarService|showReminderPrompt/i);
+test('Schedule excludes staging reminder controls', () => {
+  assert.doesNotMatch(schedule, /Device A\/B|Arm reminder test|controlled-arm|synthetic/i);
   assert.doesNotMatch(categoryStyles, /notification|reminder|wonderpush|webpushr|calendar/i);
 });

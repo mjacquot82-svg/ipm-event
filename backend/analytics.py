@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 import json
 from typing import Any, Mapping, Optional, Protocol
-from uuid import UUID
+from uuid import UUID, uuid5, NAMESPACE_URL
 from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -220,6 +220,13 @@ EVENT_CATALOG: dict[str, dict[str, PropertyRule]] = {
         **COMMON_NAVIGATION,
         **COMMON_LOAD,
     },
+    "notification_origin_visit": {
+        "navigation_id": ID,
+        "delivery_id": ID,
+        "announcement_id": ID,
+        "destination": rule(str, required=True, max_length=128),
+        **COMMON_NAVIGATION,
+    },
     "announcement_link_clicked": {
         "announcement_id": ID,
         "destination_id": ID,
@@ -324,6 +331,8 @@ class MongoAnalyticsRepository:
         self.retention = timedelta(days=retention_days)
 
     async def ensure_indexes(self) -> None:
+        await self.db.notification_origin_visits.create_index(
+            [("eventScope", ASCENDING), ("deliveryId", ASCENDING)], name="notification_visits_delivery")
         await self.db.analytics_visitors.create_index(
             [("eventScope", ASCENDING), ("visitorId", ASCENDING)], unique=True,
             name="analytics_visitor_scope_unique",
@@ -383,11 +392,28 @@ class MongoAnalyticsRepository:
             }},
             upsert=True,
         )
+        inserted = True
         try:
             await self.db.analytics_events.insert_one(document)
-            return True
         except DuplicateKeyError:
-            return False
+            inserted = False
+        if document.get("eventName") == "notification_origin_visit":
+            # Durable minimal dedup ledger: no visitor, session, device, or capability.
+            # Retry repairs a failure between the event write and this idempotent upsert.
+            await self.db.notification_origin_visits.update_one(
+                {"_id": document["clientEventId"]}, {"$setOnInsert": {
+                    "eventScope": ANALYTICS_EVENT_SCOPE,
+                    "deliveryId": document["properties"]["delivery_id"],
+                    "createdAt": document["receivedAt"],
+                }}, upsert=True)
+        return inserted
+
+    async def notification_visit_counts(self, delivery_ids):
+        rows = await self.db.notification_origin_visits.aggregate([
+            {"$match": {"eventScope": ANALYTICS_EVENT_SCOPE, "deliveryId": {"$in": delivery_ids}}},
+            {"$group": {"_id": "$deliveryId", "count": {"$sum": 1}}},
+        ]).to_list(length=None)
+        return {row["_id"]: row["count"] for row in rows}
 
     async def touch_visitor(self, *, visitor_id: str, received_at: datetime) -> tuple[bool, int]:
         existing = await self.db.analytics_visitors.find_one(
@@ -451,7 +477,8 @@ def _event_document(*, visitor_id: UUID, session_id: UUID, event: AnalyticsEvent
         "eventScope": ANALYTICS_EVENT_SCOPE,
         "visitorId": str(visitor_id),
         "sessionId": str(session_id),
-        "clientEventId": str(event.clientEventId),
+        "clientEventId": (str(uuid5(NAMESPACE_URL, f"ipm-notification:{event.properties.get('delivery_id')}:{event.properties.get('navigation_id')}"))
+                          if event.eventName == "notification_origin_visit" else str(event.clientEventId)),
         "eventName": event.eventName,
         "properties": validate_event(event.eventName, event.properties),
         "clientOccurredAt": event.occurredAt,

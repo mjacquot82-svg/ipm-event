@@ -1,3 +1,6 @@
+import { ParadeRouteOverlay, ParadeRouteControls } from './ParadeRouteOverlay';
+import type { ParadeRouteId } from '../config/tentedCityParadeRoutes';
+import { useMapEducationAnchor, MapEducationHelpButton } from './MapEducation';
 import { desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import { EXACT_MAP_UNAVAILABLE, hasTrustedMapGeometry } from '../config/mapAvailability';
@@ -14,7 +17,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import colors from '../theme/colors';
 import { tentedCityVendors } from '../data/tentedCityVendors';
-import { tentedCityVenues } from '../config/tentedCityVenues';
 import type { Rect, TentedCityPlace } from '../config/tentedCityTypes';
 import { findTentedCityPlace, findTentedCityPlaceByIdentity, placeRect, placeTitle } from '../config/tentedCitySearch';
 import { searchEventMap, type EventMapHit } from '../config/mapSearch';
@@ -26,7 +28,6 @@ import {
   findSemanticAreaForVendor, findSemanticAreaForGeometryArea, findSemanticAreaForLocation, semanticAreaRect, TENTED_CITY_SEMANTIC_AREAS,
   type SemanticMapArea,
 } from '../config/tentedCitySemanticMap';
-import { getScheduleData, ScheduleEvent } from '../services/spreadsheetDataService';
 import {
   BOOTH_DIVIDER_VISIBLE_SCALE, flyToRect,
 } from '../config/tentedCityCamera';
@@ -69,23 +70,21 @@ function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, t
   </View>;
 }
 
-type FilterId = 'all' | 'food' | 'stages' | 'vendors';
-const FILTERS: { id: FilterId; label: string }[] = [
-  { id: 'all', label: 'All' }, { id: 'vendors', label: 'Vendors' }, { id: 'food', label: 'Food' }, { id: 'stages', label: 'Stages' },
-];
-
 export default function TentedCityMap({
-  initialQuery = '', initialVendorName = '', initialVendorLocation = '', initialVendorType = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds, hideModeSelector = false,
+  initialQuery = '', initialEventTitle, initialEventId, initialVendorName = '', initialVendorLocation = '', initialVendorType = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds, hideModeSelector = false,
 }: {
-  initialQuery?: string | null; initialVendorName?: string | null; initialVendorLocation?: string | null; initialVendorType?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: (location?: string) => void; hideModeSelector?: boolean;
+  initialEventTitle?: string; initialEventId?: string; initialQuery?: string | null; initialVendorName?: string | null; initialVendorLocation?: string | null; initialVendorType?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: (location?: string) => void; hideModeSelector?: boolean;
 }) {
+  const educationSearchAnchor = useMapEducationAnchor('tented-search');
+  const educationResetAnchor = useMapEducationAnchor('tented-reset');
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [selected, setSelected] = useState<TentedCityPlace | null>(null);
   const [selectedSemanticArea, setSelectedSemanticArea] = useState<SemanticMapArea | null>(null);
   const [selectedBoothId, setSelectedBoothId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterId>('all');
-  const [events, setEvents] = useState<ScheduleEvent[]>([]);
+  const [paradeRoute, setParadeRoute] = useState<ParadeRouteId | null>(null);
+  const [eventSelectionTitle, setEventSelectionTitle] = useState<string | null>(null);
+  const [selectionCardHeight, setSelectionCardHeight] = useState(120);
   const [unavailable, setUnavailable] = useState(Boolean(mapUnavailable));
   const [unmappedInitialLocation, setUnmappedInitialLocation] = useState(false);
   const [verify1A, setVerify1A] = useState(Boolean(verify1AProp));
@@ -124,12 +123,6 @@ export default function TentedCityMap({
     originX.value = layer.left; originY.value = layer.top;
   }, [viewport.width, viewport.height, mapSize.width, mapSize.height, layer.left, layer.top]);
 
-  useEffect(() => {
-    let alive = true;
-    void getScheduleData({ preferCache: true }).then((result) => { if (alive) setEvents(result.data.events || []); }).catch(() => {});
-    return () => { alive = false; };
-  }, []);
-
   const applyFocus = (rect: Rect | null | undefined, mild = false, reservedBottom = TAB_BAR_HEIGHT) => {
     if (!rect || !viewport.width || !mapSize.width) return;
     const cam = flyToRect({
@@ -148,6 +141,7 @@ export default function TentedCityMap({
   };
 
   const resetMap = () => {
+    setEventSelectionTitle(null);
     setSelected(null);
     setSelectedSemanticArea(null);
     setSelectedBoothId(null);
@@ -159,7 +153,8 @@ export default function TentedCityMap({
     resetView();
   };
 
-  const selectPlace = (place: TentedCityPlace, fromQuery?: string) => {
+  const selectPlace = (place: TentedCityPlace, fromQuery?: string, eventTitle?: string) => {
+    setEventSelectionTitle(eventTitle || null);
     setUnmappedInitialLocation(false);
     setSelected(place);
     const footprint = place.kind === 'vendor' ? footprintForVendor(place.vendor) : null;
@@ -199,7 +194,8 @@ export default function TentedCityMap({
     selectPlace(hit.place);
   };
 
-  const selectSemanticArea = (area: SemanticMapArea) => {
+  const selectSemanticArea = (area: SemanticMapArea, eventTitle?: string) => {
+    setEventSelectionTitle(eventTitle || null);
     setUnmappedInitialLocation(false);
     setSelectedSemanticArea(area);
     setSelectedBoothId(null);
@@ -211,6 +207,7 @@ export default function TentedCityMap({
   };
 
   const selectIndividualBooth = (booth: TentedCityIndividualBooth) => {
+    setEventSelectionTitle(null);
     setSelectedBoothId(booth.semanticId);
     setSelected(null);
     const parent = AREA_BY_LABEL.get(booth.parentRangeLabel);
@@ -222,6 +219,7 @@ export default function TentedCityMap({
   };
 
   const clearSelection = () => {
+    setEventSelectionTitle(null);
     setSelected(null); setSelectedSemanticArea(null); setSelectedBoothId(null); setQuery(''); setFocused(false); setUnavailable(false); setUnmappedInitialLocation(false); Keyboard.dismiss(); resetView();
   };
 
@@ -229,13 +227,14 @@ export default function TentedCityMap({
   useEffect(() => { setVerify1A(Boolean(verify1AProp)); }, [verify1AProp]);
   useEffect(() => {
     setUnmappedInitialLocation(false);
+    setEventSelectionTitle(initialEventTitle || null);
     if (mapUnavailable || !initialQuery) return;
     const place = initialVendorName && initialVendorLocation
       ? findTentedCityPlaceByIdentity(initialVendorName, initialVendorLocation, tentedCityVendors, initialVendorType?.toLowerCase())
       : findTentedCityPlace(initialQuery, tentedCityVendors);
     if (!place) {
       const semanticArea = findSemanticAreaForLocation(initialQuery);
-      if (semanticArea) selectSemanticArea(semanticArea);
+      if (semanticArea) selectSemanticArea(semanticArea, initialEventTitle);
       else {
         setSelected(null);
         setSelectedSemanticArea(null);
@@ -248,13 +247,13 @@ export default function TentedCityMap({
     if (exactInitialPlace && (place.kind !== 'vendor' || place.vendor.name !== initialQuery)) {
       const semanticArea = findSemanticAreaForLocation(initialQuery);
       if (semanticArea) {
-        selectSemanticArea(semanticArea);
+        selectSemanticArea(semanticArea, initialEventTitle);
         return;
       }
       if (place.kind === 'vendor' && place.vendor.locationLabel
         && place.vendor.locationLabel.replace(/[^A-Za-z0-9]+/g, '').toUpperCase()
           === initialQuery.replace(/[^A-Za-z0-9]+/g, '').toUpperCase()) {
-        selectPlace(place, placeTitle(place));
+        selectPlace(place, placeTitle(place), initialEventTitle);
       }
       return;
     }
@@ -262,12 +261,12 @@ export default function TentedCityMap({
     // Only treat as unmapped when no usable rect (own or parent) exists.
     if (place.kind === 'stage' && !placeRect(place)) {
       // Keep the venue identity visible, with the generic unavailable message.
-      selectPlace(place, placeTitle(place));
+      selectPlace(place, placeTitle(place), initialEventTitle);
       return;
     }
-    selectPlace(place, placeTitle(place));
+    selectPlace(place, placeTitle(place), initialEventTitle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuery, initialVendorName, initialVendorLocation, initialVendorType, mapUnavailable, exactInitialPlace, viewport.width]);
+  }, [initialQuery, initialEventTitle, initialEventId, initialVendorName, initialVendorLocation, initialVendorType, mapUnavailable, exactInitialPlace, viewport.width]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return undefined;
@@ -277,32 +276,9 @@ export default function TentedCityMap({
   }, [viewport.width, viewport.height, cam]);
 
   const results = useMemo(
-    () => (focused || query.trim() ? searchEventMap(query, tentedCityVendors, filter) : []),
-    [query, filter, focused],
+    () => (focused || query.trim() ? searchEventMap(query, tentedCityVendors) : []),
+    [query, focused],
   );
-  const stageEvents = useMemo(() => {
-    if (selected?.kind !== 'stage') return [];
-    const names = new Set(selected.venue.names.map((n) => n.toLowerCase().replace(/[\u2019']/g, "'").replace(/\s+/g, ' ').trim()));
-    return events.filter((e) => e.location_name && names.has(e.location_name.toLowerCase().replace(/[\u2019']/g, "'").replace(/\s+/g, ' ').trim())).slice(0, 4);
-  }, [events, selected]);
-  const filterDots = useMemo(() => {
-    if (filter === 'food') {
-      return tentedCityVendors.flatMap((v) => {
-        if (v.category !== 'food') return [];
-        const fp = footprintForVendor(v);
-        if (!fp) return [];
-        return [{ key: v.name, rect: fp.rect, place: { kind: 'vendor' as const, vendor: v } }];
-      });
-    }
-    if (filter === 'stages') {
-      // Keep only stages with their own rect. Parent-fallback stages (MNP Lifestyles
-      // children) stay omitted so three dots do not stack on the same parent footprint.
-      // Find-on-Map still works via placeRect parent fallback.
-      return tentedCityVenues.filter((v) => v.kind === 'stage' && v.rect).map((v) => ({ key: v.id, rect: v.rect!, place: { kind: 'stage' as const, venue: v } }));
-    }
-    return [];
-  }, [filter]);
-
   const composed = useMemo(() => createMapNativeGestures(cam), [cam]);
   const mapStyle = useAnimatedStyle(() => ({ transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }] }));
   const boothDividerStyle = useAnimatedStyle(() => ({
@@ -349,7 +325,7 @@ export default function TentedCityMap({
       || parentOnlySemanticGeometry?.rect
       || null;
   const selectedWithoutGeometry = selected && !hasTrustedMapGeometry(selected);
-  const selectedTitle = selected ? placeTitle(selected) : selectedSemanticArea?.label || '';
+  const selectedTitle = eventSelectionTitle || (selected ? placeTitle(selected) : selectedSemanticArea?.label || '');
   const selectedBooth = selected?.kind === 'vendor' ? selected.vendor.locationLabel : selectedBoothId ? TENTED_CITY_INDIVIDUAL_BOOTHS.find((booth) => booth.semanticId === selectedBoothId)?.humanLabel || '' : '';
   const selectedMeta = selected?.kind === 'vendor'
     ? `${selected.vendor.category}${selected.vendor.tent ? `  \u00b7  ${selected.vendor.tent}` : ''}${vendorFootprint ? '' : '  \u00b7  map location not available'}`
@@ -455,9 +431,6 @@ export default function TentedCityMap({
             ) : null}
           </React.Fragment>;
         })}
-        {filterDots.map((dot) => (
-          <TouchableOpacity key={dot.key} activeOpacity={0.8} onPress={() => selectPlace(dot.place)} style={[styles.filterDot, { left: `${dot.rect.x + dot.rect.w / 2}%`, top: `${dot.rect.y + dot.rect.h / 2}%` }]} />
-        ))}
         {verify1A ? TENTED_CITY_VERIFY_PARENTS.map((parent) => (
           <View key={parent.id} pointerEvents="none" style={[styles.verifyParent, { left: `${parent.rect.x}%`, top: `${parent.rect.y}%`, width: `${parent.rect.w}%`, height: `${parent.rect.h}%` }]}>
             <Text style={styles.verifyParentLabel}>{parent.label}</Text>
@@ -513,6 +486,7 @@ export default function TentedCityMap({
             <View pointerEvents="none" style={styles.selectedStageInnerEdge} />
           </View>
         ) : null}
+        <ParadeRouteOverlay routeId={paradeRoute} />
       </Animated.View>
     </Animated.View>
   );
@@ -558,15 +532,11 @@ export default function TentedCityMap({
         )}
         <View style={styles.searchCard}>
           <Feather name="search" size={18} color="#6B7280" />
-          <TextInput value={query} onChangeText={(text) => { setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) { setSelected(null); setSelectedBoothId(null); setSelectedSemanticArea(null); } }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, stage, or place" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectHit(results[0]); }} />
+          <TextInput ref={educationSearchAnchor} value={query} onChangeText={(text) => { setEventSelectionTitle(null); setQuery(text); setUnmappedInitialLocation(false); setFocused(true); if (!text.trim()) { setSelected(null); setSelectedBoothId(null); setSelectedSemanticArea(null); } }} onFocus={() => setFocused(true)} placeholder="Find a vendor, booth, stage, or place" placeholderTextColor="#9CA3AF" style={styles.searchInput} autoCapitalize="none" autoCorrect={false} returnKeyType="search" onSubmitEditing={() => { if (results[0]) selectHit(results[0]); }} />
           {query ? <TouchableOpacity onPress={clearSelection} hitSlop={8} accessibilityLabel="Clear search"><Feather name="x" size={18} color="#6B7280" /></TouchableOpacity> : null}
-        </View>
-        <View style={styles.filters}>
-          {FILTERS.map((item) => {
-            const on = filter === item.id;
-            return <TouchableOpacity key={item.id} style={[styles.chip, on && styles.chipOn]} onPress={() => setFilter(item.id)}><Text style={[styles.chipText, on && styles.chipTextOn]}>{item.label}</Text></TouchableOpacity>;
-          })}
-        </View>
+        <MapEducationHelpButton mode="tented" />
+          </View>
+        <ParadeRouteControls value={paradeRoute} onChange={setParadeRoute} />
         {verify1A ? <View style={styles.verifyBanner} pointerEvents="none"><Text style={styles.verifyBannerText}>Tented City geometry overlay on. Five taps on Tented City to hide.</Text></View> : null}
         {focused && query.trim().length > 0 ? (
           <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
@@ -580,8 +550,8 @@ export default function TentedCityMap({
           </ScrollView>
         ) : null}
       </View>
-      <View style={[styles.fabCol, desktop && desktopMapStyles.fit]}>
-        <TouchableOpacity style={styles.fab} onPress={resetMap} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
+      <View style={[styles.fabCol, desktop && desktopMapStyles.fit, eventSelectionTitle && !desktop ? { bottom: TAB_BAR_HEIGHT + INFO_CARD_GAP + selectionCardHeight + 8 } : null]}>
+        <TouchableOpacity ref={educationResetAnchor} testID="tented-map-reset" style={styles.fab} onPress={resetMap} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
       </View>
       {unmappedInitialLocation ? (
         <View style={[styles.infoCard, desktop && desktopMapStyles.info]} accessibilityRole="alert">
@@ -594,21 +564,21 @@ export default function TentedCityMap({
           </View>
         </View>
       ) : selected || selectedSemanticArea ? (
-        <View style={[styles.infoCard, desktop && desktopMapStyles.info]}>
+        <View testID="map-selection-card" onLayout={(e) => setSelectionCardHeight(e.nativeEvent.layout.height)} style={[styles.infoCard, desktop && desktopMapStyles.info]}>
           <View style={styles.infoHeader}>
             <View style={{ flex: 1, paddingRight: 8 }}>
-              <Text style={styles.infoTitle} numberOfLines={2}>{selectedTitle}</Text>
+              <Text testID="map-selection-title" style={styles.infoTitle} numberOfLines={2}>{selectedTitle}</Text>
+              {eventSelectionTitle ? <Text style={styles.infoBooth}>{selected ? placeTitle(selected) : selectedSemanticArea?.label}</Text> : null}
               {selectedBooth ? <Text style={styles.infoBooth} numberOfLines={1}>{selectedWithoutGeometry ? `Location: ${selectedBooth}` : selectedBooth}</Text> : null}
               {selectedWithoutGeometry ? <Text style={styles.infoMeta}>{EXACT_MAP_UNAVAILABLE}</Text> : null}
               {selectedSemanticArea && !selected ? <Text style={styles.infoBooth} numberOfLines={2}>{selectedSemanticArea.category}</Text> : null}
-              {selectedMeta ? <Text style={styles.infoMeta} numberOfLines={1}>{selectedMeta}</Text> : null}
+              {!eventSelectionTitle && selectedMeta ? <Text style={styles.infoMeta} numberOfLines={1}>{selectedMeta}</Text> : null}
             </View>
             <TouchableOpacity onPress={clearSelection} hitSlop={10} accessibilityLabel="Dismiss"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity>
           </View>
-          {stageEvents.length > 0 ? <View style={styles.events}>{stageEvents.map((event) => <Text key={event.id} style={styles.eventLine} numberOfLines={1}>{event.start_time ? `${event.start_time}  \u00b7  ` : ''}{event.title}</Text>)}</View> : null}
         </View>
       ) : unavailable ? (
-        <View style={[styles.infoCard, desktop && desktopMapStyles.info]}>
+        <View testID="map-selection-card" onLayout={(e) => setSelectionCardHeight(e.nativeEvent.layout.height)} style={[styles.infoCard, desktop && desktopMapStyles.info]}>
           <View style={styles.infoHeader}>
             <View style={{ flex: 1, paddingRight: 8 }}><Text style={styles.infoTitle}>Map location not available</Text></View>
             <TouchableOpacity onPress={clearSelection} hitSlop={10} accessibilityLabel="Dismiss"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity>
@@ -650,7 +620,6 @@ const styles = StyleSheet.create({
     borderWidth: SELECTED_STAGE_INNER_BORDER_WIDTH,
     borderColor: SELECTED_STAGE_INNER_BORDER,
   },
-  filterDot: { position: 'absolute', width: 12, height: 12, marginLeft: -6, marginTop: -6, borderRadius: 6, backgroundColor: colors.accent, borderWidth: 2, borderColor: '#FFFFFF' },
   topOverlayWithParentSelector: { paddingTop: 52 },
   verifyTapTarget: { height: 44, alignSelf: 'stretch' },
   topOverlay: { position: 'absolute', top: 8, left: 12, right: 12, zIndex: 20 },
@@ -660,12 +629,7 @@ const styles = StyleSheet.create({
   modeBtnText: { fontSize: 13, fontWeight: '700', color: '#6B7280' },
   modeBtnTextOn: { color: colors.primary },
   searchCard: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-  searchInput: { flex: 1, fontSize: 16, color: '#111827', paddingVertical: 10 },
-  filters: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  chip: { minHeight: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.92)', justifyContent: 'center', borderWidth: 1, borderColor: '#E5E7EB' },
-  chipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 13, fontWeight: '700', color: '#4B5563' },
-  chipTextOn: { color: '#FFFFFF' },
+  searchInput: { flex: 1, minWidth: 0, fontSize: 16, color: '#111827', paddingVertical: 10 },
   results: { marginTop: 6, backgroundColor: '#FFFFFF', borderRadius: 14, overflow: 'hidden', maxHeight: 260 },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E7EB', minHeight: 48 },
   resultName: { fontSize: 15, fontWeight: '700', color: '#111827' },

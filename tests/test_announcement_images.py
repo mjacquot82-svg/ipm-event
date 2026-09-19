@@ -143,7 +143,7 @@ def test_text_only_notify_unchanged(monkeypatch):
         "username": "owner", "role": "Owner", "event_id": "event-a",
     }))
     assert "image_url" not in (provider.everyone_options or {})
-    assert result.target_url.endswith("/announcements/announcement-1")
+    assert result.target_url.startswith("https://theipm.ca/announcements/announcement-1?notification_ref=")
     assert deliveries.rows[0]["notification_title"].startswith("IPM")
 
 
@@ -249,7 +249,7 @@ def test_deep_link_and_targeting_preserved_with_image(monkeypatch):
     result = asyncio.run(server.notify_announcement("announcement-1", "everyone", {
         "username": "owner", "role": "Owner", "event_id": "event-a",
     }))
-    assert result.target_url == "https://theipm.ca/announcements/announcement-1"
+    assert result.target_url.startswith("https://theipm.ca/announcements/announcement-1?notification_ref=")
     assert deliveries.rows[0]["target_url"] == result.target_url
     assert provider.everyone_options["image_url"] == SAMPLE_IMAGE["url"]
 

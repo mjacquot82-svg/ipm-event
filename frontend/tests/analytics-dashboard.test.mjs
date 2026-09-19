@@ -15,7 +15,7 @@ function response(body, status = 200) {
 test('Analytics is enabled inside authenticated organizer navigation, not a public route', () => {
   assert.match(adminSource, /key: 'analytics', label: 'Analytics'/);
   assert.match(adminSource, /activeSection === 'analytics'/);
-  assert.match(adminSource, /<AnalyticsDashboard onAuthenticationExpired=/);
+  assert.match(adminSource, /<AnalyticsDashboard[^\n]*onAuthenticationExpired=/);
   assert.doesNotMatch(dashboardSource, /export default function.*public|\/analytics\/stats/);
 });
 
@@ -99,4 +99,41 @@ test('responsive-safe layouts use wrapping, compact stacking, collapsible sectio
   assert.match(dashboardSource, /splitCompact: \{ flexDirection: 'column' \}/);
   assert.match(dashboardSource, /accessibilityState=\{\{ expanded: open \}\}/);
   assert.match(dashboardSource, /<ScrollView horizontal[^>]*><View style=\{styles\.comparisonTable\}/);
+});
+
+test('notification overview reads separate aggregate-only endpoints, without provider refresh', async () => {
+ const ts=await import('typescript');
+ const compiled=ts.transpileModule(serviceSource.replace("'./adminAuthService'",JSON.stringify(new URL('../src/services/adminAuthService.ts',import.meta.url).href)),{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText;
+ const {getNotificationSummary,getReminderSummary}=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
+ const calls=[];globalThis.fetch=async(url,init)=>{calls.push({url:String(url),init});return response({});};
+ await getNotificationSummary();await getReminderSummary();
+ assert.ok(calls[0].url.endsWith('/api/admin/analytics/notification-summary'));
+ assert.ok(calls[1].url.endsWith('/api/admin/analytics/reminders'));
+ assert.ok(calls.every(({init})=>!init.method || init.method==='GET'));
+ assert.match(dashboardSource,/independent of the engagement date filter/);
+ assert.match(dashboardSource,/<NotificationOverview/);
+});
+
+test('organizers request only the health summary and diagnostics are Owner-only and lazy', async () => {
+ assert.match(serviceSource,/notification-health\?view=summary/);
+ assert.match(dashboardSource,/getNotificationHealthSummary\(\), getNotificationSummary\(\)/);
+ assert.match(adminSource,/canViewNotificationDiagnostics=\{currentUser\?\.role === 'Owner'\}/);
+ assert.match(dashboardSource,/canViewNotificationDiagnostics = false/);
+ assert.match(dashboardSource,/canViewNotificationDiagnostics && <Section title="Advanced notification diagnostics"/);
+ assert.doesNotMatch(dashboardSource,/<Section title="Advanced notification diagnostics"[^>]*initiallyOpen/);
+ assert.match(dashboardSource,/ready at last check/);
+ assert.match(dashboardSource,/Readiness does not confirm delivery/);
+ assert.match(dashboardSource,/<NotificationHealthDiagnostics onAuthenticationExpired=/);
+});
+
+
+test('older full-health payloads cannot masquerade as the organizer summary during rollout', async () => {
+ const ts=await import('typescript');
+ const compiled=ts.transpileModule(serviceSource.replace("'./adminAuthService'",JSON.stringify(new URL('../src/services/adminAuthService.ts',import.meta.url).href)),{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText;
+ const {getNotificationHealthSummary}=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
+ globalThis.fetch=async()=>response({provider_ready:3,circuit:'CLOSED'});
+ await assert.rejects(getNotificationHealthSummary(),/temporarily unavailable/);
+ const summary={ready_devices:3,readiness_outdated:false,status:'healthy',message:'No known notification problems.',snapshot_at:'2026-09-18T23:00:00Z'};
+ globalThis.fetch=async()=>response(summary);
+ assert.deepEqual(await getNotificationHealthSummary(),summary);
 });

@@ -127,3 +127,32 @@ export type NotificationHealthResponse = {
 export function getNotificationHealth() {
   return adminRequest<NotificationHealthResponse>('/api/admin/analytics/notification-health');
 }
+
+export type CoveredNotificationMetric = { value: number | null; covered_sends: number; total_sends: number };
+export type NotificationSummaryResponse = {
+  scope: 'all_time'; snapshot_at: string; accepted_sends: number; failed_requests: number; pending_requests: number;
+  metrics: Record<'targeted_devices' | 'receipts' | 'opens' | 'visits' | 'failures', CoveredNotificationMetric>;
+  latest_statistics_check: string | null; rates: null;
+  recent: { title: string; requested_at: string | null; provider_accepted: boolean }[];
+};
+export type ReminderSummaryResponse = { active_interests: number | null; provider_accepted: number | null; provider_failed: number | null; delivery_unknown: number | null };
+export function getNotificationSummary() {
+  return adminRequest<NotificationSummaryResponse>('/api/admin/analytics/notification-summary');
+}
+export function getReminderSummary() {
+  return adminRequest<ReminderSummaryResponse>('/api/admin/analytics/reminders');
+}
+
+export type NotificationHealthSummary = {
+  ready_devices: number; readiness_outdated: boolean;
+  status: 'healthy' | 'attention' | 'incomplete' | 'empty'; message: string; snapshot_at: string;
+};
+export function getNotificationHealthSummary() {
+  return adminRequest<NotificationHealthSummary>('/api/admin/analytics/notification-health?view=summary').then((result) => {
+    // During a staggered rollout an older backend may ignore the summary selector.
+    if (!Number.isInteger(result?.ready_devices) || result.ready_devices < 0 || typeof result.message !== 'string') {
+      throw new Error('Notification health summary is temporarily unavailable.');
+    }
+    return result;
+  });
+}

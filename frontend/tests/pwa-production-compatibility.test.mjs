@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import vm from 'node:vm';
 import test from 'node:test';
-const base='e93ead504d8734a0b35abce97bce59a36988d572';
+const base='5c41f907821cf11be9c3140d8b8c275c0f9b5c29';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const before=p=>execFileSync('git',['show',`${base}:frontend/${p}`],{encoding:'utf8'});
 const worker=read('public/webpushr-sw.js');
 test('WonderPush source, registration, permission and subscription code remain byte-identical',()=>{
- for(const p of ['src/services/wonderPushService.web.ts','src/services/wonderPushService.ts','src/services/notificationRegistration.web.ts','src/services/subscriptionReconciliation.web.ts','src/services/notificationDeepLink.web.ts'])assert.equal(read(p),before(p),p);
+ for(const p of ['src/services/wonderPushService.web.ts','src/services/wonderPushService.ts','src/services/subscriptionReconciliation.web.ts','src/services/notificationDeepLink.web.ts'])assert.equal(read(p),before(p),p);
  assert.equal(worker.split('// Generated after')[0],before('public/webpushr-sw.js').split('// Generated after')[0]);
  assert.doesNotMatch(worker,/addEventListener\(['"](?:push|notificationclick)/);
 });
@@ -16,11 +16,9 @@ test('currentLaunch and fetch handling identical to production',()=>{
  const extract=s=>s.slice(s.indexOf('const IPM_LAUNCH_TIMEOUT_MS'),s.indexOf('// Activation is requested')<0?undefined:s.indexOf('// Activation is requested')).trim();
  assert.equal(extract(worker),extract(before('public/webpushr-sw.js')));
 });
-test('production notification and install UI gains holds only',()=>{
- let s=read('src/components/NotificationOptIn.tsx').replace("import { holdPwaUpdate } from '../services/pwaUpdateService';\n",'').replace("  useEffect(() => {\n    if (expanded || working || setupState === 'pending') return holdPwaUpdate();\n  }, [expanded, working, setupState]);\n",'').replace('    const releaseUpdate = holdPwaUpdate();\n','').replace('      releaseUpdate();\n','');
- assert.equal(s,before('src/components/NotificationOptIn.tsx'));
- s=read('src/components/PWAInstallPrompt.tsx').replace("import { holdPwaUpdate } from '../services/pwaUpdateService';\n",'').replace('    return holdPwaUpdate();\n','');
- assert.equal(s,before('src/components/PWAInstallPrompt.tsx'));
+test('notification registration and UI include only the reviewed PR39 generic delta',()=>{
+ for(const p of ['src/services/notificationRegistration.web.ts','src/components/NotificationOptIn.tsx'])assert.equal(read(p),execFileSync('git',['show',`bfa5d76342b446c16f06bacec1f6f1853cc85e33:frontend/${p}`],{encoding:'utf8'}));
+ assert.equal(read('src/components/PWAInstallPrompt.tsx'),before('src/components/PWAInstallPrompt.tsx'));
 });
 test('approved updater mechanism is identical and does not depend on A/B marker',()=>{
  for(const p of ['src/services/pwaUpdateService.web.ts','src/services/pwaUpdateService.ts','src/components/PWAUpdatePrompt.tsx'])assert.equal(read(p),execFileSync('git',['show',`cdc6ed64:frontend/${p}`],{encoding:'utf8'}));

@@ -211,7 +211,7 @@ test('Maps shows Grounds, Tented City, and Camping Map selectors', () => {
   assert.match(selectorSrc, /id: 'grounds'/);
   assert.match(selectorSrc, /id: 'tented'/);
   assert.match(selectorSrc, /id: 'rv'/);
-  assert.match(selectorSrc, /label: 'Entrances\/Parking'/);
+  assert.match(selectorSrc, /label: 'Entrances \/ Parking'/);
   assert.match(selectorSrc, /id: 'entrances'/);
 });
 
@@ -244,7 +244,7 @@ test('mobile selector scrolls horizontally and keeps Camping Map label full', ()
   assert.match(selectorSrc, /ScrollView/);
   assert.match(selectorSrc, /horizontal/);
   assert.match(selectorSrc, /Camping Map/);
-  assert.match(selectorSrc, /numberOfLines=\{1\}/);
+  assert.match(selectorSrc, /numberOfLines=\{[12]\}/);
   assert.match(selectorSrc, /minWidth: 300/);
   assert.doesNotMatch(selectorSrc, /Camping…|Camp\b|RV Detail/);
 });

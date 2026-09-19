@@ -95,3 +95,24 @@ async def health_report(repository, *, now=None):
     project = await repository.client.request('GET', '/notification_reconciliation_project',
         params={'select': 'open_until', 'singleton': 'eq.true', 'limit': '1'})
     return build_health(rows, project[0] if project else None, now=now)
+
+
+def organizer_health_summary(health):
+    """Presentation of existing counts, without inventing a distinct-device issue count."""
+    if health['circuit'] == 'OPEN' or any(health[key] > 0 for key in (
+        'repairable_mismatch', 'key_mismatch', 'uncertain', 'current_check_failures', 'expired_leases'
+    )):
+        status, message = 'attention', 'Notification health needs an administrator’s attention.'
+    elif health['circuit'] == 'UNKNOWN':
+        status, message = 'incomplete', 'Notification health could not be fully confirmed.'
+    elif health['registrations'] == 0:
+        status, message = 'empty', 'No notification devices registered yet.'
+    elif any(health[key] > 0 for key in ('not_yet_checked', 'other_checked', 'provider_ready_stale', 'verified_expired')):
+        status, message = 'incomplete', 'Some devices still need an up-to-date check.'
+    else:
+        status, message = 'healthy', 'No known notification problems.'
+    return {
+        'ready_devices': health['provider_ready'],
+        'readiness_outdated': health['provider_ready_stale'] > 0,
+        'status': status, 'message': message, 'snapshot_at': health['snapshot_at'],
+    }

@@ -1,9 +1,12 @@
+import { VendorMapArrival } from '../../src/components/VendorTutorial';
+import EntrancesParkingMap from '../../src/components/EntrancesParkingMap';
+import { MapEducationAnchors, MapEducationMode, MapEducationReplay, MapsEducation, ScheduleMapArrival } from '../../src/components/MapEducation';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { desktopMapStyles, useDesktopMapWorkspace } from '../../src/theme/desktopMapWorkspace';
 import { View, StyleSheet, StatusBar } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import GroundsMap from '../../src/components/GroundsMap';
 import TentedCityMap from '../../src/components/TentedCityMap';
 import RvParkDetailMap from '../../src/components/RvParkDetailMap';
@@ -14,7 +17,6 @@ import { mapLocations } from '../../src/config/mapLocations';
 import { findTentedCityPlace, resolveMapTypeForLocation } from '../../src/config/tentedCitySearch';
 import { tentedCityVendors } from '../../src/data/tentedCityVendors';
 import { resolveGroundsZone } from '../../src/config/groundsZones';
-import EntrancesParkingMap from '../../src/components/EntrancesParkingMap';
 
 function paramStr(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
@@ -42,11 +44,22 @@ function resolveInitialMode(args: {
 }
 
 export default function MapScreen() {
+  const anchors = useRef({});
+  const replay = useRef<(() => void) | null>(null);
+  return <MapEducationReplay.Provider value={replay}><MapEducationAnchors.Provider value={anchors}><MapContent /></MapEducationAnchors.Provider></MapEducationReplay.Provider>;
+}
+function MapContent() {
+  const router = useRouter();
   const params = useLocalSearchParams<{
     location?: string | string[];
     vendorName?: string | string[];
     vendorLocation?: string | string[];
     vendorType?: string | string[];
+    eventId?: string | string[];
+    scheduleWalkthrough?: string | string[];
+    vendorWalkthrough?: string | string[];
+    vendorTutorialName?: string | string[];
+    eventTitle?: string | string[];
     showOnly?: string | string[];
     source?: string | string[];
     mapStatus?: string | string[];
@@ -57,6 +70,8 @@ export default function MapScreen() {
   const vendorName = paramStr(params.vendorName);
   const vendorLocation = paramStr(params.vendorLocation);
   const source = paramStr(params.source);
+  const eventTitle = source === 'schedule' ? paramStr(params.eventTitle) : undefined;
+  const eventId = source === 'schedule' ? paramStr(params.eventId) : undefined;
   const mapStatus = paramStr(params.mapStatus);
   const verify1a = paramStr(params.verify1a);
   const mapType = paramStr(params.mapType);
@@ -83,6 +98,7 @@ export default function MapScreen() {
   const groundsDesktop = useDesktopMapWorkspace('grounds');
   const tentedDesktop = useDesktopMapWorkspace('tented');
   const rvDesktop = useDesktopMapWorkspace('rv');
+  const entrancesDesktop = useDesktopMapWorkspace('entrances');
   const [overrideLocation, setOverrideLocation] = useState<string | null>(null);
 
   // Tab navigators keep Map mounted — sync mode when schedule/vendors navigate with new params.
@@ -98,7 +114,7 @@ export default function MapScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <MapEducationMode.Provider value={mode}><View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <View
         style={[styles.tentedHost, tentedDesktop && desktopMapStyles.host, tentedDesktop, mode !== 'tented' && styles.tentedHostHidden]}
@@ -113,6 +129,8 @@ export default function MapScreen() {
           initialVendorLocation={vendorLocation}
           initialVendorType={paramStr(params.vendorType)}
           mapUnavailable={unavailable}
+          initialEventTitle={!overrideLocation ? eventTitle : undefined}
+          initialEventId={!overrideLocation ? eventId : undefined}
           exactInitialPlace={source === 'vendors' && !overrideLocation && !vendorName}
           verify1A={verify1A}
           onSwitchToGrounds={(loc) => {
@@ -134,6 +152,8 @@ export default function MapScreen() {
         <View style={[styles.grounds, groundsDesktop && desktopMapStyles.host, groundsDesktop]}>
           <GroundsMap
             highlightedLocation={overrideLocation || location || null}
+            initialEventTitle={!overrideLocation ? eventTitle : undefined}
+            initialEventId={!overrideLocation ? eventId : undefined}
             onSwitchToTented={(loc) => {
               if (loc) setOverrideLocation(loc);
               setMode('tented');
@@ -142,9 +162,13 @@ export default function MapScreen() {
           />
         </View>
       ) : null}
-      {mode === 'entrances' ? <View style={styles.entrances}><EntrancesParkingMap /></View> : null}
+      {mode === 'entrances' ? <View style={[styles.entrances, entrancesDesktop && desktopMapStyles.host, entrancesDesktop]}><EntrancesParkingMap /></View> : null}
       {selector}
-    </View>
+      <VendorMapArrival token={source === 'vendors' ? paramStr(params.vendorWalkthrough) : undefined} name={paramStr(params.vendorTutorialName)} onComplete={() => router.setParams({ vendorWalkthrough: undefined, vendorTutorialName: undefined })} />
+      <ScheduleMapArrival token={source === 'schedule' ? paramStr(params.scheduleWalkthrough) : undefined} title={eventTitle} onComplete={() => router.setParams({ scheduleWalkthrough: undefined })} />
+      {/* Existing destination params defer auto-onboarding for this visit, without changing routing or seen state. */}
+      <MapsEducation mode={mode} onShowMap={setMode} autoStart={!Boolean(location || paramStr(params.showOnly) === 'true' || unavailable || verify1A)} />
+    </View></MapEducationMode.Provider>
   );
 }
 

@@ -15,6 +15,11 @@ except ImportError:
         AnnouncementImageDeletePayload,
         AnnouncementImageStorage,
     )
+
+try:
+    from backend.notification_analytics import campaign_identity, refresh_statistics, has_attribution, valid_uuid, reminder_summary, read_reminder_ledger
+except ModuleNotFoundError:
+    from notification_analytics import campaign_identity, refresh_statistics, has_attribution, valid_uuid, reminder_summary, read_reminder_ledger
 from fastapi import FastAPI, APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from dotenv import load_dotenv
@@ -96,6 +101,7 @@ try:
         VendorService,
         WonderPushClient,
         WonderPushError,
+        normalize_wonderpush_statistics,
         WebpushrClient,
         WebpushrError,
     )
@@ -110,6 +116,7 @@ except ImportError:
         VendorService,
         WonderPushClient,
         WonderPushError,
+        normalize_wonderpush_statistics,
         WebpushrClient,
         WebpushrError,
     )
@@ -125,6 +132,19 @@ except ImportError:
         SupabaseNotificationRegistrationRepository,
         provider_readiness,
         public_status as public_notification_registration,
+    )
+
+try:
+    from backend.itinerary_reminders import (
+        ItineraryReminderEngine,
+        SupabaseItineraryReminderRepository,
+        public_status as public_itinerary_reminder_status,
+    )
+except ModuleNotFoundError:
+    from itinerary_reminders import (
+        ItineraryReminderEngine,
+        SupabaseItineraryReminderRepository,
+        public_status as public_itinerary_reminder_status,
     )
 
 
@@ -298,6 +318,12 @@ class ScheduleImportProblem(BaseModel):
     errors: List[str]
     values: Dict[str, str] = Field(default_factory=dict)
 
+class ItineraryStarsPayload(BaseModel):
+    schedule_ids: List[uuid.UUID]
+
+class ItineraryEnabledPayload(BaseModel):
+    enabled: bool
+
 class ScheduleImportRequest(BaseModel):
     rows: List[ScheduleImportRow]
     problems: List[ScheduleImportProblem] = Field(default_factory=list)
@@ -438,6 +464,7 @@ class NotificationDeliveryResponse(BaseModel):
     audience: Literal["test", "everyone"]
     provider: Literal["webpushr", "wonderpush"]
     provider_campaign_id: Optional[str] = None
+    provider_delivery_id: Optional[str] = None
     status: Literal["requested", "sent", "failed"]
     requested_by: str
     requested_at: datetime
@@ -446,6 +473,54 @@ class NotificationDeliveryResponse(BaseModel):
     target_url: str
     notification_title: str
     notification_message: str
+
+class NotificationAnalyticsResponse(BaseModel):
+    """Provider event counts and attributed visits; missing metrics are unavailable, not zero."""
+    audience: str
+    requested_at: Optional[datetime] = None
+    requested: bool
+    provider_accepted: Optional[bool] = None
+    targeted_devices: Optional[int] = None
+    sent_to_push_service: Optional[int] = None
+    provider_confirmed_receipts: Optional[int] = None
+    provider_failures: Optional[int] = None
+    notification_opens: Optional[int] = None
+    notification_origin_visits: Optional[int] = None
+    statistics_status: Optional[str] = None
+    statistics_refreshed_at: Optional[datetime] = None
+    known_deliverable_devices: Optional[int] = None
+
+class NotificationAdoptionResponse(BaseModel):
+    registered_devices: int
+    enabled_devices: int
+    deliverable_devices: int
+    stale_deliverable_devices: int
+    never_checked_devices: int
+    oldest_provider_check_at: Optional[datetime] = None
+    newest_provider_check_at: Optional[datetime] = None
+    snapshot_at: datetime
+
+class AnnouncementDeliveryStats(BaseModel):
+    requested_at: Optional[datetime] = None
+    notification_origin_visit_count: Optional[int] = None
+    announcement_id: str
+    status: Literal["requested", "sent", "failed"]
+    sent_at: Optional[datetime] = None
+    audience_device_count: Optional[int] = None
+    audience_count_basis: Optional[Literal["verified_deliverable_registrations"]] = None
+    audience_snapshot_at: Optional[datetime] = None
+    audience_stale_device_count: Optional[int] = None
+    provider_accepted: bool
+    provider_targeted_device_count: Optional[int] = None
+    provider_sent_count: Optional[int] = None
+    provider_confirmed_receipt_count: Optional[int] = None
+    provider_failure_count: Optional[int] = None
+    provider_open_count: Optional[int] = None
+    provider_statistics_status: Optional[str] = None
+    provider_statistics_refreshed_at: Optional[datetime] = None
+
+class AnnouncementDeliveryStatsResponse(BaseModel):
+    deliveries: List[AnnouncementDeliveryStats]
 
 SCHEDULE_TITLE_FIELDS = ("Name", "Title", "Event Title", "Event Name", "Activity", "Program")
 SCHEDULE_FIELD_ALIASES = {
@@ -795,6 +870,7 @@ async def get_public_vendors_from_google() -> VendorsResponse:
 
 
 event_service = EventService(DEFAULT_EVENT_ID)
+itinerary_reminder_repository = None
 if CONTENT_SOURCE == "supabase":
     if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
         raise RuntimeError(
@@ -851,6 +927,9 @@ if CONTENT_SOURCE == "supabase":
         event_slug=event_service.get_public_event_id(),
     )
     notification_registration_repository = SupabaseNotificationRegistrationRepository(
+        schedule_service.client, event_service.get_public_event_id()
+    )
+    itinerary_reminder_repository = SupabaseItineraryReminderRepository(
         schedule_service.client, event_service.get_public_event_id()
     )
 
@@ -1038,6 +1117,32 @@ def require_notification_registration_repository():
     if notification_registration_repository is None:
         raise HTTPException(status_code=503, detail="Notification registration is unavailable")
     return notification_registration_repository
+
+
+def require_itinerary_reminder_repository():
+    if itinerary_reminder_repository is None:
+        raise HTTPException(status_code=503, detail="Itinerary reminders require the Supabase content source")
+    return itinerary_reminder_repository
+
+
+def itinerary_device_headers(request: Request) -> tuple[str, str]:
+    installation_id = request.headers.get("X-WonderPush-Installation-Id", "").strip()
+    capability = (request.headers.get("X-Itinerary-Device-Capability", "") or request.headers.get("X-Notification-Device-Capability", "")).strip()
+    if not installation_id or len(installation_id) > 500:
+        raise HTTPException(status_code=400, detail="A WonderPush installation ID is required")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    return installation_id, capability
+
+
+async def authorize_itinerary_device(request: Request):
+    repository = require_itinerary_reminder_repository()
+    installation_id, capability = itinerary_device_headers(request)
+    try:
+        registration = await repository.authorize(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid itinerary device credentials") from exc
+    return repository, registration
 
 
 ANNOUNCEMENT_MAX_TTL_SECONDS = 72 * 60 * 60
@@ -1412,7 +1517,20 @@ async def analytics_session_end(data: AnalyticsSessionEndRequest):
 async def analytics_events(data: AnalyticsEventsRequest):
     """Validate and ingest a bounded batch of allowlisted attendee events."""
     try:
-        result = await ingest_analytics_events(require_analytics_repository(), data)
+        accepted_events = []
+        for event in data.events:
+            if event.eventName == "notification_origin_visit":
+                props = event.properties
+                if not all(valid_uuid(props.get(key)) for key in ("delivery_id", "announcement_id", "navigation_id")):
+                    continue
+                row = await require_notification_delivery_service().get_delivery(
+                    props["delivery_id"], event_id=event_service.get_public_event_id())
+                if not row or row.get("status") != "sent" or row.get("announcement_id") != props["announcement_id"] or not has_attribution(row):
+                    continue
+            accepted_events.append(event)
+        if not accepted_events:
+            return {"eventScope": ANALYTICS_EVENT_SCOPE, "accepted": 0, "duplicates": 0}
+        result = await ingest_analytics_events(require_analytics_repository(), data.model_copy(update={"events": accepted_events}))
         return {"eventScope": ANALYTICS_EVENT_SCOPE, **result}
     except AnalyticsValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -1464,18 +1582,28 @@ async def admin_analytics_content(
     return await run_ranged_analytics_report(get_analytics_content_report, range, current_user)
 
 
-@api_router.get("/admin/analytics/notification-health")
-async def admin_notification_health(current_user: dict = Depends(get_current_organizer_user)):
+@api_router.get("/admin/analytics/notifications", response_model=NotificationAdoptionResponse)
+async def admin_notification_adoption(
+    current_user: dict = Depends(get_current_organizer_user),
+):
     require_analytics_reporting_repository(current_user)
+    return await require_notification_registration_repository().adoption_summary()
+
+
+@api_router.get("/admin/analytics/notification-health")
+async def admin_notification_health(current_user: dict = Depends(get_current_organizer_user), view: Literal["summary", "diagnostics"] = "diagnostics"):
+    require_analytics_reporting_repository(current_user)
+    if view == "diagnostics":
+        require_owner_role(current_user)
     try:
-        from backend.notification_health import health_report
+        from backend.notification_health import health_report, organizer_health_summary
     except ModuleNotFoundError:
-        from notification_health import health_report
+        from notification_health import health_report, organizer_health_summary
     try:
         result = await health_report(require_notification_registration_repository())
     except Exception:
         raise HTTPException(status_code=503, detail="Notification health is temporarily unavailable") from None
-    return JSONResponse(result, headers={"Cache-Control": "no-store"})
+    return JSONResponse(organizer_health_summary(result) if view == "summary" else result, headers={"Cache-Control": "no-store"})
 
 
 @api_router.post("/admin/bootstrap", response_model=OrganizerAuthResponse)
@@ -1647,6 +1775,135 @@ async def list_admin_announcements(current_user: dict = Depends(get_current_orga
     service = require_announcement_service()
     announcements = await service.list(get_admin_event_id(current_user))
     return AnnouncementsResponse(announcements=announcements, total_count=len(announcements))
+
+
+@api_router.get(
+    "/admin/announcements/delivery-stats",
+    response_model=AnnouncementDeliveryStatsResponse,
+)
+async def list_announcement_delivery_stats(
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    require_announcement_manager_role(current_user)
+    deliveries = require_notification_delivery_service()
+    rows = await deliveries.list_announcement_stats(
+        event_id=get_admin_event_id(current_user)
+    )
+    if wonderpush_client:
+        await refresh_statistics(rows, deliveries, wonderpush_client, datetime.now(timezone.utc))
+    await attach_notification_visit_counts(rows, deliveries)
+    return AnnouncementDeliveryStatsResponse(deliveries=[
+        AnnouncementDeliveryStats(
+            **row,
+            provider_accepted=row.get("status") == "sent",
+        ) for row in rows
+    ])
+
+
+async def attach_notification_visit_counts(rows, deliveries):
+    attributable = [row for row in rows if has_attribution(row)]
+    if not attributable or analytics_repository is None:
+        return
+    try:
+        counts = await analytics_repository.notification_visit_counts([row["id"] for row in attributable])
+        for row in attributable:
+            count = counts.get(row["id"], 0)
+            row["notification_origin_visit_count"] = count
+            # Cached aggregate only; the idempotent Mongo visit ledger is authoritative.
+            await deliveries.update_provider_statistics(row["id"], {"notification_origin_visit_count": count})
+    except Exception:
+        logger.warning("Notification visit aggregation unavailable")
+
+
+def notification_analytics_response(row):
+    return NotificationAnalyticsResponse(
+        audience=row.get("audience", "everyone"), requested_at=row.get("requested_at"), requested=True,
+        provider_accepted=True if row.get("status") == "sent" else False if row.get("status") == "failed" else None,
+        targeted_devices=row.get("provider_targeted_device_count"),
+        known_deliverable_devices=row.get("audience_device_count"),
+        sent_to_push_service=row.get("provider_sent_count"),
+        provider_confirmed_receipts=row.get("provider_confirmed_receipt_count"),
+        provider_failures=row.get("provider_failure_count"), notification_opens=row.get("provider_open_count"),
+        notification_origin_visits=row.get("notification_origin_visit_count"),
+        statistics_status=row.get("provider_statistics_status"),
+        statistics_refreshed_at=row.get("provider_statistics_refreshed_at"))
+
+
+@api_router.get("/admin/announcements/{announcement_id}/analytics", response_model=List[NotificationAnalyticsResponse])
+async def list_announcement_analytics(announcement_id: str, current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    deliveries = require_notification_delivery_service()
+    rows = await deliveries.list_deliveries(announcement_id=announcement_id, event_id=get_admin_event_id(current_user))
+    if wonderpush_client:
+        await refresh_statistics(rows, deliveries, wonderpush_client, datetime.now(timezone.utc))
+    await attach_notification_visit_counts(rows, deliveries)
+    return [notification_analytics_response(row) for row in rows]
+
+
+@api_router.post("/admin/announcements/{announcement_id}/analytics/refresh", response_model=List[NotificationAnalyticsResponse])
+async def refresh_announcement_analytics(announcement_id: str, current_user: dict = Depends(get_current_organizer_user)):
+    require_owner_role(current_user)
+    deliveries = require_notification_delivery_service()
+    rows = await deliveries.list_deliveries(announcement_id=announcement_id, event_id=get_admin_event_id(current_user))
+    if wonderpush_client:
+        await refresh_statistics(rows, deliveries, wonderpush_client, datetime.now(timezone.utc), diagnostic=True)
+    await attach_notification_visit_counts(rows, deliveries)
+    return [notification_analytics_response(row) for row in rows]
+
+
+@api_router.get("/admin/announcements/{announcement_id}/analytics/diagnostics")
+async def notification_analytics_diagnostics(announcement_id: str, current_user: dict = Depends(get_current_organizer_user)):
+    require_owner_role(current_user)
+    rows = await require_notification_delivery_service().list_deliveries(
+        announcement_id=announcement_id, event_id=get_admin_event_id(current_user))
+    keys = ("id", "announcement_id", "audience", "status", "provider_campaign_id", "provider_delivery_id",
+            "requested_at", "provider_accepted_at", "provider_statistics_status", "provider_statistics_refreshed_at")
+    return {"deliveries": [{**{key: row.get(key) for key in keys},
+            "provider_http_status": None} for row in rows],
+            "provider_http_status_note": "Historical exact HTTP status was not stored; sent means provider accepted, not displayed."}
+
+
+@api_router.get("/admin/analytics/notification-summary")
+async def notification_summary(current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    if get_admin_event_id(current_user) != event_service.get_public_event_id():
+        raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")
+    try:
+        from backend.notification_overview import read_overview
+    except ModuleNotFoundError:
+        from notification_overview import read_overview
+    try:
+        async with asyncio.timeout(12):
+            return await read_overview(require_notification_delivery_service(), analytics_repository,
+                                       get_admin_event_id(current_user), datetime.now(timezone.utc))
+    except Exception:
+        raise HTTPException(status_code=503, detail="Notification summary is temporarily unavailable") from None
+
+
+@api_router.get("/admin/analytics/reminders")
+async def notification_reminder_analytics(current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    if get_admin_event_id(current_user) != event_service.get_public_event_id():
+        raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")
+    now = datetime.now(timezone.utc)
+    metrics = await require_itinerary_reminder_repository().operational_metrics(now)
+    return {"snapshot_at": now, **reminder_summary(metrics),
+            **await read_reminder_ledger(require_itinerary_reminder_repository(), now)}
+
+
+@api_router.get("/admin/analytics/reminders/diagnostics")
+async def notification_reminder_diagnostics(current_user: dict = Depends(get_current_organizer_user)):
+    require_owner_role(current_user)
+    summary = await notification_reminder_analytics(current_user)
+    repo = require_itinerary_reminder_repository()
+    now = datetime.now(timezone.utc)
+    # Allowlist; no raw registrations, targets, claims, tokens, or hashes.
+    batch = await repo.batch_metrics(now)
+    durable = await repo.durable_metrics(now)
+    keys = ("assigned_batches", "provider_accepted_batches", "provider_failed_batches", "delivery_unknown_batches",
+            "targeted_installations", "provider_429_batches", "current_backlog", "oldest_pending_seconds",
+            "provider_5xx_batches", "open_operational_alerts", "average_batch_processing_ms", "p95_batch_processing_ms")
+    return {**summary, "batch_diagnostics": {key: {**batch, **durable}.get(key) for key in keys}}
 
 
 @api_router.post(
@@ -1822,12 +2079,19 @@ async def notify_announcement(
 
     expiration_time = announcement_expiration_time(announcement)
 
-    target_url = f"{PUBLIC_APP_URL}/announcements/{quote(announcement_id, safe='')}"
+    base_target_url = f"{PUBLIC_APP_URL}/announcements/{quote(announcement_id, safe='')}"
     image = announcement.get("image") if isinstance(announcement.get("image"), dict) else None
     image_url = image.get("url") if image and image.get("url") else None
     content = provider.notification_content(
-        announcement["title"], announcement["message"], target_url, image_url=image_url
+        announcement["title"], announcement["message"], base_target_url, image_url=image_url
     )
+    adoption = None
+    if audience == "everyone":
+        try:
+            adoption = await require_notification_registration_repository().adoption_summary()
+        except (HTTPException, httpx.HTTPError, ValueError) as exc:
+            # Analytics enrichment must never change or block announcement delivery.
+            logger.warning("notification audience snapshot unavailable: %s", type(exc).__name__)
     try:
         delivery = await deliveries.create_requested(
             event_id=event_id,
@@ -1838,6 +2102,9 @@ async def notify_announcement(
             notification_title=content["title"],
             notification_message=content["message"],
             provider="wonderpush",
+            audience_device_count=(adoption["deliverable_devices"] if adoption else None),
+            audience_stale_device_count=(adoption["stale_deliverable_devices"] if adoption else None),
+            audience_snapshot_at=(adoption["snapshot_at"] if adoption else None),
         )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 409 and audience == "everyone":
@@ -1847,23 +2114,36 @@ async def notify_announcement(
             ) from exc
         raise
 
+    provider_campaign_id = campaign_identity(delivery['id'], audience)
+    await deliveries.update_campaign_id(delivery['id'], provider_campaign_id)
+    target_url = f"{base_target_url}?notification_ref={quote(delivery['id'], safe='')}"
+    content = provider.notification_content(
+        announcement["title"], announcement["message"], target_url, image_url=image_url
+    )
+    if hasattr(deliveries, "update_target_url"):
+        await deliveries.update_target_url(delivery["id"], content["target_url"])
     try:
         if audience == "test":
             campaign_id = await provider.send_test(
                 **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS,
                 idempotency_key=f"announcement-test-{delivery['id']}",
-                campaign_id=WONDERPUSH_TEST_CAMPAIGN_ID,
+                campaign_id=provider_campaign_id,
                 expiration_time=expiration_time,
             )
         else:
             campaign_id = await provider.send_everyone(
                 **content,
-                idempotency_key=f"announcement-{event_id}-{announcement_id}"[:64],
+                idempotency_key=f"announcement-{delivery['id']}",
+                campaign_id=provider_campaign_id,
                 expiration_time=expiration_time,
             )
     except WonderPushError as exc:
-        await deliveries.mark_failed(delivery["id"], str(exc))
-        detail = str(exc) if audience == "test" else "Notification could not be sent."
+        if exc.status_code is None or exc.status_code == 408 or exc.status_code >= 500:
+            await deliveries.mark_unknown(delivery["id"])
+            detail = "Provider outcome is unknown. Do not repeat the broadcast; contact an administrator."
+        else:
+            await deliveries.mark_failed(delivery["id"], str(exc))
+            detail = str(exc) if audience == "test" else "Notification could not be sent."
         raise HTTPException(status_code=502, detail=detail) from exc
 
     sent = await deliveries.mark_sent(delivery["id"], campaign_id)
@@ -2034,6 +2314,86 @@ async def notification_registration_operations():
         "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
         "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
     }
+
+
+@api_router.post("/itinerary-reminders/register")
+async def register_itinerary_reminder_device(request: Request):
+    repository = require_itinerary_reminder_repository()
+    installation_id, capability = itinerary_device_headers(request)
+    try:
+        registration = await repository.register(installation_id, capability)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail="Invalid itinerary device credentials") from exc
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.post("/itinerary-reminders/readiness/verify")
+async def verify_itinerary_reminder_readiness(request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    try:
+        verified = await repository.reconcile_readiness(
+            registration, require_wonderpush_client(), checked_at=datetime.now(timezone.utc))
+    except WonderPushError as exc:
+        raise HTTPException(status_code=503,
+            detail="Notification readiness is temporarily unavailable") from exc
+    return public_itinerary_reminder_status(verified)
+
+
+@api_router.get("/itinerary-reminders/status")
+async def itinerary_reminder_status(request: Request):
+    _, registration = await authorize_itinerary_device(request)
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.get("/itinerary-reminders/status-by-capability")
+async def itinerary_reminder_status_by_capability(request: Request):
+    repository = require_itinerary_reminder_repository()
+    capability = request.headers.get("X-Itinerary-Device-Capability", "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", capability):
+        raise HTTPException(status_code=400, detail="A valid device capability is required")
+    registration = await repository.get_by_capability(capability)
+    if not registration:
+        raise HTTPException(status_code=404, detail="No itinerary reminder registration exists for this device")
+    return public_itinerary_reminder_status(registration)
+
+
+@api_router.put("/itinerary-reminders/enabled")
+async def set_itinerary_reminders_enabled(data: ItineraryEnabledPayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    updated = await repository.set_enabled(registration["id"], data.enabled)
+    return public_itinerary_reminder_status(updated)
+
+
+@api_router.put("/itinerary-reminders/stars")
+async def sync_itinerary_reminder_stars(data: ItineraryStarsPayload, request: Request):
+    repository, registration = await authorize_itinerary_device(request)
+    try:
+        # Star synchronization must not leave provider readiness stale. Refresh
+        # the exact installation bound to this authenticated registration first.
+        registration = await repository.reconcile_readiness(
+            registration, require_wonderpush_client(), checked_at=datetime.now(timezone.utc))
+    except WonderPushError as exc:
+        raise HTTPException(status_code=503,
+            detail="Notification readiness is temporarily unavailable") from exc
+    try:
+        result = await repository.sync_full_set(registration, [str(value) for value in data.schedule_ids])
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=400, detail="Unknown or cross-event Schedule event") from exc
+    return {"status": "ok", **result}
+
+
+@api_router.get("/itinerary-reminders/operations")
+async def itinerary_reminder_operations():
+    return {
+        "provider_configured": wonderpush_client is not None,
+        "scheduler_enabled": ITINERARY_REMINDER_SCHEDULER_ENABLED,
+        "delivery_kill_switch": not ITINERARY_REMINDER_DELIVERY_ENABLED,
+        "lead_time_minutes": 30,
+        "timezone": "America/Toronto",
+    }
+
+
+
 
 
 @api_router.get("/admin/schedule", response_model=AdminScheduleResponse)

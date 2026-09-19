@@ -18,7 +18,7 @@ test('schedule event map locations resolve audited Foxton and Davishill labels',
 
 test('initial location selection activates a semantic region and focuses its camera', () => {
   assert.match(map, /findSemanticAreaForLocation\(initialQuery\)/);
-  assert.match(map, /selectSemanticArea\(semanticArea\)/);
+  assert.match(map, /selectSemanticArea\(semanticArea, initialEventTitle\)/);
   assert.match(map, /applyFocus\(semanticAreaRect\(area\)/);
   assert.match(map, /semanticHitboxActive/);
 });

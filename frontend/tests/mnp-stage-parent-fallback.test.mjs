@@ -112,8 +112,7 @@ test('findTentedCityVenue prefers stage names over Quality Homes exhibitor', () 
 test('TentedCityMap uses placeRect for stage unmapped gate; filter dots omit parent-fallback stages', () => {
   const map = fs.readFileSync(new URL('../src/components/TentedCityMap.tsx', import.meta.url), 'utf8');
   assert.match(map, /place\.kind === 'stage' && !placeRect\(place\)/);
-  assert.match(map, /filter\(\(v\) => v\.kind === 'stage' && v\.rect\)/);
-  assert.match(map, /Parent-fallback stages/);
+  assert.doesNotMatch(map, /filterDots|type FilterId/);
 });
 
 test('TentedCityMap paints MNP parent-fallback stages as cyan rectangle, not circle/ring', () => {
