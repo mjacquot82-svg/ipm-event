@@ -1,4 +1,5 @@
 import React from 'react';
+import { useMapEducationAnchor } from './MapEducation';
 import { Feather } from '@expo/vector-icons';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { PARADE_ROUTES, PARADE_VIEWBOX, PARADE_ASSEMBLY, paradePath, type ParadeRouteId } from '../config/tentedCityParadeRoutes';
@@ -21,8 +22,9 @@ export function ParadeRouteOverlay({ routeId }: { routeId: ParadeRouteId | null 
 }
 export function ParadeRouteControls({ value, onChange }: { value: ParadeRouteId | null; onChange: (id: ParadeRouteId | null) => void }) {
   const [expanded, setExpanded] = React.useState(false);
+  const educationAnchor = useMapEducationAnchor('parade-routes');
   return <View style={styles.controls}>
-    <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Parade Routes · ${value ? PARADE_ROUTES[value].label : 'Off'} · ${expanded ? 'Collapse' : 'Choose a day'}`} aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={[styles.toggle, (expanded || value !== null) && styles.toggleActive]}>
+    <TouchableOpacity ref={educationAnchor} testID="parade-routes-control" accessibilityRole="button" accessibilityLabel={`Parade Routes · ${value ? PARADE_ROUTES[value].label : 'Off'} · ${expanded ? 'Collapse' : 'Choose a day'}`} aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => setExpanded(!expanded)} style={[styles.toggle, (expanded || value !== null) && styles.toggleActive]}>
       <Feather name="map" size={18} color="#004B76" />
       <View style={styles.toggleLabel}>
         <Text style={styles.heading}>Parade Routes</Text>

@@ -39,10 +39,10 @@ async function noTour(p, highlight, seen = false) {
  assert.ok(box && box.width > 0 && box.height > 0);
 }
 async function complete(p) {
- for (const [i, title] of ['Find parking', 'Explore Tented City', 'Find your campsite'].entries()) {
+ for (const [i, title] of ['Find parking', 'Find a place', 'Follow the parade', 'Move around the map', 'Find your campsite'].entries()) {
   await tip(p).getByText(title, { exact: true }).waitFor();
-  await tip(p).getByText(`${i + 1} of 3`, { exact: true }).waitFor();
-  await tip(p).getByRole('button', { name: i === 2 ? 'Got it' : 'Next', exact: true }).click();
+  await tip(p).getByText(`${i + 1} of 5`, { exact: true }).waitFor();
+  await tip(p).getByRole('button', { name: i === 4 ? 'Got it' : 'Next', exact: true }).click();
  }
  assert.equal(await p.evaluate(k => localStorage.getItem(k), key), 'true');
 }
@@ -50,7 +50,7 @@ async function complete(p) {
  const engine = process.env.IPM_WEBKIT ? webkit : chromium;
  const b = await engine.launch({ args: engine === chromium ? ['--no-sandbox'] : [] });
  try {
- for (const width of [320, 360, 393, 430, 1440]) {
+ for (const width of (process.env.IPM_TEST_WIDTHS ? process.env.IPM_TEST_WIDTHS.split(',').map(Number) : [320, 360, 393, 430, 1440])) {
   // Full fresh Schedule flow, then actual normal tab navigation with a retained Maps screen.
   const c = await setup(b, width), p = await c.newPage();
   await p.goto(origin + '/schedule');
@@ -80,7 +80,7 @@ async function complete(p) {
   if (process.env.IPM_ARTIFACT_DIR) await vp.screenshot({ path: path.join(process.env.IPM_ARTIFACT_DIR, `vendor-${engine.name()}-${width}.png`) });
   await vp.getByText('Home', { exact: true }).click(); await vp.getByText('Map', { exact: true }).last().click();
   await complete(vp); await vc.close();
-  console.log(`PASS ${engine.name()} ${width}: Schedule/Vendor destinations unobscured, zero tutorial flashes, unseen flag, subsequent normal tab visit all three steps`);
+  console.log(`PASS ${engine.name()} ${width}: Schedule/Vendor destinations unobscured, zero tutorial flashes, unseen flag, subsequent normal tab visit all five steps`);
  }
  // A normal first visit still auto-starts. A seen user still receives destinations without education.
  for (const seen of [false, true]) {

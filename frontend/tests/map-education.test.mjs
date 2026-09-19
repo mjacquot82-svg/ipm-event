@@ -11,11 +11,13 @@ function load(url){
 }
 const {scheduleMapTipEligible,vendorMapTipEligible}=load(new URL('../src/services/mapEducationEligibility.ts',import.meta.url));
 const {EDUCATION_KEYS,MAP_TOUR_STEPS}=load(new URL('../src/services/mapEducationState.ts',import.meta.url));
-test('three map-only steps retain their control anchors',()=>{
- assert.deepEqual(MAP_TOUR_STEPS.map(s=>s.target),['parking','tented','rv']);
- assert.deepEqual(MAP_TOUR_STEPS.map(s=>s.title),['Find parking','Explore Tented City','Find your campsite']);
- assert.match(MAP_TOUR_STEPS[1].body,/Pinch to zoom and drag to move around/);
- assert.doesNotMatch(JSON.stringify(MAP_TOUR_STEPS),/Find exhibitors|Search the maps|Find on Map|Jump straight/);
+test('five current map steps target parking, search, parade, reset and camping',()=>{
+ assert.deepEqual(MAP_TOUR_STEPS.map(s=>s.target),['grounds','tented-search','parade-routes','tented-reset','rv']);
+ assert.match(MAP_TOUR_STEPS[0].body,/Parking areas are shown.*optional Parking view/);
+ assert.match(MAP_TOUR_STEPS[1].body,/vendor, booth, stage or place/);
+ assert.match(MAP_TOUR_STEPS[2].body,/Tap Parade Routes to expand.*Tuesday or Wednesday–Saturday.*blue line and arrows.*Off/);
+ assert.match(MAP_TOUR_STEPS[3].body,/Drag.*pinch.*reset/);
+ assert.doesNotMatch(JSON.stringify(MAP_TOUR_STEPS),/Tap Parking for|Vendors filter|Food filter|Stages filter|Mutual Square/);
 });
 test('four learning states have independent versioned persistence keys',()=>{
  assert.deepEqual(Object.values(EDUCATION_KEYS),['@ipm_maps_tour_seen_v1','@ipm_schedule_find_on_map_tip_seen_v1','@ipm_schedule_event_details_tip_seen_v1','@ipm_vendor_find_on_map_tip_seen_v1']);
@@ -29,7 +31,7 @@ test('Vendor education excludes unavailable and empty destinations without touch
  for(const name of ['Bambrook Farm Equipment','Ontario Government','Transit Trailer Ltd'])assert.equal(vendorMapTipEligible(name),true,name);
  for(const name of ['Valard','CAN-AM','Hanover','Maitland Valley Conservation','Unknown test vendor',''])assert.equal(vendorMapTipEligible(name),false,name);
 });
-test('education adds no animation, network requests, preference reset or navigation',()=>{
+test('education adds no animation, network requests, preference reset or router navigation',()=>{
  const ui=fs.readFileSync(new URL('../src/components/MapEducation.tsx',import.meta.url),'utf8');
  assert.match(ui,/animationType="none"/);assert.match(ui,/AsyncStorage.setItem\(EDUCATION_KEYS\[kind\], 'true'\)/);
  assert.doesNotMatch(ui,/fetch\(|router\.|setMode\(|setGroundsView\(|removeItem\(|AsyncStorage.clear/);

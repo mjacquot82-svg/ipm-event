@@ -6,7 +6,9 @@ export const EDUCATION_KEYS = {
 } as const;
 export type EducationKind = keyof typeof EDUCATION_KEYS;
 export const MAP_TOUR_STEPS = [
-  { target: 'parking', title: 'Find parking', body: 'Tap Parking for entrances, bus drop-off and accessible parking.' },
-  { target: 'tented', title: 'Explore Tented City', body: 'Open Tented City to explore the grounds, stages and booth areas. Pinch to zoom and drag to move around.' },
-  { target: 'rv', title: 'Find your campsite', body: 'Open Camping Map to find individual RV and campsite locations.' },
+  { target: 'grounds', map: 'grounds', title: 'Find parking', body: 'Parking areas are shown on the Grounds map. The optional Parking view adds entrance markers.' },
+  { target: 'tented-search', map: 'tented', title: 'Find a place', body: 'On Tented City, search for a vendor, booth, stage or place. Select a result to highlight its location.' },
+  { target: 'parade-routes', map: 'tented', title: 'Follow the parade', body: 'Tap Parade Routes to expand it. Choose Tuesday or Wednesday–Saturday. The blue line and arrows show that day’s route. Select Off to hide it.' },
+  { target: 'tented-reset', map: 'tented', title: 'Move around the map', body: 'Drag to move and pinch to zoom. Use this reset button to fit the map again.' },
+  { target: 'rv', map: 'tented', title: 'Find your campsite', body: 'Open Camping Map to find individual RV and campsite locations.' },
 ] as const;

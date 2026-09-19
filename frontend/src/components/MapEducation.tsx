@@ -137,20 +137,27 @@ export function MapEducationHelpButton({ mode }: { mode: string }) {
   return <TouchableOpacity accessibilityRole="button" accessibilityLabel="Help, replay Maps tour" testID="maps-help" style={styles.help} onPress={() => replay.current?.()}><Text style={styles.helpText}>?</Text></TouchableOpacity>;
 }
 
-export function MapsEducation({ mode, autoStart = true }: { mode: string; autoStart?: boolean }) {
+export function MapsEducation({ mode, onShowMap, autoStart = true }: { mode: 'grounds' | 'tented' | 'rv'; onShowMap: (mode: 'grounds' | 'tented' | 'rv') => void; autoStart?: boolean }) {
   const replay = useContext(MapEducationReplay)!;
   const anchors = useContext(MapEducationAnchors)!;
   const state = useEducation('mapsTourSeen', true, autoStart);
   const [step, setStep] = useState(0);
-  replay.current = () => { setStep(0); state.replay(); };
+  const startingMode = useRef(mode);
+  const wasVisible = useRef(false);
   const definition = MAP_TOUR_STEPS[step];
-  const targetName = definition.target;
-  // Deep links and Help preserve the active map. Explain Grounds without switching layers.
-  const missingParking = step === 0 && mode !== 'grounds';
+  useEffect(() => {
+    if (state.visible) {
+      if (!wasVisible.current) startingMode.current = mode;
+      onShowMap(definition.map);
+    }
+    wasVisible.current = state.visible;
+  }, [state.visible, definition.map, mode, onShowMap]);
+  const dismiss = () => { state.dismiss(); onShowMap(startingMode.current); setStep(0); };
+  replay.current = () => { setStep(0); state.replay(); };
   return <>
-    {state.visible ? <EducationCallout title={definition.title} body={(missingParking ? 'On Grounds, tap Parking for entrances, bus drop-off and accessible parking.' : definition.body)}
-      progress={`${step + 1} of ${MAP_TOUR_STEPS.length}`} target={anchors.current[targetName]}
-      fallback={anchors.current['grounds']} onNext={step < MAP_TOUR_STEPS.length - 1 ? () => setStep(step + 1) : undefined} onDismiss={state.dismiss} /> : null}
+    {state.visible ? <EducationCallout title={definition.title} body={definition.body}
+      progress={`${step + 1} of ${MAP_TOUR_STEPS.length}`} target={mode === definition.map ? anchors.current[definition.target] : null}
+      fallback={anchors.current[definition.map]} onNext={step < MAP_TOUR_STEPS.length - 1 ? () => setStep(step + 1) : undefined} onDismiss={dismiss} /> : null}
   </>;
 }
 

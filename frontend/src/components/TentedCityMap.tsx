@@ -77,6 +77,7 @@ export default function TentedCityMap({
   initialQuery?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: (location?: string) => void; hideModeSelector?: boolean;
 }) {
   const educationSearchAnchor = useMapEducationAnchor('tented-search');
+  const educationResetAnchor = useMapEducationAnchor('tented-reset');
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [selected, setSelected] = useState<TentedCityPlace | null>(null);
@@ -553,7 +554,7 @@ export default function TentedCityMap({
         ) : null}
       </View>
       <View style={[styles.fabCol, desktop && desktopMapStyles.fit]}>
-        <TouchableOpacity style={styles.fab} onPress={resetMap} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
+        <TouchableOpacity ref={educationResetAnchor} testID="tented-map-reset" style={styles.fab} onPress={resetMap} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
       </View>
       {unmappedInitialLocation ? (
         <View style={[styles.infoCard, desktop && desktopMapStyles.info]} accessibilityRole="alert">
