@@ -5,12 +5,13 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import colors from '../theme/colors';
 
-export type MapMode = 'grounds' | 'tented' | 'rv';
+export type MapMode = 'grounds' | 'tented' | 'rv' | 'entrances';
 
 export const MAP_MODE_OPTIONS: { id: MapMode; label: string; accessibilityLabel: string }[] = [
   { id: 'grounds', label: 'Grounds', accessibilityLabel: 'Show grounds map' },
   { id: 'tented', label: 'Tented City', accessibilityLabel: 'Show tented city map' },
   { id: 'rv', label: 'Camping Map', accessibilityLabel: 'Show camping map' },
+  { id: 'entrances', label: 'Entrances / Parking', accessibilityLabel: 'Show entrances and parking map' },
 ];
 
 export default function MapModeSelector({
@@ -26,12 +27,12 @@ export default function MapModeSelector({
 }) {
   const educationAnchors = React.useContext(MapEducationAnchors);
   return (
-    <View style={[styles.wrap, desktop && { width: '100%' }]} testID={testID} accessibilityRole="tablist">
+    <View style={[styles.wrap, { width: '100%' }]} testID={testID} accessibilityRole="tablist">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.row, desktop && { width: '100%', minWidth: 0, flexGrow: 1 }]}
-        style={[styles.scroll, desktop && { width: '100%' }]}
+        contentContainerStyle={[styles.row, { width: '100%', minWidth: 0, flexGrow: 1 }]}
+        style={[styles.scroll, { width: '100%' }]}
         keyboardShouldPersistTaps="handled"
       >
         {MAP_MODE_OPTIONS.map((option) => {
@@ -40,14 +41,14 @@ export default function MapModeSelector({
             <TouchableOpacity
               ref={node => { if (educationAnchors) educationAnchors.current[option.id] = node; }}
               key={option.id}
-              style={[styles.btn, desktop && { flex: 1, flexShrink: 1, alignItems: 'center' }, on && styles.btnOn]}
+              style={[styles.btn, { flex: 1, flexShrink: 1, alignItems: 'center', justifyContent: 'center', minHeight: 40, paddingHorizontal: 2, paddingVertical: 4 }, on && styles.btnOn]}
               onPress={() => onChange(option.id)}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
               accessibilityLabel={option.accessibilityLabel}
               testID={`map-mode-${option.id}`}
             >
-              <Text style={[styles.text, on && styles.textOn]} numberOfLines={1}>
+              <Text style={[styles.text, on && styles.textOn]} numberOfLines={2}>
                 {option.label}
               </Text>
             </TouchableOpacity>
@@ -81,6 +82,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   btnOn: { backgroundColor: '#FFFFFF' },
-  text: { fontSize: 13, fontWeight: '700', color: '#6B7280' },
+  text: { textAlign: 'center', fontSize: 12, fontWeight: '700', color: '#6B7280' },
   textOn: { color: colors.primary },
 });

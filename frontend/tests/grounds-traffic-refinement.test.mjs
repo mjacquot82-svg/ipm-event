@@ -38,7 +38,7 @@ test('final positioning uses a yellow route caption and source-supported road la
 test('polish freezes road labels, Walkerton and yellow-area source geometry',()=>{
  assert.deepEqual(source.match(/    <RoadLabel[^\n]+/g).filter(s=>!s.includes('Greenock-Brant')),original.match(/    <RoadLabel[^\n]+/g).filter(s=>!s.includes('Greenock-Brant')));
  const walk=s=>s.split('testID="grounds-walkerton"')[1].split('</View>')[0];assert.equal(walk(source),walk(original));
- for(const p of ['frontend/src/config/groundsZones.ts','frontend/assets/images/grounds-site-map.jpg'])assert.deepEqual(readFileSync(new URL('../'+p.replace('frontend/',''),import.meta.url)),execFileSync('git',['show',`34359866d41ad09deeeb962de63802565f52cf88:${p}`]));
+ for(const p of ['frontend/src/config/groundsZones.ts','frontend/assets/images/grounds-site-map.jpg'])assert.deepEqual(readFileSync(new URL('../'+p.replace('frontend/',''),import.meta.url)),execFileSync('git',['show',`${p.endsWith('groundsZones.ts') ? 'd6a2334c' : '34359866d41ad09deeeb962de63802565f52cf88'}:${p}`]));
 });
 test('notice moves into passive artwork overlay without closure geometry',()=>{
  const map=readFileSync(new URL('../src/components/GroundsMap.tsx',import.meta.url),'utf8');

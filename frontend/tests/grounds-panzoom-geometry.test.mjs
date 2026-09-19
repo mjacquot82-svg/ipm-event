@@ -61,8 +61,8 @@ test('Tractor Plowing polygon is rotated parallelogram (not oversized AABB fill)
   assert.equal(hitTestGroundsZone(74.0, 47.5)?.id, 'tractor-plowing');
 });
 
-test('Horse / RV / West / North / Tented City polygons hit-test centres', () => {
-  for (const id of ['horse-plowing', 'rv-park', 'west-parking', 'north-parking', 'tented-city']) {
+test('Horse / RV / Tented City polygons hit-test centres', () => {
+  for (const id of ['horse-plowing', 'rv-park', 'tented-city']) {
     const z = zone(id);
     const cx = z.polygon.reduce((s, p) => s + p[0], 0) / z.polygon.length;
     const cy = z.polygon.reduce((s, p) => s + p[1], 0) / z.polygon.length;
@@ -113,8 +113,8 @@ test('routing aliases preserved (TC/grounds/plowing/camping/parking)', () => {
   assert.equal(resolveGroundsZone('Horse Plowing')?.id, 'horse-plowing');
   assert.equal(resolveGroundsZone('RV Park')?.id, 'rv-park');
   assert.equal(resolveGroundsZone('camping')?.id, 'rv-park');
-  assert.equal(resolveGroundsZone('West Parking Lot')?.id, 'west-parking');
-  assert.equal(resolveGroundsZone('North Parking')?.id, 'north-parking');
+  assert.equal(resolveGroundsZone('West Parking Lot'), null);
+  assert.equal(resolveGroundsZone('North Parking'), null);
   assert.equal(resolveGroundsZone('Plowing Fields')?.id, 'tractor-plowing');
 });
 

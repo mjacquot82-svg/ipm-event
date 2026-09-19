@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   modeBtnText: { fontSize: 13, fontWeight: '700', color: '#6B7280' },
   modeBtnTextOn: { color: colors.primary },
   searchCard: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-  searchInput: { flex: 1, fontSize: 16, color: '#111827', paddingVertical: 10 },
+  searchInput: { flex: 1, minWidth: 0, fontSize: 16, color: '#111827', paddingVertical: 10 },
   results: { marginTop: 6, backgroundColor: '#FFFFFF', borderRadius: 14, overflow: 'hidden', maxHeight: 260 },
   resultRow: { paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E7EB', minHeight: 48 },
   resultName: { fontSize: 15, fontWeight: '700', color: '#111827' },

@@ -93,7 +93,7 @@ async function complete(p) {
  const hc = await setup(b, 393), hp = await hc.newPage();
  await hp.goto(origin + '/map?location=The%20Beyond%20Wireless%20Stage&source=schedule&mapType=tented&showOnly=true');
  await noTour(hp, 'selected-stage-highlight');
- await hp.getByRole('button', { name: 'Help, replay Maps tour' }).click(); await complete(hp);
+ await hp.getByRole('button', { name: 'Map Help, replay Maps tour' }).click(); await complete(hp);
  await hp.getByTestId('selected-stage-highlight').waitFor(); await hc.close();
  console.log('PASS normal first visit, already-seen destination, deliberate Help replay with destination retained');
  } finally { await b.close(); }

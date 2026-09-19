@@ -6,8 +6,6 @@ export type GroundsZoneId =
   | 'tented-city'
   | 'tractor-plowing'
   | 'horse-plowing'
-  | 'west-parking'
-  | 'north-parking'
   | 'rv-park'
   | 'bus-stop'
   | 'accessible-parking';
@@ -90,17 +88,6 @@ export const GROUNDS_ZONES: GroundsZone[] = [
     color: '#E07A2F',
   },
   {
-    id: 'north-parking',
-    label: 'North Parking Lot',
-    rect: { x: 18.304, y: 47.159, w: 14.435, h: 9.721 },
-    polygon: [
-      [18.304, 48.754], [30.06, 47.159], [32.664, 55.284], [20.833, 56.83], [19.866, 54.487],
-    ],
-    fact: 'Parking is free.',
-    action: 'info',
-    color: '#3A7BC8',
-  },
-  {
     id: 'rv-park',
     label: 'RV Park',
     rect: { x: 36.012, y: 50.648, w: 13.542, h: 7.378 },
@@ -110,18 +97,6 @@ export const GROUNDS_ZONES: GroundsZone[] = [
     fact: 'Open the searchable RV site map for campsite numbers.',
     action: 'switch-rv',
     color: '#7B4EA3',
-  },
-  {
-    id: 'west-parking',
-    label: 'West Parking Lot',
-    rect: { x: 35.64, y: 57.378, w: 29.464, h: 15.653 },
-    polygon: [
-      [49.479, 57.378], [35.64, 59.372], [39.435, 72.981], [65.03, 69.641],
-      [63.393, 63.958], [51.86, 63.858], [49.926, 57.378],
-    ],
-    fact: 'Parking is free.',
-    action: 'info',
-    color: '#3A7BC8',
   },
   {
     id: 'tractor-plowing',
@@ -159,10 +134,6 @@ const GROUNDS_ZONE_ALIASES: Record<string, GroundsZoneId> = {
   // Schedule parent name (~13 events). Prefer larger tractor field when Horse/Tractor is not distinguished.
   'plowing fields': 'tractor-plowing',
   'plowing field': 'tractor-plowing',
-  'west parking lot': 'west-parking',
-  'west parking': 'west-parking',
-  'north parking lot': 'north-parking',
-  'north parking': 'north-parking',
   'bus stop': 'bus-stop',
   // Shuttle pickup/dropoff POI only — never Bus Parking #1194 (no geometry; distinct destination).
   shuttle: 'bus-stop',

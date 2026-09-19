@@ -24,7 +24,7 @@ assert.ok(origin.startsWith('http://127.0.0.1:'));
  const tip = p.getByTestId('map-education-card'); await tip.getByText('Find parking', { exact: true }).waitFor();
  await tip.getByRole('button', { name: 'Skip Maps tour' }).click();
  assert.equal(await p.evaluate(() => localStorage.getItem('@ipm_maps_tour_seen_v1')), 'true');
- await p.reload(); await p.getByRole('button', { name: 'Help, replay Maps tour' }).waitFor(); await p.waitForTimeout(1000);
+ await p.reload(); await p.getByRole('button', { name: 'Map Help, replay Maps tour' }).waitFor(); await p.waitForTimeout(1000);
  assert.equal(await tip.count(), 0);
  console.log('PASS installed-mode offline cached destination, deferred flag unchanged, later normal Maps tour, local skip persistence and offline reload');
  } finally { await b.close(); }

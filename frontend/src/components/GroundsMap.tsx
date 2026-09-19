@@ -1,8 +1,5 @@
 import { useMapEducationAnchor, MapEducationHelpButton } from './MapEducation';
 import { GroundsTrafficOverlay } from './GroundsTrafficOverlay';
-import { GroundsParkingOverlay } from './GroundsParkingOverlay';
-import { GroundsViewSelector } from './GroundsViewSelector';
-import { hitGroundsParking, type GroundsView, type GroundsParkingPoi } from '../config/groundsParking';
 import { DESKTOP_MAP_BREAKPOINT, desktopMapStyles, useDesktopMapWorkspace } from '../theme/desktopMapWorkspace';
 import { MapArtworkLoading, useArtworkReveal } from './MapArtworkLoading';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -102,8 +99,6 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   const phone = windowSize.width < DESKTOP_MAP_BREAKPOINT;
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null);
   const [selected, setSelected] = useState<GroundsZone | null>(null);
-  const [groundsView, setGroundsView] = useState<GroundsView>('general');
-  const [parkingPoi, setParkingPoi] = useState<GroundsParkingPoi | null>(null);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const focusedKey = useRef<string | null>(null);
@@ -148,7 +143,6 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
   }, [flyTo, onSwitchToTented]);
 
   const selectHit = useCallback((hit: EventMapHit) => {
-    setParkingPoi(null);
     setFocused(false);
     Keyboard.dismiss();
     if (hit.mapType === 'tented') {
@@ -162,13 +156,8 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
 
   const hitViewportPoint = useCallback((x: number, y: number) => {
     const point = mapPointUnderFocal({ scale: scale.value, tx: tx.value, ty: ty.value, focalX: x, focalY: y, left: layer.left, top: layer.top });
-    if (groundsView === 'parking') {
-      const poi = hitGroundsParking(point.x, point.y, layer.width, layer.height, scale.value);
-      if (poi) { setParkingPoi(poi); return; }
-    }
-    setParkingPoi(null);
     chooseZone(hitTestGroundsZone((point.x / layer.width) * 100, (point.y / layer.height) * 100));
-  }, [chooseZone, layer.left, layer.top, layer.width, layer.height, groundsView]);
+  }, [chooseZone, layer.left, layer.top, layer.width, layer.height]);
 
   useEffect(() => {
     const zone = resolveGroundsZone(highlightedLocation);
@@ -201,9 +190,8 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
         {phone ? <View testID="grounds-artwork-crop" style={[StyleSheet.absoluteFillObject, { top: layer.headerHeight, overflow: 'hidden' }]}>
           <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={[styles.image, { position: 'absolute', top: -layer.headerHeight, height: layer.height }]} />
         </View> : <Image key={artwork.attempt} onLoad={artwork.onLoad} onError={artwork.onError} source={MAP_SOURCE} resizeMode="stretch" style={styles.image} />}
-        <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} showTraffic={groundsView === 'general'} />
+        <GroundsTrafficOverlay width={layer.width} height={layer.height} scale={scale} />
         {selected ? <ZoneHighlight zone={selected} /> : null}
-        {groundsView === 'parking' ? <GroundsParkingOverlay width={layer.width} height={layer.height} scale={scale} selected={parkingPoi?.id || null} onSelect={setParkingPoi} /> : null}
       </Animated.View>
     </Animated.View>
   );
@@ -212,7 +200,6 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     [query, focused],
   );
   const reset = () => {
-    setParkingPoi(null);
     setSelected(null);
     setQuery('');
     setFocused(false);
@@ -263,21 +250,7 @@ export default function GroundsMap({ highlightedLocation, onSwitchToTented, onSw
     <TouchableOpacity style={[styles.reset, desktop && desktopMapStyles.fit]} onPress={reset} accessibilityLabel="Fit map to grounds" testID="grounds-fit-reset">
       <Feather name="maximize-2" size={18} color={colors.textPrimary} />
     </TouchableOpacity>
-    <View style={[styles.viewControl, desktop && { left: 16, right: 76, bottom: 8 }]}>
-      <GroundsViewSelector value={groundsView} compact={!!desktop} onChange={view => { setGroundsView(view); setParkingPoi(null); }} />
-    </View>
-    {parkingPoi ? <View style={[styles.card, desktop && { bottom: 76 }]} testID="grounds-parking-info">
-      <View style={styles.cardInner}>
-        <View style={styles.cardRow}>
-          <View style={styles.cardCopy}>
-            <Text style={styles.title}>{parkingPoi.id === 'accessible' ? parkingPoi.label : `#${parkingPoi.id} · ${parkingPoi.label}`}</Text>
-            {parkingPoi.detail ? <Text style={styles.fact}>{parkingPoi.detail}</Text> : null}
-          </View>
-          <TouchableOpacity onPress={() => setParkingPoi(null)} accessibilityLabel="Close parking information"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity>
-        </View>
-      </View>
-    </View> : null}
-    {!parkingPoi && (selected?.action === 'info' || selected?.action === 'switch-rv') ? (
+    {(selected?.action === 'info' || selected?.action === 'switch-rv') ? (
       <View style={[styles.card, desktop && desktopMapStyles.groundsInfo, desktop && { bottom: 124 }]} pointerEvents="box-none" testID="grounds-info-card">
         <View style={styles.cardInner} pointerEvents="auto">
           <View style={styles.cardRow}>
@@ -322,9 +295,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: SELECTED_INNER,
   },
-  searchWrap: { position: 'absolute', top: 52, left: 12, right: 12, zIndex: 12 },
+  searchWrap: { position: 'absolute', top: 60, left: 12, right: 12, zIndex: 12 },
   searchCard: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,255,255,0.96)', borderRadius: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E5E7EB' },
-  searchInput: { flex: 1, fontSize: 16, color: '#111827', paddingVertical: 10 },
+  searchInput: { flex: 1, minWidth: 0, fontSize: 16, color: '#111827', paddingVertical: 10 },
   results: { marginTop: 6, backgroundColor: '#FFFFFF', borderRadius: 14, overflow: 'hidden', maxHeight: 260 },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E7EB', minHeight: 48 },
   resultName: { fontSize: 15, fontWeight: '700', color: '#111827' },

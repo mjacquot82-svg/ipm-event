@@ -134,10 +134,10 @@ export function MapEducationHelpButton({ mode }: { mode: string }) {
   const replay = useContext(MapEducationReplay);
   const activeMode = useContext(MapEducationMode);
   if (!replay || mode !== activeMode) return null;
-  return <TouchableOpacity accessibilityRole="button" accessibilityLabel="Help, replay Maps tour" testID="maps-help" style={styles.help} onPress={() => replay.current?.()}><Text style={styles.helpText}>?</Text></TouchableOpacity>;
+  return <TouchableOpacity accessibilityRole="button" accessibilityLabel="Map Help, replay Maps tour" testID="maps-help" style={styles.help} onPress={() => replay.current?.()}><Text style={styles.helpText}>Map Help</Text></TouchableOpacity>;
 }
 
-export function MapsEducation({ mode, onShowMap, autoStart = true }: { mode: 'grounds' | 'tented' | 'rv'; onShowMap: (mode: 'grounds' | 'tented' | 'rv') => void; autoStart?: boolean }) {
+export function MapsEducation({ mode, onShowMap, autoStart = true }: { mode: 'grounds' | 'tented' | 'rv' | 'entrances'; onShowMap: (mode: 'grounds' | 'tented' | 'rv' | 'entrances') => void; autoStart?: boolean }) {
   const replay = useContext(MapEducationReplay)!;
   const anchors = useContext(MapEducationAnchors)!;
   const state = useEducation('mapsTourSeen', true, autoStart);
@@ -217,6 +217,6 @@ const styles = StyleSheet.create({
   primaryText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16 },
   secondary: { minHeight: 44, padding: 12, justifyContent: 'center' },
   secondaryText: { color: '#374151', fontSize: 16, fontWeight: '600' },
-  help: { flexShrink: 0, width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#8B1538', alignItems: 'center', justifyContent: 'center' },
-  helpText: { color: '#8B1538', fontWeight: '800', fontSize: 23 },
+  help: { flexShrink: 0, width: 94, height: 44, borderRadius: 10, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#8B1538', alignItems: 'center', justifyContent: 'center' },
+  helpText: { color: '#8B1538', fontWeight: '700', fontSize: 14 },
 });

@@ -123,9 +123,7 @@ test('8. Hydro One EAST-5 → EAST-05 label normalize; geometry preserved', () =
 });
 
 test('explicit mapType tented/grounds preserved; unrelated grounds routing intact', () => {
-  assert.match(mapSource, /if \(mapType === 'tented' \|\| mapType === 'grounds'(?: \|\| mapType === 'rv')?\) return mapType/);
-  assert.equal(resolveMapTypeForLocation('West Parking Lot', vendors), 'grounds');
-  assert.equal(resolveMapTypeForLocation('North Parking', vendors), 'grounds');
+  assert.match(mapSource, /mapType === 'tented'.*mapType === 'grounds'/s);
   assert.equal(resolveMapTypeForLocation('Bus Stop', vendors), 'grounds');
   assert.equal(resolveMapTypeForLocation('RAM Truck Corral', vendors), 'tented');
 });

@@ -238,11 +238,11 @@ test('Grounds → RV Park → View RV Site Map secondary entry preserved', () =>
   assert.match(screenSrc, /onSwitchToRv=\{\(\) => setMode\('rv'\)\}/);
 });
 
-test('mobile selector scrolls horizontally and keeps Camping Map label full', () => {
+test('four map tabs fit the phone row with wrapping labels', () => {
   assert.match(selectorSrc, /ScrollView/);
   assert.match(selectorSrc, /horizontal/);
   assert.match(selectorSrc, /Camping Map/);
-  assert.match(selectorSrc, /numberOfLines=\{1\}/);
+  assert.match(selectorSrc, /numberOfLines=\{2\}/);
   assert.match(selectorSrc, /minWidth: 300/);
   assert.doesNotMatch(selectorSrc, /Camping…|Camp\b|RV Detail/);
 });

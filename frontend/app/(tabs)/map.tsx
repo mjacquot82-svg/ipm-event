@@ -1,3 +1,4 @@
+import EntrancesParkingMap from '../../src/components/EntrancesParkingMap';
 import { MapEducationAnchors, MapEducationMode, MapEducationReplay, MapsEducation } from '../../src/components/MapEducation';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
@@ -30,7 +31,7 @@ function resolveInitialMode(args: {
 }): MapMode {
   const { mapType, location, source, unavailable, verify1A } = args;
   // Explicit route param wins — schedule/vendors set this so mode does not depend on remount.
-  if (mapType === 'tented' || mapType === 'grounds' || mapType === 'rv') return mapType;
+  if (mapType === 'tented' || mapType === 'grounds' || mapType === 'rv' || mapType === 'entrances') return mapType;
   const groundsZone = resolveGroundsZone(location || null);
   if (groundsZone?.id === 'rv-park' && source === 'rv-detail') return 'rv';
   if (unavailable || verify1A) return 'tented';
@@ -83,6 +84,7 @@ function MapContent() {
   const groundsDesktop = useDesktopMapWorkspace('grounds');
   const tentedDesktop = useDesktopMapWorkspace('tented');
   const rvDesktop = useDesktopMapWorkspace('rv');
+  const entrancesDesktop = useDesktopMapWorkspace('entrances');
   const [overrideLocation, setOverrideLocation] = useState<string | null>(null);
 
   // Tab navigators keep Map mounted — sync mode when schedule/vendors navigate with new params.
@@ -139,6 +141,7 @@ function MapContent() {
           />
         </View>
       ) : null}
+      {mode === 'entrances' ? <View style={[styles.entrances, entrancesDesktop && desktopMapStyles.host, entrancesDesktop]}><EntrancesParkingMap /></View> : null}
       {selector}
       {/* Existing destination params defer auto-onboarding for this visit, without changing routing or seen state. */}
       <MapsEducation mode={mode} onShowMap={setMode} autoStart={!Boolean(location || paramStr(params.showOnly) === 'true' || unavailable || verify1A)} />
@@ -152,6 +155,7 @@ const styles = StyleSheet.create({
   tentedHostHidden: { opacity: 0, zIndex: 0 },
   grounds: { ...StyleSheet.absoluteFillObject, zIndex: 2, backgroundColor: colors.background },
   rvHost: { ...StyleSheet.absoluteFillObject, zIndex: 3, backgroundColor: colors.background },
+  entrances: { ...StyleSheet.absoluteFillObject, zIndex: 3, backgroundColor: colors.background },
   selectorHost: {
     position: 'absolute',
     top: 8,
