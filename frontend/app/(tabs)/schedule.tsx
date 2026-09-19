@@ -948,7 +948,7 @@ export default function ScheduleScreen() {
                 ? 'There are no mapped events in these filters. Show all events to continue the walkthrough.'
                 : 'No mapped events are available right now. You can replay Schedule Help when they are published.'}</Text>
               {hasActiveFilters ? <TouchableOpacity accessibilityRole="button" accessibilityLabel="Show all events and continue walkthrough" onPress={clearFilters} style={styles.onboardingModalDismiss}><Text style={styles.retryButtonText}>Show all events</Text></TouchableOpacity> : null}
-              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Skip Schedule walkthrough" onPress={skipScheduleWalkthrough} style={styles.onboardingModalDismiss}><Text style={styles.retryButtonText}>Skip</Text></TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Skip tutorial" onPress={skipScheduleWalkthrough} style={styles.onboardingModalDismiss}><Text style={styles.retryButtonText}>Skip tutorial</Text></TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -989,8 +989,8 @@ export default function ScheduleScreen() {
               <Text style={styles.onboardingModalSecondaryText}>
                 If notifications are enabled, we&apos;ll remind you approximately 30 minutes before each event starts.
               </Text>
-              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Skip Schedule walkthrough" onPress={skipScheduleWalkthrough} style={{ minHeight: 44, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={styles.onboardingModalSecondaryText}>Skip</Text>
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Skip tutorial" onPress={skipScheduleWalkthrough} style={{ minHeight: 44, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={styles.onboardingModalSecondaryText}>Skip tutorial</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 ref={onboardingDismissRef}

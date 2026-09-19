@@ -169,7 +169,7 @@ function EducationCallout({ title, body, progress, target, fallback, onNext, onD
           <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
           <View style={styles.actions}>
-            {onNext || onSkip || onTargetPress ? <TouchableOpacity ref={onTargetPress ? next : undefined} accessibilityRole="button" accessibilityLabel={onSkip || onTargetPress ? 'Skip walkthrough' : 'Skip Maps tour'} style={styles.secondary} onPress={onSkip || onDismiss}><Text style={styles.secondaryText}>Skip</Text></TouchableOpacity> : null}
+            {onNext || onSkip || onTargetPress ? <TouchableOpacity ref={onTargetPress ? next : undefined} accessibilityRole="button" accessibilityLabel="Skip tutorial" style={styles.secondary} onPress={onSkip || onDismiss}><Text style={styles.secondaryText}>Skip tutorial</Text></TouchableOpacity> : null}
             {!onTargetPress ? <TouchableOpacity ref={next} accessibilityRole="button" style={styles.primary} onPress={onNext || onDismiss}>
               <Text style={styles.primaryText}>{onNext ? 'Next' : 'Got it'}</Text>
             </TouchableOpacity> : null}

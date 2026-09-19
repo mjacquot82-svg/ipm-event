@@ -93,7 +93,7 @@ try {
       await follow('selected-day');
     }
     await page.goto(base + '/schedule'); await noAuto(); await help.click();
-    await page.getByRole('button', { name: 'Skip Schedule walkthrough', exact: true }).click();
+    await page.getByRole('button', { name: 'Skip tutorial', exact: true }).click();
     await page.reload(); await noAuto();
     // A genuine first visit uses the same complete flow, then stays completed.
     await page.evaluate(() => { for (const key of Object.keys(localStorage)) if (key.startsWith('@ipm_schedule_')) localStorage.removeItem(key); });
@@ -101,7 +101,7 @@ try {
     await page.getByRole('button', { name: 'Got it, close Plan your day introduction' }).click();
     await page.getByTestId('schedule-education-open-event').waitFor();
     await assertClickCue(page, 'schedule-education-open-event');
-    await page.getByRole('button', { name: 'Skip walkthrough', exact: true }).click();
+    await page.getByRole('button', { name: 'Skip tutorial', exact: true }).click();
     await assertNoClickCue(page);
     await page.reload(); await noAuto();
     console.log(`PASS ${width}x${height}: completed returning attendee manual replay; unfiltered/filtered/empty recovery; event/detail/map guidance; unrelated taps blocked; first visit and skip persistence`);

@@ -32,7 +32,7 @@ try {for(const width of [320,768,1440]) {
   await p.mouse.click(2,500);await p.waitForTimeout(300);await tip.getByText('Tap an event',{exact:true}).waitFor();
   await p.screenshot({path:`${out}/${width}-${label}-event-target.png`});
   // Keyboard users can reach the real action as well as Skip.
-  await p.getByTestId('schedule-education-open-event').focus();await p.keyboard.press('Tab');assert.equal(await p.getByRole('button',{name:'Skip walkthrough',exact:true}).evaluate(e=>e===document.activeElement),true);
+  await p.getByTestId('schedule-education-open-event').focus();await p.keyboard.press('Tab');assert.equal(await p.getByRole('button',{name:'Skip tutorial',exact:true}).evaluate(e=>e===document.activeElement),true);
   await p.getByTestId('schedule-education-open-event').click();
   await p.getByTestId('schedule-find-on-map').scrollIntoViewIfNeeded();await tip.getByText('View event details',{exact:true}).waitFor();
   await assertClickCue(p,'schedule-education-open-map');
@@ -46,12 +46,12 @@ try {for(const width of [320,768,1440]) {
  await p.goto(base+'/schedule');await followInteractiveFlow('fresh');
  await p.goto(base+'/schedule');await p.getByRole('button',{name:'Schedule Help',exact:true}).waitFor();await p.waitForTimeout(1000);assert.equal(await tip.count(),0);await assertNoClickCue(p);assert.equal(await p.getByText('Plan your day',{exact:true}).count(),0);
  await p.getByPlaceholder('Search schedule',{exact:true}).fill(filteredEvent.title);await p.getByRole('button',{name:'Schedule Help',exact:true}).click();await followInteractiveFlow('replay-filtered',filteredEvent);
- await p.goto(base+'/schedule');await p.getByRole('button',{name:'Schedule Help',exact:true}).click();await p.getByRole('button',{name:'Got it, close Plan your day introduction'}).click();await tip.getByText('Tap an event',{exact:true}).waitFor();await p.getByRole('button',{name:'Skip walkthrough',exact:true}).click();await p.waitForTimeout(900);assert.equal(await tip.count(),0);await assertNoClickCue(p);
+ await p.goto(base+'/schedule');await p.getByRole('button',{name:'Schedule Help',exact:true}).click();await p.getByRole('button',{name:'Got it, close Plan your day introduction'}).click();await tip.getByText('Tap an event',{exact:true}).waitFor();await p.getByRole('button',{name:'Skip tutorial',exact:true}).click();await p.waitForTimeout(900);assert.equal(await tip.count(),0);await assertNoClickCue(p);
  await p.getByRole('button',{name:'Schedule Help',exact:true}).click();await p.getByRole('button',{name:'Got it, close Plan your day introduction'}).click();await assertClickCue(p,'schedule-education-open-event');await p.keyboard.press('Escape');await assertNoClickCue(p);
  assert.equal(await p.evaluate(()=>localStorage.getItem('@ipm_schedule_itinerary_onboarding_v1')),'true');
  console.log(`PASS ${width}: fresh/replay interactive event and location actions; unrelated taps blocked; keyboard target/Skip reachable; correct event highlight, no times; skip and persistence`);await c.close();
 }
 // No current events: keep the app usable rather than inventing a tutorial target.
 const c=await browser.newContext({viewport:{width:320,height:800},serviceWorkers:'block'});await fixtureRoutes(c);schedule.events=[];
-p=await c.newPage();await p.goto(base+'/schedule');await p.getByRole('button',{name:'Got it, close Plan your day introduction'}).click();await p.waitForTimeout(1000);assert.equal(await p.getByTestId('map-education-overlay').count(),0);await p.getByText('Find an event to explore',{exact:true}).waitFor();await p.getByRole('button',{name:'Skip Schedule walkthrough'}).click();console.log('PASS empty Schedule: no fabricated target or blocking overlay; Help and Skip usable');await c.close();
+p=await c.newPage();await p.goto(base+'/schedule');await p.getByRole('button',{name:'Got it, close Plan your day introduction'}).click();await p.waitForTimeout(1000);assert.equal(await p.getByTestId('map-education-overlay').count(),0);await p.getByText('Find an event to explore',{exact:true}).waitFor();await p.getByRole('button',{name:'Skip tutorial'}).click();console.log('PASS empty Schedule: no fabricated target or blocking overlay; Help and Skip usable');await c.close();
 } catch(e){if(p){await p.screenshot({path:out+'/failure.png'});console.error((await p.locator('body').innerText()).slice(0,2000));}throw e;}finally{await browser.close();}

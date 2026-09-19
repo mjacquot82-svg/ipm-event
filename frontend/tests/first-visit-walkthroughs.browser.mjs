@@ -22,19 +22,19 @@ try {for(const width of (process.env.IPM_TEST_WIDTHS ? JSON.parse(process.env.IP
  // No flags seeded: complete the fuller historical Schedule sequence.
  await p.goto(base+'/schedule');await p.getByText('Plan your day',{exact:true}).waitFor();await p.waitForTimeout(450);await p.screenshot({path:`${out}/${width}-schedule-auto.png`});assert.deepEqual(await flags(),[null,null,null]);
  await p.getByRole('button',{name:'Got it, close Plan your day introduction'}).click();await p.getByText(schedule.events[0].title,{exact:true}).first().scrollIntoViewIfNeeded();await tip.getByText('Tap an event',{exact:true}).waitFor();await p.getByTestId('schedule-education-open-event').click();await p.getByTestId('schedule-find-on-map').scrollIntoViewIfNeeded();await tip.getByText('View event details',{exact:true}).waitFor();await p.getByTestId('schedule-education-open-map').click();await p.getByTestId('map-selection-title').waitFor();
- await p.goto(base+'/schedule');await visibleHelp('schedule');await noAutomatic();await help('schedule').click();await p.getByText('Plan your day',{exact:true}).waitFor();await p.getByRole('button',{name:'Skip Schedule walkthrough'}).click();await noAutomatic();assert.deepEqual(await flags(),['true',null,null]);
+ await p.goto(base+'/schedule');await visibleHelp('schedule');await noAutomatic();await help('schedule').click();await p.getByText('Plan your day',{exact:true}).waitFor();await p.getByRole('button',{name:'Skip tutorial'}).click();await noAutomatic();assert.deepEqual(await flags(),['true',null,null]);
  // Schedule completion must not suppress Vendor automatic entry.
  await p.goto(base+'/vendors');await tip.getByText('Find this vendor',{exact:true}).waitFor();await assertNoClickCue(p);assert.match(await tip.innerText(),/Browse or search/);await p.screenshot({path:`${out}/${width}-vendors-auto.png`});await tip.getByRole('button',{name:'Got it',exact:true}).click();await p.getByTestId('vendor-find-on-map').scrollIntoViewIfNeeded();await tip.getByText('Find this vendor',{exact:true}).waitFor();await assertNoClickCue(p);assert.match(await tip.innerText(),/Tap here to jump/);await tip.getByRole('button',{name:'Got it',exact:true}).click();
- await p.goto(base+'/vendors');await visibleHelp('vendors');await noAutomatic();await help('vendors').click();await tip.getByText('Find this vendor',{exact:true}).waitFor();await tip.getByRole('button',{name:'Skip walkthrough',exact:true}).click();await noAutomatic();assert.deepEqual(await flags(),['true','true',null]);
+ await p.goto(base+'/vendors');await visibleHelp('vendors');await noAutomatic();await help('vendors').click();await tip.getByText('Find this vendor',{exact:true}).waitFor();await tip.getByRole('button',{name:'Skip tutorial',exact:true}).click();await noAutomatic();assert.deepEqual(await flags(),['true','true',null]);
  // Other section completion must not suppress Maps automatic entry.
  await p.goto(base+'/map');for(let i=0;i<5;i++){await tip.getByText(`${i+1} of 5`,{exact:true}).waitFor();await assertNoClickCue(p);if(i===0){assert.match(await tip.innerText(),/Grounds shows the overall site.*Entrances \/ Parking/s);await p.screenshot({path:`${out}/${width}-maps-auto.png`});}if(i===2)assert.match(await tip.innerText(),/Tuesday or Wednesday–Saturday/);await tip.getByRole('button',{name:i===4?'Got it':'Next',exact:true}).click();}
- await p.goto(base+'/map');await visibleHelp('map');await noAutomatic();await help('map').click();await tip.getByText('1 of 5',{exact:true}).waitFor();await tip.getByRole('button',{name:'Skip Maps tour'}).click();await noAutomatic();assert.deepEqual(await flags(),['true','true','true']);
+ await p.goto(base+'/map');await visibleHelp('map');await noAutomatic();await help('map').click();await tip.getByText('1 of 5',{exact:true}).waitFor();await tip.getByRole('button',{name:'Skip tutorial'}).click();await noAutomatic();assert.deepEqual(await flags(),['true','true','true']);
  // Staging preview ignores only tutorial completion; unrelated state is untouched.
  await p.evaluate(()=>localStorage.setItem('walkthrough-unrelated-state-proof','keep-me'));
  for(const section of ['schedule','vendors','map']){
   await p.goto(base+'/'+section+'?previewWalkthrough=1');
-  if(section==='schedule'){await p.getByText('Plan your day',{exact:true}).waitFor();await p.getByRole('button',{name:'Skip Schedule walkthrough'}).click();}
-  else{await tip.waitFor();await tip.getByRole('button',{name:section==='map'?'Skip Maps tour':'Skip walkthrough',exact:true}).click();}
+  if(section==='schedule'){await p.getByText('Plan your day',{exact:true}).waitFor();await p.getByRole('button',{name:'Skip tutorial'}).click();}
+  else{await tip.waitFor();await tip.getByRole('button',{name:'Skip tutorial',exact:true}).click();}
   await p.goto(base+'/'+section);await visibleHelp(section);await noAutomatic();
  }
  assert.deepEqual(await flags(),['true','true','true']);assert.equal(await p.evaluate(()=>localStorage.getItem('walkthrough-unrelated-state-proof')),'keep-me');
@@ -45,7 +45,7 @@ const c=await browser.newContext({viewport:{width:390,height:950},serviceWorkers
 await fixtureRoutes(c);
 p=await c.newPage();
 for(const section of ['schedule','vendors','map']){
- await p.goto(base+'/'+section);const skip=section==='schedule'?'Skip Schedule walkthrough':section==='vendors'?'Skip walkthrough':'Skip Maps tour';await p.getByRole('button',{name:skip,exact:true}).waitFor();if(section==='vendors')await p.keyboard.press('Escape');else await p.getByRole('button',{name:skip,exact:true}).click();await p.goto(base+'/'+section);await p.waitForTimeout(1500);assert.equal(await p.getByTestId('map-education-card').count(),0);assert.equal(await p.getByText('Plan your day',{exact:true}).count(),0);
+ await p.goto(base+'/'+section);const skip='Skip tutorial';await p.getByRole('button',{name:skip,exact:true}).waitFor();if(section==='vendors')await p.keyboard.press('Escape');else await p.getByRole('button',{name:skip,exact:true}).click();await p.goto(base+'/'+section);await p.waitForTimeout(1500);assert.equal(await p.getByTestId('map-education-card').count(),0);assert.equal(await p.getByText('Plan your day',{exact:true}).count(),0);
 }
 console.log('PASS fresh skip in each section suppresses automatic repeat');await c.close();
 } catch(e){if(p){await p.screenshot({path:out+'/failure.png'});console.error((await p.locator('body').innerText()).slice(0,2000));}throw e;}finally{await browser.close();}

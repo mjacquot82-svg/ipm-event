@@ -29,7 +29,7 @@ try {for(const width of [390,768,1440])for(const seen of [false,true]){
  const layer=p.getByTestId('entrances-map-layer'),before=await layer.evaluate(e=>getComputedStyle(e).transform);
  const v=await p.getByTestId('entrances-map-viewport').boundingBox();await p.mouse.move(v.x+v.width/2,v.y+v.height/2);await p.mouse.wheel(0,-220);await p.waitForTimeout(350);assert.notEqual(await layer.evaluate(e=>getComputedStyle(e).transform),before);
  await p.getByLabel('Fit entrances and parking map',{exact:true}).click();
- await help.click();await card.getByRole('button',{name:'Skip Maps tour'}).click();await p.getByLabel('Official entrances and parking map',{exact:true}).waitFor();
+ await help.click();await card.getByRole('button',{name:'Skip tutorial'}).click();await p.getByLabel('Official entrances and parking map',{exact:true}).waitFor();
  await p.reload();await help.waitFor();await p.waitForTimeout(800);assert.equal(await card.count(),0);await help.click();await card.waitFor();await p.keyboard.press('Escape');
  await p.getByText('Home',{exact:true}).click();await p.getByText('Map',{exact:true}).last().click();await help.waitFor();await p.waitForTimeout(800);assert.equal(await card.count(),0);assert.deepEqual(errors,[]);
  console.log(`PASS ${width} seen=${seen}: five-step tour, parking image, parade spotlight, four visible tabs, Help after completion/reopen, parking zoom/fit`);await c.close();

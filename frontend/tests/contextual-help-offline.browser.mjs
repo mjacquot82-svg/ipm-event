@@ -16,7 +16,7 @@ try{
  await c.unrouteAll({behavior:'wait'});await c.setOffline(true);
  await p.goto(base+'/schedule');const sh=p.getByRole('button',{name:'Schedule Help',exact:true});await sh.waitFor();assert.equal(await p.getByText('Plan your day',{exact:true}).count(),0);await sh.click();await p.getByText('Plan your day',{exact:true}).waitFor();await p.getByRole('button',{name:'Got it, close Plan your day introduction'}).click();
  await p.goto(base+'/vendors');const vh=p.getByRole('button',{name:'Vendors Help',exact:true});await vh.waitFor();await vh.click();await tip.getByText('Find this vendor',{exact:true}).waitFor();await tip.getByRole('button',{name:'Got it',exact:true}).click();
- await p.goto(base+'/map');await p.getByRole('button',{name:'Map Help, replay Maps tour',exact:true}).click();await tip.getByText('Find parking',{exact:true}).waitFor();assert.match(await tip.innerText(),/Grounds shows the overall site/);await p.getByRole('button',{name:'Skip Maps tour',exact:true}).click();
+ await p.goto(base+'/map');await p.getByRole('button',{name:'Map Help, replay Maps tour',exact:true}).click();await tip.getByText('Find parking',{exact:true}).waitFor();assert.match(await tip.innerText(),/Grounds shows the overall site/);await p.getByRole('button',{name:'Skip tutorial',exact:true}).click();
  assert.equal(await p.evaluate(()=>localStorage.getItem('@ipm_schedule_itinerary_onboarding_v1')),'true');assert.equal(await p.evaluate(()=>localStorage.getItem('@ipm_vendor_find_on_map_tip_seen_v1')),'true');
  console.log('PASS fresh Schedule introduction/details/map tips, fresh Vendor tip, fresh Maps tour; offline cached Schedule/Vendors/Maps replay and persisted completion');
  await c.close();

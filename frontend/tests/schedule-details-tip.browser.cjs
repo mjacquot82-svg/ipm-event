@@ -60,7 +60,7 @@ const artifact = process.env.IPM_ARTIFACT_DIR || '/tmp';
   await page.getByText('Home', { exact: true }).click();
   await page.getByText('Map', { exact: true }).last().click();
   await tip.getByText('Find parking', { exact: true }).waitFor();
-  await tip.getByRole('button', { name: 'Skip Maps tour' }).click();
+  await tip.getByRole('button', { name: 'Skip tutorial' }).click();
   await page.goto(origin + '/schedule'); await page.getByPlaceholder('Search schedule').waitFor();
   await page.waitForTimeout(1300); assert.equal(await tip.count(), 0); assert.equal(await page.getByText('Plan your day', { exact: true }).count(), 0);
   await page.goto(origin + '/schedule?eventId=' + mapped.id); await page.getByTestId('schedule-find-on-map').scrollIntoViewIfNeeded();

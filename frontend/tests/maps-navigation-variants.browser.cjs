@@ -22,7 +22,7 @@ const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, '../public/api/v
   await p.waitForTimeout(1100); assert.equal(await tip.count(), 0);
   assert.equal(await p.evaluate(() => localStorage.getItem('@ipm_maps_tour_seen_v1')), seen ? 'true' : null);
   await p.getByRole('button', { name: 'Map Help, replay Maps tour' }).click(); await tip.getByText('Find parking', { exact: true }).waitFor();
-  await tip.getByRole('button', { name: 'Skip Maps tour' }).click(); await p.locator('[data-testid=vendor-booth-highlight], [data-testid=selected-booth-highlight]').first().waitFor();
+  await tip.getByRole('button', { name: 'Skip tutorial' }).click(); await p.locator('[data-testid=vendor-booth-highlight], [data-testid=selected-booth-highlight]').first().waitFor();
   console.log(`PASS ${name}: unchanged booth highlight, seen=${seen}, Vendor education, Maps deferral and manual Help`); await c.close();
  }
  const c = await b.newContext({ serviceWorkers: 'block' });
