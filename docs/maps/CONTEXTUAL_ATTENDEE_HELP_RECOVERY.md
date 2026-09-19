@@ -27,7 +27,7 @@ Map Help retains five steps and the approved Parade Routes text/target. Its park
 
 Schedule's existing View on Map route now also carries event ID and title. Existing location resolution and highlight selection remain authoritative. Tented City and Grounds cards use the event title as primary text and the resolved venue/place as secondary text. Manual search, selection, reset and vendor navigation clear the event identity. Same-venue events reselect on their event ID/title, avoiding a stale title.
 
-Removed the Tented City stage-event list and its extra Schedule fetch. It previously took up to four events for the selected stage and displayed start times without dates. Schedule/detail pages retain all date/time information; their data and stable IDs are unchanged.
+Removed the Tented City stage-event list and its extra Schedule fetch. It previously took up to four events for the selected stage and displayed start times without dates. On phones, Fit sits above the measured event card so it cannot obscure Dismiss. Schedule/detail pages retain all date/time information; their data and stable IDs are unchanged.
 
 ## Validation and review
 

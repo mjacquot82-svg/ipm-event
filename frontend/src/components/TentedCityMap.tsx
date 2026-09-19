@@ -84,6 +84,7 @@ export default function TentedCityMap({
   const [selectedBoothId, setSelectedBoothId] = useState<string | null>(null);
   const [paradeRoute, setParadeRoute] = useState<ParadeRouteId | null>(null);
   const [eventSelectionTitle, setEventSelectionTitle] = useState<string | null>(null);
+  const [selectionCardHeight, setSelectionCardHeight] = useState(120);
   const [unavailable, setUnavailable] = useState(Boolean(mapUnavailable));
   const [unmappedInitialLocation, setUnmappedInitialLocation] = useState(false);
   const [verify1A, setVerify1A] = useState(Boolean(verify1AProp));
@@ -547,7 +548,7 @@ export default function TentedCityMap({
           </ScrollView>
         ) : null}
       </View>
-      <View style={[styles.fabCol, desktop && desktopMapStyles.fit]}>
+      <View style={[styles.fabCol, desktop && desktopMapStyles.fit, eventSelectionTitle && !desktop ? { bottom: TAB_BAR_HEIGHT + INFO_CARD_GAP + selectionCardHeight + 8 } : null]}>
         <TouchableOpacity ref={educationResetAnchor} testID="tented-map-reset" style={styles.fab} onPress={resetMap} accessibilityLabel="Reset map zoom"><Feather name="maximize-2" size={18} color={colors.textPrimary} /></TouchableOpacity>
       </View>
       {unmappedInitialLocation ? (
@@ -561,7 +562,7 @@ export default function TentedCityMap({
           </View>
         </View>
       ) : selected || selectedSemanticArea ? (
-        <View testID="map-selection-card" style={[styles.infoCard, desktop && desktopMapStyles.info]}>
+        <View testID="map-selection-card" onLayout={(e) => setSelectionCardHeight(e.nativeEvent.layout.height)} style={[styles.infoCard, desktop && desktopMapStyles.info]}>
           <View style={styles.infoHeader}>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <Text testID="map-selection-title" style={styles.infoTitle} numberOfLines={2}>{selectedTitle}</Text>
@@ -575,7 +576,7 @@ export default function TentedCityMap({
           </View>
         </View>
       ) : unavailable ? (
-        <View testID="map-selection-card" style={[styles.infoCard, desktop && desktopMapStyles.info]}>
+        <View testID="map-selection-card" onLayout={(e) => setSelectionCardHeight(e.nativeEvent.layout.height)} style={[styles.infoCard, desktop && desktopMapStyles.info]}>
           <View style={styles.infoHeader}>
             <View style={{ flex: 1, paddingRight: 8 }}><Text style={styles.infoTitle}>Map location not available</Text></View>
             <TouchableOpacity onPress={clearSelection} hitSlop={10} accessibilityLabel="Dismiss"><Feather name="x" size={20} color={colors.textMuted} /></TouchableOpacity>
