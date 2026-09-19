@@ -1,0 +1,35 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {chromium}=require(process.env.IPM_PLAYWRIGHT||'/tmp/ipm-browser-tools/node_modules/playwright');
+const origin=process.env.IPM_PREVIEW_URL||'https://staging.theipm.ca';
+const out=path.resolve(__dirname,'../../.artifacts/grounds-full-artwork');
+(async()=>{const browser=await chromium.launch({args:['--no-sandbox']});try{
+ const context=await browser.newContext({viewport:{width:360,height:800},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+ await context.route('**/*',r=>r.request().method()!=='GET'||/wonderpush|webpushr|google-analytics/.test(r.request().url())?r.abort():r.continue());
+ const page=await context.newPage(),errors=[],passed=[];page.on('pageerror',e=>errors.push(e.message));
+ const pass=name=>{passed.push(name);console.log('PASS',name)};
+ await page.goto(origin+'/map');await page.getByRole('button',{name:'Skip tutorial',exact:true}).click();await page.getByTestId('map-mode-grounds').click();
+ const img=page.locator('img[src*="grounds-site-map"]');await img.waitFor();await page.waitForTimeout(600);
+ const camera=()=>img.evaluate(e=>{const m=new DOMMatrix(getComputedStyle(e.closest('[style*="transform:"]')).transform);return {scale:m.a,x:m.e,y:m.f}});
+ const reset=async()=>{await page.getByTestId('grounds-fit-reset').click();await page.waitForTimeout(400);assert.ok(Math.abs((await camera()).scale-1)<.01)};
+ const box=await img.boundingBox(),cx=box.x+box.width*.55,cy=box.y+box.height*.55;
+ const cd=await context.newCDPSession(page);
+ const touch=(type,points)=>cd.send('Input.dispatchTouchEvent',{type,touchPoints:points});
+ await touch('touchStart',[{x:cx-25,y:cy,id:1},{x:cx+25,y:cy,id:2}]);
+ for(const d of [35,45,60])await touch('touchMove',[{x:cx-d,y:cy,id:1},{x:cx+d,y:cy,id:2}]);
+ await touch('touchEnd',[]);await page.waitForTimeout(400);assert.ok((await camera()).scale>1.1);pass('pinch');
+ const before=await camera();await touch('touchStart',[{x:cx,y:cy,id:1}]);
+ for(const d of [10,20,35])await touch('touchMove',[{x:cx+d,y:cy+d,id:1}]);
+ await touch('touchEnd',[]);await page.waitForTimeout(400);const after=await camera();assert.ok(Math.abs(after.x-before.x)>5||Math.abs(after.y-before.y)>5);pass('pan');
+ await reset();pass('reset/fit');
+ for(let n=0;n<2;n++){await touch('touchStart',[{x:cx,y:cy,id:1}]);await touch('touchEnd',[]);await page.waitForTimeout(70)}
+ await page.waitForTimeout(400);assert.ok((await camera()).scale>1.1);pass('double-tap');await reset();
+ await page.evaluate(()=>document.documentElement.requestFullscreen());assert.equal(await page.evaluate(()=>!!document.fullscreenElement),true);await reset();await page.evaluate(()=>document.exitFullscreen());await reset();pass('fullscreen');
+ const b=await img.boundingBox();await page.touchscreen.tap(b.x+b.width*.222,b.y+b.height*.453);await page.getByTestId('grounds-zone-highlight-horse-plowing').waitFor();pass('zone tap/highlight');await reset();
+ await page.getByTestId('grounds-map-search').fill('Tractor Plowing');await page.getByText('Tractor Plowing',{exact:true}).first().click();await page.getByTestId('grounds-zone-highlight-tractor-plowing').waitFor();pass('place search');await reset();
+ await page.getByTestId('maps-help').click();for(let n=0;n<5;n++){await page.getByTestId('map-education-card').waitFor();assert.ok(await page.getByTestId('map-education-spotlight').count());await page.getByRole('button',{name:n<4?'Next':'Got it',exact:true}).click();}await page.getByTestId('map-education-card').waitFor({state:'detached'});await img.waitFor();pass('Map Help / complete tutorial / anchors');
+ await page.getByTestId('map-mode-tented').click();await page.locator('img[src*="tented-city-map"]').waitFor();await page.getByTestId('map-mode-grounds').click();await img.waitFor();pass('Tented City switching');
+ await page.getByTestId('grounds-map-search').fill('RV Park');await page.getByText('RV Park',{exact:true}).first().click();await page.getByTestId('view-rv-site-map').click();await img.waitFor({state:'detached'});await page.getByTestId('rv-park-detail-map').waitFor();await page.locator('img[src*="rv-park-detail-map"]').waitFor();pass('RV switching');
+ await page.getByTestId('map-mode-grounds').click();await img.waitFor();await page.getByTestId('grounds-map-search').fill('Hydro One');await page.getByText(/Hydro One/).last().click();await page.locator('img[src*="tented-city-map"]').waitFor();await img.waitFor({state:'detached'});pass('vendor search');
+ await page.goto(origin+'/map?mapType=grounds&source=schedule&location=Horse%20Plowing&eventTitle=Grounds%20acceptance&eventId=acceptance');await page.getByTestId('grounds-zone-highlight-horse-plowing').waitFor();await page.getByText('Grounds acceptance',{exact:true}).waitFor();await reset();pass('Find on Map / event title and location / reset');
+ assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'interaction-results.json'),JSON.stringify({passed,errors},null,2));await page.screenshot({path:path.join(out,'interactions-final.png')});
+}finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
