@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
-import { detectInstallEnvironment } from '../src/utils/installEnvironment.ts';
+import { detectInstallEnvironment, getInstallGuidance, shouldOfferInstallGuidance } from '../src/utils/installEnvironment.ts';
 import { notificationHelp } from '../src/utils/notificationHelp.ts';
 
 // Execute the actual components with deterministic hooks and inert platform/SDK adapters.
 // Provider and browser writes are counted, never sent to a real service.
-function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Chrome/130.0', standalone=false}={}) {
- const slots=[],effects=[],listeners=new Map(),storage=new Map();let index=0,tree,dirty=false;
+function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Chrome/130.0', standalone=false, automatic=false, blockedKeys=[], initialStorage={}}={}) {
+ const slots=[],effects=[],listeners=new Map(),storage=new Map(Object.entries(initialStorage)),session=new Map();let index=0,tree,dirty=false;
  const calls={read:0,subscribe:0,unsubscribe:0,register:[],prompt:0,holds:0};
  const equal=(a,b)=>a&&b&&a.length===b.length&&a.every((v,i)=>v===b[i]);
  const hooks={
@@ -20,19 +20,19 @@ function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Ch
   useEffect:(f,deps)=>{let i=index++;if(!slots[i]||!equal(slots[i].deps,deps)){const old=slots[i];slots[i]={deps};effects.push(()=>{old?.cleanup?.();slots[i].cleanup=f();});}},
  };
  const add=(name,fn)=>{if(!listeners.has(name))listeners.set(name,new Set());listeners.get(name).add(fn);};
- const win={navigator:null,matchMedia:()=>({matches:standalone}),addEventListener:add,removeEventListener:(n,f)=>listeners.get(n)?.delete(f),dispatchEvent:e=>{for(const f of listeners.get(e.type)||[])f(e);}};
+ const win={sessionStorage:{getItem:k=>session.get(k)||null,setItem:(k,v)=>session.set(k,v)},navigator:null,matchMedia:()=>({matches:standalone}),addEventListener:add,removeEventListener:(n,f)=>listeners.get(n)?.delete(f),dispatchEvent:e=>{for(const f of listeners.get(e.type)||[])f(e);}};
  const navigator={onLine:online,userAgent:ua,platform:standalone&&ua.includes('iPad')?'MacIntel':'',maxTouchPoints:1,standalone};win.navigator=navigator;
  const sdk={getNotificationState:async()=>{calls.read++;return state;},subscribeToNotifications:async()=>{calls.subscribe++;return state='subscribed';},unsubscribeFromNotifications:async()=>{calls.unsubscribe++;return state='unsubscribed';},waitForWonderPushSessionReady:async()=>{}};
  const module={exports:{}};
  const context={module,exports:module.exports,window:win,navigator,document:{referrer:''},Event:class{constructor(type){this.type=type;}},process:{env:{}},console,
  require:(name)=>{
   if(name==='react')return {...hooks,default:hooks};
-  if(name==='react-native')return {Platform:{OS:'web'},StyleSheet:{create:x=>x},Text:'Text',View:'View',ScrollView:'ScrollView',TouchableOpacity:'Button',ActivityIndicator:'Spinner'};
+  if(name==='react-native')return {Platform:{OS:'web'},StyleSheet:{create:x=>x},Text:'Text',View:'View',ScrollView:'ScrollView',TouchableOpacity:'Button',ActivityIndicator:'Spinner',Modal:'Modal'};
   if(name==='react-native-safe-area-context')return {SafeAreaView:'View'};
   if(name==='expo-router')return {useFocusEffect:f=>hooks.useEffect(f,[f])};
-  if(name.includes('async-storage'))return {default:{setItem:async(k,v)=>storage.set(k,v),getItem:async k=>storage.get(k)||null}};
+  if(name.includes('async-storage'))return {__esModule:true,default:{setItem:async(k,v)=>{if(blockedKeys.includes('*')||blockedKeys.includes(k))throw Error('blocked');storage.set(k,v);},getItem:async k=>{if(blockedKeys.includes('*')||blockedKeys.includes(k))throw Error('blocked');return storage.get(k)||null;}}};
   if(name.includes('vector-icons'))return {Feather:'Icon'};
-  if(name.includes('installEnvironment'))return {detectInstallEnvironment,getInstallGuidance:env=>({heading:'Optional instructions',intro:'Optional',steps:[],primaryLabel:env.installState==='install_prompt_available'?'Add IPM':null})};
+  if(name.includes('installEnvironment'))return {detectInstallEnvironment,getInstallGuidance,shouldOfferInstallGuidance};
   if(name.includes('notificationHelp'))return {notificationHelp};
   if(name.includes('pwaUpdateService'))return {holdPwaUpdate:()=>{calls.holds++;return()=>calls.holds--;}};
   if(name.endsWith('wonderPushService'))return sdk;
@@ -43,7 +43,7 @@ function harness(file, {state='default', online=true, ua='Mozilla/5.0 Android Ch
   throw Error(name);
  }};
  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/'+file,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React,esModuleInterop:true}}).outputText,context);
- const render=()=>{index=0;dirty=false;tree=module.exports.default({});while(effects.length)effects.shift()();};
+ const render=()=>{index=0;dirty=false;tree=module.exports.default({automatic});while(effects.length)effects.shift()();};
  const flush=async()=>{for(let n=0;n<20;n++){if(dirty||!tree)render();await Promise.resolve();}return tree;};
  const all=(node=tree)=>!node||typeof node!=='object'?[]:[node,...node.children.flatMap(all)];
  const text=(node=tree)=>typeof node==='string'?node:node&&typeof node==='object'?node.children.map(text).join(' '):'';
@@ -92,4 +92,13 @@ test('C installed Android and iPhone offer status instead of another install act
 });
 test('G/i iPhone notification help is capability-specific and preserves browser use',()=>{
  const e=detectInstallEnvironment({userAgent:'iPhone Safari/604.1'});assert.match(notificationHelp(e,'unsupported'),/16.4/);assert.match(notificationHelp(e,'unsupported'),/browse IPM here/);
+});
+
+for(const blockedKeys of [[],['*']])test('fresh automatic guidance without a native event; blocked preferences are not a gate '+JSON.stringify(blockedKeys),async()=>{
+ const h=harness('PWAInstallPrompt.tsx',{automatic:true,blockedKeys});await h.flush();
+ assert.match(h.text(),/Install the IPM App/);assert.match(h.text(),/Tap the three dots/);assert.equal(h.calls.prompt,0);assert.equal(h.calls.holds,1);
+ await h.click('Continue without installing');assert.doesNotMatch(h.text(),/Install the IPM App/);assert.equal(h.calls.holds,0);await h.event('ipm-install-state');assert.doesNotMatch(h.text(),/Install the IPM App/);
+});
+test('one unavailable preference cannot erase another known completion',async()=>{
+ const h=harness('PWAInstallPrompt.tsx',{automatic:true,blockedKeys:['pwa_install_installed'],initialStorage:{pwa_install_entry_completed:'true'}});await h.flush();assert.doesNotMatch(h.text(),/Install the IPM App/);
 });

@@ -1,3 +1,5 @@
+> Follow-up: Marc reported a physical failure on Build 376897. See [the suppression investigation](physical-install-guidance-fix-20260919.md); the original storage-failure suppression policy below is superseded.
+
 # Device-aware install guidance recovery — 19 September 2026
 
 ## Historical evidence

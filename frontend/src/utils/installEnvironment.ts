@@ -30,11 +30,11 @@ export function isInstallGuidanceEligible(dismissedAt: string | null, now: numbe
 }
 
 // One-time Home guidance. Keep historical choices; never revive a timed nag.
-export function shouldOfferInstallGuidance({ installed, installedHint, completed, dismissedAt, storageReadable = true }: {
-  installed: boolean; installedHint: boolean; completed: boolean; dismissedAt: string | null; storageReadable?: boolean;
+export function shouldOfferInstallGuidance({ installed, installedHint, completed, dismissedAt }: {
+  installed: boolean; installedHint: boolean; completed: boolean; dismissedAt: string | null;
 }): boolean {
   const dismissed = dismissedAt !== null && Number.isFinite(Number(dismissedAt)) && Number(dismissedAt) > 0;
-  return storageReadable && !installed && !installedHint && !completed && !dismissed;
+  return !installed && !installedHint && !completed && !dismissed;
 }
 
 export function detectInstallEnvironment({

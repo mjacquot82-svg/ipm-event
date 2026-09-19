@@ -13,6 +13,20 @@ import { detectInstallEnvironment, getInstallGuidance, InstallEnvironment, Insta
 const DISMISS_KEY = 'pwa_install_dismissed_at';
 const INSTALLED_KEY = 'pwa_install_installed';
 const ENTRY_COMPLETED_KEY = 'pwa_install_entry_completed';
+const SESSION_DISMISS_KEY = 'pwa_install_session_dismissed';
+let dismissedInThisPage = false;
+
+function dismissedInSession() {
+  if (dismissedInThisPage) return true;
+  try { return window.sessionStorage.getItem(SESSION_DISMISS_KEY) === 'true'; }
+  catch { return false; }
+}
+
+function rememberSessionDismissal() {
+  dismissedInThisPage = true;
+  try { window.sessionStorage.setItem(SESSION_DISMISS_KEY, 'true'); }
+  catch { /* With all storage blocked, retain the choice for this page's lifetime. */ }
+}
 
 // Capture once at the app root, including on deep-linked first visits.
 export function startInstallPromptCapture() {
@@ -72,15 +86,17 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
     const next = currentEnvironment();
     setEnvironment(next);
     if (next.installState === 'installed') { setVisible(false); return; }
-    if (!automatic || dismissedThisSession.current) return;
-    try {
-      const [installed, completed, dismissedAt] = await Promise.all([
-        AsyncStorage.getItem(INSTALLED_KEY), AsyncStorage.getItem(ENTRY_COMPLETED_KEY), AsyncStorage.getItem(DISMISS_KEY),
-      ]);
-      if (version !== evaluation.current || dismissedThisSession.current) return;
-      setVisible(shouldOfferInstallGuidance({ installed: currentEnvironment().installState === 'installed',
-        installedHint: installed === 'true', completed: completed === 'true', dismissedAt }));
-    } catch { /* Storage unavailable: keep the website usable; manual help remains available. */ }
+    if (!automatic || dismissedThisSession.current || dismissedInSession()) return;
+    // Storage is a preference source, not a prerequisite for educational guidance.
+    // Read independently so a blocked key does not erase another known choice.
+    const [installed, completed, dismissedAt] = await Promise.all(
+      [INSTALLED_KEY, ENTRY_COMPLETED_KEY, DISMISS_KEY].map(async key => {
+        try { return await AsyncStorage.getItem(key); } catch { return null; }
+      }),
+    );
+    if (version !== evaluation.current || dismissedThisSession.current || dismissedInSession()) return;
+    setVisible(shouldOfferInstallGuidance({ installed: currentEnvironment().installState === 'installed',
+      installedHint: installed === 'true', completed: completed === 'true', dismissedAt }));
   }, [automatic]);
 
   useEffect(() => {
@@ -98,6 +114,7 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
 
   const dismiss = useCallback(async () => {
     dismissedThisSession.current = true;
+    rememberSessionDismissal();
     evaluation.current++;
     setVisible(false);
     triggerRef.current?.focus?.();
@@ -119,6 +136,7 @@ export default function PWAInstallPrompt({ onDismiss, automatic = false }: { onD
       if (outcome === 'dismissed') await dismiss();
       else {
         dismissedThisSession.current = true;
+        rememberSessionDismissal();
         setVisible(false);
         await AsyncStorage.setItem(ENTRY_COMPLETED_KEY, 'true').catch(() => undefined);
       }

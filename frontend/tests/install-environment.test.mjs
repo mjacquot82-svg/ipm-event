@@ -29,7 +29,7 @@ test('decline is respected during cooldown and eligible later', () => { const no
 test('one-time Home policy respects every historical choice without timed re-prompts', () => {
  const fresh={installed:false,installedHint:false,completed:false,dismissedAt:null};
  assert.equal(shouldOfferInstallGuidance(fresh),true);
- for(const change of [{installed:true},{installedHint:true},{completed:true},{dismissedAt:'1'},{storageReadable:false}])
+ for(const change of [{installed:true},{installedHint:true},{completed:true},{dismissedAt:'1'}])
   assert.equal(shouldOfferInstallGuidance({...fresh,...change}),false);
 });
 test('iPad desktop-style agent is identified by MacIntel and touch support', () => {

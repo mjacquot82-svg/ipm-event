@@ -15,11 +15,11 @@ const desktop = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Ch
 const preserved = {'@event_navigator_favorites': JSON.stringify({sessionIds:['fixture-saved-session']}), '@ipm_notification_capability_v1':'fixture-preserve-only', 'pwa_notification_dismissed_at':'1234'};
 const browser = await chromium.launch({args:['--no-sandbox']});
 const errors = [];
-async function setup({ua=android,width=390,display='',iosStandalone=false,oldChoice={},storageBlocked=false,referrer=''}={}) {
- const c = await browser.newContext({viewport:{width,height:width===320?568:780},userAgent:ua,serviceWorkers:'block'});
- await c.addInitScript(({display,iosStandalone,oldChoice,preserved,storageBlocked,referrer,ua})=>{
+async function setup({ua=android,width=390,display='',iosStandalone=false,oldChoice={},storageBlocked=false,allStorageBlocked=false,referrer=''}={}) {
+ const c = await browser.newContext({viewport:{width,height:width===320?568:780},userAgent:ua,isMobile:width<768,hasTouch:width<1024,serviceWorkers:'block'});
+ await c.addInitScript(({display,iosStandalone,oldChoice,preserved,storageBlocked,allStorageBlocked,referrer,ua})=>{
   const original=window.matchMedia.bind(window);
-  window.matchMedia=q=>q.startsWith('(display-mode:')?{...original(q),matches:!!display&&q===`(display-mode: ${display})`,addEventListener(){},removeEventListener(){}}:original(q);
+  window.matchMedia=q=>display&&q.startsWith('(display-mode:')?{...original(q),matches:!!display&&q===`(display-mode: ${display})`,addEventListener(){},removeEventListener(){}}:original(q);
   Object.defineProperty(navigator,'standalone',{configurable:true,value:iosStandalone});
   if(ua.includes('Macintosh')){Object.defineProperty(navigator,'platform',{configurable:true,value:'MacIntel'});Object.defineProperty(navigator,'maxTouchPoints',{configurable:true,value:5});}
   if(referrer)Object.defineProperty(document,'referrer',{configurable:true,value:referrer});
@@ -27,10 +27,10 @@ async function setup({ua=android,width=390,display='',iosStandalone=false,oldCho
    for(const [k,v]of Object.entries({...preserved,...oldChoice}))localStorage.setItem(k,v);
    sessionStorage.setItem('install-fixture-seeded','true');
   }
-  if(storageBlocked){const get=Storage.prototype.getItem;Storage.prototype.getItem=function(k){if(k.startsWith('pwa_install_'))throw Error('fixture blocked');return get.call(this,k);};}
+  if(storageBlocked||allStorageBlocked){for(const method of ['getItem','setItem']){const original=Storage.prototype[method];Storage.prototype[method]=function(k,...args){if(k.startsWith('pwa_install_')&&(allStorageBlocked||this===window.localStorage))throw new DOMException('Storage blocked','SecurityError');return original.call(this,k,...args);};}}
   window.__installCalls=0;window.__permissionCalls=0;
   if(window.Notification)Notification.requestPermission=async()=>{window.__permissionCalls++;return 'default';};
- },{display,iosStandalone,oldChoice,preserved,storageBlocked,referrer,ua});
+ },{display,iosStandalone,oldChoice,preserved,storageBlocked,allStorageBlocked,referrer,ua});
  await c.route('**/*',r=>{
   const q=r.request(),u=new URL(q.url());
   if(q.method()==='OPTIONS')return r.fulfill({status:204,headers:{'access-control-allow-origin':base,'access-control-allow-credentials':'true','access-control-allow-methods':'GET, OPTIONS','access-control-allow-headers':q.headers()['access-control-request-headers']||'content-type'}});
@@ -49,8 +49,9 @@ async function setup({ua=android,width=390,display='',iosStandalone=false,oldCho
 async function noPrompt(p,dialog){if(new URL(p.url()).pathname==='/')await p.getByText('IPM 2026 Starts In',{exact:true}).waitFor();await p.waitForTimeout(800);assert.equal(await dialog.count(),0);}
 async function fakeNative(p,outcome){await p.evaluate(outcome=>{const e=new Event('beforeinstallprompt',{cancelable:true});e.prompt=async()=>{window.__installCalls++;};e.userChoice=Promise.resolve({outcome});dispatchEvent(e);},outcome);}
 try {
- for(const [name,ua,width]of [['android-small',android,320],['android',android,390],['iphone',ios,393],['ipad',ipad,768],['desktop',desktop,1440],['ambiguous','',390]]){
+ for(const [name,ua,width]of [['android-small',android,320],['android',android,390],['iphone',ios,393],['ipad',ipad,768],['desktop',desktop,1440],['ambiguous-mobile','Mozilla/5.0 (Linux; Android 14) Mobile BrowserX/1.0',390]]){
   const {c,p,dialog,unchanged}=await setup({ua,width});await p.goto(base+'/');await dialog.waitFor();
+  assert.equal(await p.evaluate(()=>!!window.deferredPWAPrompt),false,'manual education does not require a native install event');
   assert.equal(await p.getByTestId('map-education-card').count(),0);
   if(name.startsWith('android'))await dialog.getByText('Tap the three dots',{exact:true}).waitFor();
   if(name==='iphone'||name==='ipad'){await dialog.getByText('Tap the Share button',{exact:true}).waitFor();await dialog.getByText('Tap “Add to Home Screen”',{exact:true}).waitFor();}
@@ -70,11 +71,21 @@ try {
   await action.click();await noPrompt(p,dialog);assert.equal(await p.evaluate(()=>window.__installCalls),1);await unchanged();await p.reload();await noPrompt(p,dialog);await c.close();
   console.log(`PASS native prompt: user gesture only, ${outcome}, no repeat`);
  }
- for(const options of [{display:'standalone'},{display:'minimal-ui'},{ua:ios,iosStandalone:true},{oldChoice:{pwa_install_dismissed_at:'1'}},{oldChoice:{pwa_install_entry_completed:'true'}},{oldChoice:{pwa_install_installed:'true'}},{storageBlocked:true}]){
+ for(const options of [{display:'standalone'},{display:'standalone',allStorageBlocked:true},{display:'minimal-ui'},{ua:ios,iosStandalone:true},{oldChoice:{pwa_install_dismissed_at:'1'}},{oldChoice:{pwa_install_entry_completed:'true'}},{oldChoice:{pwa_install_installed:'true'}}]){
   const {c,p,dialog,unchanged}=await setup(options);await p.goto(base+'/');await noPrompt(p,dialog);await unchanged();await c.close();
  }
  {const {c,p,dialog}=await setup({referrer:'android-app://unrelated-messenger'});await p.goto(base+'/');await dialog.waitFor();await p.evaluate(()=>dispatchEvent(new Event('appinstalled')));await noPrompt(p,dialog);assert.equal(await p.evaluate(()=>localStorage.getItem('pwa_install_installed')),'true');await c.close();}
- console.log('PASS installed modes, old choices, storage failure, appinstalled and non-install Android referrer');
+ console.log('PASS installed modes, old choices, appinstalled and non-install Android referrer');
+ for(const options of [{storageBlocked:true},{allStorageBlocked:true}]){
+  const {c,p,dialog,unchanged}=await setup(options);await p.goto(base+'/');await dialog.waitFor();
+  assert.equal(await p.evaluate(()=>!!window.deferredPWAPrompt),false);await dialog.getByText('Tap the three dots',{exact:true}).waitFor();await unchanged();
+  await dialog.getByRole('button',{name:'Continue without installing'}).click();await noPrompt(p,dialog);
+  await p.getByText('About',{exact:true}).last().click();await p.getByRole('button',{name:'Install App',exact:true}).click();await p.getByRole('heading',{name:'Install the IPM App',exact:true}).waitFor();await p.getByRole('button',{name:'Close install guidance'}).click();
+  await p.getByText('Home',{exact:true}).last().click();await noPrompt(p,dialog);
+  if(!options.allStorageBlocked){await p.reload();await noPrompt(p,dialog);}
+  await unchanged();await c.close();
+  console.log(`PASS blocked preferences ${JSON.stringify(options)}: no native event, automatic manual guidance, session dismissal and About replay`);
+ }
  for(const section of ['schedule','vendors','map']){
   const {c,p,dialog,unchanged}=await setup();await p.goto(base+'/');await dialog.waitFor();await dialog.getByRole('button',{name:'Close install guidance'}).focus();await p.keyboard.press('Escape');await noPrompt(p,dialog);
   await p.getByText(section==='map'?'Map':section==='schedule'?'Schedule':'Vendors',{exact:true}).last().click();
