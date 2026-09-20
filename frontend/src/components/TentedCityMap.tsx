@@ -71,9 +71,9 @@ function BoothHighlight({ rect, layer, border, borderColor, outset = 0, style, t
 }
 
 export default function TentedCityMap({
-  initialQuery = '', initialEventTitle, initialEventId, initialVendorName = '', initialVendorLocation = '', initialVendorType = '', mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds, hideModeSelector = false,
+  initialQuery = '', initialEventTitle, initialEventId, initialVendorName = '', initialVendorLocation = '', initialVendorType = '', initialParadeRoute = null, mapUnavailable = false, exactInitialPlace = false, verify1A: verify1AProp = false, onSwitchToGrounds, hideModeSelector = false,
 }: {
-  initialEventTitle?: string; initialEventId?: string; initialQuery?: string | null; initialVendorName?: string | null; initialVendorLocation?: string | null; initialVendorType?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: (location?: string) => void; hideModeSelector?: boolean;
+  initialEventTitle?: string; initialEventId?: string; initialParadeRoute?: ParadeRouteId | null; initialQuery?: string | null; initialVendorName?: string | null; initialVendorLocation?: string | null; initialVendorType?: string | null; mapUnavailable?: boolean; exactInitialPlace?: boolean; verify1A?: boolean; onSwitchToGrounds?: (location?: string) => void; hideModeSelector?: boolean;
 }) {
   const educationSearchAnchor = useMapEducationAnchor('tented-search');
   const educationResetAnchor = useMapEducationAnchor('tented-reset');
@@ -82,13 +82,14 @@ export default function TentedCityMap({
   const [selected, setSelected] = useState<TentedCityPlace | null>(null);
   const [selectedSemanticArea, setSelectedSemanticArea] = useState<SemanticMapArea | null>(null);
   const [selectedBoothId, setSelectedBoothId] = useState<string | null>(null);
-  const [paradeRoute, setParadeRoute] = useState<ParadeRouteId | null>(null);
+  const [paradeRoute, setParadeRoute] = useState<ParadeRouteId | null>(initialParadeRoute);
   const [eventSelectionTitle, setEventSelectionTitle] = useState<string | null>(null);
   const [selectionCardHeight, setSelectionCardHeight] = useState(120);
   const [unavailable, setUnavailable] = useState(Boolean(mapUnavailable));
   const [unmappedInitialLocation, setUnmappedInitialLocation] = useState(false);
   const [verify1A, setVerify1A] = useState(Boolean(verify1AProp));
   const verifyTaps = useRef({ count: 0, at: 0 });
+  useEffect(() => { setParadeRoute(initialParadeRoute); }, [initialParadeRoute]);
   const desktop = useDesktopMapWorkspace('tented');
   const artwork = useArtworkReveal('tented');
   const viewportRef = useRef<View>(null);

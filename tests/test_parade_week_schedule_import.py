@@ -6,7 +6,7 @@ import unittest
 from backend.import_ipm_parade_week_schedule import (
     CATEGORY,
     EXPECTED_TOTAL,
-    LOCATION,
+    LOCATION_BY_EXTERNAL_ID,
     PRODUCTION_EVENT_SLUG,
     PRODUCTION_PROJECT_REF,
     SOURCE,
@@ -33,7 +33,10 @@ class ParadeWeekScheduleImportTests(unittest.TestCase):
         self.assertEqual(EXPECTED_TOTAL, len(rows))
         self.assertEqual(EXPECTED, [(r["title"], r["date"], r["start_time"], r["days_active"]) for r in rows])
         self.assertEqual({CATEGORY: 5}, dict(Counter(r["category"] for r in rows)))
-        self.assertTrue(all(r["location_name"] == LOCATION for r in rows))
+        self.assertEqual(
+            [LOCATION_BY_EXTERNAL_ID[r["external_id"]] for r in rows],
+            [r["location_name"] for r in rows],
+        )
         self.assertTrue(all(r["end_time"] is None for r in rows))
         self.assertTrue(all(r["description"] for r in rows))
 
