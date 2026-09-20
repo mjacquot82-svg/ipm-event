@@ -5,7 +5,7 @@
 export type ParadeRouteId = 'tuesday' | 'wed-sat';
 export type RoutePoint = readonly [number, number];
 export type RouteArrow = { at: RoutePoint; direction: 'north' | 'south' | 'east' | 'west' };
-export type RouteLabel = { text: string; at: RoutePoint; angle?: 0 | 90 | -90 };
+export type RouteLabel = { text: string; at: RoutePoint; angle?: 0 | 90 | -90; lines?: readonly string[]; fontSize?: number };
 export const PARADE_VIEWBOX = '0 0 774 603';
 export const PARADE_ASSEMBLY = {
   outline: '513,111 538,111 538,216 519,216 519,139 493,139 493,121 513,121',
@@ -63,10 +63,10 @@ export const PARADE_ROUTES: Record<ParadeRouteId, {
       { at: [G,355], direction: 'south' }, { at: [395,V], direction: 'east' },
       { at: [H,360], direction: 'north' }, { at: [H,210], direction: 'north' }],
     labels: [
-      { text: 'Bruce County North', at: [477, N] }, { text: 'Hydro One Avenue', at: [H, 245], angle: -90 },
+      { text: 'Bruce County North', at: [477, N], lines: ['Bruce County', 'North'], fontSize: 6 }, { text: 'Hydro One Avenue', at: [H, 245], angle: -90, lines: ['Hydro', 'One', 'Avenue'], fontSize: 6 },
       { text: 'First Street', at: [375, F] }, { text: 'Dodge Avenue', at: [D, 300], angle: -90 },
-      { text: 'Fifth Street', at: [285, V] }, { text: 'Bruce Power Avenue', at: [B, 470], angle: -90 },
-      { text: 'Second Street', at: [300, S] }, { text: 'Grain Farmers Avenue', at: [G, 420], angle: -90 },
+      { text: 'Fifth Street', at: [285, V] }, { text: 'Bruce Power Avenue', at: [B, 470], angle: -90, fontSize: 6 },
+      { text: 'Second Street', at: [300, S] }, { text: 'Grain Farmers Avenue', at: [G, 420], angle: -90, fontSize: 6 },
     ],
   },
   'wed-sat': {
@@ -80,7 +80,7 @@ export const PARADE_ROUTES: Record<ParadeRouteId, {
       { at: [H,415], direction: 'north' }, { at: [H,330], direction: 'north' },
       { at: [H,205], direction: 'north' }],
     labels: [
-      { text: 'Bruce County North', at: [477, N] }, { text: 'Hydro One Avenue', at: [H, 250], angle: -90 },
+      { text: 'Bruce County North', at: [477, N], lines: ['Bruce County', 'North'], fontSize: 6 }, { text: 'Hydro One Avenue', at: [H, 250], angle: -90, lines: ['Hydro', 'One', 'Avenue'], fontSize: 6 },
       { text: 'First Street', at: [375, F] }, { text: 'Dodge Avenue', at: [D, 300], angle: -90 },
       { text: 'Fifth Street', at: [315, V] },
     ],
