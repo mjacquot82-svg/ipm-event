@@ -133,7 +133,7 @@ let manifestPromise: Promise<ContentManifest> | null = null;
 const refreshPromises = new Map<string, Promise<CachedApiResult<unknown>>>();
 
 function getCacheKey(cacheKey: string) {
-  const prefix = cacheKey === 'schedule' || cacheKey === 'vendors'
+  const prefix = cacheKey === 'schedule' || cacheKey === 'announcements' || cacheKey === 'vendors'
     ? getCacheNamespace()
     : EXISTING_SHARED_CACHE_KEY_PREFIX;
 

@@ -11,7 +11,7 @@ test('staging content cache gates full reads on a validated manifest revision', 
   assert.match(service, /fetch\('\/content-manifest\.json'/);
   assert.match(service, /manifest\.environment !== getContentEnvironment\(\)/);
   assert.match(service, /cachedData\.contentRevision === remoteRevision/);
-  assert.match(service, /Full content response is missing content revision/);
+  assert.match(service, /API response is missing content revision/);
   assert.match(service, /refreshPromises/);
 });
 
