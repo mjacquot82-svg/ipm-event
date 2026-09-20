@@ -39,11 +39,14 @@ def env(name: str) -> str:
 def json_request(url: str, *, method: str = "GET", body: object | None = None,
                  headers: dict[str, str] | None = None) -> object:
     payload = None if body is None else json.dumps(body, separators=(",", ":")).encode()
-    request = Request(url, data=payload, method=method, headers={
+    request_headers = {
         "Accept": "application/json",
         "User-Agent": "ipm-staging-content-manifest-publisher/1",
         **(headers or {}),
-    })
+    }
+    if payload is not None:
+        request_headers.setdefault("Content-Type", "application/json")
+    request = Request(url, data=payload, method=method, headers=request_headers)
     try:
         with urlopen(request, timeout=20) as response:
             raw = response.read()
