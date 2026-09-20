@@ -154,16 +154,21 @@ def test_bad_counts_never_become_zero(value):
     assert checked_metrics({'provider_open_count':value})['provider_open_count'] is None
 
 
-def test_repeated_test_sends_unique_and_broadcast_guard_retained(monkeypatch):
+def test_repeated_test_sends_keep_configured_campaign_and_unique_local_attribution(monkeypatch):
     provider,ledger=configure_notification_fakes(monkeypatch,announcement())
     user={'username':'owner','role':'Owner','event_id':'event-a'}
     one=asyncio.run(server.notify_announcement('announcement-1','test',user))
+    first_url=ledger.rows[-1]['target_url']
+    first_key=provider.test_options['idempotency_key']
     two=asyncio.run(server.notify_announcement('announcement-1','test',user))
-    assert one.provider_campaign_id != two.provider_campaign_id
-    assert one.provider_campaign_id=='ipm-test-delivery-1'
+    assert one.provider_campaign_id is None and two.provider_campaign_id is None
+    assert provider.test_options['campaign_id']=='controlled-test-campaign'
+    assert ledger.rows[-1]['target_url'] != first_url
+    assert provider.test_options['idempotency_key'] != first_key
     assert provider.test_installations==['test-1']  # existing fake; real provider enforces exactly one
     first=asyncio.run(server.notify_announcement('announcement-1','everyone',user))
-    assert first.provider_campaign_id not in [one.provider_campaign_id,two.provider_campaign_id]
+    assert first.provider_campaign_id is None
+    assert 'campaign_id' not in provider.everyone_options
     with pytest.raises(HTTPException) as error:asyncio.run(server.notify_announcement('announcement-1','everyone',user))
     assert error.value.status_code==409
 
@@ -282,7 +287,7 @@ def test_authenticated_fixture_api_matches_browser_contract(monkeypatch):
 
 
 @pytest.mark.parametrize('status', [None,408,500,503])
-def test_ambiguous_broadcast_keeps_identity_and_blocks_accidental_new_send(monkeypatch,status):
+def test_ambiguous_broadcast_keeps_local_identity_and_blocks_accidental_new_send(monkeypatch,status):
     provider,ledger=configure_notification_fakes(monkeypatch,announcement())
     async def ambiguous(**kw):raise WonderPushError('ambiguous',status_code=status)
     provider.send_everyone=ambiguous
@@ -290,7 +295,7 @@ def test_ambiguous_broadcast_keeps_identity_and_blocks_accidental_new_send(monke
     with pytest.raises(HTTPException) as error:asyncio.run(server.notify_announcement('announcement-1','everyone',user))
     assert error.value.status_code==502
     assert ledger.rows[0]['status']=='requested'
-    assert ledger.rows[0]['provider_campaign_id']=='ipm-everyone-delivery-1'
+    assert ledger.rows[0]['provider_campaign_id'] is None
     with pytest.raises(HTTPException) as retry:asyncio.run(server.notify_announcement('announcement-1','everyone',user))
     assert retry.value.status_code==409 and len(ledger.rows)==1
 
@@ -302,9 +307,10 @@ def test_definitively_rejected_broadcast_retry_is_a_distinct_actual_attempt(monk
     first=dict(provider.everyone_options)
     provider.fail=False
     asyncio.run(server.notify_announcement('announcement-1','everyone',user))
-    assert first['campaign_id']!=provider.everyone_options['campaign_id']
+    assert 'campaign_id' not in first and 'campaign_id' not in provider.everyone_options
     assert first['idempotency_key']!=provider.everyone_options['idempotency_key']
-    assert campaign_identity(ledger.rows[1]['id'],'everyone')==provider.everyone_options['campaign_id']
+    assert ledger.rows[0]['provider_campaign_id'] is None
+    assert ledger.rows[1]['provider_campaign_id'] is None
 
 
 def test_statistics_http_logging_never_exposes_credentials(monkeypatch,caplog):
@@ -323,26 +329,29 @@ def test_statistics_http_logging_never_exposes_credentials(monkeypatch,caplog):
 
 
 def test_future_send_identity_and_destination_across_announcements_and_tests(monkeypatch):
-    """Exercise the actual send orchestration with a provider fake, never a live send."""
+    """Exercise local attribution and provider semantics with a provider fake."""
     from urllib.parse import urlsplit, parse_qs
     provider, ledger = configure_notification_fakes(monkeypatch, announcement())
     server.announcement_service.announcements[('event-a', 'announcement-2')] = {
         **announcement(), 'id': 'announcement-2'}
     user = {'username': 'owner', 'role': 'Owner', 'event_id': 'event-a'}
-    identities, idempotency_keys = set(), set()
+    idempotency_keys, notification_refs = set(), set()
     for aid, audience in [('announcement-1', 'everyone'), ('announcement-2', 'everyone'),
                           ('announcement-1', 'test'), ('announcement-1', 'test')]:
         result = asyncio.run(server.notify_announcement(aid, audience, user))
         stored = ledger.rows[-1]
         options = provider.everyone_options if audience == 'everyone' else provider.test_options
-        assert options['campaign_id'] == stored['provider_campaign_id'] == result.provider_campaign_id
-        assert options['campaign_id'] == campaign_identity(stored['id'], audience)
-        identities.add(options['campaign_id']); idempotency_keys.add(options['idempotency_key'])
+        if audience == 'everyone':
+            assert 'campaign_id' not in options
+        else:
+            assert options['campaign_id'] == 'controlled-test-campaign'
+        assert result.provider_campaign_id is None
+        idempotency_keys.add(options['idempotency_key']); notification_refs.add(stored['id'])
         destination = urlsplit(stored['target_url'])
         assert destination.path == f'/announcements/{aid}'
         assert parse_qs(destination.query) == {'notification_ref': [stored['id']]}
         assert 'owner' not in destination.query and 'test-1' not in destination.query
-    assert len(identities) == len(idempotency_keys) == 4
+    assert len(notification_refs) == len(idempotency_keys) == 4
     with pytest.raises(HTTPException) as duplicate:
         asyncio.run(server.notify_announcement('announcement-1', 'everyone', user))
     assert duplicate.value.status_code == 409 and len(ledger.rows) == 4

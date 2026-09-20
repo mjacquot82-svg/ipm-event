@@ -17,9 +17,9 @@ except ImportError:
     )
 
 try:
-    from backend.notification_analytics import campaign_identity, refresh_statistics, has_attribution, unattributed_history, valid_uuid, reminder_summary, read_reminder_ledger
+    from backend.notification_analytics import refresh_statistics, has_attribution, unattributed_history, valid_uuid, reminder_summary, read_reminder_ledger
 except ModuleNotFoundError:
-    from notification_analytics import campaign_identity, refresh_statistics, has_attribution, unattributed_history, valid_uuid, reminder_summary, read_reminder_ledger
+    from notification_analytics import refresh_statistics, has_attribution, unattributed_history, valid_uuid, reminder_summary, read_reminder_ledger
 from fastapi import FastAPI, APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from dotenv import load_dotenv
@@ -2116,8 +2116,9 @@ async def notify_announcement(
             ) from exc
         raise
 
-    provider_campaign_id = campaign_identity(delivery['id'], audience)
-    await deliveries.update_campaign_id(delivery['id'], provider_campaign_id)
+    # The local delivery UUID owns attribution and idempotency. WonderPush
+    # campaignId is a reference to an existing dashboard campaign, so broadcast
+    # sends intentionally omit it; controlled tests use the configured campaign.
     target_url = f"{base_target_url}?notification_ref={quote(delivery['id'], safe='')}"
     content = provider.notification_content(
         announcement["title"], announcement["message"], target_url, image_url=image_url
@@ -2129,14 +2130,13 @@ async def notify_announcement(
             campaign_id = await provider.send_test(
                 **content, installation_ids=WONDERPUSH_TEST_INSTALLATION_IDS,
                 idempotency_key=f"announcement-test-{delivery['id']}",
-                campaign_id=provider_campaign_id,
+                campaign_id=WONDERPUSH_TEST_CAMPAIGN_ID,
                 expiration_time=expiration_time,
             )
         else:
             campaign_id = await provider.send_everyone(
                 **content,
                 idempotency_key=f"announcement-{delivery['id']}",
-                campaign_id=provider_campaign_id,
                 expiration_time=expiration_time,
             )
     except WonderPushError as exc:
