@@ -5,7 +5,8 @@
 export type ParadeRouteId = 'tuesday' | 'wed-sat';
 export type RoutePoint = readonly [number, number];
 export type RouteArrow = { at: RoutePoint; direction: 'north' | 'south' | 'east' | 'west' };
-export type RouteLabel = { text: string; at: RoutePoint; angle?: 0 | 90 | -90; lines?: readonly string[]; fontSize?: number; maskLength?: number; maskThickness?: number };
+export type RouteLabel = { text: string; at: RoutePoint; angle?: 0 | 90 | -90; lines?: readonly string[]; fontSize?: number };
+export type RouteMask = { at: RoutePoint; width: number; height: number };
 export const PARADE_VIEWBOX = '0 0 774 603';
 export const PARADE_ASSEMBLY = {
   outline: '513,111 538,111 538,216 519,216 519,139 493,139 493,121 513,121',
@@ -48,7 +49,7 @@ const ENTRY_ARROWS: RouteArrow[] = [
 ];
 export const PARADE_ROUTES: Record<ParadeRouteId, {
   id: ParadeRouteId; label: string; source: string; roads: readonly string[];
-  paths: readonly (readonly RoutePoint[])[]; arrows: readonly RouteArrow[]; labels: readonly RouteLabel[];
+  paths: readonly (readonly RoutePoint[])[]; arrows: readonly RouteArrow[]; labels: readonly RouteLabel[]; masks?: readonly RouteMask[];
 }> = {
   tuesday: {
     id: 'tuesday', label: 'Tuesday', source: 'IPM 2026 Tented City Map - Parade Route Tues.pdf',
@@ -65,9 +66,10 @@ export const PARADE_ROUTES: Record<ParadeRouteId, {
     labels: [
       { text: 'Bruce County North', at: [477, N], lines: ['Bruce County', 'North'], fontSize: 6 }, { text: 'Hydro One Avenue', at: [H, 245], angle: -90, lines: ['Hydro', 'One', 'Avenue'], fontSize: 6 },
       { text: 'First Street', at: [375, F] }, { text: 'Dodge Avenue', at: [D, 300], angle: -90 },
-      { text: 'Fifth Street', at: [285, V] }, { text: 'Bruce Power Avenue', at: [B, 340], angle: -90, fontSize: 6 },
-      { text: 'Second Street', at: [292, S], maskLength: 100, maskThickness: 14 }, { text: 'Grain Farmers Avenue', at: [G, 340], angle: -90, fontSize: 6 },
+      { text: 'Fifth Street', at: [285, V] }, { text: 'Bruce Power Avenue', at: [B, 285], angle: -90, fontSize: 6 },
+      { text: 'Second Street', at: [292, S] }, { text: 'Grain Farmers Avenue', at: [G, 285], angle: -90, fontSize: 6 },
     ],
+    masks: [{ at: [B, S], width: 20, height: 20 }, { at: [G, S], width: 20, height: 20 }],
   },
   'wed-sat': {
     id: 'wed-sat', label: 'Wednesday–Saturday', source: 'IPM 2026 Tented City Map - Parade Route Wed to Sat.pdf',
@@ -80,7 +82,7 @@ export const PARADE_ROUTES: Record<ParadeRouteId, {
       { at: [H,415], direction: 'north' }, { at: [H,330], direction: 'north' },
       { at: [H,205], direction: 'north' }],
     labels: [
-      { text: 'Bruce County North', at: [477, N], lines: ['Bruce County', 'North'], fontSize: 6 }, { text: 'Hydro One Avenue', at: [H, 250], angle: -90, lines: ['Hydro', 'One', 'Avenue'], fontSize: 6 },
+      { text: 'Bruce County North', at: [477, N], lines: ['Bruce County', 'North'], fontSize: 6 }, { text: 'Hydro One Avenue', at: [H, 275], angle: -90, fontSize: 6 },
       { text: 'First Street', at: [375, F] }, { text: 'Dodge Avenue', at: [D, 300], angle: -90 },
       { text: 'Fifth Street', at: [315, V] },
     ],
