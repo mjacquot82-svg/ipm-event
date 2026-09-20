@@ -44,11 +44,15 @@ def json_request(url: str, *, method: str = "GET", body: object | None = None,
         "User-Agent": "ipm-staging-content-manifest-publisher/1",
         **(headers or {}),
     })
-    with urlopen(request, timeout=20) as response:
-        raw = response.read()
-        if not raw:
-            return None
-        return json.loads(raw.decode())
+    try:
+        with urlopen(request, timeout=20) as response:
+            raw = response.read()
+            if not raw:
+                return None
+            return json.loads(raw.decode())
+    except HTTPError as exc:
+        detail = exc.read(512).decode("utf-8", "replace")
+        raise RuntimeError(f"publisher HTTP {exc.code} {method} {url.split('?')[0]}: {detail}") from exc
 
 
 def raw_request(url: str, *, method: str = "GET", body: bytes | None = None,
