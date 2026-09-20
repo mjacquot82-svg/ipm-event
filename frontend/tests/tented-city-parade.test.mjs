@@ -71,5 +71,6 @@ test('route presentation keeps labels above the thick blue line', () => {
   assert.match(source, /Bruce Power Avenue', at: \[B, 285\]/);
   assert.match(source, /Grain Farmers Avenue', at: \[G, 285\]/);
   assert.match(source, /Hydro One Avenue', at: \[H, 275\]/);
+  assert.equal((source.match(/Hydro One Avenue', at: \[H, 275\]/g) || []).length, 2);
   assert(overlaySource.indexOf('route.arrows.map') < overlaySource.indexOf('route.labels.map'));
 });

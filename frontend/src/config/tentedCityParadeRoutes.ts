@@ -64,7 +64,7 @@ export const PARADE_ROUTES: Record<ParadeRouteId, {
       { at: [G,355], direction: 'south' }, { at: [395,V], direction: 'east' },
       { at: [H,360], direction: 'north' }, { at: [H,210], direction: 'north' }],
     labels: [
-      { text: 'Bruce County North', at: [477, N], lines: ['Bruce County', 'North'], fontSize: 6 }, { text: 'Hydro One Avenue', at: [H, 245], angle: -90, lines: ['Hydro', 'One', 'Avenue'], fontSize: 6 },
+      { text: 'Bruce County North', at: [477, N], lines: ['Bruce County', 'North'], fontSize: 6 }, { text: 'Hydro One Avenue', at: [H, 275], angle: -90, fontSize: 6 },
       { text: 'First Street', at: [375, F] }, { text: 'Dodge Avenue', at: [D, 300], angle: -90 },
       { text: 'Fifth Street', at: [285, V] }, { text: 'Bruce Power Avenue', at: [B, 285], angle: -90, fontSize: 6 },
       { text: 'Second Street', at: [292, S] }, { text: 'Grain Farmers Avenue', at: [G, 285], angle: -90, fontSize: 6 },
