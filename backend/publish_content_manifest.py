@@ -187,6 +187,11 @@ def publish(site_id: str, manifest: dict[str, object], files: list[dict[str, obj
     raise RuntimeError(f"Netlify deploy {deploy_id} did not become ready")
 
 
+def manifest_digest(manifest: dict[str, object]) -> str:
+    content = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode()
+    return hashlib.sha1(content).hexdigest()
+
+
 def manifest_in_sync(previous: dict[str, object] | None, current: dict[str, object]) -> bool:
     if not previous:
         return False
@@ -226,7 +231,12 @@ def run_once() -> int:
                 new = int(manifest[content_type]["revision"])
                 if new < old:
                     raise RuntimeError(f"refusing revision rollback for {content_type}: {old} -> {new}")
-        if manifest_in_sync(previous, manifest):
+        deployed_digest = next(
+            (str(item.get("sha")) for item in files
+             if item.get("path") == "/content-manifest.json" and item.get("sha")),
+            None,
+        )
+        if manifest_in_sync(previous, manifest) or deployed_digest == manifest_digest(manifest):
             print("content-manifest: IN SYNC", json.dumps(manifest, sort_keys=True))
             return 0
         deploy_id = publish(site_id, manifest, files)
