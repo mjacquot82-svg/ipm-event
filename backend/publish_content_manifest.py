@@ -26,6 +26,7 @@ EXPECTED_EVENT = "ipm-staging"
 EXPECTED_EVENT_ID = "51000000-0000-4000-8000-000000000001"
 EXPECTED_NETLIFY_SITE_ID = "0932cc5d-9cb8-4cd3-8418-7e486df75bf1"
 EXPECTED_NETLIFY_SITE_NAME = "ipm-web-staging"
+EXPECTED_PUBLIC_MANIFEST_URL = "https://staging.theipm.ca/content-manifest.json"
 LEASE_KEY = "staging-content-manifest"
 
 
@@ -146,16 +147,12 @@ def current_files(site_id: str) -> list[dict[str, object]]:
 def current_manifest(site_id: str, files: list[dict[str, object]]) -> dict[str, object] | None:
     if not any(item.get("path") == "/content-manifest.json" for item in files):
         return None
-    deploy_id = next(
-        (str(item.get("deploy_id")) for item in files
-         if item.get("path") == "/content-manifest.json" and item.get("deploy_id")),
-        None,
-    )
-    if not deploy_id:
-        raise RuntimeError("Netlify manifest file has no owning deploy")
+    # Netlify's management API file endpoints return metadata, not file bytes.
+    # Read the already verified staging static URL with revalidation disabled so
+    # the publisher compares the actual attendee-visible manifest revision.
     raw = raw_request(
-        netlify_url(f"/deploys/{quote(deploy_id, safe='')}/files/content-manifest.json"),
-        headers={**netlify_headers(), "Accept": "application/octet-stream"},
+        EXPECTED_PUBLIC_MANIFEST_URL + f"?publisher_probe={uuid.uuid4().hex}",
+        headers={"Accept": "application/json", "Cache-Control": "no-cache", "Pragma": "no-cache"},
     )
     value = json.loads(raw.decode())
     return value if isinstance(value, dict) else None
