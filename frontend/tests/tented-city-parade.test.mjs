@@ -67,7 +67,7 @@ test('route presentation keeps labels above the thick blue line', () => {
   assert.match(overlaySource, /stroke="#003B5C"/);
   assert.match(overlaySource, /<rect x=/);
   assert.match(overlaySource, /lines=\[text\]/);
-  assert.match(source, /Second Street', at: \[292, S\], maskLength: 110, maskThickness: 20/);
+  assert.match(source, /Second Street', at: \[292, S\], maskLength: 100, maskThickness: 14/);
   assert.match(source, /Bruce Power Avenue', at: \[B, 340\]/);
   assert.match(source, /Grain Farmers Avenue', at: \[G, 340\]/);
   assert(overlaySource.indexOf('route.arrows.map') < overlaySource.indexOf('route.labels.map'));
