@@ -65,5 +65,7 @@ test('route presentation keeps labels above the thick blue line', () => {
   assert.match(overlaySource, /fill="white"/);
   assert.match(overlaySource, /paint-order="stroke"/);
   assert.match(overlaySource, /stroke="#003B5C"/);
+  assert.match(overlaySource, /<rect x=/);
+  assert.match(overlaySource, /lines=\[text\]/);
   assert(overlaySource.indexOf('route.arrows.map') < overlaySource.indexOf('route.labels.map'));
 });
