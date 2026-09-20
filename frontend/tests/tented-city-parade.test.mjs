@@ -61,7 +61,7 @@ test('road centers bisect actual SVG boundary pairs; arrows remain inside corrid
   }
 });
 test('route presentation keeps labels above the thick blue line', () => {
-  assert.match(overlaySource, /stroke-width="5\.5"/);
+  assert.match(overlaySource, /stroke-width="6"/);
   assert.match(overlaySource, /fill="white"/);
   assert.match(overlaySource, /paint-order="stroke"/);
   assert.match(overlaySource, /stroke="#003B5C"/);
