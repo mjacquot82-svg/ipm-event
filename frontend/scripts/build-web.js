@@ -1,5 +1,5 @@
 const { spawnSync } = require('node:child_process');
-const { readFileSync, writeFileSync } = require('node:fs');
+const { copyFileSync, existsSync, readFileSync, writeFileSync } = require('node:fs');
 
 const BUILD_EPOCH = Date.UTC(2026, 0, 1);
 const buildNumber = String(Math.floor((Date.now() - BUILD_EPOCH) / 60000));
@@ -17,6 +17,21 @@ for (const [command, args] of [
 ]) {
   const result = spawnSync(command, args, { env, stdio: 'inherit' });
   if (result.status !== 0) process.exit(result.status || 1);
+}
+
+// Keep the manifest an explicit published static asset. Expo currently copies
+// files from public/, but making this copy explicit prevents a future exporter
+// change from sending /content-manifest.json through the SPA fallback.
+const manifestSource = 'public/content-manifest.json';
+const manifestOutput = 'dist/content-manifest.json';
+if (!existsSync(manifestSource)) {
+  console.error(`Missing required static manifest source: ${manifestSource}`);
+  process.exit(1);
+}
+copyFileSync(manifestSource, manifestOutput);
+if (!existsSync(manifestOutput)) {
+  console.error(`Static manifest was not written to ${manifestOutput}`);
+  process.exit(1);
 }
 
 // Rewrite only /api/admin/* to the validated deployment backend.
