@@ -32,11 +32,11 @@
   status = 200
   force = true
 
-[[redirects]]
-  from = "/content-manifest.json"
-  to = "https://hooiqjcbcbwzjjvnwyxf.supabase.co/functions/v1/content-manifest"
-  status = 200
-  force = true
+[[headers]]
+  for = "/content-manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=30, stale-while-revalidate=30"
+    Netlify-CDN-Cache-Control = "public, s-maxage=30, stale-while-revalidate=30"
 
 [[redirects]]
   from = "/*"

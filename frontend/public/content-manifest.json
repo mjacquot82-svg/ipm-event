@@ -1,0 +1,12 @@
+{
+  "environment": "staging",
+  "event": "ipm-staging",
+  "schedule": {
+    "revision": 5,
+    "updatedAt": "2026-09-20T19:06:55.222888Z"
+  },
+  "announcements": {
+    "revision": 5,
+    "updatedAt": "2026-09-20T19:07:49.314046Z"
+  }
+}
