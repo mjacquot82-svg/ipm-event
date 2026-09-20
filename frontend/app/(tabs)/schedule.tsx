@@ -52,6 +52,7 @@ import {
   acknowledgeScheduleOnboarding,
   hasAcknowledgedScheduleOnboarding,
 } from '../../src/services/scheduleOnboardingState';
+import { paradeRouteForScheduleEvent, PARADE_ROUTE_LOCATIONS } from '../../src/config/paradeSchedule';
 import { resolveMapTypeForLocation } from '../../src/config/tentedCitySearch';
 import { resolvePlowingMapLocation } from '../../src/config/groundsZones';
 import { tentedCityVendors } from '../../src/data/tentedCityVendors';
@@ -130,7 +131,8 @@ export default function ScheduleScreen() {
   const openSelectedEventOnMap = (continueWalkthrough = false) => {
     if (!selectedEvent?.location_name) return;
     dismissEventModalForMap();
-    const mapLocation = resolvePlowingMapLocation(selectedEvent.location_name, selectedEvent.title) || selectedEvent.location_name;
+    const paradeRoute = selectedParadeRoute;
+    const mapLocation = paradeRoute ? PARADE_ROUTE_LOCATIONS[paradeRoute] : resolvePlowingMapLocation(selectedEvent.location_name, selectedEvent.title) || selectedEvent.location_name;
     router.replace({
       pathname: '/(tabs)/map',
       params: {
@@ -139,8 +141,9 @@ export default function ScheduleScreen() {
         source: 'schedule',
         eventId: selectedEvent.id,
         eventTitle: selectedEvent.title,
+        ...(paradeRoute ? { paradeRoute } : {}),
         ...(continueWalkthrough ? { scheduleWalkthrough: String(Date.now()) } : {}),
-        mapType: resolveMapTypeForLocation(mapLocation, tentedCityVendors),
+        mapType: paradeRoute ? 'tented' : resolveMapTypeForLocation(mapLocation, tentedCityVendors),
       },
     });
   };
@@ -180,6 +183,7 @@ export default function ScheduleScreen() {
 
   const selectedCategoryStyle = getScheduleCategoryStyle(selectedCategory);
   const selectedEventCategoryStyle = getScheduleCategoryStyle(selectedEvent?.category);
+  const selectedParadeRoute = selectedEvent ? paradeRouteForScheduleEvent(selectedEvent) : null;
 
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -1166,9 +1170,9 @@ export default function ScheduleScreen() {
                         <View style={styles.detailTextContainer}>
                           <Text style={styles.detailLabel}>Location</Text>
                           <Text style={[styles.detailValue, { color: selectedEventCategoryStyle.primary }]}>
-                            {selectedEvent.location_name}
+                            {selectedParadeRoute ? 'View Parade Route' : selectedEvent.location_name}
                           </Text>
-                          <Text style={styles.tapToViewMap}>Tap to view on map</Text>
+                          <Text style={styles.tapToViewMap}>{selectedParadeRoute ? PARADE_ROUTE_LOCATIONS[selectedParadeRoute] : 'Tap to view on map'}</Text>
                         </View>
                         <Feather name="chevron-right" size={20} color={selectedEventCategoryStyle.primary} />
                       </View>

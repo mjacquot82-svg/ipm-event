@@ -17,6 +17,7 @@ import { mapLocations } from '../../src/config/mapLocations';
 import { findTentedCityPlace, resolveMapTypeForLocation } from '../../src/config/tentedCitySearch';
 import { tentedCityVendors } from '../../src/data/tentedCityVendors';
 import { resolveGroundsZone } from '../../src/config/groundsZones';
+import type { ParadeRouteId } from '../../src/config/tentedCityParadeRoutes';
 
 function paramStr(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
@@ -62,6 +63,7 @@ function MapContent() {
     mapStatus?: string | string[];
     verify1a?: string | string[];
     mapType?: string | string[];
+    paradeRoute?: string | string[];
   }>();
   const location = paramStr(params.location);
   const source = paramStr(params.source);
@@ -70,6 +72,8 @@ function MapContent() {
   const mapStatus = paramStr(params.mapStatus);
   const verify1a = paramStr(params.verify1a);
   const mapType = paramStr(params.mapType);
+  const paradeRoute = paramStr(params.paradeRoute);
+  const initialParadeRoute: ParadeRouteId | null = paradeRoute === 'tuesday' || paradeRoute === 'wed-sat' ? paradeRoute : null;
 
   const locationId = mapLocations.find((item) => item.name === location)?.id;
   usePageAnalytics('map', source || 'other', 'map_opened', locationId ? { location_id: locationId } : {});
@@ -119,10 +123,11 @@ function MapContent() {
         collapsable={false}
       >
         <TentedCityMap
-          initialQuery={unavailable ? '' : (overrideLocation || (typeof location === 'string' ? location : '') || '')}
+          initialQuery={unavailable || initialParadeRoute ? '' : (overrideLocation || (typeof location === 'string' ? location : '') || '')}
           mapUnavailable={unavailable}
           initialEventTitle={!overrideLocation ? eventTitle : undefined}
           initialEventId={!overrideLocation ? eventId : undefined}
+          initialParadeRoute={initialParadeRoute}
           exactInitialPlace={source === 'vendors' && !overrideLocation}
           verify1A={verify1A}
           onSwitchToGrounds={(loc) => {

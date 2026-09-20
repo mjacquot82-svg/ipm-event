@@ -25,7 +25,13 @@ EXPECTED_TOTAL = 5
 EXPECTED_PREEXISTING_TOTAL = 146
 EXPECTED_FINAL_TOTAL = 151
 CATEGORY = "Parade Week"
-LOCATION = "Parade route coming soon"
+LOCATION_BY_EXTERNAL_ID = {
+    "2026-09-22-bruce-power-opening-day-parade": "Tuesday Parade Route",
+    "2026-09-23-trucks-and-tractors-parade": "Wednesday–Saturday Parade Route",
+    "2026-09-24-childrens-parade": "Wednesday–Saturday Parade Route",
+    "2026-09-25-combines-parade": "Wednesday–Saturday Parade Route",
+    "2026-09-26-bruce-county-farming-through-the-ages": "Wednesday–Saturday Parade Route",
+}
 EXPECTED_EXISTING_COUNTS = {
     "MNP Lifestyles Tent Events": 107,
     "CKNX Centennial Pavilion (GFO Stage) Lounge": 16,
@@ -61,8 +67,9 @@ def load_manifest(path: Path = MANIFEST_PATH, poster_path: Path = POSTER_PATH) -
     if len(set(identities)) != EXPECTED_TOTAL or None in identities:
         raise ImportSafetyError("External identities are missing or duplicated")
     for row in events:
-        if row.get("location_name") != LOCATION:
-            raise ImportSafetyError("Every event must use the approved temporary location")
+        expected_location = LOCATION_BY_EXTERNAL_ID.get(row.get("external_id"))
+        if expected_location is None or row.get("location_name") != expected_location:
+            raise ImportSafetyError("Parade event location does not match its approved route")
         if row.get("end_time") is not None:
             raise ImportSafetyError("Parade Week end times must remain null")
         if not row.get("description"):
@@ -85,7 +92,7 @@ def desired_rows(manifest: dict[str, Any], event_id: str) -> list[dict[str, Any]
         "ends_at": None,
         "timezone": timezone_name,
         "category": item["category"],
-        "location_name": item["location_name"],
+        "location_name": LOCATION_BY_EXTERNAL_ID[item["external_id"]],
         "days_active": item["days_active"],
         "source": SOURCE,
         "external_id": item["external_id"],

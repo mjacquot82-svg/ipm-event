@@ -26,7 +26,7 @@ class ScheduleOptionalEndTimeTests(unittest.TestCase):
             title="Parade", description="Description", start_date="2026-09-22",
             start_time="10:00 AM", end_time="", category="Parade Week",
             latitude=None, longitude=None, days_active="Tuesday",
-            location_name="Parade route coming soon",
+            location_name="Tuesday Parade Route",
         )
         row = self.service._payload_to_row(payload, "staging-event")
         self.assertEqual("2026-09-22T10:00:00-04:00", row["starts_at"])
@@ -37,7 +37,7 @@ class ScheduleOptionalEndTimeTests(unittest.TestCase):
             "id": "parade-1", "title": "Parade", "description": "Description",
             "starts_at": "2026-09-22T10:00:00-04:00", "ends_at": None,
             "category": "Parade Week", "days_active": "Tuesday",
-            "location_name": "Parade route coming soon",
+            "location_name": "Tuesday Parade Route",
         })
         self.assertEqual("10:00 AM", event.start_time)
         self.assertEqual("", event.end_time)
