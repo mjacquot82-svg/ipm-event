@@ -146,9 +146,16 @@ def current_files(site_id: str) -> list[dict[str, object]]:
 def current_manifest(site_id: str, files: list[dict[str, object]]) -> dict[str, object] | None:
     if not any(item.get("path") == "/content-manifest.json" for item in files):
         return None
+    deploy_id = next(
+        (str(item.get("deploy_id")) for item in files
+         if item.get("path") == "/content-manifest.json" and item.get("deploy_id")),
+        None,
+    )
+    if not deploy_id:
+        raise RuntimeError("Netlify manifest file has no owning deploy")
     raw = raw_request(
-        netlify_url(f"/sites/{quote(site_id, safe='')}/files/content-manifest.json"),
-        headers={**netlify_headers(), "Accept": "application/vnd.bitballoon.v1.raw"},
+        netlify_url(f"/deploys/{quote(deploy_id, safe='')}/files/content-manifest.json"),
+        headers={**netlify_headers(), "Accept": "application/octet-stream"},
     )
     value = json.loads(raw.decode())
     return value if isinstance(value, dict) else None
