@@ -210,6 +210,12 @@ ITINERARY_REMINDER_DELIVERY_REQUESTED = os.environ.get("ITINERARY_REMINDER_DELIV
 ITINERARY_REMINDER_SCHEDULER_ENABLED = STAGING_T30_ALLOWLIST_ENABLED and os.environ.get("ITINERARY_REMINDER_SCHEDULER_ENABLED", "true").lower() == "true"
 ITINERARY_REMINDER_SCHEDULER_REQUESTED = os.environ.get("ITINERARY_REMINDER_SCHEDULER_ENABLED", "false").lower() == "true"
 ITINERARY_REMINDER_INTERVAL_SECONDS = max(30, int(os.environ.get("ITINERARY_REMINDER_INTERVAL_SECONDS", "60")))
+# The legacy Expo event-change scheduler is retained for reversible compatibility,
+# but current deployments can explicitly disable its per-worker background loop.
+# Preserve the historical default for unrelated deployments until they opt in.
+LEGACY_EVENT_CHANGE_SCHEDULER_ENABLED = (
+    os.environ.get("LEGACY_EVENT_CHANGE_SCHEDULER_ENABLED", "true").strip().lower() == "true"
+)
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
 # Fixture-scoped arm is available only for the isolated staging app/database.
 CONTROLLED_T30_ARM_ENABLED = (
@@ -3356,6 +3362,9 @@ async def startup_event():
         name="broadcast_event_sent_at",
     )
     await analytics_repository.ensure_indexes()
+    if not LEGACY_EVENT_CHANGE_SCHEDULER_ENABLED:
+        logger.info("Legacy event-change scheduler disabled by configuration")
+        return
     logger.info("Starting cron scheduler for event change detection...")
     asyncio.create_task(cron_scheduler())
 
