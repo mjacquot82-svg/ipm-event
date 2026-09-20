@@ -1271,3 +1271,9 @@ class SupabaseNotificationDeliveryService:
             headers={"Prefer": "return=representation"},
         )
         return rows[0]
+
+
+def normalize_wonderpush_statistics(payload):
+    # Compatibility alias; receipts are deliberately unavailable on /stats/events.
+    from backend.notification_analytics import normalize_event_statistics
+    return normalize_event_statistics(payload)
