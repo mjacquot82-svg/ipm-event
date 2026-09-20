@@ -203,6 +203,12 @@ WONDERPUSH_TEST_INSTALLATION_IDS = [
     if installation_id.strip()
 ]
 WONDERPUSH_TEST_CAMPAIGN_ID = os.environ.get("WONDERPUSH_TEST_CAMPAIGN_ID", "").strip()
+# The legacy Expo event-change scheduler is retained for reversible compatibility,
+# but current deployments can explicitly disable its per-worker background loop.
+# Preserve the historical default for unrelated deployments until they opt in.
+LEGACY_EVENT_CHANGE_SCHEDULER_ENABLED = (
+    os.environ.get("LEGACY_EVENT_CHANGE_SCHEDULER_ENABLED", "true").strip().lower() == "true"
+)
 # T-30 delivery is deliberately unavailable during the announcement cutover.
 ITINERARY_REMINDER_DELIVERY_ENABLED = False
 ITINERARY_REMINDER_SCHEDULER_ENABLED = False
@@ -3177,6 +3183,9 @@ async def startup_event():
         name="broadcast_event_sent_at",
     )
     await analytics_repository.ensure_indexes()
+    if not LEGACY_EVENT_CHANGE_SCHEDULER_ENABLED:
+        logger.info("Legacy event-change scheduler disabled by configuration")
+        return
     logger.info("Starting cron scheduler for event change detection...")
     asyncio.create_task(cron_scheduler())
 
