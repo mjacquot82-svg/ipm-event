@@ -24,6 +24,8 @@ from urllib.request import Request, urlopen
 EXPECTED_ENV = "staging"
 EXPECTED_EVENT = "ipm-staging"
 EXPECTED_EVENT_ID = "51000000-0000-4000-8000-000000000001"
+EXPECTED_NETLIFY_SITE_ID = "0932cc5d-9cb8-4cd3-8418-7e486df75bf1"
+EXPECTED_NETLIFY_SITE_NAME = "ipm-web-staging"
 LEASE_KEY = "staging-content-manifest"
 
 
@@ -112,6 +114,17 @@ def netlify_url(path: str) -> str:
     return "https://api.netlify.com/api/v1" + path
 
 
+def verify_netlify_site(site_id: str) -> None:
+    if site_id != EXPECTED_NETLIFY_SITE_ID:
+        raise RuntimeError("publisher is restricted to the staging Netlify site ID")
+    site = json_request(
+        netlify_url(f"/sites/{quote(site_id, safe='')}") ,
+        headers=netlify_headers(),
+    )
+    if not isinstance(site, dict) or site.get("name") != EXPECTED_NETLIFY_SITE_NAME:
+        raise RuntimeError("publisher destination is not ipm-web-staging")
+
+
 def current_files(site_id: str) -> list[dict[str, object]]:
     files = json_request(netlify_url(f"/sites/{quote(site_id, safe='')}/files"), headers=netlify_headers())
     if not isinstance(files, list) or not files:
@@ -177,6 +190,7 @@ def run_once() -> int:
             "announcements": {"revision": int(rows["announcements"]["revision"]), "updatedAt": rows["announcements"]["updated_at"]},
         }
         site_id = env("NETLIFY_SITE_ID")
+        verify_netlify_site(site_id)
         files = current_files(site_id)
         previous = current_manifest(site_id, files)
         if previous:

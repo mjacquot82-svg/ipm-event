@@ -78,6 +78,11 @@ import hmac
 import re
 import time
 from urllib.parse import quote
+
+try:
+    from backend.publish_content_manifest import run_once as reconcile_content_manifest
+except ModuleNotFoundError:
+    from publish_content_manifest import run_once as reconcile_content_manifest
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 try:
@@ -217,6 +222,15 @@ LEGACY_EVENT_CHANGE_SCHEDULER_ENABLED = (
     os.environ.get("LEGACY_EVENT_CHANGE_SCHEDULER_ENABLED", "true").strip().lower() == "true"
 )
 PUBLIC_APP_URL = os.environ.get("PUBLIC_APP_URL", "https://theipm.ca").rstrip("/")
+CONTENT_MANIFEST_PUBLISHER_ENABLED = (
+    ENVIRONMENT == "staging"
+    and PUBLIC_APP_URL == "https://staging.theipm.ca"
+    and "hooiqjcbcbwzjjvnwyxf" in SUPABASE_URL
+    and os.environ.get("MANIFEST_ENVIRONMENT", "").strip() == "staging"
+    and os.environ.get("MANIFEST_EVENT", "").strip() == "ipm-staging"
+    and os.environ.get("CONTENT_MANIFEST_PUBLISHER_ENABLED", "false").strip().lower() == "true"
+)
+CONTENT_MANIFEST_PUBLISH_INTERVAL_SECONDS = 30
 # Fixture-scoped arm is available only for the isolated staging app/database.
 CONTROLLED_T30_ARM_ENABLED = (
     PUBLIC_APP_URL == "https://staging.theipm.ca"
@@ -3335,6 +3349,24 @@ async def itinerary_reminder_scheduler():
         except Exception as exc:
             logger.error("Itinerary reminder scheduler error: %s", exc)
         await asyncio.sleep(ITINERARY_REMINDER_INTERVAL_SECONDS)
+
+
+async def content_manifest_publisher_scheduler():
+    """Reconcile the static staging manifest; the DB lease serializes workers."""
+    while True:
+        try:
+            result = await asyncio.to_thread(reconcile_content_manifest)
+            logger.info("Content manifest reconciliation completed: %s", result)
+        except Exception as exc:
+            logger.error("Content manifest reconciliation error: %s", exc)
+        await asyncio.sleep(CONTENT_MANIFEST_PUBLISH_INTERVAL_SECONDS)
+
+
+@app.on_event("startup")
+async def start_content_manifest_publisher():
+    if CONTENT_MANIFEST_PUBLISHER_ENABLED:
+        logger.info("Starting staging static content manifest publisher")
+        asyncio.create_task(content_manifest_publisher_scheduler())
 
 
 @app.on_event("startup")
