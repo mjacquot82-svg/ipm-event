@@ -2,6 +2,8 @@
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlsplit
 from uuid import UUID
+import hashlib
+import re
 
 METRIC_FIELDS = (
     'provider_targeted_device_count', 'provider_sent_count',
@@ -18,9 +20,33 @@ def timestamp(value):
         return None
 
 
+CAMPAIGN_ID_PATTERN = re.compile(r"^[0-9a-zA-Z_]+$")
+# WonderPush documents campaignId as a string but does not publish a separate
+# campaign-length limit. Keep generated identities below a conservative 64-character
+# cap; WonderPush documents that same bound for its idempotency identifiers.
+CAMPAIGN_ID_MAX_LENGTH = 64
+
+
 def campaign_identity(delivery_id, audience):
-    # The ledger UUID, not the announcement, owns one actual provider request.
-    return f'ipm-{audience}-{delivery_id}'
+    """Return one deterministic, provider-safe identity for a local delivery.
+
+    The delivery UUID is the durable identity, so retries of one delivery reuse
+    this exact value while separate deliveries receive different values.
+    """
+    audience_token = str(audience)
+    if not re.fullmatch(r"[0-9a-zA-Z_]+", audience_token):
+        raise ValueError("WonderPush campaign audience must contain only letters, numbers, or underscores")
+    try:
+        delivery_token = UUID(str(delivery_id)).hex
+    except (ValueError, TypeError, AttributeError):
+        # Test/draft repositories may use non-UUID local IDs. Hash them
+        # deterministically rather than dropping punctuation or introducing a
+        # random identity that would break idempotent retries.
+        delivery_token = hashlib.blake2s(str(delivery_id).encode("utf-8"), digest_size=16).hexdigest()
+    campaign_id = f"ipm_{audience_token}_{delivery_token}"
+    if len(campaign_id) > CAMPAIGN_ID_MAX_LENGTH or not CAMPAIGN_ID_PATTERN.fullmatch(campaign_id):
+        raise ValueError("Generated WonderPush campaign ID is outside the provider contract")
+    return campaign_id
 
 
 def has_attribution(row):

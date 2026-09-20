@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from backend import server
 from backend.platform_services import SupabaseAnnouncementService, WonderPushClient, WonderPushError
+from backend.notification_analytics import CAMPAIGN_ID_PATTERN
 
 
 class FakeClient:
@@ -283,13 +284,13 @@ class FakeWonderPush:
         return "everyone-campaign"
 
 
-def announcement(status="published", *, expires_at=None):
+def announcement(status="published", *, expires_at=None, image=None):
     now = datetime.now(timezone.utc)
     return {
         "id": "announcement-1", "event_id": "event-a", "title": "Title",
         "message": "Message", "priority": "Information", "status": status,
         "expires_at": expires_at, "created_by": "Organizer",
-        "created_at": now, "updated_at": now,
+        "created_at": now, "updated_at": now, "image": image,
     }
 
 
@@ -345,11 +346,11 @@ def test_test_send_uses_only_configured_subscribers(monkeypatch):
         "username": "comms", "role": "Communications", "event_id": "event-a"
     }))
     assert provider.test_installations == ["test-1"]
-    assert provider.test_options["campaign_id"] == "ipm-test-delivery-1"
+    assert provider.test_options["campaign_id"] == "ipm_test_e92b12f3797d5092f2ef4aef4d65a327"
     assert provider.test_options["idempotency_key"].startswith("announcement-test-")
     assert 0 < int(provider.test_options["expiration_time"].split()[0]) <= 72 * 60 * 60
     assert result.audience == "test"
-    assert deliveries.rows[0]["provider_campaign_id"] == "ipm-test-delivery-1"
+    assert deliveries.rows[0]["provider_campaign_id"] == "ipm_test_e92b12f3797d5092f2ef4aef4d65a327"
     assert deliveries.rows[0]["provider"] == "wonderpush"
     assert deliveries.rows[0]["target_url"].startswith("https://theipm.ca/announcements/announcement-1?notification_ref=")
 
@@ -369,12 +370,25 @@ def test_test_send_requires_configured_wonderpush_campaign(monkeypatch):
     assert deliveries.rows == []
 
 
+def test_everyone_rich_image_send_keeps_image_and_provider_safe_campaign(monkeypatch):
+    provider, deliveries = configure_notification_fakes(
+        monkeypatch, announcement(image={"url": "https://cdn.example.test/worship.jpg"}))
+    result = asyncio.run(server.notify_announcement("announcement-1", "everyone", {
+        "username": "owner", "role": "Owner", "event_id": "event-a"
+    }))
+    campaign_id = result.provider_campaign_id
+    assert campaign_id.startswith("ipm_everyone_")
+    assert CAMPAIGN_ID_PATTERN.fullmatch(campaign_id)
+    assert provider.everyone_options["image_url"] == "https://cdn.example.test/worship.jpg"
+    assert deliveries.rows[0]["provider_campaign_id"] == campaign_id
+
+
 def test_everyone_send_cannot_duplicate_after_success(monkeypatch):
     provider, deliveries = configure_notification_fakes(monkeypatch, announcement())
     user = {"username": "owner", "role": "Owner", "event_id": "event-a"}
     first = asyncio.run(server.notify_announcement("announcement-1", "everyone", user))
-    assert first.provider_campaign_id == "ipm-everyone-delivery-1"
-    assert provider.everyone_options["campaign_id"] == "ipm-everyone-delivery-1"
+    assert first.provider_campaign_id == "ipm_everyone_e92b12f3797d5092f2ef4aef4d65a327"
+    assert provider.everyone_options["campaign_id"] == "ipm_everyone_e92b12f3797d5092f2ef4aef4d65a327"
     assert provider.everyone_options["idempotency_key"] == "announcement-delivery-1"
     assert provider.everyone_options["expiration_time"] == "259200 seconds"
     with pytest.raises(HTTPException) as duplicate:
@@ -389,7 +403,7 @@ def test_announcement_send_is_independent_of_reminder_kill_switch(monkeypatch):
         "username": "comms", "role": "Communications", "event_id": "event-a"
     }))
     assert result.status == "sent"
-    assert provider.everyone_options["campaign_id"] == "ipm-everyone-delivery-1"
+    assert provider.everyone_options["campaign_id"] == "ipm_everyone_e92b12f3797d5092f2ef4aef4d65a327"
 
 
 def test_earlier_announcement_expiry_shortens_push_ttl(monkeypatch):

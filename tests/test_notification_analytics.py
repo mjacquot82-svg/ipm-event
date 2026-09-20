@@ -4,8 +4,31 @@ from datetime import datetime, timedelta, timezone
 from backend.notification_registrations import SupabaseNotificationRegistrationRepository
 from backend.platform_services import SupabaseNotificationDeliveryService
 from backend import server
+from backend.notification_analytics import CAMPAIGN_ID_MAX_LENGTH, CAMPAIGN_ID_PATTERN, campaign_identity
 from fastapi import HTTPException
 import pytest
+
+
+def test_campaign_identity_is_provider_safe_deterministic_and_unique():
+    failed_delivery = "ba6a4b8a-c34c-4402-b38c-54f4065e1c72"
+    first = campaign_identity(failed_delivery, "everyone")
+    second = campaign_identity("ba6a4b8a-c34c-4402-b38c-54f4065e1c73", "everyone")
+    test_send = campaign_identity(failed_delivery, "test")
+
+    assert first == "ipm_everyone_ba6a4b8ac34c4402b38c54f4065e1c72"
+    assert CAMPAIGN_ID_PATTERN.fullmatch(first)
+    assert len(first) <= CAMPAIGN_ID_MAX_LENGTH
+    assert first != second
+    assert first != test_send
+    assert campaign_identity(failed_delivery, "everyone") == first
+
+
+def test_campaign_identity_handles_non_uuid_local_ids_without_punctuation():
+    value = campaign_identity("delivery-1", "everyone")
+    assert CAMPAIGN_ID_PATTERN.fullmatch(value)
+    assert len(value) <= CAMPAIGN_ID_MAX_LENGTH
+    assert value == campaign_identity("delivery-1", "everyone")
+    assert value != campaign_identity("delivery-2", "everyone")
 
 
 class RegistrationClient:
