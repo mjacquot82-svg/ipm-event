@@ -183,6 +183,18 @@ def publish(site_id: str, manifest: dict[str, object], files: list[dict[str, obj
     raise RuntimeError(f"Netlify deploy {deploy_id} did not become ready")
 
 
+def manifest_in_sync(previous: dict[str, object] | None, current: dict[str, object]) -> bool:
+    if not previous:
+        return False
+    if previous.get("environment") != EXPECTED_ENV or previous.get("event") != EXPECTED_EVENT:
+        return False
+    return all(
+        int(previous.get(content_type, {}).get("revision", 0))
+        == int(current[content_type]["revision"])
+        for content_type in ("schedule", "announcements")
+    )
+
+
 def run_once() -> int:
     if os.environ.get("MANIFEST_ENVIRONMENT", EXPECTED_ENV) != EXPECTED_ENV:
         raise RuntimeError("publisher is staging-only")
@@ -210,7 +222,7 @@ def run_once() -> int:
                 new = int(manifest[content_type]["revision"])
                 if new < old:
                     raise RuntimeError(f"refusing revision rollback for {content_type}: {old} -> {new}")
-        if previous == manifest:
+        if manifest_in_sync(previous, manifest):
             print("content-manifest: IN SYNC", json.dumps(manifest, sort_keys=True))
             return 0
         deploy_id = publish(site_id, manifest, files)
