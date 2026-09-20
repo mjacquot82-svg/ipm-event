@@ -1,4 +1,3 @@
-from backend.event_media import content_patch
 """Platform service abstractions.
 
 These services define backend-owned content boundaries for the reusable event
@@ -8,7 +7,7 @@ the providers without changing frontend API contracts.
 """
 
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import json
 import logging
 import re
@@ -20,16 +19,6 @@ import httpx
 
 
 logger = logging.getLogger(__name__)
-
-
-class _StatisticsRequestLogFilter(logging.Filter):
-    def filter(self, record):
-        # WonderPush requires query authentication. HTTPX otherwise logs that
-        # URL at INFO, including the credential. Keep only our sanitized status.
-        return "management-api.wonderpush.com/v1/stats/reports" not in record.getMessage()
-
-
-logging.getLogger("httpx").addFilter(_StatisticsRequestLogFilter())
 
 class WonderPushError(Exception):
     """Normalized provider error safe to expose through the admin API."""
@@ -57,20 +46,14 @@ class WonderPushClient:
         self.access_token = access_token
         self.timeout = timeout
 
-    def notification_content(
-        self, title: str, message: str, target_url: str, image_url: str | None = None
-    ) -> dict[str, str]:
+    def notification_content(self, title: str, message: str, target_url: str) -> dict[str, str]:
         clean_title = " ".join(title.split())
         branded_title = clean_title if clean_title.casefold().startswith("ipm") else f"IPM — {clean_title}"
-        content = {
+        return {
             "title": self._shorten(branded_title, 100),
             "message": self._shorten(" ".join(message.split()), 255),
             "target_url": target_url,
         }
-        # Include image URL only when present so text-only payloads stay identical.
-        if image_url:
-            content["image_url"] = image_url
-        return content
 
     @staticmethod
     def _shorten(value: str, limit: int) -> str:
@@ -138,21 +121,17 @@ class WonderPushClient:
         disable_capping: bool = False, campaign_id: str | None = None,
         audience_classification: str = "exact_installations") -> dict[str, Any]:
         notification_target = urlsplit(content["target_url"])
-        web = {
-            "icon": (
-                f"{notification_target.scheme}://{notification_target.netloc}"
-                "/ipm-icon-any-192.png"
-            ),
-        }
-        # WonderPush alert.web.image is optional; omit entirely when no image URL.
-        if content.get("image_url"):
-            web["image"] = content["image_url"]
         notification = {
             "alert": {
                 "title": content["title"],
                 "text": content["message"],
                 "targetUrl": content["target_url"],
-                "web": web,
+                "web": {
+                    "icon": (
+                        f"{notification_target.scheme}://{notification_target.netloc}"
+                        "/ipm-icon-any-192.png"
+                    ),
+                },
             },
             "push": {
                 "custom": {
@@ -238,8 +217,8 @@ class WonderPushClient:
 
     async def send_everyone(self, *, title: str, message: str, target_url: str,
         idempotency_key: str | None = None, campaign_id: str | None = None,
-        expiration_time: str | None = None, image_url: str | None = None) -> str:
-        content = self.notification_content(title, message, target_url, image_url=image_url)
+        expiration_time: str | None = None) -> str:
+        content = self.notification_content(title, message, target_url)
         result = await self._send_detailed(content=content, target={"targetSegmentIds": "@ALL"},
             idempotency_key=idempotency_key, campaign_id=campaign_id,
             expiration_time=expiration_time, audience_classification="broadcast")
@@ -248,11 +227,11 @@ class WonderPushClient:
     async def send_test(
         self, *, title: str, message: str, target_url: str, installation_ids: list[str],
         idempotency_key: str | None = None, campaign_id: str | None = None,
-        expiration_time: str | None = None, image_url: str | None = None,
+        expiration_time: str | None = None,
     ) -> str:
         if not installation_ids:
             raise WonderPushError("No WonderPush test installation IDs are configured")
-        content = self.notification_content(title, message, target_url, image_url=image_url)
+        content = self.notification_content(title, message, target_url)
         result = await self._send_detailed(
             content=content,
             target={"targetInstallationIds": ",".join(installation_ids)},
@@ -264,14 +243,13 @@ class WonderPushClient:
         return result["provider_delivery_id"]
 
     async def send_one_installation(
-        self, *, title: str, message: str, target_url: str, installation_id: str,
-        image_url: str | None = None,
+        self, *, title: str, message: str, target_url: str, installation_id: str
     ) -> str:
         """Send to exactly one installation; this method has no broadcast fallback."""
         target = installation_id.strip()
         if not target or "," in target or target == "@ALL":
             raise WonderPushError("Exactly one WonderPush installation ID is required")
-        content = self.notification_content(title, message, target_url, image_url=image_url)
+        content = self.notification_content(title, message, target_url)
         return await self._send(
             content=content,
             target={"targetInstallationIds": target},
@@ -280,7 +258,7 @@ class WonderPushClient:
     async def send_installations(self, *, title: str, message: str, target_url: str,
         installation_ids: list[str], idempotency_key: str,
         expiration_time: str = "15 minutes", disable_capping: bool = False,
-        campaign_id: str | None = None, image_url: str | None = None) -> dict[str, Any]:
+        campaign_id: str | None = None) -> dict[str, Any]:
         """Send one payload to an exact, bounded installation set; never broadcasts."""
         targets = [value.strip() for value in installation_ids]
         if not targets or len(targets) > 10000 or len(set(targets)) != len(targets):
@@ -289,7 +267,7 @@ class WonderPushClient:
             raise WonderPushError("Exact WonderPush installation IDs are required")
         if not idempotency_key or len(idempotency_key) > 64:
             raise WonderPushError("A valid WonderPush idempotency key is required")
-        content = self.notification_content(title, message, target_url, image_url=image_url)
+        content = self.notification_content(title, message, target_url)
         return await self._send_detailed(content=content,
             target={"targetInstallationIds": ",".join(targets)},
             idempotency_key=idempotency_key, expiration_time=expiration_time,
@@ -330,28 +308,6 @@ class WonderPushClient:
                 status_code=response.status_code,
             )
         return result
-
-    async def get_campaign_statistics(self, campaign_id: str, *, requested_at=None) -> dict[str, Any]:
-        """Read-only, exact-campaign cumulative event statistics; never a send."""
-        from backend.notification_analytics import normalize_report_statistics, timestamp, REPORT_METRICS
-        started = timestamp(requested_at)
-        if not campaign_id or campaign_id.startswith("wonderpush:") or not started:
-            raise WonderPushError("A stable campaign identity and request time are required")
-        # A fixed lifetime window, not a shrinking last-24h total. The reports
-        # endpoint is observational despite using POST; it never sends a push.
-        end = datetime.now(timezone.utc)
-        reports = [{"metric": "campaign.events.type", "params": {"campaignId": campaign_id, "type": event},
-                    "fromDate": started.isoformat(), "toDate": end.isoformat()}
-                   for event, _ in REPORT_METRICS]
-        try:
-            async with httpx.AsyncClient(timeout=min(self.timeout, 8)) as client:
-                response = await client.post("https://management-api.wonderpush.com/v1/stats/reports",
-                    params={"accessToken": self.access_token}, json={"bulk": reports})
-            if response.status_code != 200:
-                raise WonderPushError("Statistics lookup failed", status_code=response.status_code)
-            return normalize_report_statistics(response.json())
-        except (httpx.RequestError, ValueError) as exc:
-            raise WonderPushError("Statistics lookup unavailable") from exc
 
     async def list_installations(self, *, updated_since: datetime | None = None,
         page_size: int = 1000) -> tuple[list[dict[str, Any]], int]:
@@ -633,6 +589,21 @@ class SupabaseContentClient:
 
         raise ValueError(f"Supabase event not found: {event_slug}")
 
+    async def get_content_revision(self, event_id: str, content_type: str) -> int:
+        rows = await self.request(
+            "GET",
+            "/content_revisions",
+            params={
+                "select": "revision",
+                "event_id": f"eq.{event_id}",
+                "content_type": f"eq.{content_type}",
+                "limit": "1",
+            },
+        )
+        if not rows:
+            raise ValueError(f"Missing {content_type} content revision for event {event_id}")
+        return int(rows[0]["revision"])
+
 
 class SupabaseScheduleService:
     """Supabase-backed schedule content boundary."""
@@ -713,8 +684,6 @@ class SupabaseScheduleService:
             "id": row["id"],
             "title": row.get("title") or "Untitled Event",
             "description": row.get("description") or "",
-            "event_image": row.get("event_image"),
-            "external_links": row.get("external_links") or [],
             "start_date": self._format_date(row.get("starts_at")),
             "start_time": self._format_time(row.get("starts_at")),
             "end_time": self._format_time(row.get("ends_at")),
@@ -731,7 +700,6 @@ class SupabaseScheduleService:
     def _payload_to_row(self, payload: Any, event_id: str) -> dict[str, Any]:
         return {
             "event_id": event_id,
-            **content_patch(payload),
             "title": payload.title.strip(),
             "description": (payload.description or "").strip(),
             "starts_at": self._combine_datetime(payload.start_date, payload.start_time),
@@ -759,12 +727,24 @@ class SupabaseScheduleService:
         )
 
     async def list_public_schedule(self, event_id: Optional[str] = None) -> Any:
-        rows = await self._list_rows(event_id)
+        resolved_event_id = await self._get_event_id(event_id)
+        rows = await self.client.request(
+            "GET",
+            "/schedule_items",
+            params={
+                "select": "*",
+                "event_id": f"eq.{resolved_event_id}",
+                "status": "neq.archived",
+                "order": "starts_at.asc.nullslast,sort_order.asc",
+            },
+        )
+        content_revision = await self.client.get_content_revision(resolved_event_id, "schedule")
         events = [self._row_to_schedule_event(row) for row in rows]
         return self.schedule_response_model(
             events=events,
             last_updated=datetime.utcnow(),
             total_count=len(events),
+            content_revision=content_revision,
         )
 
     async def list_admin_schedule(self, event_id: Optional[str] = None) -> Any:
@@ -777,6 +757,9 @@ class SupabaseScheduleService:
             events=events,
             last_updated=datetime.utcnow(),
             total_count=len(events),
+            content_revision=await self.client.get_content_revision(
+                await self._get_event_id(event_id), "schedule"
+            ),
         )
 
     async def get_event(self, event_id: str) -> Any:
@@ -795,9 +778,6 @@ class SupabaseScheduleService:
 
     async def replace_schedule(self, rows: Any, event_id: Optional[str] = None) -> Any:
         event_id = await self._get_event_id(event_id)
-        existing = await self._list_rows(event_id)
-        if any(row.get("event_image") or row.get("external_links") for row in existing):
-            raise ValueError("This schedule has event media or links. Edit individual events to preserve their identities and content.")
         await self.client.request(
             "DELETE",
             "/schedule_items",
@@ -1061,7 +1041,6 @@ class SupabaseAnnouncementService:
         return await self.client.get_event_id(event_id or self.event_slug)
 
     def row_to_announcement(self, row: dict[str, Any]) -> dict[str, Any]:
-        image = row.get("image")
         return {
             "id": row["id"],
             "event_id": row["event_id"],
@@ -1073,7 +1052,6 @@ class SupabaseAnnouncementService:
             "created_at": row.get("created_at"),
             "updated_at": row.get("updated_at"),
             "status": row.get("status") or "draft",
-            "image": image if isinstance(image, dict) else None,
         }
 
     def _sort(self, announcements: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1085,7 +1063,9 @@ class SupabaseAnnouncementService:
             ),
         )
 
-    async def list(self, event_id: Optional[str] = None, *, public: bool = False) -> list[dict[str, Any]]:
+    async def _list_with_revision(
+        self, event_id: Optional[str] = None, *, public: bool = False
+    ) -> tuple[list[dict[str, Any]], int]:
         resolved_event_id = await self._get_event_id(event_id)
         params = {"select": "*", "event_id": f"eq.{resolved_event_id}"}
         if public:
@@ -1099,7 +1079,18 @@ class SupabaseAnnouncementService:
                 if not item["expires_at"]
                 or datetime.fromisoformat(str(item["expires_at"]).replace("Z", "+00:00")) > now
             ]
-        return self._sort(announcements)
+        return self._sort(announcements), await self.client.get_content_revision(
+            resolved_event_id, "announcements"
+        )
+
+    async def list(self, event_id: Optional[str] = None, *, public: bool = False) -> list[dict[str, Any]]:
+        announcements, _ = await self._list_with_revision(event_id, public=public)
+        return announcements
+
+    async def list_public_with_revision(
+        self, event_id: Optional[str] = None
+    ) -> tuple[list[dict[str, Any]], int]:
+        return await self._list_with_revision(event_id, public=True)
 
     async def get(
         self, announcement_id: str, event_id: Optional[str] = None, *, public: bool = False
@@ -1137,11 +1128,6 @@ class SupabaseAnnouncementService:
                 "published_at": datetime.now(timezone.utc).isoformat() if payload.status == "published" else None,
                 "expires_at": payload.expires_at.isoformat() if payload.expires_at else None,
                 "created_by": created_by,
-                "image": (
-                    payload.image.model_dump(mode="json")
-                    if getattr(payload, "image", None) is not None
-                    else None
-                ),
             },
             headers={"Prefer": "return=representation"},
         )
@@ -1156,11 +1142,6 @@ class SupabaseAnnouncementService:
             "status": payload.status,
             "expires_at": payload.expires_at.isoformat() if payload.expires_at else None,
         }
-        # Explicit null clears the image; omitted fields from older clients preserve existing image.
-        if "image" in getattr(payload, "model_fields_set", set()):
-            body["image"] = (
-                payload.image.model_dump(mode="json") if payload.image is not None else None
-            )
         if payload.status == "published":
             body["published_at"] = datetime.now(timezone.utc).isoformat()
         rows = await self.client.request(
@@ -1218,7 +1199,6 @@ class SupabaseNotificationDeliveryService:
         notification_title: str,
         notification_message: str,
         provider: str = "wonderpush",
-        provider_campaign_id: str | None = None,
         audience_device_count: int | None = None,
         audience_stale_device_count: int | None = None,
         audience_snapshot_at: str | None = None,
@@ -1234,8 +1214,6 @@ class SupabaseNotificationDeliveryService:
             "target_url": target_url,
             "notification_title": notification_title,
             "notification_message": notification_message,
-            "provider_requested_at": datetime.now(timezone.utc).isoformat(),
-            **({"provider_campaign_id": provider_campaign_id} if provider_campaign_id else {}),
         }
         # Older staging schemas predate the optional broadcast-audience snapshot
         # columns. Controlled test sends have no snapshot, so do not require
@@ -1260,11 +1238,8 @@ class SupabaseNotificationDeliveryService:
         return await self.client.request(
             "GET", "/notification_deliveries", params={
                 "select": (
-                    "id,announcement_id,audience,status,requested_at,target_url,sent_at,audience_device_count,"
-                    "audience_count_basis,audience_snapshot_at,audience_stale_device_count,"
-                    "provider_campaign_id,provider_delivery_id,provider_targeted_device_count,"
-                    "provider_sent_count,provider_confirmed_receipt_count,provider_failure_count,"
-                    "provider_open_count,notification_origin_visit_count,provider_statistics_status,provider_statistics_refreshed_at"
+                    "announcement_id,status,sent_at,audience_device_count,"
+                    "audience_count_basis,audience_snapshot_at,audience_stale_device_count"
                 ),
                 "event_id": f"eq.{resolved_event_id}",
                 "audience": "eq.everyone",
@@ -1272,93 +1247,19 @@ class SupabaseNotificationDeliveryService:
             },
         )
 
-    async def list_overview_rows(self, *, event_id: str, now: datetime) -> list[dict[str, Any]]:
-        resolved = await self._get_event_id(event_id)
-        result = []
-        # Stable ordering and a request-time cutoff prevent new sends shifting pages.
-        # Read until an empty page, even if PostgREST returns less than requested.
-        for _ in range(201):
-            page = await self.client.request("GET", "/notification_deliveries", params={
-                "select": "id,audience,status,requested_at,notification_title,target_url,provider_campaign_id,provider_targeted_device_count,provider_confirmed_receipt_count,provider_open_count,provider_failure_count,notification_origin_visit_count,provider_statistics_refreshed_at",
-                "event_id": f"eq.{resolved}", "audience": "eq.everyone",
-                "requested_at": f"lte.{now.isoformat()}",
-                "order": "requested_at.asc,id.asc", "limit": "500", "offset": str(len(result)),
-            })
-            if not page:
-                return result
-            result.extend(page)
-            if len(result) > 100000:
-                break
-        raise ValueError("Notification overview exceeds bounded read limit")
-
-    async def mark_sent(self, delivery_id: str, provider_delivery_id: str) -> dict[str, Any]:
+    async def mark_sent(self, delivery_id: str, provider_campaign_id: str) -> dict[str, Any]:
         rows = await self.client.request(
             "PATCH",
             "/notification_deliveries",
             params={"id": f"eq.{delivery_id}"},
             json={
                 "status": "sent",
-                "provider_delivery_id": provider_delivery_id,
-                "provider_accepted_at": datetime.now(timezone.utc).isoformat(),
+                "provider_campaign_id": provider_campaign_id,
                 "sent_at": datetime.now(timezone.utc).isoformat(),
                 "error_message": None,
             },
             headers={"Prefer": "return=representation"},
         )
-        return rows[0]
-
-    async def update_target_url(self, delivery_id: str, target_url: str) -> dict[str, Any]:
-        rows = await self.client.request("PATCH", "/notification_deliveries",
-            params={"id": f"eq.{delivery_id}"}, json={"target_url": target_url},
-            headers={"Prefer": "return=representation"})
-        return rows[0]
-
-    async def update_campaign_id(self, delivery_id: str, campaign_id: str) -> dict[str, Any]:
-        rows = await self.client.request("PATCH", "/notification_deliveries",
-            params={"id": f"eq.{delivery_id}"}, json={"provider_campaign_id": campaign_id},
-            headers={"Prefer": "return=representation"})
-        return rows[0]
-
-    async def claim_statistics_refresh(self, row, now):
-        previous = row.get("provider_statistics_refreshed_at")
-        rows = await self.client.request("PATCH", "/notification_deliveries", params={
-            "id": f"eq.{row['id']}",
-            "provider_statistics_refreshed_at": f"eq.{previous}" if previous else "is.null",
-        }, json={"provider_statistics_refreshed_at": now.isoformat(), "provider_statistics_status": "refreshing"},
-            headers={"Prefer": "return=representation"})
-        return bool(rows)
-
-    async def update_provider_statistics(self, delivery_id, values, *, lease_at=None):
-        params = {"id": f"eq.{delivery_id}"}
-        if "notification_origin_visit_count" in values:
-            count = values["notification_origin_visit_count"]
-            params["or"] = f"(notification_origin_visit_count.is.null,notification_origin_visit_count.lt.{count})"
-        if lease_at:
-            params["provider_statistics_refreshed_at"] = f"eq.{lease_at}"
-        rows = await self.client.request("PATCH", "/notification_deliveries", params=params,
-            json=values, headers={"Prefer": "return=representation"})
-        return rows[0] if rows else None
-
-    async def get_delivery(self, delivery_id, *, event_id):
-        resolved = await self._get_event_id(event_id)
-        rows = await self.client.request("GET", "/notification_deliveries", params={
-            "select": "id,announcement_id,status,target_url,requested_at", "id": f"eq.{delivery_id}",
-            "event_id": f"eq.{resolved}", "limit": "1"})
-        return rows[0] if rows else None
-
-    async def list_deliveries(self, *, announcement_id: str, event_id: str) -> list[dict[str, Any]]:
-        resolved_event_id = await self._get_event_id(event_id)
-        return await self.client.request("GET", "/notification_deliveries", params={
-            "select": "*", "announcement_id": f"eq.{announcement_id}",
-            "event_id": f"eq.{resolved_event_id}", "order": "requested_at.desc"})
-
-    async def mark_unknown(self, delivery_id: str):
-        # Keep the existing active-everyone uniqueness guard after an ambiguous
-        # timeout/5xx; a user retry must not become an unrelated second broadcast.
-        rows = await self.client.request("PATCH", "/notification_deliveries",
-            params={"id": f"eq.{delivery_id}"},
-            json={"status": "requested", "error_message": "Provider outcome unknown; reconciliation required before another broadcast."},
-            headers={"Prefer": "return=representation"})
         return rows[0]
 
     async def mark_failed(self, delivery_id: str, error_message: str) -> dict[str, Any]:
@@ -1370,9 +1271,3 @@ class SupabaseNotificationDeliveryService:
             headers={"Prefer": "return=representation"},
         )
         return rows[0]
-
-
-def normalize_wonderpush_statistics(payload):
-    # Compatibility alias; receipts are deliberately unavailable on /stats/events.
-    from backend.notification_analytics import normalize_event_statistics
-    return normalize_event_statistics(payload)

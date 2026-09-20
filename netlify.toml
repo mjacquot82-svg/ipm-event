@@ -21,6 +21,24 @@
   force = true
 
 [[redirects]]
+  from = "/api/admin/*"
+  to = "https://ipm-staging-backend.onrender.com/api/admin/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/vendors"
+  to = "/api/vendors.json"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/content-manifest.json"
+  to = "https://hooiqjcbcbwzjjvnwyxf.supabase.co/functions/v1/content-manifest"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

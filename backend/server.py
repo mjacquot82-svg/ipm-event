@@ -301,6 +301,7 @@ class ScheduleResponse(BaseModel):
     events: List[ScheduleEvent]
     last_updated: datetime
     total_count: int
+    content_revision: int = 0
 
 class AdminScheduleEvent(ScheduleEvent):
     row_number: int
@@ -309,6 +310,7 @@ class AdminScheduleResponse(BaseModel):
     events: List[AdminScheduleEvent]
     last_updated: datetime
     total_count: int
+    content_revision: int = 0
 
 class ScheduleEventPayload(EventDetailContent):
     title: str
@@ -473,6 +475,7 @@ class AnnouncementResponse(BaseModel):
 class AnnouncementsResponse(BaseModel):
     announcements: List[AnnouncementResponse]
     total_count: int
+    content_revision: int = 0
 
 class NotificationDeliveryResponse(BaseModel):
     id: str
@@ -2072,8 +2075,12 @@ async def delete_admin_announcement(
 async def list_public_announcements(event_id: Optional[str] = None):
     """Return published, unexpired announcements for one event."""
     service = require_announcement_service()
-    announcements = await service.list(get_event_id(event_id), public=True)
-    return AnnouncementsResponse(announcements=announcements, total_count=len(announcements))
+    announcements, content_revision = await service.list_public_with_revision(get_event_id(event_id))
+    return AnnouncementsResponse(
+        announcements=announcements,
+        total_count=len(announcements),
+        content_revision=content_revision,
+    )
 
 
 @api_router.get("/announcements/{announcement_id}", response_model=AnnouncementResponse)
