@@ -1296,6 +1296,11 @@ class SupabaseNotificationDeliveryService:
             "/notification_deliveries",
             params={"id": f"eq.{delivery_id}"},
             json={
+                # The legacy database constraint requires a non-null campaign
+                # field for sent rows. This marker means the request was sent
+                # without a campaignId; the actual provider response identity
+                # remains in provider_delivery_id.
+                "provider_campaign_id": "wonderpush:accepted",
                 "status": "sent",
                 "provider_delivery_id": provider_delivery_id,
                 "provider_accepted_at": datetime.now(timezone.utc).isoformat(),

@@ -97,6 +97,24 @@ class DeliveryClient:
         }]
 
 
+def test_mark_sent_satisfies_legacy_constraint_without_conflating_delivery_identity():
+    class SentClient:
+        async def get_event_id(self, slug): return "event-production"
+        async def request(self, method, path, params=None, json=None, headers=None):
+            assert method == "PATCH" and path == "/notification_deliveries"
+            assert json["provider_campaign_id"] == "wonderpush:accepted"
+            assert json["provider_delivery_id"] == "wonderpush:accepted"
+            assert json["provider_accepted_at"] and json["sent_at"]
+            return [{"id": "delivery-1", **json}]
+
+    service = SupabaseNotificationDeliveryService(
+        supabase_url="https://example.supabase.co", service_role_key="test", event_slug="ipm-2026")
+    service.client = SentClient()
+    result = asyncio.run(service.mark_sent("delivery-1", "wonderpush:accepted"))
+    assert result["provider_campaign_id"] == "wonderpush:accepted"
+    assert result["provider_delivery_id"] == "wonderpush:accepted"
+
+
 def test_delivery_snapshot_is_immutable_and_stats_are_announcement_scoped():
     service = SupabaseNotificationDeliveryService(
         supabase_url="https://example.supabase.co", service_role_key="test", event_slug="ipm-2026")
