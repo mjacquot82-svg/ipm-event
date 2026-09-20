@@ -19,18 +19,29 @@ export function validateTarget(url, env = {}) {
   if (Object.keys(env).some((key) => /(?:TARGET|BASE|HOST|PROXY|BACKEND|SUPABASE)/i.test(key))) {
     return { ok: false, reason: 'target override is forbidden' };
   }
-  if (url !== STAGING_MANIFEST_URL) return { ok: false, reason: 'target is not the exact staging manifest URL' };
-  let parsed;
-  try { parsed = new URL(url); } catch (_) { return { ok: false, reason: 'target is not a URL' }; }
-  if (parsed.protocol !== 'https:' || parsed.hostname !== 'staging.theipm.ca'
-      || parsed.port || parsed.pathname !== '/content-manifest.json' || parsed.search || parsed.hash) {
-    return { ok: false, reason: 'target URL is outside the staging allowlist' };
-  }
-  const productionIdentities = new Set([
+  // Keep this deterministic and runtime-portable. k6 v2.2.0 does not provide the
+  // browser WHATWG URL constructor during `k6 inspect`; no URL parsing is needed
+  // because the primary target is an exact, single-string allowlist.
+  if (typeof url !== 'string') return { ok: false, reason: 'target is not a string' };
+  const productionIdentities = [
     'theipm.ca', 'www.theipm.ca', 'ipm-backend-eoiw.onrender.com',
     'hppboivlpqkfhhzfftuu.supabase.co',
-  ]);
-  if (productionIdentities.has(parsed.hostname)) return { ok: false, reason: 'production target rejected' };
+  ];
+  const lowered = url.toLowerCase();
+  const hasProductionHost = productionIdentities.some((identity) => ['https://', 'http://'].some((scheme) => {
+    const prefix = `${scheme}${identity}`;
+    const next = lowered.charAt(prefix.length);
+    return lowered.indexOf(prefix) === 0 && (next === '' || next === ':' || next === '/' || next === '?' || next === '#');
+  }));
+  if (hasProductionHost) {
+    return { ok: false, reason: 'production target rejected' };
+  }
+  if (url !== STAGING_MANIFEST_URL) return { ok: false, reason: 'target is not the exact staging manifest URL' };
+  // Explicitly retain scheme/host/path/query/fragment/port constraints without
+  // invoking URL, URI, browser, or filesystem APIs.
+  if (!/^https:\/\/staging\.theipm\.ca\/content-manifest\.json$/.test(url)) {
+    return { ok: false, reason: 'target URL is outside the staging allowlist' };
+  }
   return { ok: true };
 }
 

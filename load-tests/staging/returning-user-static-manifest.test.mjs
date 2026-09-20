@@ -44,6 +44,26 @@ test('production target and overrides are rejected', () => {
   assert.equal(validateTarget('https://staging.theipm.ca/content-manifest.json', { TARGET_URL: 'https://theipm.ca' }).ok, false);
 });
 
+test('target guard works when the global URL constructor is unavailable', () => {
+  const originalURL = globalThis.URL;
+  try {
+    globalThis.URL = undefined;
+    assert.deepEqual(validateTarget('https://staging.theipm.ca/content-manifest.json'), { ok: true });
+    for (const target of [
+      'http://staging.theipm.ca/content-manifest.json',
+      'https://staging.theipm.ca:443/content-manifest.json',
+      'https://staging.theipm.ca/content-manifest.json?x=1',
+      'https://staging.theipm.ca/content-manifest.json#x',
+      'https://staging.theipm.ca/other.json',
+      'https://theipm.ca/content-manifest.json',
+      'https://ipm-backend-eoiw.onrender.com/content-manifest.json',
+      'https://hppboivlpqkfhhzfftuu.supabase.co/content-manifest.json',
+    ]) assert.equal(validateTarget(target).ok, false, target);
+  } finally {
+    globalThis.URL = originalURL;
+  }
+});
+
 test('script contains only the static manifest request and no dangerous endpoint paths', () => {
   const source = fs.readFileSync(new URL('./returning-user-static-manifest.js', import.meta.url), 'utf8');
   for (const path of ['/api/schedule', '/api/announcements', '/api/vendors', '/admin', '/organizer', '/sos', 'WonderPush', 'Expo', 'T-30', 'migrations']) {
