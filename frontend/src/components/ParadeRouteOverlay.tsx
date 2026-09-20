@@ -13,8 +13,9 @@ export function ParadeRouteOverlay({ routeId }: { routeId: ParadeRouteId | null 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${PARADE_VIEWBOX}">
     <polygon points="${PARADE_ASSEMBLY.outline}" fill="#E6F4FA" fill-opacity="0.8" stroke="${BLUE}" stroke-width="1" stroke-dasharray="3 2"/>
     <text transform="translate(${PARADE_ASSEMBLY.label.join(' ')}) rotate(-90)" text-anchor="middle" font-family="sans-serif" font-size="6" font-weight="bold" fill="#004B76">Parade Assembly Area</text>
-    ${route.paths.map(points => `<path d="${paradePath(points)}" fill="none" stroke="white" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/><path d="${paradePath(points)}" fill="none" stroke="${BLUE}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
+    ${route.paths.map(points => `<path d="${paradePath(points)}" fill="none" stroke="white" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/><path d="${paradePath(points)}" fill="none" stroke="${BLUE}" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
     ${route.arrows.map(({at:[x,y],direction}) => `<g transform="translate(${x} ${y}) rotate(${rotation[direction]})"><path d="M -3 -3 L 1 0 L -3 3" fill="none" stroke="white" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M -3 -3 L 1 0 L -3 3" fill="none" stroke="${BLUE}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>`).join('')}
+    ${route.labels.map(({text,at:[x,y],angle=0}) => `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${angle} ${x} ${y})" font-family="sans-serif" font-size="7.5" font-weight="700" fill="white" stroke="#003B5C" stroke-width="1.25" stroke-linejoin="round" paint-order="stroke" letter-spacing="0.05">${text}</text>`).join('')}
   </svg>`;
   return <View pointerEvents="none" testID={`parade-route-${routeId}`} style={StyleSheet.absoluteFill} accessibilityLabel={`${route.label} parade route`}>
     <Image source={{uri: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}} style={StyleSheet.absoluteFill} resizeMode="stretch" />

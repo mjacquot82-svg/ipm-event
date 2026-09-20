@@ -3,6 +3,7 @@ import test from 'node:test';
 import fs from 'node:fs';
 import ts from 'typescript';
 const source = fs.readFileSync(new URL('../src/config/tentedCityParadeRoutes.ts', import.meta.url),'utf8');
+const overlaySource = fs.readFileSync(new URL('../src/components/ParadeRouteOverlay.tsx', import.meta.url),'utf8');
 const mod = { exports: {} };
 new Function('exports', ts.transpileModule(source, {compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(mod.exports);
 const {PARADE_ROUTES: routes, PARADE_VIEWBOX, PARADE_ROAD_EDGES: edges, PARADE_ROAD_CENTERS: centers, PENDING_MUTUAL_SQUARE_SEGMENT: pending, paradePath} = mod.exports;
@@ -27,6 +28,11 @@ test('both routes use base map points, assembly entry and approved First Street 
           direction==='south' ? x===ax && x===bx && ay<y && y<by :
           x===ax && x===bx && by<y && y<ay;
       })), `${route.id} arrow follows road direction`);
+    }
+    assert(route.labels.length > 0);
+    for (const label of route.labels) {
+      assert(route.roads.includes(label.text));
+      assert(label.at[0] >= 0 && label.at[0] <= 774 && label.at[1] >= 0 && label.at[1] <= 603);
     }
   }
 });
@@ -53,4 +59,11 @@ test('road centers bisect actual SVG boundary pairs; arrows remain inside corrid
     // Chevron extends 3 points across the road, plus half its 3.8pt outline.
     assert((edges[road][1]-edges[road][0])/2 + 0.1 >= 4.9);
   }
+});
+test('route presentation keeps labels above the thick blue line', () => {
+  assert.match(overlaySource, /stroke-width="5\.5"/);
+  assert.match(overlaySource, /fill="white"/);
+  assert.match(overlaySource, /paint-order="stroke"/);
+  assert.match(overlaySource, /stroke="#003B5C"/);
+  assert(overlaySource.indexOf('route.arrows.map') < overlaySource.indexOf('route.labels.map'));
 });

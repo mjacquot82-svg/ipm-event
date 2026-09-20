@@ -5,6 +5,7 @@
 export type ParadeRouteId = 'tuesday' | 'wed-sat';
 export type RoutePoint = readonly [number, number];
 export type RouteArrow = { at: RoutePoint; direction: 'north' | 'south' | 'east' | 'west' };
+export type RouteLabel = { text: string; at: RoutePoint; angle?: 0 | 90 | -90 };
 export const PARADE_VIEWBOX = '0 0 774 603';
 export const PARADE_ASSEMBLY = {
   outline: '513,111 538,111 538,216 519,216 519,139 493,139 493,121 513,121',
@@ -47,7 +48,7 @@ const ENTRY_ARROWS: RouteArrow[] = [
 ];
 export const PARADE_ROUTES: Record<ParadeRouteId, {
   id: ParadeRouteId; label: string; source: string; roads: readonly string[];
-  paths: readonly (readonly RoutePoint[])[]; arrows: readonly RouteArrow[];
+  paths: readonly (readonly RoutePoint[])[]; arrows: readonly RouteArrow[]; labels: readonly RouteLabel[];
 }> = {
   tuesday: {
     id: 'tuesday', label: 'Tuesday', source: 'IPM 2026 Tented City Map - Parade Route Tues.pdf',
@@ -61,6 +62,12 @@ export const PARADE_ROUTES: Record<ParadeRouteId, {
       { at: [B,375], direction: 'north' }, { at: [310,S], direction: 'east' },
       { at: [G,355], direction: 'south' }, { at: [395,V], direction: 'east' },
       { at: [H,360], direction: 'north' }, { at: [H,210], direction: 'north' }],
+    labels: [
+      { text: 'Bruce County North', at: [477, N] }, { text: 'Hydro One Avenue', at: [H, 245], angle: -90 },
+      { text: 'First Street', at: [375, F] }, { text: 'Dodge Avenue', at: [D, 300], angle: -90 },
+      { text: 'Fifth Street', at: [285, V] }, { text: 'Bruce Power Avenue', at: [B, 470], angle: -90 },
+      { text: 'Second Street', at: [300, S] }, { text: 'Grain Farmers Avenue', at: [G, 420], angle: -90 },
+    ],
   },
   'wed-sat': {
     id: 'wed-sat', label: 'Wednesday–Saturday', source: 'IPM 2026 Tented City Map - Parade Route Wed to Sat.pdf',
@@ -72,6 +79,11 @@ export const PARADE_ROUTES: Record<ParadeRouteId, {
       { at: [D,345], direction: 'south' }, { at: [240,V], direction: 'east' },
       { at: [H,415], direction: 'north' }, { at: [H,330], direction: 'north' },
       { at: [H,205], direction: 'north' }],
+    labels: [
+      { text: 'Bruce County North', at: [477, N] }, { text: 'Hydro One Avenue', at: [H, 250], angle: -90 },
+      { text: 'First Street', at: [375, F] }, { text: 'Dodge Avenue', at: [D, 300], angle: -90 },
+      { text: 'Fifth Street', at: [315, V] },
+    ],
   },
 };
 export function paradePath(points: readonly RoutePoint[]) {
