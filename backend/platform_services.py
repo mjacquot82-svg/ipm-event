@@ -589,6 +589,21 @@ class SupabaseContentClient:
 
         raise ValueError(f"Supabase event not found: {event_slug}")
 
+    async def get_content_revision(self, event_id: str, content_type: str) -> int:
+        rows = await self.request(
+            "GET",
+            "/content_revisions",
+            params={
+                "select": "revision",
+                "event_id": f"eq.{event_id}",
+                "content_type": f"eq.{content_type}",
+                "limit": "1",
+            },
+        )
+        if not rows:
+            raise ValueError(f"Missing {content_type} content revision for event {event_id}")
+        return int(rows[0]["revision"])
+
 
 class SupabaseScheduleService:
     """Supabase-backed schedule content boundary."""
@@ -712,12 +727,24 @@ class SupabaseScheduleService:
         )
 
     async def list_public_schedule(self, event_id: Optional[str] = None) -> Any:
-        rows = await self._list_rows(event_id)
+        resolved_event_id = await self._get_event_id(event_id)
+        rows = await self.client.request(
+            "GET",
+            "/schedule_items",
+            params={
+                "select": "*",
+                "event_id": f"eq.{resolved_event_id}",
+                "status": "neq.archived",
+                "order": "starts_at.asc.nullslast,sort_order.asc",
+            },
+        )
+        content_revision = await self.client.get_content_revision(resolved_event_id, "schedule")
         events = [self._row_to_schedule_event(row) for row in rows]
         return self.schedule_response_model(
             events=events,
             last_updated=datetime.utcnow(),
             total_count=len(events),
+            content_revision=content_revision,
         )
 
     async def list_admin_schedule(self, event_id: Optional[str] = None) -> Any:
@@ -730,6 +757,9 @@ class SupabaseScheduleService:
             events=events,
             last_updated=datetime.utcnow(),
             total_count=len(events),
+            content_revision=await self.client.get_content_revision(
+                await self._get_event_id(event_id), "schedule"
+            ),
         )
 
     async def get_event(self, event_id: str) -> Any:
@@ -1033,7 +1063,9 @@ class SupabaseAnnouncementService:
             ),
         )
 
-    async def list(self, event_id: Optional[str] = None, *, public: bool = False) -> list[dict[str, Any]]:
+    async def _list_with_revision(
+        self, event_id: Optional[str] = None, *, public: bool = False
+    ) -> tuple[list[dict[str, Any]], int]:
         resolved_event_id = await self._get_event_id(event_id)
         params = {"select": "*", "event_id": f"eq.{resolved_event_id}"}
         if public:
@@ -1047,7 +1079,18 @@ class SupabaseAnnouncementService:
                 if not item["expires_at"]
                 or datetime.fromisoformat(str(item["expires_at"]).replace("Z", "+00:00")) > now
             ]
-        return self._sort(announcements)
+        return self._sort(announcements), await self.client.get_content_revision(
+            resolved_event_id, "announcements"
+        )
+
+    async def list(self, event_id: Optional[str] = None, *, public: bool = False) -> list[dict[str, Any]]:
+        announcements, _ = await self._list_with_revision(event_id, public=public)
+        return announcements
+
+    async def list_public_with_revision(
+        self, event_id: Optional[str] = None
+    ) -> tuple[list[dict[str, Any]], int]:
+        return await self._list_with_revision(event_id, public=True)
 
     async def get(
         self, announcement_id: str, event_id: Optional[str] = None, *, public: bool = False

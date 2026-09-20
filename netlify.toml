@@ -3,10 +3,8 @@
   publish = "dist"
   command = "npm install && npm run build:web"
 
-# Vendors tab on staging.theipm.ca should show the live vendor list.
-# The browser cannot call production Render from this origin (CORS), so
-# same-origin /api/vendors is proxied to production. Other /api routes stay
-# on the staging backend (schedule, announcements, what3words).
+# Public attendee content is served from the deployment's static catalog.
+# Keep the vendor path static; it must never proxy to production Render.
 [[redirects]]
   from = "/api/admin/*"
   to = "https://ipm-staging-backend.onrender.com/api/admin/:splat"
@@ -15,7 +13,13 @@
 
 [[redirects]]
   from = "/api/vendors"
-  to = "https://ipm-backend-eoiw.onrender.com/api/vendors"
+  to = "/api/vendors.json"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/content-manifest.json"
+  to = "https://hooiqjcbcbwzjjvnwyxf.supabase.co/functions/v1/content-manifest"
   status = 200
   force = true
 

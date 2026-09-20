@@ -1,3 +1,4 @@
 /api/admin/*  https://ipm-staging-backend.onrender.com/api/admin/:splat  200!
-/api/vendors  https://ipm-backend-eoiw.onrender.com/api/vendors  200!
+/api/vendors  /api/vendors.json  200!
+/content-manifest.json  https://hooiqjcbcbwzjjvnwyxf.supabase.co/functions/v1/content-manifest  200!
 /*	/index.html	200
