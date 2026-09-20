@@ -1,6 +1,8 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -29,6 +31,7 @@ from backend.analytics import (
     toronto_day_bounds,
     toronto_hour_key,
     validate_event,
+    normalize_utc_datetime,
 )
 
 
@@ -162,6 +165,24 @@ class RecordingDatabase:
     def __init__(self):
         self.analytics_events = RecordingCollection()
         self.analytics_metadata = RecordingCollection()
+
+
+class SessionCollection:
+    def __init__(self, started_at):
+        self.started_at = started_at
+        self.update = None
+
+    async def find_one(self, query):
+        return {"_id": "legacy-session", "startedAt": self.started_at}
+
+    async def update_one(self, query, update, **options):
+        self.update = update
+        return SimpleNamespace(modified_count=1)
+
+
+class SessionDatabase:
+    def __init__(self, started_at):
+        self.analytics_sessions = SessionCollection(started_at)
 
 
 def session_request(**overrides):
@@ -368,6 +389,52 @@ def test_session_end_calculates_server_duration_and_repeated_end_is_idempotent()
     retry = asyncio.run(end_session(repository, request, received_at=start_at + timedelta(minutes=8)))
     assert ended["accepted"] and ended["durationSeconds"] == 420
     assert retry == {"accepted": False, "duplicate": True, "durationSeconds": None}
+
+
+def test_production_failure_is_naive_aware_subtraction_and_legacy_session_ends_safely():
+    legacy_started_at = datetime(2026, 8, 12, 10)
+    aware_received_at = datetime(2026, 8, 12, 10, 7, tzinfo=UTC)
+    with pytest.raises(TypeError):
+        aware_received_at - legacy_started_at
+
+    database = SessionDatabase(legacy_started_at)
+    repository = MongoAnalyticsRepository(database)
+    duration = asyncio.run(repository.end_session(
+        visitor_id="visitor", session_id="session", received_at=aware_received_at, reason="pagehide",
+    ))
+    assert duration == 420
+    assert database.analytics_sessions.update["$set"]["durationSeconds"] == 420
+    assert database.analytics_sessions.update["$set"]["endedAt"].tzinfo is UTC
+
+
+def test_session_end_normalizes_aware_and_legacy_naive_timestamps_across_dst():
+    toronto = ZoneInfo("America/Toronto")
+    started_at = datetime(2026, 3, 8, 1, 30, tzinfo=toronto)
+    received_at = datetime(2026, 3, 8, 3, 30, tzinfo=toronto)
+    database = SessionDatabase(started_at)
+    duration = asyncio.run(MongoAnalyticsRepository(database).end_session(
+        visitor_id="visitor", session_id="session", received_at=received_at, reason="background",
+    ))
+    assert duration == 3600
+    assert normalize_utc_datetime(datetime(2026, 8, 12, 10)) == datetime(2026, 8, 12, 10, tzinfo=UTC)
+
+    naive_received = datetime(2026, 8, 12, 10, 7)
+    database = SessionDatabase(datetime(2026, 8, 12, 10, tzinfo=UTC))
+    duration = asyncio.run(MongoAnalyticsRepository(database).end_session(
+        visitor_id="visitor", session_id="session", received_at=naive_received, reason="explicit",
+    ))
+    assert duration == 420
+
+
+def test_session_end_malformed_historical_timestamp_completes_without_500(caplog):
+    database = SessionDatabase("legacy-invalid-timestamp")
+    with caplog.at_level("WARNING"):
+        duration = asyncio.run(MongoAnalyticsRepository(database).end_session(
+            visitor_id="visitor", session_id="session", received_at=datetime.now(UTC), reason="timeout",
+        ))
+    assert duration == 0.0
+    assert database.analytics_sessions.update["$set"]["durationSeconds"] is None
+    assert "analytics_session_end_invalid_started_at" in caplog.text
 
 
 def test_toronto_time_keys_and_dst_day_boundaries():

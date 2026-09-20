@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 import json
+import logging
 from typing import Any, Mapping, Optional, Protocol
 from uuid import UUID, uuid5, NAMESPACE_URL
 from zoneinfo import ZoneInfo
@@ -18,6 +19,9 @@ from zoneinfo import ZoneInfo
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import DuplicateKeyError
+
+
+logger = logging.getLogger(__name__)
 
 
 ANALYTICS_EVENT_SCOPE = "ipm-2026"
@@ -31,6 +35,23 @@ MAX_PROPERTIES = 32
 MAX_PROPERTIES_BYTES = 8 * 1024
 
 Scalar = str | int | float | bool | None
+
+
+def normalize_utc_datetime(value: Any) -> Optional[datetime]:
+    """Normalize application and legacy Mongo timestamps to an aware UTC value.
+
+    PyMongo commonly returns BSON datetimes without tzinfo unless its client is
+    configured with ``tz_aware=True``. Those naive values represent UTC in this
+    application. Aware values retain their instant while being converted to
+    UTC. Non-datetime values are treated as malformed historical data.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, datetime):
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 class StrictRequest(BaseModel):
@@ -455,13 +476,27 @@ class MongoAnalyticsRepository:
         )
         if not session:
             return None
-        duration = max(0.0, (received_at - session["startedAt"]).total_seconds())
+        normalized_received_at = normalize_utc_datetime(received_at)
+        normalized_started_at = normalize_utc_datetime(session.get("startedAt"))
+        duration: Optional[float] = None
+        if normalized_received_at is not None and normalized_started_at is not None:
+            duration = max(0.0, (normalized_received_at - normalized_started_at).total_seconds())
+        else:
+            logger.warning(
+                "analytics_session_end_invalid_started_at session_id=%s; ending safely without duration",
+                session_id,
+            )
+            normalized_received_at = normalized_received_at or datetime.now(UTC)
         result = await self.db.analytics_sessions.update_one(
             {"_id": session["_id"], "status": "active"},
-            {"$set": {"status": "ended", "endedAt": received_at, "lastActivityAt": received_at,
-                      "durationSeconds": duration, "endReason": reason, "updatedAt": received_at}},
+            {"$set": {"status": "ended", "endedAt": normalized_received_at, "lastActivityAt": normalized_received_at,
+                      "durationSeconds": duration, "endReason": reason, "updatedAt": normalized_received_at}},
         )
-        return duration if result.modified_count == 1 else None
+        if result.modified_count != 1:
+            return None
+        # A malformed legacy start timestamp is recorded as an unknown duration
+        # while the endpoint still completes successfully and remains non-blocking.
+        return duration if duration is not None else 0.0
 
     async def increment_rollup(self, *, event_name: str, received_at: datetime) -> None:
         await self.db.analytics_daily_rollups.update_one(
