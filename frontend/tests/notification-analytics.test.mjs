@@ -11,7 +11,7 @@ const history = () => ({state: {router: 'preserved'}, replaceState(value) {this.
 test('plain-English rows distinguish exact targets, estimates and gateway sends', () => {
  const rows=Object.fromEntries(notificationMetricRows({provider_targeted_device_count:12,audience_device_count:13,
   provider_sent_count:11,provider_confirmed_receipt_count:9,provider_open_count:3,notification_origin_visit_count:2,provider_failure_count:1}));
- for(const [label,n] of [['Devices targeted',12],['Confirmed receipts',9],['Notification taps',3],['Visits through notification links',2],['Provider-reported delivery failures',1]]) assert.equal(rows[label],String(n));
+ for(const [label,n] of [['Devices targeted',12],['Confirmed receipts',9],['Notification taps',3],['Opened from notification',2],['Provider-reported delivery failures',1]]) assert.equal(rows[label],String(n));
  assert.ok(!('Estimated available registrations at send time' in rows));
  assert.ok(!('Sent to push service' in rows));
  const estimated=Object.fromEntries(notificationMetricRows({audience_device_count:248}));

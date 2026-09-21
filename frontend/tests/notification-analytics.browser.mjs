@@ -46,9 +46,9 @@ try {
   const known=await boxes.nth(0).innerText(),historical=await boxes.nth(1).innerText();
   const empty=await boxes.nth(2).innerText(),partial=await boxes.nth(3).innerText();
   for(const text of ['Targeted devices: 12','Sent to push service: 11','Provider-confirmed receipts: 9','Notification opens: 3','Provider failures: 1','Notification-origin app visits: 2']) assert.equal(await boxes.nth(0).getByLabel(text,{exact:true}).count(),1,text);
-  assert.ok(known.includes('Provider accepted: Yes'));
+  assert.ok(known.includes('Sent to WonderPush: Yes'));
   assert.ok(!known.includes('not available'));
-  assert.ok(historical.includes('Provider accepted: Yes'));
+  assert.ok(historical.includes('Sent to WonderPush: Yes'));
   assert.ok(historical.includes('Requested:'));
   assert.ok(historical.includes('Detailed delivery analytics are not available for this send.'));
   assert.ok(!historical.includes('Targeted devices'));

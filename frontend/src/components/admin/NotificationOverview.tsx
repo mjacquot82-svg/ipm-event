@@ -13,7 +13,7 @@ function Count({ label, value, help }: { label: string; value: number | null; he
 }
 const metricLabels = {
   targeted_devices: 'Devices targeted', receipts: 'Confirmed receipts', opens: 'Notification taps',
-  visits: 'Visits through notification links', failures: 'Provider-reported delivery failures',
+  visits: 'Opened from notification', failures: 'Provider-reported delivery failures',
 } as const;
 const torontoTime = (value: string) => new Date(value).toLocaleString('en-CA', { timeZone: 'America/Toronto', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
@@ -26,8 +26,8 @@ export function NotificationOverview({ announcements, reminders, loading, onOpen
       <Text style={styles.title}>Announcement notifications</Text>
       <Text style={styles.help}>All-time sends to everyone in this event. Test sends are excluded.</Text>
       {!announcements ? <Text style={styles.help}>{loading ? 'Loading notification summary…' : 'Notification summary is temporarily unavailable.'}</Text> : <>
-        {announcements.accepted_sends === 0 ? <Text style={styles.empty}>No announcement notifications accepted by the provider yet.</Text> : <View style={styles.grid}>
-          <Count label="Announcement sends accepted" value={announcements.accepted_sends} help={notificationDefinitions['Announcement sends accepted']} />
+        {announcements.accepted_sends === 0 ? <Text style={styles.empty}>No announcement requests sent to WonderPush yet.</Text> : <View style={styles.grid}>
+          <Count label="Sent to WonderPush" value={announcements.accepted_sends} help={notificationDefinitions['Sent to WonderPush']} />
           {Object.entries(metricLabels).map(([key, label]) => {
             const metric = announcements.metrics[key as keyof typeof metricLabels];
             if (key === 'targeted_devices' && metric.value == null) return null;
@@ -47,9 +47,12 @@ export function NotificationOverview({ announcements, reminders, loading, onOpen
         </>}
         {announcements.recent.length > 0 && <View style={styles.recent}>
           <Text style={styles.label}>Recent announcement sends</Text>
+          <Text style={styles.help}>Opened from notification means recorded app visits through each notification’s tracked link. Repeat opens may be counted; these are not unique people.</Text>
+          <Text style={styles.help}>Sent to WonderPush means the provider accepted the request; it does not prove the device displayed it.</Text>
           {announcements.recent.map((send, index) => <View key={index} style={styles.recentRow}>
             <Text style={styles.recentTitle} numberOfLines={2}>{send.title}</Text>
-            <Text style={styles.help}>Provider accepted{send.requested_at ? ` · Requested ${torontoTime(send.requested_at)}` : ''}</Text>
+            <Text style={styles.help}>{send.sent_at ? `Sent ${torontoTime(send.sent_at)}` : 'Sent time unavailable'} · {typeof send.notification_origin_visit_count === 'number' && Number.isSafeInteger(send.notification_origin_visit_count) && send.notification_origin_visit_count >= 0 ? `${send.notification_origin_visit_count.toLocaleString()} opened` : 'Opens unavailable'}</Text>
+            {!send.sent_at && send.requested_at && <Text style={styles.help}>Requested {torontoTime(send.requested_at)}</Text>}
           </View>)}
         </View>}
       </>}
@@ -60,11 +63,11 @@ export function NotificationOverview({ announcements, reminders, loading, onOpen
       <Text style={styles.help}>Automatic reminders for starred events. Current interests and all-time normal reminder outcomes.</Text>
       {!reminders ? <Text style={styles.help}>{loading ? 'Loading reminders…' : 'Reminder summary is temporarily unavailable.'}</Text> : <View style={styles.grid}>
         <Count label="Active reminder interests" value={reminders.active_interests} />
-        <Count label="Reminders provider accepted" value={reminders.provider_accepted} />
+        <Count label="Reminders sent to WonderPush" value={reminders.provider_accepted} />
         <Count label="Reminder provider failures" value={reminders.provider_failed} />
         <Count label="Reminder delivery unknown" value={reminders.delivery_unknown} />
       </View>}
-      <Text style={styles.help}>Provider acceptance does not confirm visible display. Reminder totals are separate from announcement sends.</Text>
+      <Text style={styles.help}>Sent to WonderPush means the provider accepted the request; it does not prove the device displayed it. Reminder totals are separate from announcement sends.</Text>
     </View>
   </View>;
 }

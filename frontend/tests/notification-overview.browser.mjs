@@ -47,9 +47,9 @@ try{
    const panel=page.getByLabel('Notification performance overview');
    await panel.getByLabel('Active reminder interests',{exact:true}).getByText('7',{exact:true}).waitFor();
    const a=panel.getByLabel('Announcement notification summary');
-   if(cases[name].accepted_sends===0)await a.getByText('No announcement notifications accepted by the provider yet.',{exact:true}).waitFor();
+   if(cases[name].accepted_sends===0)await a.getByText('No announcement requests sent to WonderPush yet.',{exact:true}).waitFor();
    else{
-    for(const [key,label] of Object.entries({targeted_devices:'Devices targeted',receipts:'Confirmed receipts',opens:'Notification taps',visits:'Visits through notification links',failures:'Provider-reported delivery failures'})){
+    for(const [key,label] of Object.entries({targeted_devices:'Devices targeted',receipts:'Confirmed receipts',opens:'Notification taps',visits:'Opened from notification',failures:'Provider-reported delivery failures'})){
      const metric=cases[name].metrics[key],card=a.getByLabel(label,{exact:true});
      if(key==='targeted_devices' && metric.value==null){assert.equal(await card.count(),0);continue;}
      await card.getByText(metric.value==null?'Unavailable':metric.value.toLocaleString(),{exact:true}).waitFor();
@@ -66,8 +66,8 @@ try{
     assert.equal(await a.getByLabel('Pending / unknown requests',{exact:true}).getByText('1',{exact:true}).count(),1);
    }
    const reminders=panel.getByLabel('T-30 reminder analytics');
-   for(const [label,n] of [['Reminders provider accepted',3],['Reminder provider failures',1],['Reminder delivery unknown',2]]) assert.equal(await reminders.getByLabel(label,{exact:true}).getByText(String(n),{exact:true}).count(),1);
-   assert.doesNotMatch(await panel.innerText(),/\d%|unique people|installation_id|push_token|capability|claim IDs/i);
+   for(const [label,n] of [['Reminders sent to WonderPush',3],['Reminder provider failures',1],['Reminder delivery unknown',2]]) assert.equal(await reminders.getByLabel(label,{exact:true}).getByText(String(n),{exact:true}).count(),1);
+   assert.doesNotMatch(await panel.innerText(),/\d%|\d+\s+unique (people|devices)|installation_id|push_token|capability|claim IDs/i);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    if(['historical','mixed','partial'].includes(name)){
     await page.setViewportSize({width,height:2400});
@@ -80,7 +80,7 @@ try{
  unavailable=true;
  await page.getByText('Refresh',{exact:true}).first().click();
  await page.getByText('Notification summary is temporarily unavailable.',{exact:true}).waitFor();
- assert.equal(await page.getByText('No announcement notifications accepted by the provider yet.',{exact:true}).count(),0);
+ assert.equal(await page.getByText('No announcement requests sent to WonderPush yet.',{exact:true}).count(),0);
  await page.getByRole('button',{name:'View announcement details →'}).click();
  await page.getByText('No announcements yet',{exact:true}).waitFor();
  assert.deepEqual(errors,[]);assert.deepEqual(mutations,[]);

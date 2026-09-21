@@ -40,7 +40,10 @@ def overview(rows, now):
         # Event counts need not represent distinct devices; no conversion percentages.
         'rates': None,
         'recent': [{'title': row.get('notification_title') or 'Announcement notification',
-                    'requested_at': row.get('requested_at'), 'provider_accepted': True} for row in recent],
+                    'requested_at': row.get('requested_at'), 'sent_at': row.get('sent_at'),
+                    'notification_origin_visit_count': row.get('notification_origin_visit_count')
+                        if type(row.get('notification_origin_visit_count')) is int and row['notification_origin_visit_count'] >= 0 else None,
+                    'provider_accepted': True} for row in recent],
     }
 
 

@@ -1339,7 +1339,7 @@ class SupabaseNotificationDeliveryService:
         # Read until an empty page, even if PostgREST returns less than requested.
         for _ in range(201):
             page = await self.client.request("GET", "/notification_deliveries", params={
-                "select": "id,audience,status,requested_at,notification_title,target_url,provider_campaign_id,provider_targeted_device_count,provider_confirmed_receipt_count,provider_open_count,provider_failure_count,notification_origin_visit_count,provider_statistics_refreshed_at",
+                "select": "id,audience,status,requested_at,sent_at,notification_title,target_url,provider_campaign_id,provider_targeted_device_count,provider_confirmed_receipt_count,provider_open_count,provider_failure_count,notification_origin_visit_count,provider_statistics_refreshed_at",
                 "event_id": f"eq.{resolved}", "audience": "eq.everyone",
                 "requested_at": f"lte.{now.isoformat()}",
                 "order": "requested_at.asc,id.asc", "limit": "500", "offset": str(len(result)),
