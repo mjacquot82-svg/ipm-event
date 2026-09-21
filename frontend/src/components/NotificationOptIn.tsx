@@ -22,6 +22,8 @@ import { colors } from '../theme/colors';
 import { detectInstallEnvironment } from '../utils/installEnvironment';
 import { notificationHelp } from '../utils/notificationHelp';
 
+const INSTALLED_NOTIFICATION_DECISION_KEY = '@ipm_installed_notification_decision_v1';
+
 const STATE_COPY: Record<NotificationState, string> = {
   loading: 'Checking notification status…',
   default: 'Notifications are optional. Choose whether to receive important IPM announcements.',
@@ -160,8 +162,15 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
         ? await unsubscribeFromNotifications()
         : await subscribeToNotifications();
       setState(nextState === 'loading' ? 'error' : nextState);
-      if (nextState === 'subscribed') await completeSetup();
-      else {
+      if (nextState === 'subscribed') {
+        await completeSetup();
+        const environment = detectInstallEnvironment({ userAgent: navigator.userAgent, platformHint: navigator.platform, maxTouchPoints: navigator.maxTouchPoints,
+          standalone: window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true });
+        if (environment.installState === 'installed') {
+          setInstalledDecision('enabled');
+          void AsyncStorage.setItem(INSTALLED_NOTIFICATION_DECISION_KEY, 'enabled').catch(() => {});
+        }
+      } else {
         recordNotificationWorkflowDiagnostic('IDLE');
         setSetupState('idle');
       }
@@ -173,13 +182,22 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
   }, [completeSetup, state]);
 
   const [homeDismissed, setHomeDismissed] = useState(true);
+  const [installedDecision, setInstalledDecision] = useState<'unknown' | 'enabled' | 'declined'>('unknown');
   useEffect(() => {
-    if (homePresentation) void AsyncStorage.getItem('@ipm_home_notification_invitation_dismissed_v1')
+    if (!homePresentation) return;
+    void AsyncStorage.getItem('@ipm_home_notification_invitation_dismissed_v1')
       .then(value => setHomeDismissed(value === 'true')).catch(() => setHomeDismissed(true));
+    void AsyncStorage.getItem(INSTALLED_NOTIFICATION_DECISION_KEY)
+      .then(value => setInstalledDecision(value === 'enabled' || value === 'declined' ? value : 'unknown'))
+      .catch(() => setInstalledDecision('unknown'));
   }, [homePresentation]);
   const dismissHomeInvitation = () => {
     setHomeDismissed(true);
     void AsyncStorage.setItem('@ipm_home_notification_invitation_dismissed_v1', 'true').catch(() => {});
+  };
+  const declineInstalledNotifications = () => {
+    setInstalledDecision('declined');
+    void AsyncStorage.setItem(INSTALLED_NOTIFICATION_DECISION_KEY, 'declined').catch(() => {});
   };
 
   if (Platform.OS !== 'web') return null;
@@ -200,8 +218,28 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
     : STATE_COPY[state];
 
   if (homePresentation) {
-    // Presentation only: keep all existing lifecycle and subscription handlers mounted.
-    // A Home dismissal does not affect itinerary suggestions or notification settings.
+    // Installed PWAs require one explicit notification decision. The browser/OS
+    // permission request still starts only after the attendee taps Enable.
+    const installedNeedsDecision = environment.installState === 'installed' &&
+      installedDecision === 'unknown' &&
+      (state === 'default' || state === 'unsubscribed');
+    if (installedNeedsDecision) {
+      return <View style={[containerStyle, styles.homeInvitation]} accessibilityLabel="Choose IPM notification preference">
+        <View style={styles.copy}>
+          <Text style={styles.title}>Turn on IPM notifications?</Text>
+          <Text style={styles.homeMessage}>Get important event updates and schedule reminders. You can change this later in Notification options.</Text>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Enable notifications"
+            disabled={working || setupState === 'pending'} onPress={updateSubscription} style={styles.homeAction}>
+            <Text style={styles.retryButtonText}>{working ? 'Please wait…' : 'Enable notifications'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Decline notifications"
+            disabled={working || setupState === 'pending'} onPress={declineInstalledNotifications} style={styles.notNowButton}>
+            <Text style={styles.notNowButtonText}>No thanks</Text>
+          </TouchableOpacity>
+        </View>
+      </View>;
+    }
+    // Browser users retain the existing optional Home invitation behavior.
     if (homeDismissed || verificationDeferred || state === 'subscribed' ||
       (state !== 'default' && state !== 'unsubscribed') ||
       (typeof Notification !== 'undefined' && Notification.permission !== 'default')) return null;
