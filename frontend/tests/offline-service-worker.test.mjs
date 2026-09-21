@@ -47,3 +47,26 @@ test('map and attendee media use a bounded durable runtime cache', () => {
   assert.match(worker, /cache\.put\(request, response\.clone\(\)\)/);
   assert.match(worker, /key !== IPM_RUNTIME_CACHE/);
 });
+
+test('primary map artwork is included in the generated shell and warmed on install', () => {
+  assert.match(generator, /grounds-site-map/);
+  assert.match(generator, /tented-city-map-app-ready/);
+  assert.match(generator, /rv-park-detail-map/);
+  assert.match(generator, /coreArtwork/);
+  assert.match(generator, /IPM_MAP_ARTWORK_ASSETS/);
+  assert.match(worker, /IPM_MAP_ARTWORK_ASSETS/);
+  assert.match(worker, /async function warmMapArtwork/);
+  assert.match(worker, /await warmMapArtwork\(cache\);/);
+  assert.match(worker, /cache\.addAll\(IPM_SHELL_ASSETS\.filter\(\(asset\) => !IPM_MAP_ARTWORK_ASSETS\.includes\(asset\)\)\)/);
+  assert.match(worker, /if \(current\)/);
+});
+
+test('map warming is individually guarded and preserves production runtime fallback', () => {
+  assert.match(worker, /IPM_MAP_ARTWORK_ASSETS\.map\(async \(asset\)/);
+  assert.match(worker, /if \(response\.ok\) await cache\.put\(asset, response\.clone\(\)\)/);
+  assert.match(worker, /catch \{[\s\S]*One unavailable artwork must not abort worker installation/);
+  assert.match(worker, /const warmed = await caches\.match\(request, \{ ignoreSearch: true \}\)/);
+  assert.match(worker, /if \(warmed\) return warmed/);
+  assert.match(worker, /const IPM_RUNTIME_CACHE = `\$\{IPM_CACHE_PREFIX\}runtime-v1`/);
+  assert.match(worker, /IPM_RUNTIME_MAX_ENTRIES = 40/);
+});
