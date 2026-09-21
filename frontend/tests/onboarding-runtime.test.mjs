@@ -109,6 +109,20 @@ for (const [label, options, visible] of [
  assert.doesNotMatch(h.text(),/Notification options|delivery|verified|VERIFIED|MISMATCH|provider-ready|reconciliation|notification health|Home Screen/);
  assert.equal(h.calls.subscribe,0);assert.equal(h.calls.unsubscribe,0);assert.equal(h.calls.prompt,0);
 });
+test('installed PWA ignores stale Home dismissal while notifications are off', async()=> {
+ const storage=new Map([['@ipm_home_notification_invitation_dismissed_v1','true']]);
+ const h=harness('NotificationOptIn.tsx',{state:'default',standalone:true,props:{homePresentation:true},storage});await h.flush();
+ assert.match(h.text(),/Stay up to date/);
+ assert.ok(h.all().some(n=>n.props.accessibilityLabel==='Enable notifications'));
+ assert.equal(h.calls.subscribe,0);
+});
+
+test('browser dismissal still stays dismissed outside installed PWA', async()=> {
+ const storage=new Map([['@ipm_home_notification_invitation_dismissed_v1','true']]);
+ const h=harness('NotificationOptIn.tsx',{state:'default',standalone:false,props:{homePresentation:true},storage});await h.flush();
+ assert.equal(h.text(),'');
+});
+
 test('Home dismissal survives remount without changing itinerary storage or enrolling',async()=>{
  const storage=new Map([['@ipm_itinerary_notification_suggestion_v1','untouched']]);
  const h=harness('NotificationOptIn.tsx',{props:{homePresentation:true},storage});await h.flush();
