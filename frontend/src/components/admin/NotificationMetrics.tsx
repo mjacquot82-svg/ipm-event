@@ -21,11 +21,12 @@ export function NotificationMetrics({ stats, available = true }: { stats?: Annou
     <View style={styles.heading}>
       <Text style={styles.title}>{stats ? 'Notification analytics' : 'Notification'}</Text>
       {!stats ? <Text style={styles.secondary}>{available ? 'No notification sent' : 'Notification analytics temporarily unavailable'}</Text>
-        : <Text style={styles.secondary}>Provider accepted: {stats.provider_accepted ? 'Yes' : stats.status === 'failed' ? 'No' : 'Pending / unknown'}</Text>}
+        : <Text style={styles.secondary}>Sent to WonderPush: {stats.provider_accepted ? 'Yes' : stats.status === 'failed' ? 'No' : 'Pending / unknown'}</Text>}
     </View>
     {stats && <>
+      <Text style={styles.note}>{notificationDefinitions['Sent to WonderPush']}</Text>
       {stats.status === 'failed' && <Text style={styles.failure}>Failed send request</Text>}
-      {time && <Text style={styles.note}>{stats.requested_at ? 'Requested' : 'Provider accepted'}: {new Date(time).toLocaleString()}</Text>}
+      {time && <Text style={styles.note}>{stats.requested_at ? 'Requested' : 'Sent to WonderPush'}: {new Date(time).toLocaleString()}</Text>}
       {notificationMetricRows(stats).length > 0 && <View style={styles.grid}>
         {notificationMetricRows(stats).map(([label, value]) => <View key={label} style={styles.metric} accessibilityLabel={`${label}: ${value}`}>
           <Text style={styles.metricValue}>{value}</Text><Text style={styles.metricLabel}>{label}</Text>

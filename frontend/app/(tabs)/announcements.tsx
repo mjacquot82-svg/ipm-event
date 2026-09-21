@@ -96,6 +96,8 @@ export default function AnnouncementsScreen() {
                 <AnnouncementCard
                   key={announcement.id}
                   announcement={announcement}
+                  preview
+                  compactPreview
                   unread={hydrated && unreadIds.has(announcement.id)}
                   onPress={() => {
                     router.push(`/announcements/${announcement.id}?source=list` as never);

@@ -110,21 +110,24 @@ function AnnouncementImageView({ image, allowLocal = false }: { image: NonNullab
 export default function AnnouncementCard({
   announcement,
   preview = false,
+  compactPreview = false,
   onPress,
   onDismiss,
   unread = false,
 }: {
   announcement: Announcement;
   preview?: boolean;
+  compactPreview?: boolean;
   onPress?: () => void;
   onDismiss?: () => void;
   unread?: boolean;
 }) {
+  const compact = preview && compactPreview;
   const isEmergency = announcement.priority === 'Emergency';
   const isImportant = announcement.priority === 'Important';
   const content = (
     <>
-      <View style={[styles.headingRow, onDismiss && styles.dismissSpacing]}>
+      <View style={[styles.headingRow, compact && styles.compactHeading, onDismiss && styles.dismissSpacing]}>
         <View style={styles.badgeGroup}>
           {unread && <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>}
           <View style={[styles.badge, isEmergency && styles.emergencyBadge, isImportant && styles.importantBadge]}>
@@ -134,14 +137,15 @@ export default function AnnouncementCard({
         </View>
         <Text style={styles.posted}>{formatAnnouncementTime(announcement.created_at, !preview)}</Text>
       </View>
-      <Text style={[styles.title, onDismiss && styles.dismissSpacing]}>{announcement.title}</Text>
-      <Text style={styles.message} numberOfLines={preview ? 3 : undefined}>{announcement.message}</Text>
-      {announcement.image ? <AnnouncementImageView image={announcement.image} allowLocal={preview} /> : null}
-      {preview && <Feather name="chevron-right" size={20} color={colors.textMuted} style={styles.chevron} />}
+      <Text style={[styles.title, compact && styles.compactTitle, onDismiss && styles.dismissSpacing]}>{announcement.title}</Text>
+      <Text style={styles.message} numberOfLines={preview ? (compact ? 2 : 3) : undefined}>{announcement.message}</Text>
+      {announcement.image && !compact ? <AnnouncementImageView image={announcement.image} allowLocal={preview} /> : null}
+      {compact && <View style={styles.readMore}><Text style={styles.readMoreText}>Tap to read</Text><Feather name="chevron-right" size={16} color={colors.textMuted} /></View>}
+      {preview && !compact && <Feather name="chevron-right" size={20} color={colors.textMuted} style={styles.chevron} />}
     </>
   );
 
-  const cardStyle = [styles.card, unread && styles.unreadCard, isEmergency && styles.emergencyCard, isImportant && styles.importantCard];
+  const cardStyle = [styles.card, compact && styles.compactCard, unread && styles.unreadCard, isEmergency && styles.emergencyCard, isImportant && styles.importantCard];
   if (!onDismiss) {
     return onPress ? <TouchableOpacity style={cardStyle} onPress={onPress} activeOpacity={0.8}>{content}</TouchableOpacity> : <View style={cardStyle}>{content}</View>;
   }
@@ -163,6 +167,11 @@ export default function AnnouncementCard({
 
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: ATTENDEE_CARD_RADIUS, borderWidth: 1, padding: 16, position: 'relative' },
+  compactCard: { padding: 12 },
+  compactHeading: { marginBottom: 6 },
+  compactTitle: { fontSize: 16 },
+  readMore: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 6, gap: 4 },
+  readMoreText: { fontSize: 12, color: colors.textMuted },
   cardWrapper: { position: 'relative' },
   dismissButton: { alignItems: 'center', backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 10, borderWidth: 1, height: 44, justifyContent: 'center', position: 'absolute', right: 8, top: 8, width: 44, zIndex: 2 },
   unreadCard: { backgroundColor: '#FFFCF3', borderColor: '#D8B866' },

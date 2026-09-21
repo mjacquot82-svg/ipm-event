@@ -133,7 +133,7 @@ export type NotificationSummaryResponse = {
   scope: 'all_time'; snapshot_at: string; accepted_sends: number; failed_requests: number; pending_requests: number; detailed_sends: number; historical_unattributed_sends: number;
   metrics: Record<'targeted_devices' | 'receipts' | 'opens' | 'visits' | 'failures', CoveredNotificationMetric>;
   latest_statistics_check: string | null; rates: null;
-  recent: { title: string; requested_at: string | null; provider_accepted: boolean }[];
+  recent: { title: string; requested_at: string | null; sent_at?: string | null; notification_origin_visit_count?: number | null; provider_accepted: boolean }[];
 };
 export type ReminderSummaryResponse = { active_interests: number | null; provider_accepted: number | null; provider_failed: number | null; delivery_unknown: number | null };
 export function getNotificationSummary() {

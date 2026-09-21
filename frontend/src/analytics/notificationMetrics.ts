@@ -1,11 +1,11 @@
 import type { AnnouncementDeliveryStats } from '../services/adminAuthService';
 export const metricValue = (value: number | null | undefined): string => value == null ? 'Unavailable' : String(value);
 export const notificationDefinitions = {
-  'Announcement sends accepted': 'Announcement notification requests accepted by the notification provider. This does not confirm delivery.',
+  'Sent to WonderPush': 'WonderPush accepted the request. This does not prove the device displayed the notification.',
   'Devices targeted': 'Devices targeted according to send-specific provider evidence. Counts across sends may include the same device more than once.',
   'Confirmed receipts': 'Notification receipts acknowledged by devices, where provider data is available. This does not mean the notification was read.',
   'Notification taps': 'Notification clicks reported by the provider. These are not necessarily different people or devices.',
-  'Visits through notification links': 'Recorded app visits through links included in notifications, with repeat reporting deduplicated.',
+  'Opened from notification': 'Recorded app visits through that notification’s tracked link. Repeat opens may be counted; this is not a unique-person count.',
   'Provider-reported delivery failures': 'Delivery attempts the notification provider explicitly reported as failed.',
   'Failed send requests': 'Requests IPM could not successfully submit.',
   'Estimated available registrations at send time': 'A snapshot of local registrations that appeared ready when the send was requested. This is not an exact provider target count.',
@@ -14,7 +14,7 @@ export const notificationDefinitions = {
 export const notificationDetailFields = [
   ['Confirmed receipts', 'provider_confirmed_receipt_count'],
   ['Notification taps', 'provider_open_count'],
-  ['Visits through notification links', 'notification_origin_visit_count'],
+  ['Opened from notification', 'notification_origin_visit_count'],
   ['Provider-reported delivery failures', 'provider_failure_count'],
 ] as const;
 

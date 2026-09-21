@@ -55,7 +55,7 @@ def test_recent_safe_allowlist_and_chronology():
     rows[0]['requested_at']='2026-01-01T00:00:00Z'
     r=overview(rows,NOW)
     assert len(r['recent'])==5 and r['recent'][0]['title']=='Title 1'
-    assert set(r['recent'][0])=={'title','requested_at','provider_accepted'}
+    assert set(r['recent'][0])=={'title','requested_at','sent_at','notification_origin_visit_count','provider_accepted'}
     assert 'secret' not in str(r) and 'private' not in str(r)
 
 
@@ -80,6 +80,7 @@ def test_paginated_read_is_scoped_and_reads_past_short_server_pages():
         assert c['event_id']=='eq.resolved-a' and c['audience']=='eq.everyone'
         assert c['requested_at']=='lte.'+NOW.isoformat()
         assert 'push_token' not in c['select'] and 'requested_by' not in c['select']
+        assert 'sent_at' in c['select'].split(',')
 
 
 def test_bounded_read_fails_instead_of_returning_partial_totals():
@@ -99,6 +100,7 @@ def test_visit_aggregation_read_only_and_unavailability(unavailable):
             return {}  # Successful authoritative ledger read proves zero.
     result=asyncio.run(read_overview(Deliveries(),Visits(),'event-a',NOW))
     assert result['metrics']['visits']['value']==(None if unavailable else 0)
+    assert result['recent'][0]['notification_origin_visit_count']==(None if unavailable else 0)
     assert rows[0]['notification_origin_visit_count']==50
 
 
@@ -154,3 +156,11 @@ def test_estimate_is_not_exact_targeting_or_detail_coverage():
     result = overview([row(audience_device_count=248)], NOW)
     assert result['metrics']['targeted_devices']['value'] is None
     assert result['detailed_sends'] == 0
+
+
+@pytest.mark.parametrize('count,expected', [(16,16),(0,0),(None,None),(-1,None),(True,None)])
+def test_recent_uses_app_visits_only_and_actual_send_time(count, expected):
+    result = overview([row(sent_at='2026-09-21T19:46:00Z', notification_origin_visit_count=count,
+        provider_open_count=999, provider_confirmed_receipt_count=888)], NOW)
+    assert result['recent'][0]['notification_origin_visit_count'] == expected
+    assert result['recent'][0]['sent_at'] == '2026-09-21T19:46:00Z'
