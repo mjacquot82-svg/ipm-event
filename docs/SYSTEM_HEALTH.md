@@ -16,9 +16,10 @@ There are no retries: intermittent JWT rejection is reported as a dependency
 failure. Responses are not cacheable and never contain credentials or upstream
 error details. This is a REST dependency probe, not a database-wide audit.
 
-The existing authenticated organizer Analytics page owns the System Health
-section. It refreshes on mount and on its own Refresh button, with overlapping
-refreshes prevented and no polling. Three parallel read-only requests have
+The existing authenticated organizer Dashboard owns the System Health
+section, below the Event / Role / Vendors / Schedule summary cards. It refreshes
+on mount and on its own Refresh button, with overlapping refreshes prevented
+and no polling. Three parallel read-only requests have
 seven-second deadlines:
 
 - `/api/health`: backend process and Supabase event-read status.

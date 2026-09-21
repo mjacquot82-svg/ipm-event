@@ -1,3 +1,4 @@
+import { SystemHealth } from '../../src/components/admin/SystemHealth';
 import { NotificationMetrics, NotificationAnalyticsDetails } from '../../src/components/admin/NotificationMetrics';
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
@@ -820,6 +821,7 @@ function DashboardPage({
         <MetricCard label="Schedule" value={scheduleCount} icon="calendar" />
       </View>
       {countsError ? <ErrorState message={countsError} onRetry={onRefreshCounts} /> : null}
+      <SystemHealth />
     </ContentPage>
   );
 }

@@ -58,7 +58,9 @@ test('wrong event, invalid manifest and unknown provider never produce healthy s
 });
 
 test('admin view renders real status labels, timestamp, limitations and refresh', async () => {
-  const primitive = tag => ({ children, accessibilityLabel, disabled }) => React.createElement(tag, { 'aria-label': accessibilityLabel, disabled }, children);
+  const primitive = tag => function TestPrimitive({ children, accessibilityLabel, disabled }) {
+    return React.createElement(tag, { 'aria-label': accessibilityLabel, disabled }, children);
+  };
   const { SystemHealthView } = load('src/components/admin/SystemHealth.tsx', {
     'react-native': { View: primitive('div'), Text: primitive('span'), Pressable: primitive('button'), StyleSheet: { create: value => value } },
     '../../theme/colors': { colors: {} }, '../../services/systemHealthService': {},
@@ -71,8 +73,17 @@ test('admin view renders real status labels, timestamp, limitations and refresh'
   assert.match(busy, /Checking/);
 });
 
-test('health section is mounted only in admin analytics; no polling or attendee route edits', () => {
-  assert.match(readFileSync('src/components/admin/AnalyticsDashboard.tsx', 'utf8'), /<SystemHealth \/>/);
+test('health section is below admin dashboard cards, absent from analytics and attendee routes', () => {
+  assert.doesNotMatch(readFileSync('src/components/admin/AnalyticsDashboard.tsx', 'utf8'), /SystemHealth/);
+  const admin = readFileSync('app/admin/index.tsx', 'utf8');
+  const dashboard = admin.slice(admin.indexOf('function DashboardPage('), admin.indexOf('function createEmptySchedulePayload('));
+  assert.match(admin, /activeSection === 'dashboard' && \(\s*<DashboardPage/);
+  assert.match(dashboard, /<SystemHealth \/>/);
+  assert.equal((admin.match(/<SystemHealth \/>/g) || []).length, 1);
+  for (const label of ['Event', 'Role', 'Vendors', 'Schedule']) {
+    assert.ok(dashboard.indexOf(`label="${label}"`) >= 0);
+    assert.ok(dashboard.indexOf(`label="${label}"`) < dashboard.indexOf('<SystemHealth />'));
+  }
   const component = readFileSync('src/components/admin/SystemHealth.tsx', 'utf8');
   assert.doesNotMatch(component, /setInterval/);
   assert.match(component, /if \(inFlight.current\) return/);
