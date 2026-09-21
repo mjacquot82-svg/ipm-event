@@ -231,7 +231,7 @@ export type CreateBroadcastPayload = {
   priority: BroadcastPriority;
 };
 
-function getApiBaseUrl() {
+export function getApiBaseUrl() {
   return process.env.EXPO_PUBLIC_BACKEND_URL || DEFAULT_API_BASE_URL;
 }
 

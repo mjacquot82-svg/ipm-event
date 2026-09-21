@@ -1,3 +1,4 @@
+import { SystemHealth } from './SystemHealth';
 import { NotificationOverview } from './NotificationOverview';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -243,6 +244,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   const mapSources = useMemo(() => Object.fromEntries((report?.map.sources || []).map((item) => [item.source, item.count])), [report]);
 
   return <ContentPage title="Analytics" subtitle="Aggregate attendee engagement · America/Toronto">
+    <SystemHealth />
     <Text style={styles.collectionStart}>Analytics collecting since: {formatCollectionStart(summary?.collectionStartedAt)} · “All Time” includes all analytics collected since this date.</Text>
     <View style={styles.toolbar}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangeRow}>
