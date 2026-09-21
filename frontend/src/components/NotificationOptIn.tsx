@@ -201,10 +201,13 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
 
   if (homePresentation) {
     // Presentation only: keep all existing lifecycle and subscription handlers mounted.
-    // A Home dismissal does not affect itinerary suggestions or notification settings.
-    if (homeDismissed || verificationDeferred || state === 'subscribed' ||
+    // On an installed PWA, stale browser storage from an earlier install must not
+    // suppress the opt-in invitation when notifications are currently off.
+    const installedNeedsNotificationOptIn = environment.installState === 'installed' &&
+      (state === 'default' || state === 'unsubscribed');
+    if ((!installedNeedsNotificationOptIn && homeDismissed) || verificationDeferred || state === 'subscribed' ||
       (state !== 'default' && state !== 'unsubscribed') ||
-      (typeof Notification !== 'undefined' && Notification.permission !== 'default')) return null;
+      (!installedNeedsNotificationOptIn && typeof Notification !== 'undefined' && Notification.permission !== 'default')) return null;
     return <View style={[containerStyle, styles.homeInvitation]} accessibilityLabel="Optional IPM updates">
       <View style={styles.copy}>
         <Text style={styles.title}>Stay up to date</Text>
