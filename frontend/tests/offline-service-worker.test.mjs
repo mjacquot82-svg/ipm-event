@@ -104,3 +104,26 @@ test('updates preserve itinerary and origin storage and retain one WonderPush wo
   assert.match(worker, /cdn\.by\.wonderpush\.com/);
   assert.equal((rootLayout.match(/initializeOfflineShell\(\)/g) || []).length, 1);
 });
+
+test('primary map artwork is included in generated shell and supports SVG', () => {
+  assert.match(generator, /grounds-site-map/);
+  assert.match(generator, /tented-city-map-app-ready/);
+  assert.match(generator, /rv-park-detail-map/);
+  assert.match(generator, /coreArtwork/);
+  assert.match(generator, /IPM_MAP_ARTWORK_ASSETS/);
+  assert.match(worker, /IPM_MAP_ARTWORK_ASSETS/);
+});
+
+test('existing installs acquire missing artwork on an online map visit', () => {
+  assert.match(worker, /IPM_MAP_ARTWORK_ASSETS\.includes\(url\.pathname\)/);
+  assert.match(worker, /const cached = await cache\.match\(request, \{ ignoreSearch: true \}\)/);
+  assert.match(worker, /await cache\.put\(request, response\.clone\(\)\)/);
+  assert.match(worker, /await cache\.addAll\(IPM_SHELL_ASSETS\)/);
+});
+
+test('offline navigation and existing cached assets remain covered', () => {
+  assert.match(worker, /if \(cached\) return cached/);
+  for (const asset of ['ipm-logo', 'field', 'gemini4', 'event-map']) {
+    assert.match(generator, new RegExp(asset));
+  }
+});

@@ -13,6 +13,7 @@ try {
 // service worker; these handlers only add application-shell offline behavior.
 const IPM_OFFLINE_VERSION = 'development';
 const IPM_SHELL_ASSETS = ['/', '/index.html', '/manifest.json'];
+const IPM_MAP_ARTWORK_ASSETS = [];
 const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
 const IPM_SHELL_CACHE = `${IPM_CACHE_PREFIX}${IPM_OFFLINE_VERSION}`;
 const IPM_ADMIN_LOGIN_PATH = '/admin/login';
@@ -96,5 +97,19 @@ self.addEventListener('fetch', (event) => {
   if (IPM_SHELL_ASSETS.includes(url.pathname)) {
     event.respondWith(caches.match(request, { ignoreSearch: true })
       .then((cached) => cached || fetch(request)));
+    return;
+  }
+
+  if (IPM_MAP_ARTWORK_ASSETS.includes(url.pathname)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(IPM_SHELL_CACHE);
+      const cached = await cache.match(request, { ignoreSearch: true });
+      if (cached) return cached;
+      const response = await fetch(request);
+      if (IPM_MAP_ARTWORK_ASSETS.includes(url.pathname) && response.ok) {
+        await cache.put(request, response.clone());
+      }
+      return response;
+    })());
   }
 });
