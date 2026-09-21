@@ -455,7 +455,15 @@ class MongoAnalyticsRepository:
         )
         if not session:
             return None
-        duration = max(0.0, (received_at - session["startedAt"]).total_seconds())
+        # Import lazily: reporting imports ingestion constants from this module.
+        # Reuse its BSON UTC normalization without introducing an import cycle.
+        try:
+            from backend.analytics_reporting import normalize_utc_datetime
+        except ModuleNotFoundError:
+            from analytics_reporting import normalize_utc_datetime
+        duration = max(0.0, (
+            normalize_utc_datetime(received_at) - normalize_utc_datetime(session["startedAt"])
+        ).total_seconds())
         result = await self.db.analytics_sessions.update_one(
             {"_id": session["_id"], "status": "active"},
             {"$set": {"status": "ended", "endedAt": received_at, "lastActivityAt": received_at,
