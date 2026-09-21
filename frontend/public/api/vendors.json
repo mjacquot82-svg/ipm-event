@@ -175,7 +175,7 @@
       "id": "c0b34681-27da-4ffd-bd87-4ef3bbdd3178",
       "name": "Bluewater District School Board",
       "type": "Indoor",
-      "location": "",
+      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -211,7 +211,7 @@
       "id": "01d61f68-207b-43e3-a1a7-4b31ce36c8bf",
       "name": "Bruce County Federation of Agriculture",
       "type": "Indoor",
-      "location": "",
+      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -229,7 +229,7 @@
       "id": "f27fb7aa-fafb-49a2-932c-f31e9e4b5f25",
       "name": "Bruce Grey Catholic District School Board",
       "type": "Indoor",
-      "location": "",
+      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -427,7 +427,7 @@
       "id": "6c4a5c1a-cabc-4def-b4f3-f0410c02c88d",
       "name": "Dairy Farmers of Ontario",
       "type": "Indoor",
-      "location": "",
+      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -517,7 +517,7 @@
       "id": "03ff43f0-ece8-4f67-a3c5-3dfd9a21cf2f",
       "name": "Egg Farmers of Ontario",
       "type": "Indoor",
-      "location": "",
+      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -562,7 +562,7 @@
       "id": "48108aac-d4c7-49e9-9c85-8a0a33e315b7",
       "name": "ETFO Bluewater Local",
       "type": "Indoor",
-      "location": "",
+      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1318,7 +1318,7 @@
       "id": "c965a55b-6079-4aad-83ef-25e8029a4275",
       "name": "Ontario Fur Managers Federation",
       "type": "Indoor",
-      "location": "",
+      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1381,7 +1381,7 @@
       "id": "9f7fd4cf-fe95-4d75-88ff-13a899280283",
       "name": "Ontario Youth Apprenticeship Program (OYAP)",
       "type": "Indoor",
-      "location": "",
+      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2051,8 +2051,98 @@
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
+    },
+    {
+      "id": "ff36e1c8-55d2-51e9-aaf4-89873ec3f185",
+      "name": "AgScape",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "27b25013-0ec5-5fe9-8996-30aca4bf7023",
+      "name": "Canadian Agricultural Safety Association (CASA)",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1f1c0077-d5d1-5b21-adfa-a9acdc50c494",
+      "name": "DGFO - Dairy Goat Farmers of Ontario",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9c26622e-5c15-5390-abc9-3f6e2bb8b6a1",
+      "name": "FIRST Robotics Canada",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f8bfb328-5bc0-5b5a-b8fd-5210e2220dde",
+      "name": "Grain Farmers of Ontario",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "5830d6af-41d5-5ef6-ab85-cf66cc9dfb0b",
+      "name": "Gregglea Clydesdales",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1ff4cbc1-b908-52b7-b5dc-ce9184784904",
+      "name": "Grey Bruce Pork Producers",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c9808ae8-0d7f-52ff-a76b-d32b4a98d8e0",
+      "name": "Ontario Association of Agriculture Societies",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1761db83-9b91-5857-9518-3d2aa67c7f3f",
+      "name": "Ontario Sheep Farmers",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1ce79caf-a959-5a43-8baa-c0c6d6a09528",
+      "name": "Set Free Healing",
+      "type": "Indoor",
+      "location": "4B 17–22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
     }
   ],
-  "last_updated": "2026-09-12T14:28:36.762Z",
-  "total_count": 228
+  "last_updated": "2026-09-21T19:00:00.000Z",
+  "total_count": 238
 }
