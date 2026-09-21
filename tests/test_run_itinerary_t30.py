@@ -145,7 +145,11 @@ def test_real_engine_and_provider_only_send_exact_claimed_installations(producti
         form = parse_qs(posts[0].content.decode())
         assert form["targetInstallationIds"] == [target]
         assert "targetSegmentIds" not in form and "@ALL" not in posts[0].content.decode()
-        assert json.loads(form["notification"][0])["alert"]["targetUrl"] == "https://theipm.ca/itinerary"
+        notification = json.loads(form["notification"][0])
+        assert notification["alert"]["targetUrl"] == "https://theipm.ca/itinerary"
+        assert notification["alert"]["web"]["silent"] is False
+        assert notification["alert"]["web"]["vibrate"] == [200, 100, 200]
+        assert "sound" not in notification["alert"]["web"]
         assert posts[0].headers["X-WonderPush-Idempotency-Key"].startswith("ipm-t30-")
     else:
         assert status == 1 and not posts

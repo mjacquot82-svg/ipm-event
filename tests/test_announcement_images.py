@@ -101,7 +101,10 @@ def test_wonderpush_payload_omits_image_when_absent(monkeypatch):
         expiration_time="72 hours",
     ))
     notification = json.loads(captured["data"]["notification"])
-    assert notification["alert"]["web"] == {"icon": "https://theipm.ca/ipm-icon-any-192.png"}
+    assert notification["alert"]["web"] == {
+        "icon": "https://theipm.ca/ipm-icon-any-192.png",
+        "silent": False, "vibrate": [200, 100, 200],
+    }
     assert "image" not in notification["alert"]["web"]
     assert notification["alert"]["targetUrl"].endswith("/announcements/a1")
     assert captured["data"]["filterPlatforms"] == "Web"
