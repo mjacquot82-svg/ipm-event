@@ -139,6 +139,9 @@ class WonderPushClient:
         audience_classification: str = "exact_installations") -> dict[str, Any]:
         notification_target = urlsplit(content["target_url"])
         web = {
+            # Request normal browser/OS alerting; web sound requires a real URL.
+            "silent": False,
+            "vibrate": [200, 100, 200],
             "icon": (
                 f"{notification_target.scheme}://{notification_target.netloc}"
                 "/ipm-icon-any-192.png"

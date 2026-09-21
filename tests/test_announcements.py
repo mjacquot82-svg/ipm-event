@@ -478,7 +478,8 @@ def test_wonderpush_payload_targets_installations_and_preserves_deep_link(monkey
     assert notification["alert"] == {
         "title": "IPM — Title", "text": "Message",
         "targetUrl": "https://theipm.ca/announcements/announcement-1",
-        "web": {"icon": "https://theipm.ca/ipm-icon-any-192.png"},
+        "web": {"icon": "https://theipm.ca/ipm-icon-any-192.png",
+                "silent": False, "vibrate": [200, 100, 200]},
     }
     assert notification["push"]["custom"]["target_url"].endswith("/announcements/announcement-1")
     assert "diagnostic_id" not in notification["push"]["custom"]
