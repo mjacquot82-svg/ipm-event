@@ -19,9 +19,22 @@ const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
 // versions. Activation must not delete a concurrent navigation's cached result.
 const IPM_SHELL_CACHE = `${IPM_CACHE_PREFIX}current-v1`;
 
+async function warmMapArtwork(cache) {
+  await Promise.all(IPM_MAP_ARTWORK_ASSETS.map(async (asset) => {
+    try {
+      if (await cache.match(asset)) return;
+      const response = await fetch(asset, { cache: 'no-store' });
+      if (response.ok) await cache.put(asset, response.clone());
+    } catch {
+      // A single unavailable artwork must not abort worker installation.
+    }
+  }));
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(IPM_SHELL_CACHE);
+    await warmMapArtwork(cache);
     const current = await cache.match('/index.html');
     if (current) {
       const entry = (await current.text()).match(/src=["'](\/_expo\/static\/js\/web\/entry-[^"']+\.js)["']/)?.[1];
