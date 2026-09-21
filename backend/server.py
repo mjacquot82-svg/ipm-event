@@ -2280,6 +2280,16 @@ async def verify_notification_readiness(request: Request):
     return public_notification_registration(verified)
 
 
+# Public read-only dependency probe for standard HTTP/HEAD uptime monitors.
+try:
+    from backend.system_health import install_routes as install_system_health
+except ModuleNotFoundError:
+    from system_health import install_routes as install_system_health
+install_system_health(api_router, lambda: {
+    "url": SUPABASE_URL, "key": SUPABASE_SERVICE_ROLE_KEY, "event": DEFAULT_EVENT_ID,
+})
+
+
 # Isolated, non-mutating production Pixel diagnostic. No existing routes changed.
 try:
     from backend.production_push_diagnostic import install_routes as install_production_push_diagnostic
