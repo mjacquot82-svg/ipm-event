@@ -41,3 +41,26 @@ test('explicit activation is the only skipWaiting call; release probe is not pre
   assert.doesNotMatch(worker, /app-release\.json/);
   assert.match(generator, /writeFileSync\(join\(dist, 'app-release.json'\)/);
 });
+
+test('primary map artwork is included in generated shell and supports SVG', () => {
+  assert.match(generator, /grounds-site-map/);
+  assert.match(generator, /tented-city-map-app-ready/);
+  assert.match(generator, /rv-park-detail-map/);
+  assert.match(generator, /coreArtwork/);
+  assert.match(generator, /IPM_MAP_ARTWORK_ASSETS/);
+  assert.match(worker, /IPM_MAP_ARTWORK_ASSETS/);
+});
+
+test('existing installs acquire missing artwork on an online map visit', () => {
+  assert.match(worker, /IPM_MAP_ARTWORK_ASSETS\.includes\(url\.pathname\)/);
+  assert.match(worker, /const cached = await cache\.match\(request, \{ ignoreSearch: true \}\)/);
+  assert.match(worker, /await cache\.put\(request, response\.clone\(\)\)/);
+  assert.match(worker, /await cache\.addAll\(IPM_SHELL_ASSETS\)/);
+});
+
+test('offline navigation and existing cached assets remain covered', () => {
+  assert.match(worker, /if \(cached\) return cached/);
+  for (const asset of ['ipm-logo', 'field', 'gemini4', 'event-map']) {
+    assert.match(generator, new RegExp(asset));
+  }
+});

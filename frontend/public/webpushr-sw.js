@@ -13,6 +13,7 @@ try {
 // service worker; these handlers only add application-shell offline behavior.
 const IPM_OFFLINE_VERSION = 'development';
 const IPM_SHELL_ASSETS = ['/', '/index.html', '/manifest.json'];
+const IPM_MAP_ARTWORK_ASSETS = [];
 const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
 // Navigation and installation share a last-known-good shell across worker
 // versions. Activation must not delete a concurrent navigation's cached result.
@@ -126,6 +127,18 @@ self.addEventListener('fetch', (event) => {
   if (IPM_SHELL_ASSETS.includes(url.pathname) || url.pathname.startsWith('/_expo/static/')) {
     event.respondWith(caches.match(request, { ignoreSearch: true })
       .then((cached) => cached || fetch(request)));
+    return;
+  }
+
+  if (IPM_MAP_ARTWORK_ASSETS.includes(url.pathname)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(IPM_SHELL_CACHE);
+      const cached = await cache.match(request, { ignoreSearch: true });
+      if (cached) return cached;
+      const response = await fetch(request);
+      if (response.ok) await cache.put(request, response.clone());
+      return response;
+    })());
   }
 });
 
