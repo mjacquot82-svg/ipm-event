@@ -18,6 +18,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import quote
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 
@@ -37,9 +38,9 @@ def env(name: str) -> str:
 
 
 def json_request(url: str, *, method: str = "GET", body: object | None = None,
-                 headers: dict[str, str] | None = None, retry: bool = True) -> object:
+                 headers: dict[str, str] | None = None, retry: bool | None = None) -> object:
     payload = None if body is None else json.dumps(body, separators=(",", ":")).encode()
-    attempts = 3 if retry else 1
+    attempts = 3 if (retry if retry is not None else method.upper() in {"GET", "HEAD"}) else 1
     last_error: Exception | None = None
     for attempt in range(attempts):
         try:
@@ -53,9 +54,19 @@ def json_request(url: str, *, method: str = "GET", body: object | None = None,
                 return json.loads(raw.decode()) if raw else None
         except Exception as error:  # retry reads and idempotent lease operations only
             last_error = error
+            if isinstance(error, HTTPError) and error.code == 401:
+                try:
+                    detail = json.loads(error.read())
+                except (ValueError, UnicodeError):
+                    detail = {}
+                future_jwt = (isinstance(detail, dict) and detail.get("code") == "PGRST303"
+                              and "jwt issued at future" in str(detail.get("message", "")).lower())
+                if not future_jwt:
+                    break
+                last_error = RuntimeError("transient Supabase PGRST303: JWT issued at future")
             if attempt + 1 < attempts:
                 time.sleep(2 ** attempt)
-    raise RuntimeError(f"request failed after {attempts} attempts: {last_error}") from last_error
+    raise RuntimeError(f"request failed after {attempt + 1} attempts: {last_error}") from last_error
 
 
 def raw_request(url: str, *, method: str = "GET", body: bytes | None = None,
@@ -112,13 +123,13 @@ def acquire_lease(owner: str) -> bool:
     # two publisher invocations race on an existing lease.
     json_request(base + "/rest/v1/content_manifest_publish_leases", method="POST", body={
         "lease_key": LEASE_KEY, "owner": owner, "lease_until": now,
-    }, headers=headers)
+    }, headers=headers, retry=True)
     rows = json_request(
         base + "/rest/v1/content_manifest_publish_leases"
         f"?lease_key=eq.{quote(LEASE_KEY, safe='')}"
         f"&or=(lease_until.lt.{quote(now, safe='')},owner.eq.{quote(owner, safe='')})",
         method="PATCH", body={"owner": owner, "lease_until": lease_until},
-        headers={**headers, "Prefer": "return=representation"},
+        headers={**headers, "Prefer": "return=representation"}, retry=True,
     )
     return isinstance(rows, list) and bool(rows)
 
@@ -129,7 +140,7 @@ def release_lease(owner: str) -> None:
         base + "/rest/v1/content_manifest_publish_leases"
         f"?lease_key=eq.{quote(LEASE_KEY, safe='')}&owner=eq.{quote(owner, safe='')}",
         method="PATCH", body={"lease_until": datetime.now(timezone.utc).isoformat()},
-        headers={"apikey": key, "Authorization": f"Bearer {key}"},
+        headers={"apikey": key, "Authorization": f"Bearer {key}"}, retry=True,
     )
 
 
@@ -222,10 +233,12 @@ def run_once() -> int:
     if os.environ.get("MANIFEST_EVENT", EXPECTED_EVENT) != EXPECTED_EVENT:
         raise RuntimeError("publisher event guard failed")
     owner = f"{os.uname().nodename}:{os.getpid()}:{uuid.uuid4()}"
-    if not acquire_lease(owner):
-        print("content-manifest publisher: lease busy; skipping")
-        return 0
+    acquired = False
     try:
+        acquired = acquire_lease(owner)
+        if not acquired:
+            print("content-manifest publisher: lease busy; skipping")
+            return 0
         rows = supabase_rows()
         manifest = {
             "environment": EXPECTED_ENV,
@@ -246,7 +259,13 @@ def run_once() -> int:
         print(f"content-manifest: OUT OF SYNC: {exc}", file=sys.stderr)
         return 1
     finally:
-        release_lease(owner)
+        if acquired:
+            try:
+                release_lease(owner)
+            except Exception as exc:
+                # The lease expires; a cleanup failure must not abort the next
+                # scheduled reconciliation (including the daemon's second run).
+                print(f"content-manifest: lease release failed; awaiting expiry: {exc}", file=sys.stderr)
 
 
 def main() -> int:

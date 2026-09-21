@@ -169,6 +169,8 @@ function getCacheAge(lastSuccessfulUpdate: string) {
 
 let manifestPromise: Promise<ContentManifest> | null = null;
 const refreshPromises = new Map<string, Promise<CachedApiResult<unknown>>>();
+const REFRESH_FAILURE_COOLDOWN_MS = 30_000;
+const refreshFailures = new Map<string, { retryAfter: number; error: unknown }>();
 
 async function readCache<T>(cacheKey: string): Promise<CachedApiResult<T> | null> {
   const storageKey = getCacheKey(cacheKey);
@@ -189,10 +191,6 @@ async function readCache<T>(cacheKey: string): Promise<CachedApiResult<T> | null
     }
 
     const cacheAge = getCacheAge(cacheEntry.lastSuccessfulUpdate);
-    await AsyncStorage.setItem(
-      storageKey,
-      JSON.stringify({ ...cacheEntry, cacheAge })
-    );
 
     return {
       data: cacheEntry.data,
@@ -317,9 +315,11 @@ export async function fetchCachedApiData<T>({
   contentType,
 }: FetchWithCacheOptions<T>): Promise<CachedApiResult<T>> {
   await removeLegacyCache(cacheKey);
-  const cachedData = preferCache ? await readCache<T>(cacheKey) : null;
+  const savedData = await readCache<T>(cacheKey);
+  const cachedData = preferCache ? savedData : null;
+  const refreshKey = getCacheKey(cacheKey);
 
-  const refresh = async () => {
+  const refresh = async (expectedRevision?: number) => {
     const result = await fetchWithRetry<T>(
       url,
       timeoutMs,
@@ -327,6 +327,17 @@ export async function fetchCachedApiData<T>({
       retryDelayMs,
       isCacheableResponse
     );
+    // Validate before committing: a failed/mismatched refresh must never
+    // replace the last successful payload, including on manual refresh.
+    if (contentType) {
+      if (expectedRevision !== undefined && result.contentRevision !== expectedRevision) {
+        throw new Error(`Full ${contentType} response revision does not match manifest`);
+      }
+      if (savedData?.contentRevision !== undefined
+          && (result.contentRevision === undefined || result.contentRevision < savedData.contentRevision)) {
+        throw new Error(`Refusing ${contentType} cache revision rollback`);
+      }
+    }
     try {
       await writeCache(cacheKey, result.data, result.lastSuccessfulUpdate, result.contentRevision);
     } catch (error) {
@@ -335,37 +346,50 @@ export async function fetchCachedApiData<T>({
     return result;
   };
 
-  if (cachedData) {
-    const fullRefresh = () => {
-      const existing = refreshPromises.get(cacheKey);
-      if (existing) return existing as Promise<CachedApiResult<T>>;
-      const promise = refresh().finally(() => refreshPromises.delete(cacheKey));
-      refreshPromises.set(cacheKey, promise as Promise<CachedApiResult<unknown>>);
-      return promise;
-    };
-    const refreshCachedContent = async () => {
+  const refreshContent = async () => {
+    if (cachedData) {
       if (Platform.OS !== 'web' || !contentType) {
-        return cachedData.cacheAge >= CACHE_MAX_AGE_MS ? fullRefresh() : cachedData;
+        return cachedData.cacheAge >= CACHE_MAX_AGE_MS ? refresh() : cachedData;
       }
       const manifest = await getContentManifest();
       const remoteRevision = manifest[contentType].revision;
       if (cachedData.contentRevision === remoteRevision) return cachedData;
-      const result = await fullRefresh();
-      if (result.contentRevision !== remoteRevision) {
-        throw new Error(`Full ${contentType} response revision does not match manifest`);
+      if (cachedData.contentRevision !== undefined && remoteRevision < cachedData.contentRevision) {
+        throw new Error(`Refusing ${contentType} manifest revision rollback`);
       }
+      return refresh(remoteRevision);
+    }
+    return refresh();
+  };
+  const fullRefresh = () => {
+    const existing = refreshPromises.get(refreshKey);
+    if (existing) return existing as Promise<CachedApiResult<T>>;
+    const failure = contentType ? refreshFailures.get(refreshKey) : undefined;
+    if (failure && Date.now() < failure.retryAfter) return Promise.reject(failure.error);
+    const promise = refreshContent().then((result) => {
+      refreshFailures.delete(refreshKey);
       return result;
-    };
-    void refreshCachedContent()
-        .then((result) => onBackgroundRefresh?.(result))
-        .catch((error) => {
-          console.warn('Background API refresh failed:', error);
-          onBackgroundRefreshError?.(error);
-        });
+    }).catch((error) => {
+      if (contentType) refreshFailures.set(refreshKey, {
+        retryAfter: Date.now() + REFRESH_FAILURE_COOLDOWN_MS, error,
+      });
+      throw error;
+    }).finally(() => refreshPromises.delete(refreshKey));
+    refreshPromises.set(refreshKey, promise as Promise<CachedApiResult<unknown>>);
+    return promise;
+  };
+
+  if (cachedData) {
+    void fullRefresh()
+      .then((result) => onBackgroundRefresh?.(result))
+      .catch((error) => {
+        console.warn('Background API refresh failed:', error);
+        onBackgroundRefreshError?.(error);
+      });
     return cachedData;
   }
 
-  return refresh();
+  return fullRefresh();
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
