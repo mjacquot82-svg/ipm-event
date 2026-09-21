@@ -101,21 +101,51 @@ function RankedList({ rows, empty }: { rows: RankRow[]; empty: string }) {
   </View>)}</View>;
 }
 
-function TrafficChart({ rows, labelKey, valueKey, empty }: { rows: (Record<string, string | number> | object)[]; labelKey: string; valueKey: string; empty: string }) {
+export function TrafficChart({ rows, labelKey, valueKey, empty, showNavigation = false, startAtEnd = false }: {
+  rows: (Record<string, string | number> | object)[]; labelKey: string; valueKey: string; empty: string;
+  showNavigation?: boolean; startAtEnd?: boolean;
+}) {
+  const scroll = useRef<ScrollView>(null);
+  const positioned = useRef(false);
+  const dimensions = useRef({ viewport: 0, content: 0 });
+  const positionInitially = () => {
+    if (startAtEnd && !positioned.current && scroll.current
+      && dimensions.current.viewport > 0 && dimensions.current.content > dimensions.current.viewport) {
+      scroll.current.scrollToEnd({ animated: false });
+      positioned.current = true;
+    }
+  };
   const values = rows as Record<string, string | number>[];
   const populated = values.filter((row) => Number(row[valueKey]) > 0);
-  if (!populated.length) return <Text style={styles.inlineEmpty}>{empty}</Text>;
+  if (!values.length || (!showNavigation && !populated.length)) return <Text style={styles.inlineEmpty}>{empty}</Text>;
   const max = Math.max(...values.map((row) => Number(row[valueKey])), 1);
-  return <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chart}>
+  const chart = <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={showNavigation}
+    style={showNavigation && styles.dailyChartScroll} contentContainerStyle={styles.chart}
+    focusable={showNavigation || undefined}
+    accessibilityLabel={showNavigation ? 'Daily traffic chart, scroll to view all dates' : undefined}
+    onLayout={showNavigation ? (event) => { dimensions.current.viewport = event.nativeEvent.layout.width; positionInitially(); } : undefined}
+    onContentSizeChange={showNavigation ? (width) => { dimensions.current.content = width; positionInitially(); } : undefined}>
     {values.map((row, index) => {
       const value = Number(row[valueKey]);
-      return <View key={`${row[labelKey]}-${index}`} style={styles.chartColumn}>
+      return <View key={`${row[labelKey]}-${index}`} style={styles.chartColumn}
+        accessibilityLabel={showNavigation ? `${row[labelKey]}: ${value} ${valueKey}` : undefined}>
         <Text style={styles.chartValue}>{value || ''}</Text>
         <View style={styles.chartBarSlot}><View style={[styles.chartBar, { height: `${value ? Math.max(5, value / max * 100) : 0}%` }]} /></View>
         <Text style={styles.chartLabel} numberOfLines={1}>{String(row[labelKey]).replace(/^\d{4}-/, '')}</Text>
       </View>;
     })}
   </ScrollView>;
+  if (!showNavigation) return chart;
+  return <View style={styles.dailyChart}>
+    <View style={styles.chartNavigation}>
+      <Text style={styles.chartHint}>{startAtEnd ? 'Showing all dates · scroll left for earlier history' : 'Scroll to view all dates'}</Text>
+      <View style={styles.chartNavigationButtons}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Show earliest traffic dates" style={styles.chartNavigationButton} onPress={() => scroll.current?.scrollTo({ x: 0, animated: true })}><Text style={styles.chartHint}>← Earliest</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Show latest traffic dates" style={styles.chartNavigationButton} onPress={() => scroll.current?.scrollToEnd({ animated: true })}><Text style={styles.chartHint}>Latest →</Text></Pressable>
+      </View>
+    </View>
+    {chart}
+  </View>;
 }
 
 function MiniPanel({ title, children }: { title: string; children: React.ReactNode }) {
@@ -310,7 +340,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
 
     {traffic ? <Section title="Traffic" subtitle="Toronto-local session traffic with DST-safe hourly buckets." initiallyOpen>
       <MiniPanel title="Today by Hour"><TrafficChart rows={traffic.traffic.todayByHour} labelKey="hour" valueKey="sessions" empty="No sessions have been recorded today." /></MiniPanel>
-      <MiniPanel title="Traffic by Day"><TrafficChart rows={traffic.traffic.byDay} labelKey="date" valueKey="sessions" empty="No daily traffic is available for this range." /></MiniPanel>
+      <MiniPanel title="Traffic by Day"><TrafficChart key={traffic.range} showNavigation startAtEnd={traffic.range === 'all'} rows={traffic.traffic.byDay} labelKey="date" valueKey="sessions" empty="No daily traffic is available for this range." /></MiniPanel>
     </Section> : null}
 
     {report ? <>
@@ -386,6 +416,12 @@ const styles = StyleSheet.create({
   metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, metricCard: { flexGrow: 1, flexBasis: 190, minWidth: 170, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceElevated, padding: 14 }, metricIcon: { width: 34, height: 34, borderRadius: 8, backgroundColor: colors.surfaceHighlight, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }, metricValue: { fontSize: 22, fontWeight: '800', color: colors.textPrimary }, metricLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginTop: 3 }, metricHelp: { fontSize: 11, lineHeight: 16, color: colors.textMuted, marginTop: 7 },
   inlineEmpty: { color: colors.textMuted, fontSize: 13, paddingVertical: 16, textAlign: 'center' }, rankList: { gap: 12 }, rankRow: { gap: 6 }, rankHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, rankLabel: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.textPrimary }, rankValue: { fontSize: 13, fontWeight: '800', color: colors.primary }, rankDetail: { fontSize: 11, color: colors.textMuted }, barTrack: { height: 7, borderRadius: 4, backgroundColor: colors.surfaceHighlight, overflow: 'hidden' }, barFill: { height: '100%', borderRadius: 4, backgroundColor: colors.primary },
   miniPanel: { flex: 1, minWidth: 260, borderRadius: 8, borderWidth: 1, borderColor: colors.border, padding: 14, gap: 12, backgroundColor: colors.surfaceElevated }, miniTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary }, split: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }, splitCompact: { flexDirection: 'column' },
+  dailyChart: { width: '100%', minWidth: 0, gap: 4 },
+  dailyChartScroll: { width: '100%', maxWidth: '100%', minWidth: 0 },
+  chartNavigation: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 4 },
+  chartNavigationButtons: { flexDirection: 'row', gap: 8 },
+  chartNavigationButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8, borderWidth: 1, borderColor: colors.border, borderRadius: 6 },
+  chartHint: { fontSize: 12, color: colors.textSecondary },
   chart: { minWidth: '100%', height: 190, alignItems: 'flex-end', gap: 6, paddingTop: 20 }, chartColumn: { width: 42, height: 165, alignItems: 'center' }, chartValue: { height: 18, fontSize: 10, color: colors.textSecondary }, chartBarSlot: { flex: 1, width: 22, justifyContent: 'flex-end', backgroundColor: colors.surfaceHighlight, borderRadius: 4, overflow: 'hidden' }, chartBar: { width: '100%', minHeight: 0, backgroundColor: colors.primary, borderRadius: 4 }, chartLabel: { marginTop: 5, width: 44, textAlign: 'center', fontSize: 9, color: colors.textMuted },
   adoptionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, adoptionCard: { flex: 1, flexBasis: 190, minWidth: 170, padding: 14, borderRadius: 8, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border, gap: 5 }, adoptionPercent: { fontSize: 26, fontWeight: '800', color: colors.primary }, adoptionLabel: { fontSize: 14, fontWeight: '800', color: colors.textPrimary }, adoptionHelp: { fontSize: 11, color: colors.textMuted, marginBottom: 5 },
   comparisonTable: { minWidth: 850, borderWidth: 1, borderColor: colors.border, borderRadius: 8, overflow: 'hidden' }, comparisonRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.divider }, comparisonHeader: { backgroundColor: colors.surfaceHighlight }, comparisonCell: { width: 120, padding: 12, fontSize: 12, color: colors.textSecondary }, comparisonHeaderText: { fontWeight: '800', color: colors.textPrimary },
