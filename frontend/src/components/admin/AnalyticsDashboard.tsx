@@ -1,3 +1,4 @@
+import { PopularReminderEvents } from './PopularReminderEvents';
 import { NotificationOverview } from './NotificationOverview';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -9,7 +10,7 @@ import {
   AnalyticsSummaryResponse, AnalyticsTrafficResponse, RankedMetric,
   NotificationHealthResponse, getAnalyticsContent, getAnalyticsLive, getAnalyticsSummary,
   getAnalyticsTraffic, getNotificationHealth, getNotificationHealthSummary, NotificationHealthSummary, getNotificationSummary, getReminderSummary,
-  NotificationSummaryResponse, ReminderSummaryResponse,
+  NotificationSummaryResponse, ReminderSummaryResponse, PopularReminderEventsResponse, getPopularReminderEvents,
 } from '../../services/adminAnalyticsService';
 import { ContentPage, EmptyState, ErrorState, LoadingState } from './ContentScaffold';
 
@@ -176,6 +177,7 @@ function NotificationHealthDiagnostics({ onAuthenticationExpired }: { onAuthenti
 export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncements, canViewNotificationDiagnostics = false }: Props) {
   const { width } = useWindowDimensions();
   const compact = width < 720;
+  const [popularReminders, setPopularReminders] = useState<PopularReminderEventsResponse | null>(null);
   const [range, setRange] = useState<AnalyticsRange>('7d');
   const [summary, setSummary] = useState<AnalyticsSummaryResponse | null>(null);
   const [traffic, setTraffic] = useState<AnalyticsTrafficResponse | null>(null);
@@ -201,7 +203,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
     if (manual) setRefreshing(true); else setAggregateLoading(true);
     const results = await Promise.allSettled([
       getAnalyticsSummary(selectedRange), getAnalyticsTraffic(selectedRange), getAnalyticsContent(selectedRange),
-      getNotificationHealthSummary(), getNotificationSummary(), getReminderSummary(),
+      getNotificationHealthSummary(), getNotificationSummary(), getReminderSummary(), getPopularReminderEvents(),
     ]);
     if (request !== aggregateRequest.current) return;
     const errors: string[] = [];
@@ -217,6 +219,8 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
     else { setNotificationSummary(null); errors.push(`Notifications: ${handleError(results[4].reason)}`); }
     if (results[5].status === 'fulfilled') setReminderSummary(results[5].value);
     else { setReminderSummary(null); errors.push(`Reminders: ${handleError(results[5].reason)}`); }
+    if (results[6].status === 'fulfilled') setPopularReminders(results[6].value);
+    else { setPopularReminders(null); errors.push(`Reminder popularity: ${handleError(results[6].reason)}`); }
     setAggregateErrors(errors); setAggregateLoading(false); setRefreshing(false);
   }, [handleError]);
 
@@ -276,6 +280,9 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
 
     <Section title="Notifications" subtitle="All-time notification performance for this event; independent of the engagement date filter." initiallyOpen>
       <NotificationOverview announcements={notificationSummary} reminders={reminderSummary} loading={aggregateLoading} onOpenAnnouncements={onOpenAnnouncements} />
+    </Section>
+    <Section title="Most Popular Reminder Events" subtitle="Counts are reminder stars for individual schedule timeslots." initiallyOpen>
+      <PopularReminderEvents items={popularReminders?.items ?? null} loading={aggregateLoading} />
     </Section>
     <View style={styles.healthSummary} accessibilityLabel="Notification health summary">
       <Text style={styles.sectionTitle}>Notification health</Text>
