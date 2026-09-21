@@ -13,6 +13,7 @@ try {
 // service worker; these handlers only add application-shell offline behavior.
 const IPM_OFFLINE_VERSION = 'development';
 const IPM_SHELL_ASSETS = ['/', '/index.html', '/manifest.json'];
+const IPM_MAP_ARTWORK_ASSETS = [];
 const IPM_CACHE_PREFIX = 'ipm-offline-shell-';
 // Navigation and installation share a last-known-good shell across worker
 // versions. Activation must not delete a concurrent navigation's cached result.
@@ -41,6 +42,10 @@ async function cacheRuntimeAsset(request) {
   const cache = await caches.open(IPM_RUNTIME_CACHE);
   const cached = await cache.match(request);
   if (cached) return cached;
+  if (IPM_MAP_ARTWORK_ASSETS.includes(new URL(request.url).pathname)) {
+    const warmed = await caches.match(request, { ignoreSearch: true });
+    if (warmed) return warmed;
+  }
   try {
     const response = await fetch(request);
     if (response.ok || response.type === 'opaque') {
@@ -55,9 +60,22 @@ async function cacheRuntimeAsset(request) {
   }
 }
 
+async function warmMapArtwork(cache) {
+  await Promise.all(IPM_MAP_ARTWORK_ASSETS.map(async (asset) => {
+    try {
+      if (await cache.match(asset)) return;
+      const response = await fetch(asset, { cache: 'no-store' });
+      if (response.ok) await cache.put(asset, response.clone());
+    } catch {
+      // One unavailable artwork must not abort worker installation.
+    }
+  }));
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(IPM_SHELL_CACHE);
+    await warmMapArtwork(cache);
     const current = await cache.match('/index.html');
     if (current) {
       const entry = (await current.text()).match(/src=["'](\/_expo\/static\/js\/web\/entry-[^"']+\.js)["']/)?.[1];
@@ -84,7 +102,7 @@ self.addEventListener('install', (event) => {
       return;
     }
     // First installation has no last-known-good shell to inherit.
-    await cache.addAll(IPM_SHELL_ASSETS);
+    await cache.addAll(IPM_SHELL_ASSETS.filter((asset) => !IPM_MAP_ARTWORK_ASSETS.includes(asset)));
   })());
 });
 
