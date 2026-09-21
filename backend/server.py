@@ -1901,6 +1901,22 @@ async def notification_reminder_analytics(current_user: dict = Depends(get_curre
             **await read_reminder_ledger(require_itinerary_reminder_repository(), now)}
 
 
+@api_router.get("/admin/analytics/reminders/popular-events")
+async def popular_reminder_events(current_user: dict = Depends(get_current_organizer_user)):
+    if get_admin_event_id(current_user) != "ipm-2026" or event_service.get_public_event_id() != "ipm-2026":
+        raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")
+    try:
+        from backend.reminder_popularity import read_popular_reminder_events
+    except ModuleNotFoundError:
+        from reminder_popularity import read_popular_reminder_events
+    repository = require_itinerary_reminder_repository()
+    try:
+        async with asyncio.timeout(12):
+            return JSONResponse(await read_popular_reminder_events(repository), headers={"Cache-Control": "no-store"})
+    except Exception:
+        raise HTTPException(status_code=503, detail="Reminder popularity is temporarily unavailable") from None
+
+
 @api_router.get("/admin/analytics/reminders/diagnostics")
 async def notification_reminder_diagnostics(current_user: dict = Depends(get_current_organizer_user)):
     require_owner_role(current_user)

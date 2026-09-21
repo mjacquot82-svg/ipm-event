@@ -156,3 +156,12 @@ export function getNotificationHealthSummary() {
     return result;
   });
 }
+
+export type PopularReminderEvent = {
+  schedule_item_id: string; title: string; starts_at: string;
+  location_name: string | null; reminder_count: number;
+};
+export type PopularReminderEventsResponse = { items: PopularReminderEvent[] };
+export function getPopularReminderEvents() {
+  return adminRequest<PopularReminderEventsResponse>('/api/admin/analytics/reminders/popular-events');
+}
