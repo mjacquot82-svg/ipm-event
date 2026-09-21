@@ -4,6 +4,7 @@ import { check } from 'k6';
 import { Rate } from 'k6/metrics';
 import {
   STAGING_MANIFEST_URL,
+  classifyManifestResponse,
   validateManifestResponse,
   validateTarget,
 } from './manifest-validation.js';
@@ -29,6 +30,7 @@ if (!targetGuard.ok) throw new Error(`Unsafe target: ${targetGuard.reason}`);
 
 const validManifest = new Rate('valid_manifest_success');
 const transportErrors = new Rate('manifest_transport_errors');
+const httpDeliveryFailures = new Rate('manifest_http_delivery_failures');
 
 export const options = {
   scenarios: {
@@ -48,9 +50,12 @@ export const options = {
   summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
   tags: { scenario, target: 'staging-static-manifest' },
   thresholds: {
-    valid_manifest_success: [{ threshold: 'rate>=0.999', abortOnFail: true, delayAbortEval: '30s' }],
-    http_req_failed: [{ threshold: 'rate<0.001', abortOnFail: true, delayAbortEval: '30s' }],
+    // Reliability thresholds remain strict, but are evaluated at completion so
+    // isolated early failures do not truncate the measurement sample.
+    valid_manifest_success: [{ threshold: 'rate>=0.999', abortOnFail: false }],
+    http_req_failed: [{ threshold: 'rate<0.001', abortOnFail: false }],
     manifest_transport_errors: ['rate<0.001'],
+    manifest_http_delivery_failures: ['rate<0.001'],
     dropped_iterations: ['count==0'],
     http_req_duration: ['p(95)<100'],
   },
@@ -84,14 +89,17 @@ export default function (baseline) {
     tags: { phase: 'load', endpoint: 'content-manifest' },
     headers: { Accept: 'application/json' },
   });
-  const result = validateManifestResponse(response, baseline);
+  const classified = classifyManifestResponse(response, baseline);
+  const result = classified.result || { ok: false, reason: classified.reason };
   const valid = check(response, {
     'manifest is a valid unchanged staging manifest': () => result.ok,
     'manifest has staging identity': () => result.reason !== 'wrong environment' && result.reason !== 'wrong event',
   });
   validManifest.add(valid);
-  transportErrors.add(response.status === 0 || response.status >= 400);
-  if (!result.ok) {
+  const deliveryFailure = response.status !== 200;
+  httpDeliveryFailures.add(deliveryFailure);
+  transportErrors.add(response.status === 0);
+  if (classified.kind === 'safety') {
     exec.test.abort(`Manifest validation failed: ${result.reason}`);
   }
 }

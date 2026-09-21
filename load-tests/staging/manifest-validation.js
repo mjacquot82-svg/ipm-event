@@ -68,3 +68,33 @@ export function validateManifestResponse(response, expected = null) {
     body,
   };
 }
+
+// Classify a response before the k6 script decides whether to continue. A
+// transport/delivery failure is measurable reliability data; semantic content
+// proving that the target is unsafe or invalid must stop the test immediately.
+export function classifyManifestResponse(response, expected = null) {
+  if (!response || response.status === 0) return { kind: 'reliability', reason: 'transport failure' };
+
+  const bodyText = typeof response.body === 'string' ? response.body.trim() : '';
+  const contentType = Object.entries(response.headers || {})
+    .find(([key]) => key.toLowerCase() === 'content-type')?.[1] || '';
+  const looksLikeHtml = /text\/html/i.test(String(contentType)) || /^<!doctype\s+html|^<html[\s>]/i.test(bodyText);
+  if (looksLikeHtml) return { kind: 'safety', reason: 'response is SPA HTML' };
+
+  // For non-200 responses, only classify as unsafe when the body contains
+  // recognizable manifest semantics. A bare 4xx/5xx/error body is delivery
+  // failure data and must remain in the measurement.
+  let parsed;
+  if (bodyText) {
+    try { parsed = JSON.parse(bodyText); } catch (_) { parsed = undefined; }
+  }
+  const hasManifestShape = parsed && typeof parsed === 'object'
+    && ('environment' in parsed || 'event' in parsed || 'schedule' in parsed || 'announcements' in parsed);
+  if (response.status !== 200 && !hasManifestShape) {
+    return { kind: 'reliability', reason: 'HTTP delivery failure' };
+  }
+
+  const result = validateManifestResponse({ ...response, body: bodyText, json: () => parsed }, expected);
+  if (result.ok) return { kind: 'success', result };
+  return { kind: 'safety', reason: result.reason, result };
+}

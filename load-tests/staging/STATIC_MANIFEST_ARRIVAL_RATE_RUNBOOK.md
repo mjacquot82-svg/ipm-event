@@ -20,7 +20,7 @@ Run one scenario per separately authorized invocation. The script defaults to `R
 
 Each scenario runs for five minutes. The worker allocations are sized for the observed 5–40 ms response range without allocating one VU per attendee. `dropped_iterations` must remain zero; otherwise the requested rate was not generated and the run is not capacity evidence.
 
-The thresholds are valid manifest rate ≥99.9%, HTTP failure rate <0.1%, transport error rate <0.1%, zero dropped iterations, and p95 request duration <100 ms. The summary includes p99. Review p50, p95, p99, max, bytes sent/received, and connection timings (`blocked`, `connecting`, `tls_handshaking`, `waiting`, and `receiving`) where emitted by k6.
+The thresholds are valid manifest rate ≥99.9%, HTTP failure rate <0.1%, transport error rate <0.1%, HTTP delivery failure rate <0.1%, zero dropped iterations, and p95 request duration <100 ms. The summary includes p99. Review p50, p95, p99, max, bytes sent/received, and connection timings (`blocked`, `connecting`, `tls_handshaking`, `waiting`, and `receiving`) where emitted by k6. Transport errors are status-0/network failures; HTTP delivery failures are non-200 responses without semantic evidence that the target is unsafe.
 
 Example invocation (future use only; do not run as part of package creation):
 

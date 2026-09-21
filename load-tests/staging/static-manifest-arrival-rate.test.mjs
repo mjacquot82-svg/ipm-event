@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import { validateManifestResponse, validateTarget } from './manifest-validation.js';
+import { classifyManifestResponse, validateManifestResponse, validateTarget } from './manifest-validation.js';
 
 const scriptPath = new URL('./static-manifest-arrival-rate.js', import.meta.url);
 const source = fs.readFileSync(scriptPath, 'utf8');
@@ -39,6 +39,36 @@ test('changed revision is rejected against setup baseline', () => {
   assert.equal(validateManifestResponse(response, baseline).reason, 'manifest revision changed');
 });
 
+test('transport failure is measurable and does not require safety abort', () => {
+  const classified = classifyManifestResponse({ status: 0, body: '', headers: {} });
+  assert.equal(classified.kind, 'reliability');
+});
+
+test('unexpected EOF equivalent is measurable and continues', () => {
+  const classified = classifyManifestResponse({ status: 0, body: 'unexpected EOF', headers: {} });
+  assert.equal(classified.kind, 'reliability');
+});
+
+test('bare HTTP 5xx delivery failure is measurable and continues', () => {
+  const classified = classifyManifestResponse({
+    status: 503, body: 'upstream unavailable', headers: { 'Content-Type': 'text/plain' },
+  });
+  assert.equal(classified.kind, 'reliability');
+});
+
+for (const [name, response] of [
+  ['wrong environment', valid({ environment: 'production' })],
+  ['wrong event', valid({ event: 'wrong-event' })],
+  ['revision change', valid({ schedule: { revision: 'schedule-b' } })],
+  ['SPA HTML', { status: 200, body: '<!doctype html><html></html>', headers: { 'Content-Type': 'text/html' } }],
+]) {
+  test(`${name} remains an immediate safety-abort classification`, () => {
+    const baseline = { scheduleRevision: 'schedule-a', announcementsRevision: 'announcements-a' };
+    const classified = classifyManifestResponse(parseResponse(response), baseline);
+    assert.equal(classified.kind, 'safety');
+  });
+}
+
 test('exact target guard rejects production, HTTP, ports, queries, fragments and overrides', () => {
   assert.deepEqual(validateTarget('https://staging.theipm.ca/content-manifest.json'), { ok: true });
   for (const target of [
@@ -61,6 +91,8 @@ test('arrival script has no dangerous endpoints and exactly one load GET plus se
   assert.equal((source.match(/http\.get\(/g) || []).length, 2);
   assert.equal(source.includes('sleep('), false);
   assert.match(source, /executor: 'constant-arrival-rate'/);
+  assert.match(source, /abortOnFail: false/);
+  assert.match(source, /manifest_http_delivery_failures/);
 });
 
 test('all supported rates and worker allocations are exactly configured', () => {
@@ -73,4 +105,6 @@ test('all supported rates and worker allocations are exactly configured', () => 
   assert.match(source, /duration: '5m'/);
   assert.match(source, /dropped_iterations: \['count==0'\]/);
   assert.match(source, /http_req_duration: \['p\(95\)<100'\]/);
+  assert.match(source, /valid_manifest_success: \[\{ threshold: 'rate>=0\.999', abortOnFail: false \}\]/);
+  assert.match(source, /http_req_failed: \[\{ threshold: 'rate<0\.001', abortOnFail: false \}\]/);
 });
