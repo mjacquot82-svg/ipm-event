@@ -55,24 +55,6 @@
       "priority": 99
     },
     {
-      "id": "ff36e1c8-55d2-51e9-aaf4-89873ec3f185",
-      "name": "AgScape",
-      "type": "Indoor",
-      "location": "SOUTH-4",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "3ae7740c-f1c6-5e2c-b2ec-743f80879a0e",
-      "name": "Amabel Books, Allenford",
-      "type": "Indoor",
-      "location": "Indoors at the Artisan Tent",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "af16cf06-a3fc-442f-89fb-34b7f7c811aa",
       "name": "Armtec",
       "type": "Indoor",
@@ -82,19 +64,19 @@
       "priority": 99
     },
     {
-      "id": "f2c294e5-6c52-55ae-920f-784caea9c320",
-      "name": "B Town Farm Supply",
-      "type": "",
-      "location": "1B-07",
+      "id": "ee1415e6-f744-4630-bc35-6abe2ba92ba5",
+      "name": "B&L Farm Services Ltd., Chesley",
+      "type": "Outdoor",
+      "location": "2B-13-14",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
     },
     {
-      "id": "ee1415e6-f744-4630-bc35-6abe2ba92ba5",
-      "name": "B&L Farm Services Ltd., Chesley",
-      "type": "Outdoor",
-      "location": "2B-13-14",
+      "id": "f2c294e5-6c52-55ae-920f-784caea9c320",
+      "name": "B Town Farm Supply",
+      "type": "",
+      "location": "1B-07",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -271,15 +253,6 @@
       "priority": 99
     },
     {
-      "id": "27b25013-0ec5-5fe9-8996-30aca4bf7023",
-      "name": "Canadian Agricultural Safety Association (CASA)",
-      "type": "Indoor",
-      "location": "SOUTH-4",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "cae86ad1-4826-4a0a-b06c-3112e7a23706",
       "name": "Canadian Foodgrains Bank",
       "type": "Indoor",
@@ -424,15 +397,6 @@
       "priority": 99
     },
     {
-      "id": "cbc1c263-8e96-508b-9aa2-e6b9508b43b8",
-      "name": "CSN Auto Reset Group",
-      "type": "Outdoor",
-      "location": "4B-02",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "4dd3723c-6622-561c-84c7-efb5cbd97b33",
       "name": "Culligan, Cambridge",
       "type": "Outdoor",
@@ -500,15 +464,6 @@
       "name": "DeDell Seeds Inc., Melbourne",
       "type": "Outdoor",
       "location": "2B-19-20",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "1f1c0077-d5d1-5b21-adfa-a9acdc50c494",
-      "name": "DGFO - Dairy Goat Farmers of Ontario",
-      "type": "Indoor",
-      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -649,15 +604,6 @@
       "priority": 99
     },
     {
-      "id": "9c26622e-5c15-5390-abc9-3f6e2bb8b6a1",
-      "name": "FIRST Robotics Canada",
-      "type": "Indoor",
-      "location": "SOUTH-4",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "e173b0f8-0a76-4bc9-9eef-b610dbbfaad8",
       "name": "Flora and Fae, Tara",
       "type": "Indoor",
@@ -766,15 +712,6 @@
       "priority": 99
     },
     {
-      "id": "f8bfb328-5bc0-5b5a-b8fd-5210e2220dde",
-      "name": "Grain Farmers of Ontario",
-      "type": "Indoor",
-      "location": "SOUTH-4",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "fb1f11fa-5cbe-5618-a233-594b716eea62",
       "name": "Great Canadian Lumberjacks",
       "type": "Outdoor",
@@ -788,24 +725,6 @@
       "name": "Green Valley Heating Inc., Granton",
       "type": "Outdoor",
       "location": "4B-28",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "5830d6af-41d5-5ef6-ab85-cf66cc9dfb0b",
-      "name": "Gregglea Clydesdales",
-      "type": "Indoor",
-      "location": "SOUTH-4",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "1ff4cbc1-b908-52b7-b5dc-ce9184784904",
-      "name": "Grey Bruce Pork Producers",
-      "type": "Indoor",
-      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -941,15 +860,6 @@
       "name": "Huron Tractor Ltd., Walkerton",
       "type": "Outdoor",
       "location": "1A-25-27",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "bdb80694-dc56-54c3-a75d-e087aa2fe2cc",
-      "name": "Huron-Bruce Provincial Liberal Association",
-      "type": "Outdoor",
-      "location": "3A-06",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1171,15 +1081,6 @@
       "priority": 99
     },
     {
-      "id": "054d5eeb-3c43-5637-8086-0740fa345d33",
-      "name": "Maple Court Retirement",
-      "type": "Outdoor",
-      "location": "4B-08",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "f86f55a1-a099-5abe-9562-39b0b7450405",
       "name": "Maple Lane Farm Service, Mount Forest",
       "type": "Outdoor",
@@ -1333,15 +1234,6 @@
       "priority": 99
     },
     {
-      "id": "9ef92046-0bef-557b-9739-8c0a90888010",
-      "name": "National Energy Equipment Inc.",
-      "type": "Outdoor",
-      "location": "2B-15",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "f2f40011-8138-4f50-bb92-48e0ce605ed3",
       "name": "Natural Stitch Designs, Amaranth",
       "type": "Indoor",
@@ -1400,15 +1292,6 @@
       "name": "Old Country Leather, Chesley",
       "type": "Outdoor",
       "location": "4B-24",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "c9808ae8-0d7f-52ff-a76b-d32b4a98d8e0",
-      "name": "Ontario Association of Agriculture Societies",
-      "type": "Indoor",
-      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1490,15 +1373,6 @@
       "name": "Ontario Provincial Police - South Bruce",
       "type": "Outdoor",
       "location": "5A-15-16",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "1761db83-9b91-5857-9518-3d2aa67c7f3f",
-      "name": "Ontario Sheep Farmers",
-      "type": "Indoor",
-      "location": "SOUTH-4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1603,15 +1477,6 @@
       "priority": 99
     },
     {
-      "id": "a4947094-8c16-5fcb-903f-d0073ae78023",
-      "name": "Rachel Joy Jewellery, Kincardine",
-      "type": "Indoor",
-      "location": "Indoors at the Artisan Tent",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "3e324cae-84da-45f6-9f2c-b9201d65e86e",
       "name": "Reformed Evangelistic Outreach, Ancaster",
       "type": "Outdoor",
@@ -1697,15 +1562,6 @@
       "name": "Schmidt's Farm Drainage",
       "type": "Indoor",
       "location": "",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "1ce79caf-a959-5a43-8baa-c0c6d6a09528",
-      "name": "Set Free Healing",
-      "type": "Indoor",
-      "location": "4B 17–22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2044,15 +1900,6 @@
       "priority": 99
     },
     {
-      "id": "9e597f9a-0607-567e-816e-8f58904a308d",
-      "name": "Weldesign Hardware Inc., Burgessville",
-      "type": "Outdoor",
-      "location": "2B-22",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "3e66a69a-8ef2-48d8-b1ec-69a4f25a0b9b",
       "name": "Weppler Farm Machinery Ltd., Ayton",
       "type": "Outdoor",
@@ -2138,6 +1985,159 @@
       "name": "Your Ultimate Structures Inc., Beachville",
       "type": "Outdoor",
       "location": "2A-09",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9ef92046-0bef-557b-9739-8c0a90888010",
+      "name": "National Energy Equipment Inc.",
+      "type": "Outdoor",
+      "location": "2B-15",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9e597f9a-0607-567e-816e-8f58904a308d",
+      "name": "Weldesign Hardware Inc., Burgessville",
+      "type": "Outdoor",
+      "location": "2B-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "bdb80694-dc56-54c3-a75d-e087aa2fe2cc",
+      "name": "Huron-Bruce Provincial Liberal Association",
+      "type": "Outdoor",
+      "location": "3A-06",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "cbc1c263-8e96-508b-9aa2-e6b9508b43b8",
+      "name": "CSN Auto Reset Group",
+      "type": "Outdoor",
+      "location": "4B-02",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "054d5eeb-3c43-5637-8086-0740fa345d33",
+      "name": "Maple Court Retirement",
+      "type": "Outdoor",
+      "location": "4B-08",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3ae7740c-f1c6-5e2c-b2ec-743f80879a0e",
+      "name": "Amabel Books, Allenford",
+      "type": "Indoor",
+      "location": "Indoors at the Artisan Tent",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a4947094-8c16-5fcb-903f-d0073ae78023",
+      "name": "Rachel Joy Jewellery, Kincardine",
+      "type": "Indoor",
+      "location": "Indoors at the Artisan Tent",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "ff36e1c8-55d2-51e9-aaf4-89873ec3f185",
+      "name": "AgScape",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "27b25013-0ec5-5fe9-8996-30aca4bf7023",
+      "name": "Canadian Agricultural Safety Association (CASA)",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1f1c0077-d5d1-5b21-adfa-a9acdc50c494",
+      "name": "DGFO - Dairy Goat Farmers of Ontario",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9c26622e-5c15-5390-abc9-3f6e2bb8b6a1",
+      "name": "FIRST Robotics Canada",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f8bfb328-5bc0-5b5a-b8fd-5210e2220dde",
+      "name": "Grain Farmers of Ontario",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "5830d6af-41d5-5ef6-ab85-cf66cc9dfb0b",
+      "name": "Gregglea Clydesdales",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1ff4cbc1-b908-52b7-b5dc-ce9184784904",
+      "name": "Grey Bruce Pork Producers",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c9808ae8-0d7f-52ff-a76b-d32b4a98d8e0",
+      "name": "Ontario Association of Agriculture Societies",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1761db83-9b91-5857-9518-3d2aa67c7f3f",
+      "name": "Ontario Sheep Farmers",
+      "type": "Indoor",
+      "location": "SOUTH-4",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1ce79caf-a959-5a43-8baa-c0c6d6a09528",
+      "name": "Set Free Healing",
+      "type": "Indoor",
+      "location": "4B 17–22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
