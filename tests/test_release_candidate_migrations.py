@@ -125,3 +125,16 @@ def test_generic_engine_runs_all_rpc_dependencies_without_real_provider(db):
         again=await engine.run(now=now)
         assert again['claimed']==0 and len(provider.calls)==1
     asyncio.run(run())
+
+
+def test_production_content_revisions_are_monotonic_and_event_scoped(db):
+    event = str(uuid4())
+    db(f"insert into events(id,slug,name,status) values ('{event}','manifest-test','Manifest test','published');")
+    db(f"insert into content_revisions(event_id,content_type) values ('{event}','schedule'),('{event}','announcements');")
+    db(f"insert into schedule_items(event_id,title) values ('{event}','first');")
+    assert db(f"select revision from content_revisions where event_id='{event}' and content_type='schedule';").strip() == '2'
+    db(f"update schedule_items set title='second' where event_id='{event}';")
+    assert db(f"select revision from content_revisions where event_id='{event}' and content_type='schedule';").strip() == '3'
+    db(f"insert into alerts(event_id,title,message,status) values ('{event}','Update','Message','published');")
+    assert db(f"select revision from content_revisions where event_id='{event}' and content_type='announcements';").strip() == '2'
+    assert db(f"select revision from content_revisions where event_id='{event}' and content_type='schedule';").strip() == '3'
