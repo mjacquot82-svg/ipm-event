@@ -57,6 +57,18 @@ test('wrong event, invalid manifest and unknown provider never produce healthy s
   }
 });
 
+test('health statuses have distinct green, yellow, red and gray visual treatments', () => {
+  const source = readFileSync('src/components/admin/SystemHealth.tsx', 'utf8');
+  assert.match(source, /case 'Healthy'/);
+  assert.match(source, /case 'Degraded'/);
+  assert.match(source, /case 'Unavailable'/);
+  assert.match(source, /healthyDot: \{ backgroundColor: colors\.success/);
+  assert.match(source, /degradedDot: \{ backgroundColor: colors\.warning/);
+  assert.match(source, /unavailableDot: \{ backgroundColor: colors\.error/);
+  assert.match(source, /notTrackedDot: \{ backgroundColor: colors\.textMuted/);
+  assert.match(source, /styles\.statusBadge/);
+});
+
 test('admin view renders real status labels, timestamp, limitations and refresh', async () => {
   const primitive = tag => function TestPrimitive({ children, accessibilityLabel, disabled }) {
     return React.createElement(tag, { 'aria-label': accessibilityLabel, disabled }, children);
