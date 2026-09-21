@@ -13,12 +13,14 @@ function walk(directory) {
   });
 }
 
-const coreImage = /\/(ipm-logo|field|gemini4|event-map)\.[^/]+\.(png|jpe?g)$/i;
+const coreImage = /\/(ipm-logo|field|gemini4|event-map|grounds-site-map|rv-park-detail-map)\.[^/]+\.(png|jpe?g)$/i;
+const coreArtwork = /\/tented-city-map-app-ready\.[^/]+\.svg$/i;
 const coreFont = /\/(Feather|MaterialCommunityIcons)\.[^/]+\.ttf$/i;
 const essential = walk(dist).filter((path) => {
   const url = `/${relative(dist, path).split(sep).join('/')}`;
   return path !== workerPath && (/\.(js|css|woff2?)$/i.test(url) || coreFont.test(url))
     || coreImage.test(url)
+    || coreArtwork.test(url)
     || /^\/(manifest\.json|v2-icon\.png|ipm-icon-(any|maskable)-(192|512)\.png)$/.test(url);
 });
 const assets = ['/', '/index.html', ...essential.map((path) => `/${relative(dist, path).split(sep).join('/')}`)]
@@ -33,6 +35,9 @@ const version = digest.digest('hex').slice(0, 16);
 let worker = readFileSync(join(root, 'public', 'webpushr-sw.js'), 'utf8');
 worker = worker.replace("const IPM_OFFLINE_VERSION = 'development';", `const IPM_OFFLINE_VERSION = '${version}';`)
   .replace("const IPM_SHELL_ASSETS = ['/', '/index.html', '/manifest.json'];",
-    `const IPM_SHELL_ASSETS = ${JSON.stringify(assets, null, 2)};`);
+    `const IPM_SHELL_ASSETS = ${JSON.stringify(assets, null, 2)};`)
+  .replace("const IPM_MAP_ARTWORK_ASSETS = [];",
+    `const IPM_MAP_ARTWORK_ASSETS = ${JSON.stringify(assets.filter((asset) =>
+      /\/(?:grounds-site-map|tented-city-map-app-ready|rv-park-detail-map)\.[^/]+\.(?:jpg|svg|png)$/i.test(asset)), null, 2)};`);
 writeFileSync(workerPath, worker);
 console.log(`Generated ${relative(root, workerPath)} with ${assets.length} shell assets (${version}).`);
