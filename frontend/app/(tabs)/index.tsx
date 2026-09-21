@@ -267,8 +267,9 @@ export default function HomeScreen() {
 
   const applyAnnouncementsResult = useCallback((result: CachedApiResult<AnnouncementsResponse>) => {
     setAnnouncements(getVisibleAnnouncements(result.data.announcements || []));
+    // A cache hit is the normal fast path. Keep it silent unless the
+    // background network/manifest revalidation actually fails.
     if (result.source === 'network') setAnnouncementDataSource('network');
-    else setAnnouncementDataSource('cache');
     setAnnouncementLastUpdate(result.lastSuccessfulUpdate);
   }, []);
 
