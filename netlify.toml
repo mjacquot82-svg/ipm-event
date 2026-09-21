@@ -14,6 +14,12 @@
   status = 200
   force = true
 
+[[headers]]
+  for = "/content-manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=30, stale-while-revalidate=30"
+    Netlify-CDN-Cache-Control = "public, s-maxage=30, stale-while-revalidate=30"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

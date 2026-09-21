@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 import json
 import logging
 import re
-from typing import Any, Optional
+from typing import Any, List, Optional
 from urllib.parse import quote, urlsplit
 from zoneinfo import ZoneInfo
 
@@ -639,6 +639,23 @@ class SupabaseContentClient:
 
         raise ValueError(f"Supabase event not found: {event_slug}")
 
+    async def get_content_revision(self, event_id: str, content_type: str) -> int:
+        if content_type not in {"schedule", "announcements"}:
+            raise ValueError(f"Unsupported content type: {content_type}")
+        rows = await self.request(
+            "GET",
+            "/content_revisions",
+            params={
+                "select": "revision",
+                "event_id": f"eq.{event_id}",
+                "content_type": f"eq.{content_type}",
+                "limit": "1",
+            },
+        )
+        if not rows:
+            raise ValueError(f"Missing {content_type} content revision for event {event_id}")
+        return int(rows[0]["revision"])
+
 
 class SupabaseScheduleService:
     """Supabase-backed schedule content boundary."""
@@ -763,12 +780,14 @@ class SupabaseScheduleService:
         )
 
     async def list_public_schedule(self, event_id: Optional[str] = None) -> Any:
-        rows = await self._list_rows(event_id)
+        resolved_event_id = await self._get_event_id(event_id)
+        rows = await self._list_rows(resolved_event_id)
         events = [self._row_to_schedule_event(row) for row in rows]
         return self.schedule_response_model(
             events=events,
             last_updated=datetime.utcnow(),
             total_count=len(events),
+            content_revision=await self.client.get_content_revision(resolved_event_id, "schedule"),
         )
 
     async def list_admin_schedule(self, event_id: Optional[str] = None) -> Any:
@@ -1086,6 +1105,15 @@ class SupabaseAnnouncementService:
             ),
         )
 
+    async def _list_with_revision(
+        self, event_id: Optional[str] = None, *, public: bool = False
+    ) -> tuple[list[dict[str, Any]], int]:
+        resolved_event_id = await self._get_event_id(event_id)
+        announcements = await self.list(resolved_event_id, public=public)
+        return announcements, await self.client.get_content_revision(
+            resolved_event_id, "announcements"
+        )
+
     async def list(self, event_id: Optional[str] = None, *, public: bool = False) -> list[dict[str, Any]]:
         resolved_event_id = await self._get_event_id(event_id)
         params = {"select": "*", "event_id": f"eq.{resolved_event_id}"}
@@ -1101,6 +1129,11 @@ class SupabaseAnnouncementService:
                 or datetime.fromisoformat(str(item["expires_at"]).replace("Z", "+00:00")) > now
             ]
         return self._sort(announcements)
+
+    async def list_public_with_revision(
+        self, event_id: Optional[str] = None
+    ) -> tuple[List[dict[str, Any]], int]:
+        return await self._list_with_revision(event_id, public=True)
 
     async def get(
         self, announcement_id: str, event_id: Optional[str] = None, *, public: bool = False
