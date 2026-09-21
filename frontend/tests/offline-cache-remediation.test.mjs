@@ -15,10 +15,12 @@ test('Home warms the canonical vendor cache and refreshes mutable data on reconn
   assert.match(home, /fetchAnnouncements\(\);/);
 });
 
-test('Home renders one saved-data notice directly below the hero', () => {
+test('Home shows saved-data notice only after background refresh failure', () => {
   assert.equal((home.match(/<CachedDataBanner\b/g) || []).length, 1);
   assert.match(home, /<ResponsiveBanner \/>[\s\S]*?<CachedDataBanner lastSuccessfulUpdate=\{cachedNoticeTimestamp\}/);
-  assert.match(home, /announcementDataSource === 'cache' && announcements\.length > 0/);
+  assert.match(home, /onBackgroundRefreshError: \(\) => setAnnouncementDataSource\('cache'\)/);
+  assert.match(home, /onBackgroundRefreshError: \(\) => setDataSource\('cache'\)/);
+  assert.doesNotMatch(home, /else setAnnouncementDataSource\('cache'\)/);
 });
 
 test('announcement details retain the fetched record for closed-client offline reads', () => {
