@@ -1,0 +1,12 @@
+{
+  "environment": "production",
+  "event": "ipm-2026",
+  "schedule": {
+    "revision": 1,
+    "updatedAt": "2026-09-21T00:00:00Z"
+  },
+  "announcements": {
+    "revision": 1,
+    "updatedAt": "2026-09-21T00:00:00Z"
+  }
+}

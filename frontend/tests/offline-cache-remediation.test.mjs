@@ -11,8 +11,8 @@ const banner = await readFile(new URL('../src/components/CachedDataBanner.tsx', 
 test('Home warms the canonical vendor cache and refreshes mutable data on reconnect', () => {
   assert.match(home, /prefetchVendorsData/);
   assert.match(home, /addEventListener\('online'/);
-  assert.match(home, /fetchSchedule\(true\)/);
-  assert.match(home, /fetchAnnouncements\(true\)/);
+  assert.match(home, /fetchSchedule\(\);/);
+  assert.match(home, /fetchAnnouncements\(\);/);
 });
 
 test('Home renders one saved-data notice directly below the hero', () => {

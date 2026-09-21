@@ -23,12 +23,22 @@ export type CachedApiResult<T> = {
   source: CachedApiSource;
   lastSuccessfulUpdate: string;
   cacheAge: number;
+  contentRevision?: number;
 };
 
 type CacheEntry<T> = {
   data: T;
   lastSuccessfulUpdate: string;
   cacheAge: number;
+  contentRevision?: number;
+};
+
+type ContentType = 'schedule' | 'announcements';
+type ContentManifest = {
+  environment: 'production';
+  event: 'ipm-2026';
+  schedule: { revision: number; updatedAt: string };
+  announcements: { revision: number; updatedAt: string };
 };
 
 type FetchWithCacheOptions<T> = {
@@ -41,6 +51,7 @@ type FetchWithCacheOptions<T> = {
   isCacheableResponse: (data: unknown) => data is T;
   onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
   onBackgroundRefreshError?: (error: unknown) => void;
+  contentType?: ContentType;
 };
 
 export type SupabaseFetchOptions<T> = {
@@ -49,6 +60,7 @@ export type SupabaseFetchOptions<T> = {
   maxAttempts?: number;
   onBackgroundRefresh?: (result: CachedApiResult<T>) => void;
   onBackgroundRefreshError?: (error: unknown) => void;
+  contentType?: ContentType;
 };
 
 export type EventImage = {
@@ -78,6 +90,7 @@ export type ScheduleResponse = {
   events: ScheduleEvent[];
   last_updated: string;
   total_count: number;
+  content_revision: number;
 };
 
 export type Vendor = {
@@ -121,6 +134,7 @@ export type Announcement = {
 export type AnnouncementsResponse = {
   announcements: Announcement[];
   total_count: number;
+  content_revision: number;
 };
 
 function getApiBaseUrl() {
@@ -153,6 +167,11 @@ function getCacheAge(lastSuccessfulUpdate: string) {
   return Math.max(0, Date.now() - new Date(lastSuccessfulUpdate).getTime());
 }
 
+let manifestPromise: Promise<ContentManifest> | null = null;
+const refreshPromises = new Map<string, Promise<CachedApiResult<unknown>>>();
+const REFRESH_FAILURE_COOLDOWN_MS = 30_000;
+const refreshFailures = new Map<string, { retryAfter: number; error: unknown }>();
+
 async function readCache<T>(cacheKey: string): Promise<CachedApiResult<T> | null> {
   const storageKey = getCacheKey(cacheKey);
 
@@ -172,16 +191,13 @@ async function readCache<T>(cacheKey: string): Promise<CachedApiResult<T> | null
     }
 
     const cacheAge = getCacheAge(cacheEntry.lastSuccessfulUpdate);
-    await AsyncStorage.setItem(
-      storageKey,
-      JSON.stringify({ ...cacheEntry, cacheAge })
-    );
 
     return {
       data: cacheEntry.data,
       source: 'cache',
       lastSuccessfulUpdate: cacheEntry.lastSuccessfulUpdate,
       cacheAge,
+      contentRevision: cacheEntry.contentRevision,
     };
   } catch (error) {
     console.error('Failed to read cached API data:', error);
@@ -197,11 +213,12 @@ async function removeLegacyCache(cacheKey: string) {
   }
 }
 
-async function writeCache<T>(cacheKey: string, data: T, timestamp: string) {
+async function writeCache<T>(cacheKey: string, data: T, timestamp: string, contentRevision?: number) {
   const cacheEntry: CacheEntry<T> = {
     data,
     lastSuccessfulUpdate: timestamp,
     cacheAge: 0,
+    contentRevision,
   };
 
   await AsyncStorage.setItem(getCacheKey(cacheKey), JSON.stringify(cacheEntry));
@@ -248,6 +265,9 @@ async function fetchWithRetry<T>(
         source: 'network',
         lastSuccessfulUpdate: new Date().toISOString(),
         cacheAge: 0,
+        contentRevision: typeof (data as { content_revision?: unknown }).content_revision === 'number'
+          ? (data as { content_revision: number }).content_revision
+          : undefined,
       };
     } catch (error) {
       lastError = error;
@@ -260,6 +280,28 @@ async function fetchWithRetry<T>(
   throw lastError;
 }
 
+async function getContentManifest(): Promise<ContentManifest> {
+  if (Platform.OS !== 'web') throw new Error('Manifest is web-only');
+  if (manifestPromise) return manifestPromise;
+  manifestPromise = fetch('/content-manifest.json', {
+    cache: 'no-store',
+    headers: { 'X-IPM-Content-Manifest': '1' },
+  }).then(async (response) => {
+    if (!response.ok) throw new Error(`Manifest request failed with status ${response.status}`);
+    const manifest = await response.json() as ContentManifest;
+    if (manifest.environment !== 'production' || manifest.event !== 'ipm-2026') {
+      throw new Error('Manifest environment or event mismatch');
+    }
+    for (const type of ['schedule', 'announcements'] as const) {
+      if (!Number.isInteger(manifest[type]?.revision) || manifest[type].revision < 1) {
+        throw new Error(`Invalid ${type} manifest revision`);
+      }
+    }
+    return manifest;
+  }).finally(() => { manifestPromise = null; });
+  return manifestPromise;
+}
+
 export async function fetchCachedApiData<T>({
   cacheKey,
   url,
@@ -270,11 +312,14 @@ export async function fetchCachedApiData<T>({
   isCacheableResponse,
   onBackgroundRefresh,
   onBackgroundRefreshError,
+  contentType,
 }: FetchWithCacheOptions<T>): Promise<CachedApiResult<T>> {
   await removeLegacyCache(cacheKey);
-  const cachedData = preferCache ? await readCache<T>(cacheKey) : null;
+  const savedData = await readCache<T>(cacheKey);
+  const cachedData = preferCache ? savedData : null;
+  const refreshKey = getCacheKey(cacheKey);
 
-  const refresh = async () => {
+  const refresh = async (expectedRevision?: number) => {
     const result = await fetchWithRetry<T>(
       url,
       timeoutMs,
@@ -282,35 +327,78 @@ export async function fetchCachedApiData<T>({
       retryDelayMs,
       isCacheableResponse
     );
+    // Validate before committing: a failed/mismatched refresh must never
+    // replace the last successful payload, including on manual refresh.
+    if (contentType) {
+      if (expectedRevision !== undefined && result.contentRevision !== expectedRevision) {
+        throw new Error(`Full ${contentType} response revision does not match manifest`);
+      }
+      if (savedData?.contentRevision !== undefined
+          && (result.contentRevision === undefined || result.contentRevision < savedData.contentRevision)) {
+        throw new Error(`Refusing ${contentType} cache revision rollback`);
+      }
+    }
     try {
-      await writeCache(cacheKey, result.data, result.lastSuccessfulUpdate);
+      await writeCache(cacheKey, result.data, result.lastSuccessfulUpdate, result.contentRevision);
     } catch (error) {
       console.error('Failed to write cached API data:', error);
     }
     return result;
   };
 
-  if (cachedData) {
-    const shouldRefresh = cachedData.cacheAge >= CACHE_MAX_AGE_MS || Platform.OS === 'web';
-    if (shouldRefresh) {
-      void refresh()
-        .then((result) => onBackgroundRefresh?.(result))
-        .catch((error) => {
-          console.warn('Background API refresh failed:', error);
-          onBackgroundRefreshError?.(error);
-        });
+  const refreshContent = async () => {
+    if (cachedData) {
+      if (Platform.OS !== 'web' || !contentType) {
+        return cachedData.cacheAge >= CACHE_MAX_AGE_MS ? refresh() : cachedData;
+      }
+      const manifest = await getContentManifest();
+      const remoteRevision = manifest[contentType].revision;
+      if (cachedData.contentRevision === remoteRevision) return cachedData;
+      if (cachedData.contentRevision !== undefined && remoteRevision < cachedData.contentRevision) {
+        throw new Error(`Refusing ${contentType} manifest revision rollback`);
+      }
+      return refresh(remoteRevision);
     }
+    return refresh();
+  };
+  const fullRefresh = () => {
+    const existing = refreshPromises.get(refreshKey);
+    if (existing) return existing as Promise<CachedApiResult<T>>;
+    const failure = contentType ? refreshFailures.get(refreshKey) : undefined;
+    if (failure && Date.now() < failure.retryAfter) return Promise.reject(failure.error);
+    const promise = refreshContent().then((result) => {
+      refreshFailures.delete(refreshKey);
+      return result;
+    }).catch((error) => {
+      if (contentType) refreshFailures.set(refreshKey, {
+        retryAfter: Date.now() + REFRESH_FAILURE_COOLDOWN_MS, error,
+      });
+      throw error;
+    }).finally(() => refreshPromises.delete(refreshKey));
+    refreshPromises.set(refreshKey, promise as Promise<CachedApiResult<unknown>>);
+    return promise;
+  };
+
+  if (cachedData) {
+    void fullRefresh()
+      .then((result) => onBackgroundRefresh?.(result))
+      .catch((error) => {
+        console.warn('Background API refresh failed:', error);
+        onBackgroundRefreshError?.(error);
+      });
     return cachedData;
   }
 
-  return refresh();
+  return fullRefresh();
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function isSupabaseScheduleResponse(data: unknown): data is ScheduleResponse {
   if (!data || typeof data !== 'object' || !Array.isArray((data as ScheduleResponse).events)) return false;
-  return (data as ScheduleResponse).events.every((event) => UUID_PATTERN.test(event.id));
+  return Number.isInteger((data as ScheduleResponse).content_revision)
+    && (data as ScheduleResponse).content_revision > 0
+    && (data as ScheduleResponse).events.every((event) => UUID_PATTERN.test(event.id));
 }
 
 function isSupabaseVendorsResponse(data: unknown): data is VendorsResponse {
@@ -319,7 +407,10 @@ function isSupabaseVendorsResponse(data: unknown): data is VendorsResponse {
 }
 
 function isAnnouncementsResponse(data: unknown): data is AnnouncementsResponse {
-  return !!data && typeof data === 'object' && Array.isArray((data as AnnouncementsResponse).announcements);
+  return !!data && typeof data === 'object'
+    && Number.isInteger((data as AnnouncementsResponse).content_revision)
+    && (data as AnnouncementsResponse).content_revision > 0
+    && Array.isArray((data as AnnouncementsResponse).announcements);
 }
 
 export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> = {}) {
@@ -327,6 +418,7 @@ export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> 
     cacheKey: 'schedule',
     url: `${getApiBaseUrl()}/api/schedule`,
     isCacheableResponse: isSupabaseScheduleResponse,
+    contentType: 'schedule',
     ...options,
   });
 }
@@ -357,6 +449,7 @@ export function getAnnouncementsData(options: SupabaseFetchOptions<Announcements
     cacheKey: 'announcements',
     url: `${getApiBaseUrl()}/api/announcements`,
     isCacheableResponse: isAnnouncementsResponse,
+    contentType: 'announcements',
     ...options,
   });
 }

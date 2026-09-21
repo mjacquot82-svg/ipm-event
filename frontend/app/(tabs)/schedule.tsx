@@ -294,7 +294,7 @@ export default function ScheduleScreen() {
     useCallback(() => {
       loadFavorites();
       if (hasFocusedScheduleRef.current) {
-        fetchSchedule(true);
+        void fetchSchedule();
       } else {
         hasFocusedScheduleRef.current = true;
       }

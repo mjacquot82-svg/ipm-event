@@ -6,12 +6,13 @@ through these services so future Supabase-backed implementations can replace
 the providers without changing frontend API contracts.
 """
 
+import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone, timedelta
 import json
 import logging
 import re
-from typing import Any, Optional
+from typing import Any, List, Optional
 from urllib.parse import quote, urlsplit
 from zoneinfo import ZoneInfo
 
@@ -596,14 +597,23 @@ class SupabaseContentClient:
         }
 
     async def request(self, method: str, path: str, **kwargs: Any) -> Any:
+        headers = {**self.headers, **kwargs.pop("headers", {})}
+        # Only retry the known clock-skew failure on safe reads. Other JWT
+        # validation failures and all writes retain their original semantics.
         async with httpx.AsyncClient() as client:
-            response = await client.request(
-                method,
-                f"{self.rest_url}{path}",
-                headers={**self.headers, **kwargs.pop("headers", {})},
-                timeout=30.0,
-                **kwargs,
-            )
+            for attempt in range(3):
+                response = await client.request(
+                    method,
+                    f"{self.rest_url}{path}",
+                    headers=headers,
+                    timeout=30.0,
+                    **kwargs,
+                )
+                if (method.upper() not in {"GET", "HEAD"}
+                        or not self._is_future_jwt_failure(response)
+                        or attempt == 2):
+                    break
+                await asyncio.sleep(0.25 * (2 ** attempt))
         if response.status_code >= 400:
             raise httpx.HTTPStatusError(
                 f"Supabase request failed with status {response.status_code}: {response.text}",
@@ -611,6 +621,17 @@ class SupabaseContentClient:
                 response=response,
             )
         return response.json() if response.content else None
+
+    @staticmethod
+    def _is_future_jwt_failure(response: httpx.Response) -> bool:
+        if response.status_code != 401:
+            return False
+        try:
+            error = response.json()
+        except ValueError:
+            return False
+        return (isinstance(error, dict) and error.get("code") == "PGRST303"
+                and "jwt issued at future" in str(error.get("message", "")).lower())
 
     async def get_event_id(self, event_slug: str) -> str:
         events = await self.request(
@@ -638,6 +659,23 @@ class SupabaseContentClient:
             return events[0]["id"]
 
         raise ValueError(f"Supabase event not found: {event_slug}")
+
+    async def get_content_revision(self, event_id: str, content_type: str) -> int:
+        if content_type not in {"schedule", "announcements"}:
+            raise ValueError(f"Unsupported content type: {content_type}")
+        rows = await self.request(
+            "GET",
+            "/content_revisions",
+            params={
+                "select": "revision",
+                "event_id": f"eq.{event_id}",
+                "content_type": f"eq.{content_type}",
+                "limit": "1",
+            },
+        )
+        if not rows:
+            raise ValueError(f"Missing {content_type} content revision for event {event_id}")
+        return int(rows[0]["revision"])
 
 
 class SupabaseScheduleService:
@@ -763,12 +801,17 @@ class SupabaseScheduleService:
         )
 
     async def list_public_schedule(self, event_id: Optional[str] = None) -> Any:
-        rows = await self._list_rows(event_id)
+        resolved_event_id = await self._get_event_id(event_id)
+        revision = await self.client.get_content_revision(resolved_event_id, "schedule")
+        rows = await self._list_rows(resolved_event_id)
         events = [self._row_to_schedule_event(row) for row in rows]
+        if revision != await self.client.get_content_revision(resolved_event_id, "schedule"):
+            raise ValueError("Schedule changed during read; retry for a consistent revision")
         return self.schedule_response_model(
             events=events,
             last_updated=datetime.utcnow(),
             total_count=len(events),
+            content_revision=revision,
         )
 
     async def list_admin_schedule(self, event_id: Optional[str] = None) -> Any:
@@ -1086,6 +1129,16 @@ class SupabaseAnnouncementService:
             ),
         )
 
+    async def _list_with_revision(
+        self, event_id: Optional[str] = None, *, public: bool = False
+    ) -> tuple[list[dict[str, Any]], int]:
+        resolved_event_id = await self._get_event_id(event_id)
+        revision = await self.client.get_content_revision(resolved_event_id, "announcements")
+        announcements = await self.list(resolved_event_id, public=public)
+        if revision != await self.client.get_content_revision(resolved_event_id, "announcements"):
+            raise ValueError("Announcements changed during read; retry for a consistent revision")
+        return announcements, revision
+
     async def list(self, event_id: Optional[str] = None, *, public: bool = False) -> list[dict[str, Any]]:
         resolved_event_id = await self._get_event_id(event_id)
         params = {"select": "*", "event_id": f"eq.{resolved_event_id}"}
@@ -1101,6 +1154,11 @@ class SupabaseAnnouncementService:
                 or datetime.fromisoformat(str(item["expires_at"]).replace("Z", "+00:00")) > now
             ]
         return self._sort(announcements)
+
+    async def list_public_with_revision(
+        self, event_id: Optional[str] = None
+    ) -> tuple[List[dict[str, Any]], int]:
+        return await self._list_with_revision(event_id, public=True)
 
     async def get(
         self, announcement_id: str, event_id: Optional[str] = None, *, public: bool = False

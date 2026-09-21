@@ -301,8 +301,10 @@ export default function HomeScreen() {
   useEffect(() => {
     if (Platform.OS !== 'web') return undefined;
     const refreshOnReconnect = () => {
-      void fetchSchedule(true);
-      void fetchAnnouncements(true);
+      // Reconnect revalidates the static manifest first; unchanged content
+      // stays on the saved payload without a full backend read.
+      void fetchSchedule();
+      void fetchAnnouncements();
       void prefetchVendorsData();
     };
     window.addEventListener('online', refreshOnReconnect);
