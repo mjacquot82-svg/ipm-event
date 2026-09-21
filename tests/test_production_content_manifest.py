@@ -44,7 +44,7 @@ def test_lease_acquisition_is_singleton_and_expiry_allows_retry(monkeypatch):
             "SUPABASE_SERVICE_ROLE_KEY": "test-key",
         }[name]
 
-    responses = [None, [{"lease_key": publisher.LEASE_KEY}], None, []]
+    responses = [None, [{"lease_key": publisher.LEASE_KEY, "owner": "owner-a"}], None, []]
 
     def fake_request(url, **kwargs):
         calls.append((url, kwargs))

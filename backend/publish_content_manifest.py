@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 import uuid
@@ -37,8 +38,46 @@ def env(name: str) -> str:
     return value
 
 
+def http_error_body(error: HTTPError) -> object:
+    try:
+        # Bound both reading and logging. Do not log arbitrary HTML/text bodies.
+        return json.loads(error.read(65536))
+    except (ValueError, OSError):
+        return None
+    finally:
+        error.close()
+
+
+def safe_http_error(error: HTTPError, *, method: str, operation: str,
+                    headers: dict[str, str] | None, detail: object) -> str:
+    # Only diagnostic fields are eligible; echoed credentials/headers are not.
+    fields = {key: value for key, value in detail.items()
+              if key in {"code", "message", "details", "hint", "error_description"}
+              and isinstance(value, (str, int))} if isinstance(detail, dict) else {}
+    secrets = {value.strip() for name, value in os.environ.items()
+               if re.search(r"KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH", name, re.I) and value.strip()}
+    for name, value in (headers or {}).items():
+        if re.search(r"authorization|key|token|secret|cookie", name, re.I):
+            secrets.add(value)
+            if value.lower().startswith("bearer "):
+                secrets.add(value[7:])
+    cleaned = {}
+    for key, value in fields.items():
+        text = str(value)
+        for secret in sorted(secrets, key=len, reverse=True):
+            if secret:
+                text = text.replace(secret, "[REDACTED]").replace(quote(secret, safe=""), "[REDACTED]")
+        text = re.sub(r"(?i)\b(?:bearer\s+\S+|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)", "[REDACTED]", text)
+        text = re.sub(r"(?i)(authorization|api[-_ ]?key|token|secret|password)\s*[:=]\s*[^\r\n]+", r"\1=[REDACTED]", text)
+        cleaned[key] = text
+    body = json.dumps(cleaned, ensure_ascii=True)[:2048] if cleaned else "[non-diagnostic body omitted]"
+    # Labels are caller-owned constants; never include URLs or request headers.
+    return f"{operation} {method}: HTTP {error.code}; response body: {body}"
+
+
 def json_request(url: str, *, method: str = "GET", body: object | None = None,
-                 headers: dict[str, str] | None = None, retry: bool | None = None) -> object:
+                 headers: dict[str, str] | None = None, retry: bool | None = None,
+                 operation: str = "json request") -> object:
     payload = None if body is None else json.dumps(body, separators=(",", ":")).encode()
     attempts = 3 if (retry if retry is not None else method.upper() in {"GET", "HEAD"}) else 1
     last_error: Exception | None = None
@@ -46,6 +85,7 @@ def json_request(url: str, *, method: str = "GET", body: object | None = None,
         try:
             request = Request(url, data=payload, method=method, headers={
                 "Accept": "application/json",
+                **({"Content-Type": "application/json"} if payload is not None else {}),
                 "User-Agent": "ipm-production-content-manifest-publisher/1",
                 **(headers or {}),
             })
@@ -53,30 +93,35 @@ def json_request(url: str, *, method: str = "GET", body: object | None = None,
                 raw = response.read()
                 return json.loads(raw.decode()) if raw else None
         except Exception as error:  # retry reads and idempotent lease operations only
-            last_error = error
-            if isinstance(error, HTTPError) and error.code == 401:
-                try:
-                    detail = json.loads(error.read())
-                except (ValueError, UnicodeError):
-                    detail = {}
-                future_jwt = (isinstance(detail, dict) and detail.get("code") == "PGRST303"
-                              and "jwt issued at future" in str(detail.get("message", "")).lower())
-                if not future_jwt:
-                    break
-                last_error = RuntimeError("transient Supabase PGRST303: JWT issued at future")
+            last_error = RuntimeError(f"{operation} {method}: {type(error).__name__}")
+            if isinstance(error, HTTPError):
+                detail = http_error_body(error)
+                last_error = RuntimeError(safe_http_error(
+                    error, method=method, operation=operation, headers=headers, detail=detail))
+                if error.code == 401:
+                    future_jwt = (isinstance(detail, dict) and detail.get("code") == "PGRST303"
+                                  and "jwt issued at future" in str(detail.get("message", "")).lower())
+                    if not future_jwt:
+                        break
             if attempt + 1 < attempts:
                 time.sleep(2 ** attempt)
-    raise RuntimeError(f"request failed after {attempt + 1} attempts: {last_error}") from last_error
+    raise RuntimeError(f"request failed after {attempt + 1} attempts: {last_error}") from None
 
 
 def raw_request(url: str, *, method: str = "GET", body: bytes | None = None,
-               headers: dict[str, str] | None = None, retry: bool = False) -> bytes:
+               headers: dict[str, str] | None = None, retry: bool = False,
+               operation: str = "raw request") -> bytes:
     request = Request(url, data=body, method=method, headers={
         "User-Agent": "ipm-production-content-manifest-publisher/1",
         **(headers or {}),
     })
-    with urlopen(request, timeout=20) as response:
-        return response.read()
+    try:
+        with urlopen(request, timeout=20) as response:
+            return response.read()
+    except HTTPError as error:
+        raise RuntimeError(safe_http_error(
+            error, method=method, operation=operation, headers=headers,
+            detail=http_error_body(error))) from None
 
 
 def supabase_base() -> tuple[str, str]:
@@ -92,7 +137,7 @@ def supabase_rows() -> dict[str, dict[str, object]]:
     headers = {"apikey": key, "Authorization": f"Bearer {key}"}
     events = json_request(
         base + "/rest/v1/events?select=id,slug&slug=eq." + EXPECTED_EVENT + "&limit=2",
-        headers=headers,
+        headers=headers, operation="read event identity",
     )
     if not isinstance(events, list) or len(events) != 1 or events[0].get("slug") != EXPECTED_EVENT:
         raise RuntimeError("production event identity check failed")
@@ -100,7 +145,7 @@ def supabase_rows() -> dict[str, dict[str, object]]:
     rows = json_request(
         base + "/rest/v1/content_revisions?select=content_type,revision,updated_at"
         f"&event_id=eq.{quote(event_id, safe='')}&content_type=in.(schedule,announcements)",
-        headers=headers,
+        headers=headers, operation="read authoritative revisions",
     )
     if not isinstance(rows, list):
         raise RuntimeError("content_revisions response was not a list")
@@ -123,15 +168,20 @@ def acquire_lease(owner: str) -> bool:
     # two publisher invocations race on an existing lease.
     json_request(base + "/rest/v1/content_manifest_publish_leases", method="POST", body={
         "lease_key": LEASE_KEY, "owner": owner, "lease_until": now,
-    }, headers=headers, retry=True)
+    }, headers=headers, retry=True, operation="lease insert")
     rows = json_request(
         base + "/rest/v1/content_manifest_publish_leases"
         f"?lease_key=eq.{quote(LEASE_KEY, safe='')}"
         f"&or=(lease_until.lt.{quote(now, safe='')},owner.eq.{quote(owner, safe='')})",
         method="PATCH", body={"owner": owner, "lease_until": lease_until},
-        headers={**headers, "Prefer": "return=representation"}, retry=True,
+        headers={**headers, "Prefer": "return=representation"}, retry=True, operation="lease acquire",
     )
-    return isinstance(rows, list) and bool(rows)
+    if rows == []:
+        return False
+    if (not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict)
+            or rows[0].get("lease_key") != LEASE_KEY or rows[0].get("owner") != owner):
+        raise RuntimeError("lease acquire: invalid ownership response; refusing publication")
+    return True
 
 
 def release_lease(owner: str) -> None:
@@ -140,7 +190,7 @@ def release_lease(owner: str) -> None:
         base + "/rest/v1/content_manifest_publish_leases"
         f"?lease_key=eq.{quote(LEASE_KEY, safe='')}&owner=eq.{quote(owner, safe='')}",
         method="PATCH", body={"lease_until": datetime.now(timezone.utc).isoformat()},
-        headers={"apikey": key, "Authorization": f"Bearer {key}"}, retry=True,
+        headers={"apikey": key, "Authorization": f"Bearer {key}"}, retry=True, operation="lease release",
     )
 
 
@@ -160,7 +210,7 @@ def site_id() -> str:
 
 
 def current_files(site: str) -> list[dict[str, object]]:
-    files = json_request(netlify_url(f"/sites/{quote(site, safe='')}/files"), headers=netlify_headers())
+    files = json_request(netlify_url(f"/sites/{quote(site, safe='')}/files"), headers=netlify_headers(), operation="read deployed files")
     if not isinstance(files, list) or not files:
         raise RuntimeError("Netlify returned no deployed files; refusing destructive deploy")
     return files
@@ -172,6 +222,7 @@ def current_manifest(files: list[dict[str, object]]) -> dict[str, object] | None
     raw = raw_request(
         EXPECTED_PUBLIC_MANIFEST_URL + f"?publisher_probe={uuid.uuid4().hex}",
         headers={"Accept": "application/json", "Cache-Control": "no-cache", "Pragma": "no-cache"},
+        operation="read public manifest",
     )
     value = json.loads(raw.decode())
     return value if isinstance(value, dict) else None
@@ -206,7 +257,7 @@ def publish(site: str, manifest: dict[str, object], files: list[dict[str, object
     # the public URL before deciding whether another deploy is necessary.
     deploy = json_request(
         netlify_url(f"/sites/{quote(site, safe='')}/deploys"), method="POST",
-        body={"files": file_map}, headers=netlify_headers(), retry=False,
+        body={"files": file_map}, headers=netlify_headers(), retry=False, operation="create Netlify deploy",
     )
     if not isinstance(deploy, dict) or not deploy.get("id"):
         raise RuntimeError("Netlify did not return a deploy id")
@@ -216,9 +267,10 @@ def publish(site: str, manifest: dict[str, object], files: list[dict[str, object
             netlify_url(f"/deploys/{quote(deploy_id, safe='')}/files/content-manifest.json"),
             method="PUT", body=content,
             headers={**netlify_headers(), "Content-Type": "application/octet-stream"},
+            operation="upload manifest",
         )
     for _ in range(30):
-        state = json_request(netlify_url(f"/deploys/{quote(deploy_id, safe='')}"), headers=netlify_headers())
+        state = json_request(netlify_url(f"/deploys/{quote(deploy_id, safe='')}"), headers=netlify_headers(), operation="poll Netlify deploy")
         if isinstance(state, dict) and state.get("state") == "ready":
             return deploy_id
         if isinstance(state, dict) and state.get("state") in {"error", "failed"}:
