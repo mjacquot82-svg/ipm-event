@@ -109,12 +109,29 @@ for (const [label, options, visible] of [
  assert.doesNotMatch(h.text(),/Notification options|delivery|verified|VERIFIED|MISMATCH|provider-ready|reconciliation|notification health|Home Screen/);
  assert.equal(h.calls.subscribe,0);assert.equal(h.calls.unsubscribe,0);assert.equal(h.calls.prompt,0);
 });
-test('installed PWA ignores stale Home dismissal while notifications are off', async()=> {
+test('installed PWA requires one explicit notification decision', async()=> {
  const storage=new Map([['@ipm_home_notification_invitation_dismissed_v1','true']]);
  const h=harness('NotificationOptIn.tsx',{state:'default',standalone:true,props:{homePresentation:true},storage});await h.flush();
- assert.match(h.text(),/Stay up to date/);
+ assert.match(h.text(),/Turn on IPM notifications/);
  assert.ok(h.all().some(n=>n.props.accessibilityLabel==='Enable notifications'));
+ assert.ok(h.all().some(n=>n.props.accessibilityLabel==='Decline notifications'));
  assert.equal(h.calls.subscribe,0);
+});
+
+test('installed PWA decline is remembered and does not enroll', async()=> {
+ const storage=new Map();
+ const h=harness('NotificationOptIn.tsx',{state:'default',standalone:true,props:{homePresentation:true},storage});await h.flush();
+ await h.click('Decline notifications');assert.equal(h.text(),'');assert.equal(h.calls.subscribe,0);
+ const returning=harness('NotificationOptIn.tsx',{state:'default',standalone:true,props:{homePresentation:true},storage});await returning.flush();
+ assert.equal(returning.text(),'');assert.equal(storage.get('@ipm_installed_notification_decision_v1'),'declined');
+});
+
+test('installed PWA enable uses existing permission/enrollment path once', async()=> {
+ const storage=new Map();
+ const h=harness('NotificationOptIn.tsx',{state:'default',standalone:true,props:{homePresentation:true},storage});await h.flush();
+ await h.click('Enable notifications');
+ assert.equal(h.calls.subscribe,1);assert.equal(h.calls.register.length,1);
+ assert.equal(storage.get('@ipm_installed_notification_decision_v1'),'enabled');
 });
 
 test('browser dismissal still stays dismissed outside installed PWA', async()=> {
