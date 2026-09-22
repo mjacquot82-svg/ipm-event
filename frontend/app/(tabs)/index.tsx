@@ -52,12 +52,14 @@ const CATEGORY_COLORS = [
 ];
 
 function CountdownTimer({ targetDate }: { targetDate: string }) {
+  const [hasStarted, setHasStarted] = useState(() => Date.now() >= new Date(targetDate).getTime());
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
     const calculateTimeLeft = () => {
       const difference = new Date(targetDate).getTime() - Date.now();
 
+      setHasStarted(difference <= 0);
       if (difference <= 0) {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
         return;
@@ -76,28 +78,46 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
     return () => clearInterval(timer);
   }, [targetDate]);
 
+  if (hasStarted) {
+    return (
+      <View style={styles.countdownWelcomeContainer}>
+        <Text style={styles.countdownWelcome}>
+          The countdown is over! Welcome to the 2026 International Plowing Match &amp; Rural Expo!
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={countdownStyles.container}>
-      <View style={countdownStyles.unit}>
-        <Text style={countdownStyles.number}>{timeLeft.days}</Text>
-        <Text style={countdownStyles.label}>Days</Text>
+    <>
+      <View style={styles.countdownIcon} testID="countdown-clock">
+        <Feather name="clock" size={22} color={colors.primary} />
       </View>
-      <View style={countdownStyles.separator} />
-      <View style={countdownStyles.unit}>
-        <Text style={countdownStyles.number}>{String(timeLeft.hours).padStart(2, '0')}</Text>
-        <Text style={countdownStyles.label}>Hours</Text>
+      <View style={styles.countdownContent}>
+        <Text style={styles.countdownLabel}>IPM 2026 Starts In</Text>
+        <View style={countdownStyles.container}>
+          <View style={countdownStyles.unit}>
+            <Text style={countdownStyles.number}>{timeLeft.days}</Text>
+            <Text style={countdownStyles.label}>Days</Text>
+          </View>
+          <View style={countdownStyles.separator} />
+          <View style={countdownStyles.unit}>
+            <Text style={countdownStyles.number}>{String(timeLeft.hours).padStart(2, '0')}</Text>
+            <Text style={countdownStyles.label}>Hours</Text>
+          </View>
+          <View style={countdownStyles.separator} />
+          <View style={countdownStyles.unit}>
+            <Text style={countdownStyles.number}>{String(timeLeft.minutes).padStart(2, '0')}</Text>
+            <Text style={countdownStyles.label}>Minutes</Text>
+          </View>
+          <View style={countdownStyles.separator} />
+          <View style={countdownStyles.unit}>
+            <Text style={countdownStyles.number}>{String(timeLeft.seconds).padStart(2, '0')}</Text>
+            <Text style={countdownStyles.label}>Seconds</Text>
+          </View>
+        </View>
       </View>
-      <View style={countdownStyles.separator} />
-      <View style={countdownStyles.unit}>
-        <Text style={countdownStyles.number}>{String(timeLeft.minutes).padStart(2, '0')}</Text>
-        <Text style={countdownStyles.label}>Minutes</Text>
-      </View>
-      <View style={countdownStyles.separator} />
-      <View style={countdownStyles.unit}>
-        <Text style={countdownStyles.number}>{String(timeLeft.seconds).padStart(2, '0')}</Text>
-        <Text style={countdownStyles.label}>Seconds</Text>
-      </View>
-    </View>
+    </>
   );
 }
 
@@ -455,14 +475,8 @@ export default function HomeScreen() {
         )}
 
         <View style={sectionStyle}>
-          <View style={styles.countdownCard}>
-            <View style={styles.countdownIcon}>
-              <Feather name="clock" size={22} color={colors.primary} />
-            </View>
-            <View style={styles.countdownContent}>
-              <Text style={styles.countdownLabel}>IPM 2026 Starts In</Text>
-              <CountdownTimer targetDate={EVENT_START_DATE} />
-            </View>
+          <View style={styles.countdownCard} testID="home-countdown-card">
+            <CountdownTimer targetDate={EVENT_START_DATE} />
           </View>
         </View>
 
@@ -919,6 +933,19 @@ const styles = StyleSheet.create({
   countdownContent: {
     flex: 1,
     paddingTop: 2,
+  },
+  countdownWelcomeContainer: {
+    flex: 1,
+    minHeight: 72,
+    justifyContent: 'center',
+  },
+  countdownWelcome: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '800',
+    color: colors.primary,
+    textAlign: 'center',
+    paddingVertical: 8,
   },
   countdownLabel: {
     fontSize: 12,
