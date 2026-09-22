@@ -135,7 +135,13 @@ export type NotificationSummaryResponse = {
   latest_statistics_check: string | null; rates: null;
   recent: { title: string; requested_at: string | null; sent_at?: string | null; notification_origin_visit_count?: number | null; provider_accepted: boolean }[];
 };
-export type ReminderSummaryResponse = { active_interests: number | null; provider_accepted: number | null; provider_failed: number | null; delivery_unknown: number | null };
+export type ReminderSummaryResponse = {
+  active_interests: number | null; provider_accepted: number | null;
+  provider_failed: number | null; delivery_unknown: number | null;
+  // Current T-30 API omits these: absence is unknown, never acceptance or zero.
+  provider_sent_count?: number | null; provider_confirmed_receipt_count?: number | null;
+  provider_open_count?: number | null; provider_failure_count?: number | null;
+};
 export function getNotificationSummary() {
   return adminRequest<NotificationSummaryResponse>('/api/admin/analytics/notification-summary');
 }

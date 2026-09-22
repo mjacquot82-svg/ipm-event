@@ -4,9 +4,9 @@ import type { NotificationSummaryResponse, ReminderSummaryResponse } from '../..
 import { notificationDefinitions } from '../../analytics/notificationMetrics';
 import { colors } from '../../theme/colors';
 
-function Count({ label, value, help }: { label: string; value: number | null; help?: string }) {
+function Count({ label, value, help, unavailableLabel = 'Unavailable' }: { label: string; value: number | null; help?: string; unavailableLabel?: string }) {
   return <View style={styles.card} accessibilityLabel={label}>
-    <Text style={styles.value}>{value == null ? 'Unavailable' : value.toLocaleString()}</Text>
+    <Text style={styles.value}>{value == null ? unavailableLabel : value.toLocaleString()}</Text>
     <Text style={styles.label}>{label}</Text>
     {help && <Text style={styles.help}>{help}</Text>}
   </View>;
@@ -60,14 +60,17 @@ export function NotificationOverview({ announcements, reminders, loading, onOpen
     </View>
     <View style={[styles.group, styles.reminders]} accessibilityLabel="T-30 reminder analytics">
       <Text style={styles.title}>Event reminders / T-30</Text>
-      <Text style={styles.help}>Automatic reminders for starred events. Current interests and all-time normal reminder outcomes.</Text>
+      <Text style={styles.help}>Current reminder requests for upcoming events, plus all-time reminder delivery information.</Text>
       {!reminders ? <Text style={styles.help}>{loading ? 'Loading reminders…' : 'Reminder summary is temporarily unavailable.'}</Text> : <View style={styles.grid}>
-        <Count label="Active reminder interests" value={reminders.active_interests} />
-        <Count label="Reminders sent to WonderPush" value={reminders.provider_accepted} />
-        <Count label="Reminder provider failures" value={reminders.provider_failed} />
-        <Count label="Reminder delivery unknown" value={reminders.delivery_unknown} />
+        <Count label="Reminders requested" value={reminders.active_interests} unavailableLabel="Not available" help="Starred event timeslots with reminders turned on. One person can request several reminders; this is not a count of people." />
+        <Count label="Reminders sent" value={reminders.provider_sent_count ?? null} unavailableLabel="Not available" help="The reminder was handed to the notification service." />
+        <Count label="Phones that received it" value={reminders.provider_confirmed_receipt_count ?? null} unavailableLabel="Not available" help="The phone confirmed the reminder arrived." />
+        <Count label="Reminders opened" value={reminders.provider_open_count ?? null} unavailableLabel="Not available" help="The person tapped the reminder." />
+        <Count label="Failed" value={reminders.provider_failure_count ?? null} unavailableLabel="Not available" help="The notification service reported a delivery failure." />
       </View>}
-      <Text style={styles.help}>Sent to WonderPush means the provider accepted the request; it does not prove the device displayed it. Reminder totals are separate from announcement sends.</Text>
+      <Text style={styles.help}>Sent does not mean displayed. Receipt does not mean the person saw it. Counts across reminders can include the same phone or person more than once.</Text>
+      <Text style={styles.help}>Not available means we do not have that delivery information saved for reminders. It does not mean zero. Announcement totals are separate.</Text>
+      <Text style={styles.help}>Example: If 20 reminders are sent, 18 phones confirm receipt, and 7 people tap them, this section would show 20 sent · 18 received · 7 opened.</Text>
     </View>
   </View>;
 }

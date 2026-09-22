@@ -19,7 +19,9 @@ await page.route('**/*',async route=>{
   if(url.pathname.endsWith('/auth/me'))body={user:{id:'fixture',username:'fixture',display_name:'STAGING FIXTURE',role:'Owner',event_id:'ipm-2026',is_active:true}};
   else if(url.pathname.endsWith('/notification-summary')){
    if(unavailable)return route.fulfill({status:503,json:{detail:'Summary unavailable'}});
-   body=cases[current];
+   body={...cases[current]};
+   // The older fixture predates the summary coverage fields asserted below.
+   if(current==='historical')Object.assign(body,{detailed_sends:0,historical_unattributed_sends:2});
   }
   else if(url.pathname.endsWith('/analytics/reminders'))body={active_interests:7,provider_accepted:3,provider_failed:1,delivery_unknown:2};
   else if(url.pathname.endsWith('/analytics/summary'))body={collectionStartedAt:null,overview:{uniqueVisitors:1,newVisitors:1,returningVisitors:0,sessions:1,launches:1,pageViews:1,installedPwaVisitors:0,browserOnlyVisitors:1,averageSessionDurationSeconds:null,sessionDurationSampleSize:0}};
@@ -45,7 +47,7 @@ try{
    await page.getByText('Analytics',{exact:true}).first().click();
    await page.setViewportSize({width,height:1000});
    const panel=page.getByLabel('Notification performance overview');
-   await panel.getByLabel('Active reminder interests',{exact:true}).getByText('7',{exact:true}).waitFor();
+   await panel.getByLabel('Reminders requested',{exact:true}).getByText('7',{exact:true}).waitFor();
    const a=panel.getByLabel('Announcement notification summary');
    if(cases[name].accepted_sends===0)await a.getByText('No announcement requests sent to WonderPush yet.',{exact:true}).waitFor();
    else{
@@ -59,14 +61,14 @@ try{
    if(name==='historical'){
     await a.getByText('Detailed delivery data available for 0 of 2 sends',{exact:true}).waitFor();
     await a.getByText('Detailed provider statistics were not uniquely attributable for these earlier sends.',{exact:true}).waitFor();
-    for(const title of ['THE BRUCE RV PARK IS OPEN!','Celebration of Excellence Banquet']) await a.getByText(title,{exact:true}).waitFor();
+    for(const title of new Set(cases[name].recent.map(send=>send.title))) await a.getByText(title,{exact:true}).first().waitFor();
    }
    if(name==='failures'){
     assert.equal(await a.getByLabel('Failed send requests',{exact:true}).getByText('1',{exact:true}).count(),1);
     assert.equal(await a.getByLabel('Pending / unknown requests',{exact:true}).getByText('1',{exact:true}).count(),1);
    }
    const reminders=panel.getByLabel('T-30 reminder analytics');
-   for(const [label,n] of [['Reminders sent to WonderPush',3],['Reminder provider failures',1],['Reminder delivery unknown',2]]) assert.equal(await reminders.getByLabel(label,{exact:true}).getByText(String(n),{exact:true}).count(),1);
+   for(const label of ['Reminders sent','Phones that received it','Reminders opened','Failed']) assert.equal(await reminders.getByLabel(label,{exact:true}).getByText('Not available',{exact:true}).count(),1);
    assert.doesNotMatch(await panel.innerText(),/\d%|\d+\s+unique (people|devices)|installation_id|push_token|capability|claim IDs/i);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    if(['historical','mixed','partial'].includes(name)){
