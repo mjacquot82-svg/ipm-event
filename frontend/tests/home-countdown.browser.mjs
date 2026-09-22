@@ -10,7 +10,7 @@ const liveUrl = process.env.IPM_TEST_URL;
 if (liveUrl && new URL(liveUrl).hostname !== 'staging.theipm.ca') throw new Error('Only staging verification is allowed');
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true });
-const welcome = 'Welcome to the 2026 International Plowing Match & Rural Expo!';
+const welcome = 'The countdown is over! Welcome to the 2026 International Plowing Match & Rural Expo!';
 const results = [];
 try {
   const cases = [
@@ -43,6 +43,12 @@ try {
     const target = page.getByText(scenario.welcome ? welcome : 'IPM 2026 Starts In', { exact: true });
     await target.waitFor();
     await target.scrollIntoViewIfNeeded();
+    assert.equal(await page.getByTestId('countdown-clock').count(), scenario.welcome ? 0 : 1);
+    if (scenario.welcome) {
+      const card = await page.getByTestId('home-countdown-card').boundingBox();
+      const text = await target.boundingBox();
+      assert.ok(Math.abs((card.x + card.width / 2) - (text.x + text.width / 2)) < 1, 'Welcome is centered across the full card');
+    }
     assert.equal(await page.getByText(scenario.welcome ? 'IPM 2026 Starts In' : welcome, { exact: true }).count(), 0);
     for (const label of ['Quick Actions', 'Links', 'Emergency Services']) assert.ok(await page.getByText(label, { exact: true }).count());
     const bounds = await target.evaluate(el => {

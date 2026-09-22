@@ -16,7 +16,7 @@ test('countdown retains the real start date and ordinary pre-start units', () =>
 test('temporary forced welcome is restricted to the exact staging web hostname', () => {
   assert.match(home, /Platform.OS === 'web' && typeof window !== 'undefined'\s*&& window.location.hostname === 'staging.theipm.ca'/);
   assert.match(home, /if \(forceWelcome \|\| hasStarted\)/);
-  assert.match(home, /Welcome to the 2026 International Plowing Match &amp; Rural Expo!/);
+  assert.match(home, /The countdown is over! Welcome to the 2026 International Plowing Match &amp; Rural Expo!/);
 });
 
 test('welcome wraps without a line cap or fixed width and is centered', () => {
@@ -26,4 +26,12 @@ test('welcome wraps without a line cap or fixed width and is centered', () => {
   assert.match(styles, /justifyContent: 'center'/);
   assert.match(styles, /textAlign: 'center'/);
   assert.doesNotMatch(styles, /width:|height:/);
+});
+
+test('clock is only rendered in the ordinary pre-start countdown', () => {
+  const start = home.indexOf('if (forceWelcome || hasStarted)');
+  const normal = home.indexOf('  return (\n    <>', start);
+  assert.doesNotMatch(home.slice(start, normal), /countdownIcon|name="clock"/);
+  assert.match(home.slice(normal, home.indexOf('const countdownStyles')), /testID="countdown-clock"/);
+  assert.match(home, /countdownWelcomeContainer: \{\s*flex: 1/);
 });

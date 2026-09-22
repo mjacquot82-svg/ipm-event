@@ -83,7 +83,7 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
     return (
       <View style={styles.countdownWelcomeContainer}>
         <Text style={styles.countdownWelcome}>
-          Welcome to the 2026 International Plowing Match &amp; Rural Expo!
+          The countdown is over! Welcome to the 2026 International Plowing Match &amp; Rural Expo!
         </Text>
       </View>
     );
@@ -91,26 +91,31 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
 
   return (
     <>
-      <Text style={styles.countdownLabel}>IPM 2026 Starts In</Text>
-      <View style={countdownStyles.container}>
-        <View style={countdownStyles.unit}>
-          <Text style={countdownStyles.number}>{timeLeft.days}</Text>
-          <Text style={countdownStyles.label}>Days</Text>
-        </View>
-        <View style={countdownStyles.separator} />
-        <View style={countdownStyles.unit}>
-          <Text style={countdownStyles.number}>{String(timeLeft.hours).padStart(2, '0')}</Text>
-          <Text style={countdownStyles.label}>Hours</Text>
-        </View>
-        <View style={countdownStyles.separator} />
-        <View style={countdownStyles.unit}>
-          <Text style={countdownStyles.number}>{String(timeLeft.minutes).padStart(2, '0')}</Text>
-          <Text style={countdownStyles.label}>Minutes</Text>
-        </View>
-        <View style={countdownStyles.separator} />
-        <View style={countdownStyles.unit}>
-          <Text style={countdownStyles.number}>{String(timeLeft.seconds).padStart(2, '0')}</Text>
-          <Text style={countdownStyles.label}>Seconds</Text>
+      <View style={styles.countdownIcon} testID="countdown-clock">
+        <Feather name="clock" size={22} color={colors.primary} />
+      </View>
+      <View style={styles.countdownContent}>
+        <Text style={styles.countdownLabel}>IPM 2026 Starts In</Text>
+        <View style={countdownStyles.container}>
+          <View style={countdownStyles.unit}>
+            <Text style={countdownStyles.number}>{timeLeft.days}</Text>
+            <Text style={countdownStyles.label}>Days</Text>
+          </View>
+          <View style={countdownStyles.separator} />
+          <View style={countdownStyles.unit}>
+            <Text style={countdownStyles.number}>{String(timeLeft.hours).padStart(2, '0')}</Text>
+            <Text style={countdownStyles.label}>Hours</Text>
+          </View>
+          <View style={countdownStyles.separator} />
+          <View style={countdownStyles.unit}>
+            <Text style={countdownStyles.number}>{String(timeLeft.minutes).padStart(2, '0')}</Text>
+            <Text style={countdownStyles.label}>Minutes</Text>
+          </View>
+          <View style={countdownStyles.separator} />
+          <View style={countdownStyles.unit}>
+            <Text style={countdownStyles.number}>{String(timeLeft.seconds).padStart(2, '0')}</Text>
+            <Text style={countdownStyles.label}>Seconds</Text>
+          </View>
         </View>
       </View>
     </>
@@ -471,13 +476,8 @@ export default function HomeScreen() {
         )}
 
         <View style={sectionStyle}>
-          <View style={styles.countdownCard}>
-            <View style={styles.countdownIcon}>
-              <Feather name="clock" size={22} color={colors.primary} />
-            </View>
-            <View style={styles.countdownContent}>
-              <CountdownTimer targetDate={EVENT_START_DATE} />
-            </View>
+          <View style={styles.countdownCard} testID="home-countdown-card">
+            <CountdownTimer targetDate={EVENT_START_DATE} />
           </View>
         </View>
 
@@ -922,6 +922,7 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   countdownWelcomeContainer: {
+    flex: 1,
     minHeight: 72,
     justifyContent: 'center',
   },
