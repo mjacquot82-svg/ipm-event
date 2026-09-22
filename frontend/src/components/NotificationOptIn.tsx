@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { watchReconciliation } from '../services/subscriptionReconciliation';
+import { watchReconciliation, ReconciliationState } from '../services/subscriptionReconciliation';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
@@ -38,7 +38,8 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
   const [state, setState] = useState<NotificationState>('loading');
   const [working, setWorking] = useState(false);
   const [verificationDeferred, setVerificationDeferred] = useState(false);
-  const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'failed'>('idle');
+  const [setupState, setSetupState] = useState<'idle' | 'pending' | 'ready' | 'unverified' | 'failed'>('idle');
+  const [reconciliationStatus, setReconciliationStatus] = useState<ReconciliationState | null>(null);
   const [failureStage, setFailureStage] = useState<NotificationRegistrationStage | null>(null);
   const [failureClassification, setFailureClassification] = useState<NotificationRegistrationFailure | null>(null);
   const [expanded, setExpanded] = useState(initiallyExpanded || persistent);
@@ -52,10 +53,11 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
   const closeHelp = () => { setExpanded(false); triggerRef.current?.focus?.(); };
 
   useEffect(() => watchReconciliation((result) => {
-    // Preserve the deployed reconciliation watcher as the source of check status.
+    // Reconciliation uncertainty is not evidence that notifications are unavailable.
+    setReconciliationStatus(result.status);
     if (result.status === 'VERIFIED') { setSetupState('ready'); setState('subscribed'); }
     else if (['SDK_SETTLING','COMPARING','PATCH_PENDING','VERIFYING','CHECK_DUE'].includes(result.status)) setSetupState('pending');
-    else setSetupState('failed');
+    else setSetupState('unverified');
   }), []);
 
   const completeSetup = useCallback(async () => {
@@ -95,7 +97,8 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
       setFailureStage(safeStage || 'installation_retrieval');
       setFailureClassification(safeClassification || 'other');
       recordNotificationWorkflowDiagnostic('FAILED', safeClassification || 'other');
-      setSetupState('failed');
+      if (safeClassification === 'pilot_verification_pending') setSetupState('unverified');
+      else setSetupState('failed');
 
     }
   }, []);
@@ -205,10 +208,17 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
     standalone: window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true });
   const help = notificationHelp(environment, state);
   const canAct = state === 'default' || state === 'unsubscribed' || (state === 'subscribed' && setupState === 'ready');
+  // Legacy registration readiness still controls enrollment actions, but only
+  // a VERIFIED reconciliation result can support the enabled status message.
+  const setupUnverified = setupState === 'unverified' || (setupState === 'ready' && reconciliationStatus !== 'VERIFIED');
   const stateMessage = verificationDeferred
     ? 'Notification status will refresh when your connection improves.'
     : state === 'subscribed' && setupState === 'pending'
-    ? 'Checking notification status…'
+    ? 'We couldn’t verify notification setup right now. Your IPM app will keep working.'
+    : state === 'subscribed' && setupUnverified
+    ? (reconciliationStatus === 'MISMATCH'
+      ? 'Your notification setup could not be verified on this device. You can keep using IPM.'
+      : 'We couldn’t verify notification setup right now. Your IPM app will keep working.')
     : state === 'subscribed' && setupState === 'failed'
     ? 'Notifications are temporarily unavailable. You can keep using IPM.'
     : state === 'subscribed' && setupState !== 'ready'
@@ -264,7 +274,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
       style={[containerStyle, styles.card]}
       accessibilityLabel="IPM notification settings"
       testID={`notification-setup-${setupState === 'failed'
-        ? `${failureStage}-${failureClassification}` : setupState}`}
+        ? `${failureStage}-${failureClassification}` : setupUnverified ? 'unverified' : setupState}`}
     >
       <View style={styles.copy}>
         <Text accessibilityRole="header" style={styles.title}>{persistent ? 'Notification options' : 'Get important IPM updates'}</Text>
@@ -273,7 +283,7 @@ export default function NotificationOptIn({ containerStyle, initiallyExpanded = 
           <Text style={styles.retryButtonText}>{expanded ? 'Hide notification options' : 'Notification options'}</Text>
         </TouchableOpacity>
         {expanded ? <Text style={styles.hint}>Notifications are optional. Get important IPM announcements on this device. You can keep using IPM without them.</Text> : null}
-        {expanded && state === 'subscribed' && setupState === 'failed' ? (
+        {expanded && state === 'subscribed' && (setupState === 'failed' || setupUnverified) ? (
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel="Try notification setup again"
