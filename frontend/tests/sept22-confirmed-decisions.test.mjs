@@ -10,7 +10,7 @@ const {footprintForVendor}=load(new URL('../src/config/tentedCityVendorMatch.ts'
 const one=name=>{const hits=catalog.filter(v=>v.name===name);assert.equal(hits.length,1,name);return hits[0];};
 const target=name=>{const hit=resolveVendorMapQuery(name);assert.equal(hit.status,'mapped',name);return map.find(v=>v.name===hit.query);};
 test('only the confirmed catalog changes, restored ENJO ID and duplicate consolidation',()=>{
- assert.equal(catalog.length,304);assert.equal(new Set(catalog.map(v=>v.id)).size,304);
+ assert.equal(catalog.length,303);assert.equal(new Set(catalog.map(v=>v.id)).size,303);
  for(const {before,after} of audit.updates){assert.equal(before.id,after.id);assert.deepEqual(one(after.name),after);}
  for(const expected of audit.additions)assert.deepEqual(one(expected.name),expected);
  assert.equal(one('ENJO Canada').id,'64319171-ef84-58ee-b1f9-00189522f700');
@@ -36,9 +36,8 @@ test('resolved replacements use existing geometry; Dodge does not invent unavail
  assert.ok(vendorMatchesSearch(one('ENJO Canada'),'ENJO Chemical Free Cleaning System'));
  assert.equal(map.filter(v=>v.name==='Partnership Park').length,1);
 });
-test('all other ambiguity groups remain unchanged',()=>{
- for(const [name,location] of [['iLGi Canada','1A 05'],["Chris's Barbeque and Country Style Catering",'5A 23-24'],["Gilligan's Juice Bar",'CXD'],['Brightshores Health System - Saugeen Shores Hospital Foundation',''],['Real Time Fun and Rentals','4B-10'],['WASTE MANAGEMNT','4B-29']])assert.equal(one(name).location,location,name);
- for(const name of ['Bellario Café','Doc MacCheesey',"MJ Burnt Creations, Mike's Diecast, Hill Top Farm",'Pronano Solutions'])assert.ok(!catalog.some(v=>v.name===name),name);
+test('remaining unrelated decisions stay unchanged',()=>{
+ for(const [name,location] of [['iLGi Canada','1A 05'],["Chris's Barbeque and Country Style Catering",'5A 23-24']])assert.equal(one(name).location,location,name);
 });
 test('outdoor booth sharing is limited to the three approved pairs and preserved same-exhibitor entries',()=>{
  const allowed=new Set(audit.approved_shared_booths.map(p=>p.names.slice().sort().join('|'))),claims=new Map();

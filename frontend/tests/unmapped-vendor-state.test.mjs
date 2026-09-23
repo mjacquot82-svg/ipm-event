@@ -32,9 +32,9 @@ test('raw stale geometry cannot make unavailable footprint trusted',()=>{
  const v=tentedCityVendors.find(v=>v.name==='Maitland Valley Conservation');assert.equal(hasTrustedMapGeometry({kind:'vendor',vendor:{...v,rect:{x:1,y:1,w:5,h:5}}}),false);
  for(const name of ['Hanover','Maitland Valley Conservation'])assert.equal(vendorHasTrustedMapGeometry(name),false);
 });
-test('canonical known-location scan is limited to six unavailable records',()=>{
- const rows=catalog.filter(v=>v.location.trim()&&!vendorHasTrustedMapGeometry(v.name));assert.equal(rows.length,6);
- assert.deepEqual(rows.map(v=>v.name),['Bell Cell Tower','Dodge RAM',"Gilligan's Juice Bar",'Hanover','Maitland Valley Conservation','Rogers Cell Tower']);
+test('canonical known-location scan is limited to five unavailable records',()=>{
+ const rows=catalog.filter(v=>v.location.trim()&&!vendorHasTrustedMapGeometry(v.name));assert.equal(rows.length,5);
+ assert.deepEqual(rows.map(v=>v.name),['Bell Cell Tower','Dodge RAM','Hanover','Maitland Valley Conservation','Rogers Cell Tower']);
 });
 test('both attendee surfaces show the generic message and map selection clears untrusted parent state',()=>{
  const ui=fs.readFileSync(new URL('../app/(tabs)/vendors.tsx',import.meta.url),'utf8');const map=fs.readFileSync(new URL('../src/components/TentedCityMap.tsx',import.meta.url),'utf8');

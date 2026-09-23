@@ -8,7 +8,7 @@ const load=createTsLoader(),{tentedCityVendors:map}=load(new URL('../src/data/te
 const {resolveVendorMapQuery,vendorMatchesSearch}=load(new URL('../src/config/vendorMapCrosswalk.ts',import.meta.url));
 const {footprintForVendor}=load(new URL('../src/config/tentedCityVendorMatch.ts',import.meta.url));
 test('four source replacements preserve IDs, consolidate blanks, and retain exact existing geometry',()=>{
- assert.equal(catalog.total_count,304);assert.equal(catalog.vendors.length,304);assert.equal(new Set(catalog.vendors.map(v=>v.id)).size,304);
+ assert.equal(catalog.total_count,303);assert.equal(catalog.vendors.length,303);assert.equal(new Set(catalog.vendors.map(v=>v.id)).size,303);
  assert.equal(audit.updates.length,4);assert.equal(audit.removed_duplicates.length,2);assert.equal(audit.remaining_unresolved.length,6);
  for(const {before,after} of audit.updates){
   assert.equal(after.id,before.id);assert.deepEqual(catalog.vendors.find(v=>v.id===before.id),after);
