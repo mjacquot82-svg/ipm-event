@@ -48,6 +48,8 @@ function isTrailingCityRemainder(exhibitorNorm: string, liveNorm: string): boole
  * aliases: two exhibitor rows could fit, so they stay unmapped.
  */
 export const VENDOR_MAP_ALIASES: Record<string, string> = {
+  [normalizeVendorKey('DODGE DEALERS')]: 'Dodge RAM',
+  [normalizeVendorKey('ENJO Chemical Free Cleaning System')]: 'ENJO Canada, Tiverton',
   [normalizeVendorKey('Gay Lea Foods Co-operative Ltd.')]: 'Gay Lea Foods Co-operative Ltd',
   [normalizeVendorKey('Kincardine & Community Health Care Foundation')]:
     'Kincardine & Community Health Care',
