@@ -190,15 +190,6 @@
       "priority": 99
     },
     {
-      "id": "b5263806-99c3-4979-af82-5c08f1d598e7",
-      "name": "Brightshores Health System - Saugeen Shores Hospital Foundation",
-      "type": "Indoor",
-      "location": "",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "577b1ad6-5ac8-41c4-a163-04c59c103493",
       "name": "Broeders Farm Equipment, North Augusta",
       "type": "Outdoor",
@@ -680,15 +671,6 @@
       "name": "GGS Structures Inc., Vineland Station",
       "type": "Outdoor",
       "location": "2B-23",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "87a6f85f-b903-584b-a8e1-c92458076dc6",
-      "name": "Gilligan's Juice Bar",
-      "type": "Outdoor",
-      "location": "CXD",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2834,8 +2816,44 @@
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
+    },
+    {
+      "id": "6e77cda5-7713-5ed5-83f5-e2a8b85d69a7",
+      "name": "Bellario Café",
+      "type": "Food",
+      "location": "4B 10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2c76a419-cfec-4413-9d8c-e1944dda6add",
+      "name": "Doc MacCheesey",
+      "type": "Outdoor",
+      "location": "2A 37",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e32ebc10-ce2b-5bac-8bb4-c21650a2effb",
+      "name": "MJ Burnt Creations, Mike’s Diecast, Hill Top Farm",
+      "type": "Outdoor",
+      "location": "4B 29",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "53ee0ece-6172-5f47-899f-d3f0c0d0c299",
+      "name": "Pronano Solutions",
+      "type": "Outdoor",
+      "location": "2A 36",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
     }
   ],
-  "last_updated": "2026-09-23T12:00:00.000Z",
-  "total_count": 315
+  "last_updated": "2026-09-23T13:29:59.000Z",
+  "total_count": 317
 }
