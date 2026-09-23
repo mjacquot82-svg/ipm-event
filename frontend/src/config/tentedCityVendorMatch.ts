@@ -53,6 +53,7 @@ const NAMED_ALIASES: Record<string, string> = {
   WEST2: 'named-dancing-tractors-combine-derby-west-2',
   'WEST-2': 'named-dancing-tractors-combine-derby-west-2',
   'WEST 2': 'named-dancing-tractors-combine-derby-west-2',
+  LOUNGE: 'named-cknx-centennial-pavilion-lounge-west-3',
   WEST3: 'named-cknx-centennial-pavilion-lounge-west-3',
   'WEST-3': 'named-cknx-centennial-pavilion-lounge-west-3',
   'WEST 3': 'named-cknx-centennial-pavilion-lounge-west-3',

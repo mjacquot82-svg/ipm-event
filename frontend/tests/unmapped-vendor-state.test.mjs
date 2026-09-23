@@ -15,10 +15,10 @@ const {vendorMatchesSearch}=load(new URL('../src/config/vendorMapCrosswalk.ts',i
 const {findTentedCityPlace,placeRect}=load(new URL('../src/config/tentedCitySearch.ts',import.meta.url));
 const {footprintForVendor}=load(new URL('../src/config/tentedCityVendorMatch.ts',import.meta.url));
 const catalog=JSON.parse(fs.readFileSync(new URL('../public/api/vendors.json',import.meta.url))).vendors;
-for(const [query,location] of [['Valard','EAST-06'],['CAN-AM','WEST-02']])test(`${query} remains searchable with location but no precise map action or fake geometry`,()=>{
+for(const [query,location] of [['Valard','5A 39-42'],['CAN-AM','West 4']])test(`${query} uses confirmed September 22 location and existing map geometry`,()=>{
  const row=catalog.find(v=>vendorMatchesSearch(v,query));assert.ok(row);assert.equal(row.location,location);
- const place=findTentedCityPlace(row.name,tentedCityVendors);assert.equal(place.kind,'vendor');assert.equal(place.vendor.rect,null);assert.equal(footprintForVendor(place.vendor),null);
- assert.equal(hasTrustedMapGeometry(place),false);assert.equal(vendorHasTrustedMapGeometry(row.name),false);assert.equal(EXACT_MAP_UNAVAILABLE,"Exact map location isn't available yet.");
+ const place=findTentedCityPlace(row.name,tentedCityVendors);assert.equal(place.kind,'vendor');assert.ok(place.vendor.rect);assert.ok(footprintForVendor(place.vendor));
+ assert.equal(hasTrustedMapGeometry(place),true);assert.equal(vendorHasTrustedMapGeometry(row.name),true);assert.equal(EXACT_MAP_UNAVAILABLE,"Exact map location isn't available yet.");
 });
 test('MNP approved EAST-2 parent remains trusted',()=>{
  for(const name of ['The Beyond Wireless Stage',"Harley's Pub & Perk - Stage",'Quality Homes - Stage']){
@@ -29,12 +29,12 @@ test('single and multi-booth vendors retain normal map actions',()=>{
  for(const name of ['Bambrook Farm Equipment','Ontario Government','Transit Trailer Ltd'])assert.equal(vendorHasTrustedMapGeometry(name),true,name);
 });
 test('raw stale geometry cannot make unavailable footprint trusted',()=>{
- const v=tentedCityVendors.find(v=>/Valard/.test(v.name));assert.equal(hasTrustedMapGeometry({kind:'vendor',vendor:{...v,rect:{x:1,y:1,w:5,h:5}}}),false);
+ const v=tentedCityVendors.find(v=>v.name==='Maitland Valley Conservation');assert.equal(hasTrustedMapGeometry({kind:'vendor',vendor:{...v,rect:{x:1,y:1,w:5,h:5}}}),false);
  for(const name of ['Hanover','Maitland Valley Conservation'])assert.equal(vendorHasTrustedMapGeometry(name),false);
 });
-test('canonical known-location scan is limited to eight unavailable records',()=>{
- const rows=catalog.filter(v=>v.location.trim()&&!vendorHasTrustedMapGeometry(v.name));assert.equal(rows.length,8);
- assert.deepEqual(rows.map(v=>v.name),['Bell Cell Tower','Can-Am Demo Area, Montreal, QC','DODGE DEALERS',"Gilligan's Juice Bar",'Hanover','Maitland Valley Conservation','Rogers Cell Tower','Valard Construction, Vaughan']);
+test('canonical known-location scan is limited to six unavailable records',()=>{
+ const rows=catalog.filter(v=>v.location.trim()&&!vendorHasTrustedMapGeometry(v.name));assert.equal(rows.length,6);
+ assert.deepEqual(rows.map(v=>v.name),['Bell Cell Tower','DODGE DEALERS',"Gilligan's Juice Bar",'Hanover','Maitland Valley Conservation','Rogers Cell Tower']);
 });
 test('both attendee surfaces show the generic message and map selection clears untrusted parent state',()=>{
  const ui=fs.readFileSync(new URL('../app/(tabs)/vendors.tsx',import.meta.url),'utf8');const map=fs.readFileSync(new URL('../src/components/TentedCityMap.tsx',import.meta.url),'utf8');

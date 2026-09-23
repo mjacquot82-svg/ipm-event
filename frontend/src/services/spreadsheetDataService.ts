@@ -1,5 +1,6 @@
 // © 2026 1001538341 ONTARIO INC. All Rights Reserved.
 
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isScheduleRecord, isVendorRecord, shouldAcceptReplacement } from './contentCachePolicy';
 import { ApiDataError } from './apiFailureClassification';
@@ -133,6 +134,10 @@ let manifestPromise: Promise<ContentManifest> | null = null;
 const refreshPromises = new Map<string, Promise<CachedApiResult<unknown>>>();
 
 function getCacheKey(cacheKey: string) {
+  if (cacheKey === 'vendors:canonical-v2') {
+    const backend = getApiBaseUrl().toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    return `ipm_supabase_cache:v2:${backend}:${cacheKey}`;
+  }
   const prefix = cacheKey === 'schedule' || cacheKey === 'announcements' || cacheKey === 'vendors'
     ? getCacheNamespace()
     : EXISTING_SHARED_CACHE_KEY_PREFIX;
@@ -394,14 +399,27 @@ export function getScheduleData(options: SupabaseFetchOptions<ScheduleResponse> 
   });
 }
 
-export function getVendorsData(options: SupabaseFetchOptions<VendorsResponse> = {}) {
-  return fetchCachedApiData<VendorsResponse>({
-    cacheKey: 'vendors',
-    url: `${getApiBaseUrl()}/api/vendors`,
-    isCacheableResponse: isSupabaseVendorsResponse,
-    getItemCount: (data) => data.vendors.length,
-    ...options,
-  });
+export async function getVendorsData(options: SupabaseFetchOptions<VendorsResponse> = {}) {
+  const isWeb = Platform.OS === 'web';
+  const cacheKey = isWeb ? 'vendors:canonical-v2' : 'vendors';
+  try {
+    return await fetchCachedApiData<VendorsResponse>({
+      // Web must use the same catalog as the deployed Tented City bundle.
+      cacheKey,
+      url: isWeb ? '/api/vendors' : `${getApiBaseUrl()}/api/vendors`,
+      isCacheableResponse: isSupabaseVendorsResponse,
+      getItemCount: (data) => data.vendors.length,
+      ...options,
+      ...(isWeb ? { preferCache: false } : {}),
+    });
+  } catch (error) {
+    // Network-first web reads may fall back only to this canonical catalog's cache.
+    if (isWeb && error instanceof ApiDataError && error.kind === 'connectivity') {
+      const cached = await readCache<VendorsResponse>(cacheKey, isSupabaseVendorsResponse);
+      if (cached) return cached;
+    }
+    throw error;
+  }
 }
 
 export function addConnectivityRefreshListener(refresh: () => void) {

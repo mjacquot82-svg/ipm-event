@@ -36,8 +36,8 @@ const { chromium } = require(process.env.IPM_PLAYWRIGHT_MODULE || 'playwright');
     assert.equal(rawCount, expectedCount);
     assert.deepEqual(vendorUrls, [`${origin}/api/vendors`]);
     for (const [query, name, location] of [
-      ['CAN-AM', 'Can-Am Demo Area, Montreal, QC', 'WEST-02'],
-      ['Valard', 'Valard Construction, Vaughan', 'EAST-06'],
+      ['CAN-AM', 'Can-Am Demo Area, Montreal, QC', 'West 4'],
+      ['Valard', 'Valard Construction, Vaughan', '5A 39-42'],
       ['Bambrook', 'Bambrook Farm Equipment', '1A-05'],
       ['Cottrill', 'Cottrill Heavy Equipment, Kincardine', '2A-05'],
       ['Ontario Government', 'Ontario Government', '3B-19-24'],

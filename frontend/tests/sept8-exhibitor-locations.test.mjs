@@ -49,11 +49,11 @@ test('Sept8 conflict corrections', () => {
   assert.equal(scatter.tent, null);
   assert.equal(scatter.category, 'outdoor');
   const canAmConflict = findOne(vendors, (v) => /can-am/i.test(v.name), 'CAN-AM');
-  assert.equal(canAmConflict.locationLabel, 'WEST-02');
-  assert.equal(canAmConflict.rect, null);
+  assert.equal(canAmConflict.locationLabel, 'West 4');
+  assert.ok(canAmConflict.rect);
   const valard = findOne(vendors, (v) => /valard/i.test(v.name), 'Valard');
-  assert.equal(valard.locationLabel, 'EAST-06');
-  assert.equal(valard.rect, null);
+  assert.equal(valard.locationLabel, '5A 39-42');
+  assert.ok(valard.rect);
 });
 
 test('Sept8 backfills present with correct labels', () => {
@@ -77,7 +77,7 @@ test('Sept8 must-adds and optional adds', () => {
     ['Florence Leather', '4B-15'],
     ["Gerry's Truck Centre", '4A-04'],
     ['Heavenly Dreams Ice Cream Inc', '4A-37'],
-    ['Metalf Food & Beverage', '3B-13-14'],
+    ['Metcalf Food & Beverage Inc.', '3B 13-14'],
     ['Ontario Cattle Feeders', '2B-07'],
     ['Premier Tech Water & Environment', '2A-28'],
     ['Pro Cart', '5A-19'],
@@ -106,11 +106,11 @@ test('CAN-AM and Valard are searchable by common queries via find in vendor name
   assert.ok(vendors.some((v) => /can-am/i.test(v.name)));
   assert.ok(vendors.some((v) => /valard/i.test(v.name)));
   const canam = findOne(vendors, (v) => /can-am/i.test(v.name), 'CAN-AM');
-  assert.equal(canam.locationLabel, 'WEST-02');
-  assert.equal(canam.rect, null);
+  assert.equal(canam.locationLabel, 'West 4');
+  assert.ok(canam.rect);
   const valard = findOne(vendors, (v) => /valard/i.test(v.name), 'Valard');
-  assert.equal(valard.locationLabel, 'EAST-06');
-  assert.equal(valard.rect, null);
+  assert.equal(valard.locationLabel, '5A 39-42');
+  assert.ok(valard.rect);
 });
 
 test('AmSpec Group, Hamilton unchanged (NOT_ON_SEPT_8 hold)', () => {
@@ -144,5 +144,5 @@ test('no duplicate exact names among Sept8 targets', () => {
 
 test('vendor count did not drop below pre-Sept8 baseline', () => {
   assert.ok(vendors.length >= 318, `expected >= 318, got ${vendors.length}`);
-  assert.equal(vendors.length, 326);
+  assert.equal(vendors.length, 349); // September 22 additions and confirmed split-name repairs.
 });

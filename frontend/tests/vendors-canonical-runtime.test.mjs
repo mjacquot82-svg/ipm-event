@@ -6,8 +6,9 @@ import ts from 'typescript';
 const require=createRequire(import.meta.url);
 const catalog=JSON.parse(fs.readFileSync(new URL('../public/api/vendors.json',import.meta.url)));
 function load(url,overrides={}) {
+ if (!fs.existsSync(url) && url.pathname.endsWith('.ts')) url = new URL(url.href.replace(/\.ts$/, '.js'));
  const mod={exports:{}};
- const code=ts.transpileModule(fs.readFileSync(url,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText;
+ const code=ts.transpileModule(fs.readFileSync(url,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2019,esModuleInterop:true}}).outputText;
  new Function('require','module','exports','fetch','process','setTimeout',code)(name=>{
   if(name==='react-native') return {Platform:{OS:'web'}};
   if(name==='@react-native-async-storage/async-storage') return {getItem:async k=>overrides.cache.get(k)??null,setItem:async(k,v)=>overrides.cache.set(k,v),removeItem:async k=>overrides.cache.delete(k)};
@@ -21,7 +22,7 @@ const {vendorMatchesSearch}=load(new URL('../src/config/vendorMapCrosswalk.ts',i
 test('absolute backend configuration cannot bypass canonical web vendor catalog; all five searches resolve',async()=>{
  const urls=[];const result=await api(async url=>{urls.push(url);return {ok:true,json:async()=>catalog};}).getVendorsData();
  assert.deepEqual(urls,['/api/vendors']);assert.equal(result.data.vendors.length,catalog.vendors.length);assert.equal(new Set(result.data.vendors.map(v=>v.id)).size,catalog.vendors.length);
- for(const [q,location] of [['CAN-AM','WEST-02'],['Valard','EAST-06'],['Bambrook','1A-05'],['Cottrill','2A-05'],['Ontario Government','3B-19-24']]){
+ for(const [q,location] of [['CAN-AM','West 4'],['Valard','5A 39-42'],['Bambrook','1A-05'],['Cottrill','2A-05'],['Ontario Government','3B-19-24']]){
   const matches=result.data.vendors.filter(v=>vendorMatchesSearch(v,q));assert.equal(matches.length,1,q);assert.equal(matches[0].location,location);
  }
 });
@@ -66,7 +67,7 @@ test('environment-scoped namespace also protects announcement content',async()=>
 });
 test('offline fallback uses only the canonical cache',async()=>{
  const cache=new Map();await api(async()=>({ok:true,json:async()=>catalog}),cache).getVendorsData();
- const result=await api(async()=>{throw Error('offline');},cache).getVendorsData();assert.equal(result.source,'cache');assert.equal(result.data.vendors.length,catalog.vendors.length);
+ const result=await api(async()=>{throw new TypeError('Network unavailable');},cache).getVendorsData();assert.equal(result.source,'cache');assert.equal(result.data.vendors.length,catalog.vendors.length);
 });
 test('loading renders before no-results and default category is All',()=>{
  const s=fs.readFileSync(new URL('../app/(tabs)/vendors.tsx',import.meta.url),'utf8');

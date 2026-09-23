@@ -25,6 +25,7 @@ const normalize = (value: string) => value.toUpperCase().replace(/[\u2019']/g, '
 // These are published schedule labels whose wording differs from the audited
 // map manifest. Keep this list explicit so an unknown location stays unmapped.
 const LOCATION_ALIASES: Record<string, string> = {
+  LOUNGE: 'cknx-centennial-pavilion-lounge-west-3',
   'EVENT CENTRE 1 WEST 2': 'dancing-tractors-combine-derby-west-2',
   'EVENT CENTRE 1': 'dancing-tractors-combine-derby-west-2',
   'EVENT CENTRE': 'dancing-tractors-combine-derby-west-2',

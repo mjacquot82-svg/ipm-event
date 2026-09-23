@@ -4,7 +4,7 @@
       "id": "b9f5cf91-c819-4c09-b66d-c7755e0cf06f",
       "name": "A&M Truck Parts Ltd",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -40,7 +40,7 @@
       "id": "f55883bc-5358-4211-a3b6-7b53edaba2e6",
       "name": "Agilec Employment Services",
       "type": "Indoor",
-      "location": "",
+      "location": "4B 17-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -49,7 +49,7 @@
       "id": "3b04e05a-7aff-4552-b267-caf238b690d4",
       "name": "Agriculture and Agri-Food Canada",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -76,7 +76,7 @@
       "id": "af16cf06-a3fc-442f-89fb-34b7f7c811aa",
       "name": "Armtec",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -157,7 +157,7 @@
       "id": "00cdb72c-1b0d-4a4f-ba56-94afe97592aa",
       "name": "Ben Lobb Member of Parliament for Huron Bruce",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -166,7 +166,7 @@
       "id": "988bfa58-8601-4351-9a9c-56367bdec339",
       "name": "Bernie McGlynn Lumber / South Bruce Flooring",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -265,7 +265,7 @@
       "id": "2f34e37e-1880-5e22-b369-9372257143f7",
       "name": "Can-Am Demo Area, Montreal, QC",
       "type": "Outdoor",
-      "location": "WEST-02",
+      "location": "West 4",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -274,7 +274,7 @@
       "id": "cae86ad1-4826-4a0a-b06c-3112e7a23706",
       "name": "Canadian Foodgrains Bank",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -283,7 +283,7 @@
       "id": "fe9ce824-1ba8-4bf7-998d-b236ffefd2aa",
       "name": "Canadian Snowbird Association",
       "type": "Indoor",
-      "location": "",
+      "location": "4B 17-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -319,7 +319,7 @@
       "id": "5f2a4b8e-4a5c-45a0-928c-4ae43ead02df",
       "name": "Christadelphians: ASK",
       "type": "Indoor",
-      "location": "",
+      "location": "4B 17-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -328,7 +328,7 @@
       "id": "8263f8cc-47cc-46bb-880e-4fd4e040a055",
       "name": "Christian Farmers Federation of Ontario",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -364,7 +364,7 @@
       "id": "92ced957-30d0-44bd-948c-268b1a5b68a2",
       "name": "CMHA Grey Bruce",
       "type": "Indoor",
-      "location": "",
+      "location": "4B 17-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -544,7 +544,7 @@
       "id": "fac9b1e9-54db-41cb-976f-eb4f6f2f8f16",
       "name": "Electrical Safety Authority",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -634,7 +634,7 @@
       "id": "bcc0b099-1270-4436-8222-560ab866fea2",
       "name": "Fort44 Inc.",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -652,7 +652,7 @@
       "id": "9b876531-d38c-4955-af9f-0550c9446f61",
       "name": "Freiburger Welding",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -661,7 +661,7 @@
       "id": "dd656a11-03d9-451b-bd7a-c05b12320448",
       "name": "Galaxy Sweets",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 05-10",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -742,7 +742,7 @@
       "id": "d68df8ab-824a-4993-80b8-3a46d73669d2",
       "name": "Grey Bruce Public Health",
       "type": "Indoor",
-      "location": "",
+      "location": "4B 17-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -751,7 +751,7 @@
       "id": "72281fef-9af2-40e7-9132-2bcfe55ca87d",
       "name": "Guelph Solar",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -787,7 +787,7 @@
       "id": "db8358ab-6aca-4cc1-9500-c20ae81c4c9c",
       "name": "HearingLife Canada",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 05-10",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -850,7 +850,7 @@
       "id": "a7971766-a77f-5ce5-9ce4-2f29808a1849",
       "name": "Hometown Street Eats, Drayton",
       "type": "Food",
-      "location": "2B-25",
+      "location": "Lounge",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -859,7 +859,7 @@
       "id": "464f0a56-2cfb-42ba-9d27-59324d17ec16",
       "name": "Huron County",
       "type": "Indoor",
-      "location": "",
+      "location": "4B 17-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -922,7 +922,7 @@
       "id": "b16de7a5-f57f-4789-bf01-735f6831ac80",
       "name": "Joe Carter - Group Benefits Specialist",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 05-10",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1021,7 +1021,7 @@
       "id": "3383bf0f-7040-4292-b672-b8f546e6f90b",
       "name": "LeafFilter Gutter Protection",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1163,9 +1163,9 @@
     },
     {
       "id": "9d2341cd-270e-5669-8d74-990ef1838766",
-      "name": "Metalf Food & Beverage",
+      "name": "Metcalf Food & Beverage Inc.",
       "type": "Food",
-      "location": "3B-13-14",
+      "location": "3B 13-14",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1210,7 +1210,7 @@
       "id": "d7d546d4-2d97-4e22-936c-b7276e2926ee",
       "name": "MPAC - Municipal Property Assessment Corporation",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1273,7 +1273,7 @@
       "id": "65e03aa7-8bec-4465-a7a7-83ce3c22abc2",
       "name": "Norwex",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 05-10",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1282,7 +1282,7 @@
       "id": "19c4141d-9ce0-4a98-bc7c-2ae658ba2b20",
       "name": "Oasis Therapy",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 05-10",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1372,7 +1372,7 @@
       "id": "72e344c1-223b-4f4e-9544-40456b21a939",
       "name": "Ontario Phragmites Action",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1408,7 +1408,7 @@
       "id": "0b03a71a-bb5e-461b-8af9-b303298f8b61",
       "name": "Parrish & Heimbecker, Ltd",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1426,7 +1426,7 @@
       "id": "c2f887e0-c182-4fe3-a124-c5ea39f0c56c",
       "name": "PIKA PIKA",
       "type": "Indoor",
-      "location": "",
+      "location": "4B 17-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1435,7 +1435,7 @@
       "id": "f4fa6a81-0991-4f33-9c19-bb049c6cbb97",
       "name": "Playtime Casino Hanover",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 05-10",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1570,7 +1570,7 @@
       "id": "f5b057d7-2036-467d-b45e-6008fcc3bcc1",
       "name": "Rural Home Care",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1579,7 +1579,7 @@
       "id": "42aaed65-6d65-47c5-b938-74315db706a6",
       "name": "Saugeen Economic Development Corporation",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1597,7 +1597,7 @@
       "id": "843e1734-6422-4cab-9107-d9632a28698e",
       "name": "Schmidt's Farm Drainage",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1705,7 +1705,7 @@
       "id": "b574de87-5059-488d-841b-2728fb5227d4",
       "name": "SV Law",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 05-10",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1732,7 +1732,7 @@
       "id": "2349eab4-0602-421f-b0f6-b07949c227eb",
       "name": "Teeswater Laser",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1741,7 +1741,7 @@
       "id": "34e10e60-9e05-4461-9350-d85fb6babb70",
       "name": "The Insurance Market",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1750,7 +1750,7 @@
       "id": "79c70f83-6ff1-41b1-9b88-81ec1a52e64b",
       "name": "The Miller Group",
       "type": "Indoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1759,7 +1759,7 @@
       "id": "125044e1-87e9-403a-ba52-73a3826f0de7",
       "name": "The Quilt Jeannie",
       "type": "Indoor",
-      "location": "",
+      "location": "3A 39-44",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1768,7 +1768,7 @@
       "id": "215cc6ac-a0ef-4157-b2c3-2300a4727d2b",
       "name": "The WOMB Bruce County",
       "type": "Indoor",
-      "location": "",
+      "location": "4B 17-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1777,7 +1777,7 @@
       "id": "3760419b-7bb3-41b8-becd-c2e028b4ca27",
       "name": "Thede Acres Alpacas",
       "type": "Indoor",
-      "location": "",
+      "location": "4B 17-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1813,7 +1813,7 @@
       "id": "73abc49e-5b32-49a9-ba05-dfa04bdb577c",
       "name": "TreeGirl Henna",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 05-10",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1849,7 +1849,7 @@
       "id": "0bd5ea4a-dae9-59b1-acf0-3547467cf4d0",
       "name": "Valard Construction, Vaughan",
       "type": "Outdoor",
-      "location": "EAST-06",
+      "location": "5A 39-42",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1865,9 +1865,9 @@
     },
     {
       "id": "ad9e85a4-2eca-5484-a676-a0bd77ce37de",
-      "name": "Walkerton",
+      "name": "Walkerton & District Hospital Foundation",
       "type": "Outdoor",
-      "location": "3B-06",
+      "location": "3B 06",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1876,7 +1876,7 @@
       "id": "e1965785-7bae-466f-a0ec-153577c3bd52",
       "name": "Walkerton Clean Water Centre",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1939,7 +1939,7 @@
       "id": "096575d8-9155-4f08-a307-44d60a3e2596",
       "name": "Wecover Structures",
       "type": "Outdoor",
-      "location": "",
+      "location": "1B 16-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1984,7 +1984,7 @@
       "id": "3c2093d3-f87d-44e9-9062-3e029f932769",
       "name": "Wilson Developments",
       "type": "Indoor",
-      "location": "",
+      "location": "4A 16-21",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2020,7 +2020,7 @@
       "id": "23bb582a-b74a-4013-adb9-312803cac3bc",
       "name": "YMCA Owen Sound Grey Bruce - Employment Services",
       "type": "Indoor",
-      "location": "",
+      "location": "4B 17-22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2033,8 +2033,710 @@
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
+    },
+    {
+      "id": "b80db0b1-9244-584b-b7b6-f3de550362e2",
+      "name": "2 Farmers & a Cow Ice Cream Co.",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "de3c17a0-5c54-5dcf-b66e-105683bdd384",
+      "name": "Action First Aid",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "94f0a048-b74d-539b-a19b-c9ff75175873",
+      "name": "Alair Homes Huron",
+      "type": "Indoor",
+      "location": "4A 16-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "95f6cbd4-bd04-54bf-8af3-dc322758e5ec",
+      "name": "All Star Metals Inc.",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d86f139f-40d8-51c3-b21d-64c0b435e885",
+      "name": "Aqwa Building Solutions",
+      "type": "Indoor",
+      "location": "4A 16-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "28817132-a3c5-5612-ba02-ab81062e43e7",
+      "name": "Avenir Energy",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "bb7deb52-30fd-52e0-9e70-b5a914d00803",
+      "name": "Better Farming | Small Farm Canada",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "1fb90512-c8f0-54d6-8b17-d3e6bdb9306a",
+      "name": "Bruce County Genealogical Society",
+      "type": "Indoor",
+      "location": "South 2 & 3",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8314b91d-c387-57e3-a129-d0071ca1d393",
+      "name": "Bruce County Historical Society",
+      "type": "Indoor",
+      "location": "South 2 & 3",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "6496699d-ff53-5567-8b89-9eb8250439ca",
+      "name": "Bruce/Grey Owen Sound Constituency Association, Green Party of Ontario",
+      "type": "Indoor",
+      "location": "4B 17-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "5a537ec9-3efc-5166-93d9-a1d165aa7c1a",
+      "name": "Buddsteel Architectural Products",
+      "type": "Indoor",
+      "location": "4A 16-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "75b9a62d-6ae6-5f5d-83a4-3837003e7cc3",
+      "name": "Canada Clean Fuels",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "6df1afee-da60-59c9-a1f2-8126df1fbc74",
+      "name": "Canadian Cattle Identification Agency",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "90163774-4833-5f4d-a99d-6baf387e16fc",
+      "name": "Canadian Cowgirls",
+      "type": "Outdoor",
+      "location": "5A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c1277949-332e-54d9-8476-cc673b652f1c",
+      "name": "Canadian Propane Association",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "6bc2d4c6-e1ed-5f0b-9992-4f540dae8981",
+      "name": "Canadian Union of Skilled Workers",
+      "type": "Indoor",
+      "location": "3B 07-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f8f1907b-ab01-5e86-bef2-3db06ca6411e",
+      "name": "Candu Energy Inc, an AtkinsRéalis company",
+      "type": "Indoor",
+      "location": "3B 07-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2d88b270-7ec0-5ea8-b67a-61ea54b755b2",
+      "name": "CarePartners - Exploring Care Excellence In Rural Ontario",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "317f1a81-fcf9-52ae-a3a4-0fd6396f3f7e",
+      "name": "CarePartners - Exploring Healthcare Careers in Rural Ontario",
+      "type": "Indoor",
+      "location": "4B 17-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "40ad4687-2d9e-5a1d-9d3b-1c5738177fef",
+      "name": "CarePartners - Rural Health Care. Yours to Explore.",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "80057243-c6b2-5989-a1d5-12ecfb1bb883",
+      "name": "Chalmers Fuels",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "3f8497e0-3ee3-59ec-a39d-995f6f118ab3",
+      "name": "Chepstow & District Lions Club",
+      "type": "Food",
+      "location": "3A 17-18",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "5bf384f1-18d6-5d87-b223-866b32a37139",
+      "name": "CIBC",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e39c3cf4-ce16-5ee0-b394-3fea4766b5eb",
+      "name": "Circular Materials",
+      "type": "Indoor",
+      "location": "4A 16-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "4366b628-7f6c-5e9e-85e4-95bdb1cd9d7a",
+      "name": "Core Fuels Ltd. / Red Cap Propane Ltd.",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a712e78d-6e80-5c74-a27a-18b4af7427d5",
+      "name": "Croskill Overhead Doors",
+      "type": "Indoor",
+      "location": "4A 16-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b8f9cca1-74eb-5b21-bd6e-3f38ccb99a7f",
+      "name": "Dill Doughs",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0042678d-478d-59c1-b11e-49249fbac550",
+      "name": "Eastern Ontario Wardens’ Caucus",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9b90e9cd-8a0b-5ac9-8537-26e45ddf2d69",
+      "name": "Eastlink",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "82ad3098-6303-5e7a-9a43-96cda2806f1e",
+      "name": "Elevated Workplace Safety",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "09b146c7-5501-5abe-8f3a-9a5bb42eafd9",
+      "name": "Elite Sprouting Systems Inc.",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d27739f9-97e4-5b7a-bf8a-30008f48ff51",
+      "name": "Enviro-Farm",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e2813ecd-7a60-50ed-8226-006b1e91118a",
+      "name": "Express Heat Therapy",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a10076fa-721c-58b4-bc7d-4adf67ce9de7",
+      "name": "Farmers Choice Real Estate",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8ad38a82-82f5-52d9-8194-afe9aa339936",
+      "name": "Goderich Port Management Corporation",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "92b67203-ddd7-5732-8435-423a0bde75d3",
+      "name": "Grey Ag Services",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d8ba9867-ff65-59bf-a560-488a19d07bbb",
+      "name": "Grey Bruce Ontario Health Team",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2a3d1487-7e50-53c8-b942-bd9d246ff1db",
+      "name": "Grey County",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "54db06ca-4ed7-5fe4-be06-093ac73b8c60",
+      "name": "Harry Buurma - free bibles",
+      "type": "Indoor",
+      "location": "4B 17-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "98d04023-047a-5579-9160-8803e4eb0d5e",
+      "name": "HDTV & Electronics",
+      "type": "Indoor",
+      "location": "4B 17-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c75bbef4-0464-52a6-9169-0815a2dd9278",
+      "name": "Hear Canada",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f6030aca-f388-542f-860f-8f7227be1776",
+      "name": "Iron-Haven Structures",
+      "type": "Outdoor",
+      "location": "1B 35",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "097c9a35-6fdc-5a81-bc78-9fc33a5e82ac",
+      "name": "It's About You by Christine Lennips",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9c7d2d37-fcbe-5412-bfb7-d008d20d5204",
+      "name": "J.A. Porter Holdings (Lucknow) Ltd.",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8391fa2f-6880-5415-a3d0-af48d3bf0aef",
+      "name": "Kinectrics Inc.",
+      "type": "Indoor",
+      "location": "3B 07-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "824ab9fa-badc-5700-9758-b14cfc5204a4",
+      "name": "LaSalle Agri Inc.",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e5911ee2-4970-575d-9422-6267bb149c7e",
+      "name": "Libro Credit Union",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "49cc2ec0-9dd5-5d54-8aea-74d4197f2949",
+      "name": "LiUNA Local 1059",
+      "type": "Indoor",
+      "location": "3B 07-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "57574993-a47c-5eca-8fe9-e10b51b2b993",
+      "name": "London Eco-Metal Manufacturing",
+      "type": "Indoor",
+      "location": "4A 16-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "978c3376-e3fa-5dd1-b6db-ca815bd25d65",
+      "name": "Meat & Poultry Ontario",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "48230859-63b0-5cec-94e9-15de5558ae94",
+      "name": "MowUcontrol",
+      "type": "Indoor",
+      "location": "4A 16-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e60b82e4-9260-5c48-b069-09066151642b",
+      "name": "Ontario Bean Growers",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "682de61f-8c18-5fa9-a83d-df80ef9512d1",
+      "name": "Ontario Dairy Goat Co-operative",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0ac22beb-e1eb-50d6-bd0c-9800e6040a6a",
+      "name": "Ontario Power Generation (OPG)",
+      "type": "Indoor",
+      "location": "3B 07-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "e8215303-da85-571d-94cc-68b47f901de9",
+      "name": "Pro Fleet Care",
+      "type": "Indoor",
+      "location": "4B 17-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "31ec8641-f1af-5bd6-beac-ec4a7b445b93",
+      "name": "ProResp Inc",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "aef059e7-ae8e-5325-bc53-9e8c557376bb",
+      "name": "Quality Seeds Ltd",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "2d2945e0-1a4f-54fb-9e80-17ee07a32bd0",
+      "name": "Royal Bank of Canada (\"RBC\")",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "28a42c5b-a053-5a93-9a87-4d2b2c3c2b6f",
+      "name": "Rural Ontario Institute/AALP",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c218f3c5-b75c-5a43-8ad5-6af41ae8333d",
+      "name": "Skills Ontario",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0f7d74a4-83a4-5e46-8a50-c5db3d3c596d",
+      "name": "Snobelen Farms Ltd.",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "ceacb558-7adb-56d5-962b-e0d469b218f6",
+      "name": "Society of United Professionals",
+      "type": "Indoor",
+      "location": "3B 07-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "c04e00d9-45cf-5800-93ff-e81d6461a63c",
+      "name": "Soleno Inc.",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "f99fa85f-2675-50c3-a81f-f1c9e52a58e7",
+      "name": "Solera Solar Lighting",
+      "type": "Indoor",
+      "location": "1B 16-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b7ca8a6d-c7fb-5ba9-bd91-8ca942afbd0c",
+      "name": "Superior Meats",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "469d095a-d7d5-58a3-a642-e72e0da9cee1",
+      "name": "Tenth Street Wealth Management - Raymond James",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "a139b694-4185-5462-b5f0-dfe75ba3a664",
+      "name": "The Back 40 Smoke Box",
+      "type": "Food",
+      "location": "4B 33",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "10ab5394-071e-553a-8d97-ddfb35027824",
+      "name": "The Kirstine-Ellis Group",
+      "type": "Indoor",
+      "location": "4B 17-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "d26ef15d-6ebc-5d88-befa-77e9f5240b52",
+      "name": "Tilly's Fresh Fair Style Lemonade",
+      "type": "Food",
+      "location": "3B 05",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "b3f674dd-50a0-51f3-823c-2efa01031a37",
+      "name": "Titanium Gourmet Inc.",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8f5cd314-16dc-52e1-82c6-5da416dda692",
+      "name": "Turquesa Mexican Food",
+      "type": "Food",
+      "location": "2B 25",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "773eee12-f039-5d09-823c-59a7366e8eb5",
+      "name": "UBC Local 2222",
+      "type": "Indoor",
+      "location": "3B 07-12",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "4c51e34c-611c-5c15-8cd3-c71158ca852e",
+      "name": "Uber Canada",
+      "type": "Indoor",
+      "location": "4A 05-10",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "8523d01b-21e8-5840-a81c-399fa6959fc8",
+      "name": "Victim Services Bruce Grey",
+      "type": "Indoor",
+      "location": "4A 16-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "670acbd9-0e74-5cb9-83de-ce2774994af7",
+      "name": "Western Ontario Wardens Caucus",
+      "type": "Indoor",
+      "location": "3B 39-44",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "cbda64b0-cb77-5820-991f-6c979333b612",
+      "name": "Whisky & Wine Rustic Design Co.",
+      "type": "Indoor",
+      "location": "2B 33-38",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "9994db75-59e3-596f-96fd-92db39073c49",
+      "name": "Work Authority",
+      "type": "Indoor",
+      "location": "4B 17-22",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "12d7512a-88af-5c95-a596-7ea11e645fd5",
+      "name": "WT Living",
+      "type": "Indoor",
+      "location": "4A 16-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
     }
   ],
-  "last_updated": "2026-09-19T01:06:07.613Z",
-  "total_count": 226
+  "last_updated": "2026-09-23T00:00:00.000Z",
+  "total_count": 304
 }
