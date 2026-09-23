@@ -34,7 +34,7 @@ test('raw stale geometry cannot make unavailable footprint trusted',()=>{
 });
 test('canonical known-location scan is limited to six unavailable records',()=>{
  const rows=catalog.filter(v=>v.location.trim()&&!vendorHasTrustedMapGeometry(v.name));assert.equal(rows.length,6);
- assert.deepEqual(rows.map(v=>v.name),['Bell Cell Tower','DODGE DEALERS',"Gilligan's Juice Bar",'Hanover','Maitland Valley Conservation','Rogers Cell Tower']);
+ assert.deepEqual(rows.map(v=>v.name),['Bell Cell Tower','Dodge RAM',"Gilligan's Juice Bar",'Hanover','Maitland Valley Conservation','Rogers Cell Tower']);
 });
 test('both attendee surfaces show the generic message and map selection clears untrusted parent state',()=>{
  const ui=fs.readFileSync(new URL('../app/(tabs)/vendors.tsx',import.meta.url),'utf8');const map=fs.readFileSync(new URL('../src/components/TentedCityMap.tsx',import.meta.url),'utf8');

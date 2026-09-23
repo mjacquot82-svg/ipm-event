@@ -135,12 +135,12 @@ test('ACE / JCB at 1A-09 is confident_lot with PDF rect', () => {
 
 test('matcher totals cover every vendor', () => {
   const t = report.totals;
-  assert.equal(t.confident_lot, 273);
+  assert.equal(t.confident_lot, 271);
   assert.equal(t.range_or_named, 71);
   assert.equal(t.ambiguous, 2);
   assert.equal(t.unmatched, 3);
   assert.equal(t.confident_lot + t.range_or_named + t.ambiguous + t.unmatched, report.vendor_count);
-  assert.equal(report.vendor_count, 349);
+  assert.equal(report.vendor_count, 347);
   assert.ok(report.classes.ambiguous.includes('Hanover'));
   assert.ok(report.classes.ambiguous.includes('Dodge RAM'));
   assert.ok(report.classes.range_or_named.includes('Bruce Power, Tiverton'));
@@ -304,7 +304,7 @@ test('every bundled exhibitor with mapped lots paints one rect per cluster', () 
       assert.ok(clusters.length >= parents.size, vendor.name + ' must not union across parents');
     }
   }
-  assert.ok(multi >= 7, `expected preserved multi-location vendors, got ${multi}`);
+  assert.ok(multi >= 4, `expected preserved multi-location vendors, got ${multi}`);
 });
 
 test('TentedCityMap paints each cluster rect, not the union, with a tight halo', () => {

@@ -353,9 +353,9 @@
     },
     {
       "id": "d9e22660-ba30-5f2e-a36d-91888a9f2cc7",
-      "name": "Clinton",
+      "name": "Treemendous Tree Sales & Transplanting",
       "type": "Outdoor",
-      "location": "5A-32",
+      "location": "5A 32",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -506,9 +506,9 @@
     },
     {
       "id": "5041c4ee-0da8-5174-b73c-2451f95aa2ac",
-      "name": "DODGE DEALERS",
+      "name": "Dodge RAM",
       "type": "Outdoor",
-      "location": "5A-01-04",
+      "location": "5A 01-04",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -958,7 +958,7 @@
       "id": "5e1c39f7-d7c4-4bc7-9353-1b426bbbd4fd",
       "name": "K and S Boat and Sled",
       "type": "Outdoor",
-      "location": "",
+      "location": "4B 34",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -974,9 +974,9 @@
     },
     {
       "id": "380ac022-0c50-43fa-8580-e4493f794556",
-      "name": "Kincardine",
+      "name": "Women's House Serving Bruce and Grey",
       "type": "Outdoor",
-      "location": "4B-06",
+      "location": "4B 06",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1814,15 +1814,6 @@
       "name": "TreeGirl Henna",
       "type": "Indoor",
       "location": "4A 05-10",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "9efea015-7697-44b4-a27f-5c1b605b81d6",
-      "name": "Treemendous Tree Sales & Transplanting",
-      "type": "Outdoor",
-      "location": "",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2735,8 +2726,35 @@
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
+    },
+    {
+      "id": "02042ba2-214b-5841-bb7a-f17f5ba0dd60",
+      "name": "Fruitage of the Field",
+      "type": "Outdoor",
+      "location": "4B 24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "77353df6-d87b-5afc-a209-67793fa5d8af",
+      "name": "Northern Fabrication",
+      "type": "Outdoor",
+      "location": "4A 14",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "64319171-ef84-58ee-b1f9-00189522f700",
+      "name": "ENJO Canada",
+      "type": "Indoor",
+      "location": "4A 16-21",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
     }
   ],
-  "last_updated": "2026-09-23T00:00:00.000Z",
-  "total_count": 304
+  "last_updated": "2026-09-23T12:00:00.000Z",
+  "total_count": 306
 }

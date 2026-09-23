@@ -1,0 +1,211 @@
+{
+  "base_sha": "6767d0aa1857c2fda67183e6dc2b99c76d287b37",
+  "before_count": 304,
+  "updates": [
+    {
+      "before": {
+        "id": "5e1c39f7-d7c4-4bc7-9353-1b426bbbd4fd",
+        "name": "K and S Boat and Sled",
+        "type": "Outdoor",
+        "location": "",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      },
+      "after": {
+        "id": "5e1c39f7-d7c4-4bc7-9353-1b426bbbd4fd",
+        "name": "K and S Boat and Sled",
+        "type": "Outdoor",
+        "location": "4B 34",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      }
+    },
+    {
+      "before": {
+        "id": "5041c4ee-0da8-5174-b73c-2451f95aa2ac",
+        "name": "DODGE DEALERS",
+        "type": "Outdoor",
+        "location": "5A-01-04",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      },
+      "after": {
+        "id": "5041c4ee-0da8-5174-b73c-2451f95aa2ac",
+        "name": "Dodge RAM",
+        "type": "Outdoor",
+        "location": "5A 01-04",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      }
+    },
+    {
+      "before": {
+        "id": "d9e22660-ba30-5f2e-a36d-91888a9f2cc7",
+        "name": "Clinton",
+        "type": "Outdoor",
+        "location": "5A-32",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      },
+      "after": {
+        "id": "d9e22660-ba30-5f2e-a36d-91888a9f2cc7",
+        "name": "Treemendous Tree Sales & Transplanting",
+        "type": "Outdoor",
+        "location": "5A 32",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      }
+    },
+    {
+      "before": {
+        "id": "380ac022-0c50-43fa-8580-e4493f794556",
+        "name": "Kincardine",
+        "type": "Outdoor",
+        "location": "4B-06",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      },
+      "after": {
+        "id": "380ac022-0c50-43fa-8580-e4493f794556",
+        "name": "Women's House Serving Bruce and Grey",
+        "type": "Outdoor",
+        "location": "4B 06",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      }
+    }
+  ],
+  "additions": [
+    {
+      "id": "02042ba2-214b-5841-bb7a-f17f5ba0dd60",
+      "name": "Fruitage of the Field",
+      "type": "Outdoor",
+      "location": "4B 24",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "77353df6-d87b-5afc-a209-67793fa5d8af",
+      "name": "Northern Fabrication",
+      "type": "Outdoor",
+      "location": "4A 14",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    }
+  ],
+  "removed_duplicate": {
+    "id": "9efea015-7697-44b4-a27f-5c1b605b81d6",
+    "name": "Treemendous Tree Sales & Transplanting",
+    "type": "Outdoor",
+    "location": "",
+    "hours_of_operation": "",
+    "days_of_operation": "",
+    "priority": 99
+  },
+  "restored": [
+    {
+      "before": {
+        "id": "64319171-ef84-58ee-b1f9-00189522f700",
+        "name": "ENJO Chemical Free Cleaning System",
+        "type": "Indoor",
+        "location": "4A 16–21\n4B 17–22",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      },
+      "after": {
+        "id": "64319171-ef84-58ee-b1f9-00189522f700",
+        "name": "ENJO Canada",
+        "type": "Indoor",
+        "location": "4A 16-21",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      },
+      "source": "Preserved September 16 staging-vendors-api.json; record absent from current staging candidate"
+    }
+  ],
+  "after_count": 306,
+  "approved_shared_booths": [
+    {
+      "location": "4B 34",
+      "names": [
+        "K and S Boat and Sled",
+        "Kreations Candy and Treats, Hanover"
+      ]
+    },
+    {
+      "location": "4B 24",
+      "names": [
+        "Fruitage of the Field",
+        "Old Country Leather, Chesley"
+      ]
+    },
+    {
+      "location": "4A 14",
+      "names": [
+        "Northern Fabrication",
+        "Hip Town Hype, Trent Lakes"
+      ]
+    }
+  ],
+  "site_area": "Partnership Park",
+  "remaining_unresolved": [
+    {
+      "name": "Bambrook Farm Equipment / iLGi Canada",
+      "reason": "1A 05 ownership conflict; both unchanged"
+    },
+    {
+      "name": "Style Catering / Chris's Barbeque and Country Style Catering",
+      "reason": "5A 23-24 ownership conflict; both unchanged"
+    },
+    {
+      "name": "Gilligan's Juice Bar",
+      "reason": "Explicit hold; unchanged"
+    },
+    {
+      "name": "Brightshores Health System - Saugeen Shores Hospital Foundation",
+      "reason": "Explicit hold; unchanged"
+    },
+    {
+      "name": "Bellario Café",
+      "location": "4B 10",
+      "reason": "Existing booth claim: Real Time Fun and Rentals"
+    },
+    {
+      "name": "Diesel Creek Supply Co",
+      "location": "4A 24",
+      "reason": "Existing booth claim: Shiva Fashion Inc, Scarborough"
+    },
+    {
+      "name": "Doc MacCheesey",
+      "location": "2A 37",
+      "reason": "Existing booth claim: RONA Doidge Kincardine, Kincardine"
+    },
+    {
+      "name": "Ecoflo - Septic Solutions",
+      "location": "2A 28",
+      "reason": "Existing booth claim: Premier Tech Water & Environment"
+    },
+    {
+      "name": "MJ Burnt Creations, Mike's Diecast, Hill Top Farm",
+      "location": "4B 29",
+      "reason": "Existing booth claim: WASTE MANAGEMNT"
+    },
+    {
+      "name": "Pronano Solutions",
+      "location": "2A 36",
+      "reason": "Existing booth claim: RONA Doidge Kincardine, Kincardine"
+    }
+  ]
+}

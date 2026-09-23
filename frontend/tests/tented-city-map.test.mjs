@@ -111,7 +111,7 @@ function tokensMatch(hay, needle) {
 }
 
 const vendors = loadExhibitors();
-assert.equal(vendors.length, 349);
+assert.equal(vendors.length, 347);
 
 test('Tented City has valid initial dimensions without onLayout', () => {
   const viewport = tentedCityPaintViewport(null, { width: 390, height: 844 });

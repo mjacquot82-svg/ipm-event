@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const expectedCount=JSON.parse(fs.readFileSync(new URL('../public/api/vendors.json',import.meta.url))).vendors.length;
 const base=process.env.IPM_TEST_URL || 'http://127.0.0.1:8767';
 assert.ok(!/^https:\/\/(www\.)?theipm\.ca/.test(base),'Never run against production');
 const out=process.env.IPM_TEST_OUTPUT || new URL('../../.artifacts/sept22/browser', import.meta.url).pathname;fs.mkdirSync(out,{recursive:true});
@@ -14,7 +15,7 @@ try{
   await context.route('**/*',r=>!['GET','OPTIONS'].includes(r.request().method())||/wonderpush|webpushr|google-analytics/.test(r.request().url())?r.abort():r.continue());
   const page=await context.newPage();const requests=[];
   page.on('request',r=>{if(/\/api\/vendors(?:\?|$)/.test(r.url()))requests.push(r.url());});
-  await page.goto(base+'/vendors');await page.getByText('304 vendors',{exact:true}).waitFor({timeout:60000});
+  await page.goto(base+'/vendors');await page.getByText(`${expectedCount} vendors`,{exact:true}).waitFor({timeout:60000});
   for(const [query,name,location,mapped] of [
    ['CAN-AM','Can-Am Demo Area, Montreal, QC','West 4',true],
    ['Valard','Valard Construction, Vaughan','5A 39-42',true],
@@ -27,7 +28,7 @@ try{
   ]){
    await page.getByPlaceholder('Search vendors').fill(query);await page.getByText(name,{exact:true}).waitFor();
    assert.ok((await page.locator('body').innerText()).includes(location),name+' location');
-   await page.getByText('1 of 304 vendors',{exact:true}).waitFor();
+   await page.getByText(`1 of ${expectedCount} vendors`,{exact:true}).waitFor();
    if(mapped){
     await page.getByTestId('vendor-find-on-map').click();await page.waitForURL(/\/map\?/);
     await page.getByTestId('map-selection-title').waitFor();assert.ok((await page.getByTestId('map-selection-title').innerText()).toLowerCase().includes(name.toLowerCase()),name+' correct destination');await page.locator('[data-testid=vendor-booth-highlight], [data-testid=selected-parent-range-fill], [data-testid=selected-booth-highlight], [data-testid=selected-stage-highlight]').first().waitFor({timeout:20000});

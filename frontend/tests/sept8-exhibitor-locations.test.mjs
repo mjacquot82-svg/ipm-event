@@ -144,5 +144,5 @@ test('no duplicate exact names among Sept8 targets', () => {
 
 test('vendor count did not drop below pre-Sept8 baseline', () => {
   assert.ok(vendors.length >= 318, `expected >= 318, got ${vendors.length}`);
-  assert.equal(vendors.length, 349); // September 22 additions and confirmed split-name repairs.
+  assert.equal(vendors.length, 347); // September 22 additions and confirmed split-name repairs.
 });

@@ -1,7 +1,7 @@
 {
-  "vendor_count": 349,
+  "vendor_count": 347,
   "totals": {
-    "confident_lot": 273,
+    "confident_lot": 271,
     "range_or_named": 71,
     "ambiguous": 2,
     "unmatched": 3
@@ -176,7 +176,6 @@
       "Toromont Cat, Concord",
       "Township of North Huron, Wingham",
       "Treemendous Tree Sales & Transplanting",
-      "Clinton",
       "United Rentals, Walkerton",
       "University of Guelph, Guelph",
       "Valard Construction, Vaughan",
@@ -188,8 +187,7 @@
       "Water and Wellness, Walkerton",
       "Weldesign Hardware Inc., Burgessville",
       "Weppler Farm Machinery Ltd., Ayton",
-      "Women’s House Serving Bruce and Grey",
-      "Kincardine",
+      "Women's House Serving Bruce and Grey",
       "Wonderfull Inc., Innisfil",
       "Work N Wear, Markham",
       "Xplore Inc., Markham",
@@ -415,7 +413,7 @@
     },
     {
       "name": "Dodge RAM",
-      "locationLabel": "5A-01-04",
+      "locationLabel": "5A 01-04",
       "class": "ambiguous",
       "reason": "5A-01-04-do-not-exist",
       "rect": null,
