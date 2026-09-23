@@ -29,7 +29,7 @@ const artisan = [
   ['Rachel Joy Jewellery, Kincardine', 'Artisan Tent'], ['Susan Seitz, Walkerton', 'Artisan Tent'],
   ['Wildflower Designs, Shallow Lake', 'Artisan Tent'],
 ];
-const orange = ['Norfolk Drone Services', 'Iron-Haven Structures', 'Doc MacCheesey', 'Turquesa Mexican Food', 'Chepstow & District Lions Club', "Tilly's Fresh Fair Style Lemonade", 'Little Bowl', 'The Back 40 Smoke Box'];
+const orange = ['Norfolk Drone Services', 'Doc MacCheesey', 'Little Bowl'];
 const cancellations = [
   { directory: 'RONA Doidge Kincardine, Kincardine', id: '2c76a419-cfec-4413-9d8c-e1944dda6add', type: 'Outdoor', location: '2A-36-38', map: 'RONA Doidge Kincardine' },
   { directory: 'WASTE MANAGEMNT', id: 'e32ebc10-ce2b-5bac-8bb4-c21650a2effb', type: 'Outdoor', location: '4B-29', map: 'WASTE MANAGEMNT' },
@@ -56,7 +56,7 @@ function loadTypeScript(relative, parent = root) {
 }
 
 test('candidate preserves consolidated data after four confirmed cancellations', () => {
-  assert.equal(catalog.length, 228);
+  assert.equal(catalog.length, 315);
   for (const [name, location] of yellow) {
     const hits = catalog.filter((vendor) => vendor.name === name);
     assert.equal(hits.length, 1, name);
@@ -66,7 +66,7 @@ test('candidate preserves consolidated data after four confirmed cancellations',
     ['Beef Farmers of Ontario & Bruce County Beef Farmers', 'Outdoor', '2B-08–09'],
     ['Beef Farmers of Ontario & Bruce County Beef Farmers', 'Indoor', 'SOUTH-4'],
   ]);
-  assert.equal(catalog.find((v) => v.name === 'Hometown Street Eats, Drayton')?.location, 'WEST-3');
+  assert.equal(catalog.find((v) => v.name === 'Hometown Street Eats, Drayton')?.location, 'Lounge');
   for (const [name, location] of artisan) {
     const hits = catalog.filter((vendor) => vendor.name === name);
     assert.equal(hits.length, 1, name);
@@ -94,7 +94,7 @@ test('map updater preserves destinations and Artisan Tent representation', () =>
     assert.match(mapUpdates, new RegExp(`locationLabel: '${location}'`));
   }
   assert.match(mapUpdates, /booths: \['2B-08', '2B-09'\]/);
-  assert.match(mapUpdates, /booths: \['WEST-3'\]/);
+  assert.match(mapUpdates, /booths: \['Lounge'\]/);
   for (const [name] of artisan) {
     const mapName = name.replaceAll("'", '’');
     assert.ok(mapSource.includes(name) || mapSource.includes(mapName), name);

@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import ts from 'typescript';
 const require=createRequire(import.meta.url);
 const catalog=JSON.parse(fs.readFileSync(new URL('../public/api/vendors.json',import.meta.url)));
-const EXPECTED_VENDOR_COUNT=228;
+const EXPECTED_VENDOR_COUNT=315;
 function load(url,overrides={}) {
  const mod={exports:{}};
  const code=ts.transpileModule(fs.readFileSync(url,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText;
@@ -22,7 +22,7 @@ const {vendorMatchesSearch}=load(new URL('../src/config/vendorMapCrosswalk.ts',i
 test('absolute backend configuration cannot bypass canonical web vendor catalog; all five searches resolve',async()=>{
  const urls=[];const result=await api(async url=>{urls.push(url);return {ok:true,json:async()=>catalog};}).getVendorsData();
  assert.deepEqual(urls,['/api/vendors']);assert.equal(result.data.vendors.length,EXPECTED_VENDOR_COUNT);assert.equal(new Set(result.data.vendors.map(v=>v.id)).size,EXPECTED_VENDOR_COUNT);
- for(const [q,location] of [['CAN-AM','WEST-02'],['Valard','EAST-06'],['Bambrook','1A-05'],['Cottrill','2A-05'],['Ontario Government','3B-19-24']]){
+ for(const [q,location] of [['CAN-AM','West 4'],['Valard','5A 39-42'],['iLGi','1A 05'],['Cottrill','2A-05'],['Ontario Government','3B-19-24']]){
   const matches=result.data.vendors.filter(v=>vendorMatchesSearch(v,q));assert.equal(matches.length,1,q);assert.equal(matches[0].location,location);
  }
 });
@@ -45,7 +45,7 @@ test('staging and production content caches use different namespaces',async()=>{
 });
 test('legacy environment-ambiguous cache is ignored',async()=>{
  const cache=new Map([['ipm_supabase_cache:v1:schedule',JSON.stringify({data:{events:[{id:'11111111-1111-4111-8111-111111111111'}]},lastSuccessfulUpdate:new Date().toISOString()})]]);
- const result=await api(async()=>({ok:true,json:async()=>({events:[],last_updated:'now',total_count:0})}),cache).getScheduleData();
+ const result=await api(async()=>({ok:true,json:async()=>({events:[],last_updated:'now',total_count:0,content_revision:1})}),cache).getScheduleData();
  assert.equal(result.source,'network'); assert.equal(result.data.events.length,0);
 });
 test('staging Schedule cache is not rendered by production offline',async()=>{
@@ -53,7 +53,7 @@ test('staging Schedule cache is not rendered by production offline',async()=>{
  await assert.rejects(() => api(async()=>{throw Error('offline');},cache).getScheduleData(),/offline/);
 });
 test('environment-scoped namespace protects announcement content',async()=>{
- const cache=new Map(); await api(async()=>({ok:true,json:async()=>({announcements:[],total_count:0})}),cache).getAnnouncementsData();
+ const cache=new Map(); await api(async()=>({ok:true,json:async()=>({announcements:[],total_count:0,content_revision:1})}),cache).getAnnouncementsData();
  assert.match([...cache.keys()][0],/ipm_supabase_cache:v2:https_ipm_backend_eoiw_onrender_com:announcements/);
 });
 test('offline fallback uses only the canonical cache',async()=>{

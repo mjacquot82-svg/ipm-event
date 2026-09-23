@@ -38,9 +38,9 @@ test('multi-booth exhibitors collapse to one card with footprint', () => {
 
 test('must-have Sept8 vendors searchable by name with locations', () => {
   const cases = [
-    [/can-am/i, 'WEST-02', 'CAN-AM'],
-    [/valard/i, 'EAST-06', 'Valard'],
-    [/bambrook/i, '1A-05', 'Bambrook'],
+    [/can-am/i, 'West 4', 'CAN-AM'],
+    [/valard/i, '5A 39-42', 'Valard'],
+    [/ilgi/i, '1A 05', 'iLGi'],
     [/cottrill/i, '2A-05', 'Cottrill'],
     [/scatterbrain/i, '4A-13', 'Scatterbrain'],
     [/dj'?s handcrafted/i, '4A-29-30', "DJ's"],

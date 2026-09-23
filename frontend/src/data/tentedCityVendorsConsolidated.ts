@@ -17,8 +17,8 @@ const UPDATED_LOCATIONS: Record<string, LocationUpdate> = {
     tent: null,
   },
   'Hometown Street Eats, Drayton': {
-    locationLabel: 'CKNX Centennial Pavilion (Lounge), West 3',
-    booths: ['WEST-3'],
+    locationLabel: 'Lounge',
+    booths: ['Lounge'],
     tent: null,
   },
 };

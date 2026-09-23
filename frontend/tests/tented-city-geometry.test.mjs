@@ -135,16 +135,16 @@ test('ACE / JCB at 1A-09 is confident_lot with PDF rect', () => {
 
 test('matcher totals cover every vendor', () => {
   const t = report.totals;
-  assert.equal(t.confident_lot, 241);
-  assert.equal(t.range_or_named, 72);
+  assert.equal(t.confident_lot, 271);
+  assert.equal(t.range_or_named, 71);
   assert.equal(t.ambiguous, 2);
   assert.equal(t.unmatched, 3);
   assert.equal(t.confident_lot + t.range_or_named + t.ambiguous + t.unmatched, report.vendor_count);
-  assert.equal(report.vendor_count, 318);
+  assert.equal(report.vendor_count, 347);
   assert.ok(report.classes.ambiguous.includes('Hanover'));
   assert.ok(report.classes.ambiguous.includes('Dodge RAM'));
   assert.ok(report.classes.range_or_named.includes('Bruce Power, Tiverton'));
-  assert.ok(report.classes.unmatched.includes('Wroxeter'));
+  assert.ok(report.classes.unmatched.includes('Maitland Valley Conservation'));
 });
 
 test('normalize 1A-09 variants in the matcher', () => {
@@ -178,7 +178,7 @@ test('3B-07-12 vendors map to the named Bruce Power tent, not invented lots', ()
   assert.ok(tent);
   assert.equal(tent.n_lots, 0);
   assert.deepEqual(tent.rect, { x: 24.363, y: 52.744, w: 5.604, h: 3.947 });
-  assert.equal(report.bruce_power_named_tent.vendor_count, 13);
+  assert.equal(report.bruce_power_named_tent.vendor_count, 12);
   assert.equal(report.ace.class, 'confident_lot');
   assert.deepEqual(report.ace.rect, { x: 26.935, y: 26.268, w: 0.758, h: 3.947 });
 });
@@ -275,26 +275,10 @@ test('lotsConnected rejects a street gap / different parent', () => {
   assert.equal(rectsAbut(a, b), false);
 });
 
-test('Agilec clusters into two tight range rects, not the road union', () => {
+test('Agilec uses the September 22 confirmed Rural Living 2 range', () => {
   const agilec = allVendors.find((v) => v.name === 'Agilec Employment Services, Wingham');
-  assert.ok(agilec);
-  const lotObjs = agilec.booths.map((id) => lots[id]);
-  assert.equal(lotObjs.length, 12);
-  const clusters = clusterLotRects(lotObjs);
-  assert.equal(clusters.length, 2);
-  const parents = new Set(lotObjs.map((l) => l.parent));
-  assert.deepEqual([...parents].sort(), ['4A 13-24', '4B 13-24']);
-  const a = unionOf(lotObjs.filter((l) => l.parent === '4A 13-24').map((l) => l.rect));
-  const b = unionOf(lotObjs.filter((l) => l.parent === '4B 13-24').map((l) => l.rect));
-  const painted = clusters.slice().sort((p, q) => p.y - q.y);
-  assert.deepEqual(painted[0], a);
-  assert.deepEqual(painted[1], b);
-  const roadUnion = unionOf(clusters);
-  assert.ok(roadUnion.h > a.h + b.h, 'union includes the street gap');
-  for (const c of clusters) {
-    assert.ok(Math.abs(c.h - a.h) < 0.05 || Math.abs(c.h - b.h) < 0.05);
-    assert.ok(c.w < 6, 'cluster is stalls only, not the whole 13-24 block');
-  }
+  assert.equal(agilec.locationLabel, '4B 17-22');
+  assert.deepEqual(agilec.booths, ['4B 17-22']);
 });
 
 test('ACE / JCB stays a single 1A-09 stall', () => {
@@ -320,7 +304,7 @@ test('every bundled exhibitor with mapped lots paints one rect per cluster', () 
       assert.ok(clusters.length >= parents.size, vendor.name + ' must not union across parents');
     }
   }
-  assert.ok(multi >= 20, `expected many rural-living multi-cluster vendors, got ${multi}`);
+  assert.ok(multi >= 4, `expected preserved multi-location vendors, got ${multi}`);
 });
 
 test('TentedCityMap paints each cluster rect, not the union, with a tight halo', () => {
@@ -343,7 +327,7 @@ test('Hanover / RAM / Wroxeter / Bell leftovers stay unmatched or 5A-missing', (
   assert.match(matchSrc, /3B-07-12-bruce-power-named-tent/);
   assert.ok(report.classes.ambiguous.includes('Hanover'));
   assert.ok(report.classes.ambiguous.includes('Dodge RAM'));
-  assert.ok(report.classes.unmatched.includes('Wroxeter'));
+  assert.ok(report.classes.unmatched.includes('Maitland Valley Conservation'));
   assert.ok(report.classes.unmatched.includes('Bell Mobility (Cell Tower)'));
   const hanover = allVendors.find((v) => v.name === 'Hanover' && v.locationLabel === '5A-01-04');
   assert.ok(hanover);

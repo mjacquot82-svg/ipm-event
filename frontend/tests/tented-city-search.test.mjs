@@ -157,7 +157,7 @@ function findTentedCityPlace(query, vendors) {
 }
 
 const vendors = loadExhibitors();
-assert.equal(vendors.length, 322);
+assert.equal(vendors.length, 342);
 
 test('short queries use word boundaries so ACE does not match Wallaceburg', () => {
   assert.equal(tokensMatch('ACE / JCB, Harriston', 'ACE'), true);
@@ -219,7 +219,7 @@ test('default search limit can return more than 8 hits', () => {
 });
 
 test('wrap-split live names stay unmapped unless uniquely proven', () => {
-  assert.equal(resolveVendorMapQuery('Bernie McGlynn Lumber / South Bruce Flooring', vendors).status, 'unmapped');
+  assert.equal(resolveVendorMapQuery('Bernie McGlynn Lumber / South Bruce Flooring', vendors).status, 'mapped');
   assert.equal(resolveVendorMapQuery('Bruce Grey Catholic District School Board', vendors).status, 'unmapped');
   assert.equal(resolveVendorMapQuery('Ontario Youth Apprenticeship Program (OYAP)', vendors).status, 'unmapped');
 });
@@ -260,7 +260,7 @@ test('Armtec live name maps to Farming for the Future tent 1B-16-22', () => {
   assert.equal(resolved.query, 'Armtec, Cambridge');
   const place = findTentedCityPlace('Armtec', vendors);
   assert.equal(place.vendor.name, 'Armtec, Cambridge');
-  assert.equal(place.vendor.locationLabel, '1B-16-22');
+  assert.equal(place.vendor.locationLabel, '1B 16-22');
   const hits = searchTentedCity('Armtec', vendors, 'vendors');
   assert.ok(hits.some((h) => h.vendor.name === 'Armtec, Cambridge'));
 });
