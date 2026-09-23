@@ -12,7 +12,7 @@ const audit=read('../scripts/data/sept22-catalog-reconciliation.json');
 const vendors=catalog.vendors;
 const key=s=>s.toLowerCase().replace(/[’‘]/g,"'").replace(/[^a-z0-9]/g,'');
 test('September 22 catalog counts, stable IDs, source assignments, and duplicate variants',()=>{
- assert.equal(catalog.total_count,306);assert.equal(vendors.length,306);
+ assert.equal(catalog.total_count,304);assert.equal(vendors.length,304);
  assert.equal(audit.before_count,226);assert.equal(audit.additions.length,78);assert.equal(audit.updates.length,48);
  assert.equal(new Set(vendors.map(v=>v.id)).size,vendors.length);
  for(const expected of [...audit.updates,...audit.additions]){
@@ -44,12 +44,12 @@ test('shared exhibitors use a whole tent label rather than an invented individua
  }
 });
 test('explicit ambiguity holds and multi-location records remain',()=>{
- for(const [name,location] of [['Bambrook Farm Equipment','1A-05'],['iLGi Canada',''],['Treemendous Tree Sales & Transplanting','5A 32'],["Chris's Barbeque and Country Style Catering",''],['K and S Boat and Sled','4B 34'],["Gilligan's Juice Bar",'CXD'],['Dodge RAM','5A 01-04'],['DC Foods, Tillsonburg','1B-38,4B-12']]){
+ for(const [name,location] of [['iLGi Canada','1A 05'],['Treemendous Tree Sales & Transplanting','5A 32'],["Chris's Barbeque and Country Style Catering",'5A 23-24'],['K and S Boat and Sled','4B 34'],["Gilligan's Juice Bar",'CXD'],['Dodge RAM','5A 01-04'],['DC Foods, Tillsonburg','1B-38,4B-12']]){
   assert.equal(vendors.find(v=>v.name===name)?.location,location,name);
  }
  assert.equal(vendors.filter(v=>v.name==='Dairy Farmers of Ontario').length,4);
  assert.equal(vendors.filter(v=>/Beef Farmers of Ontario/.test(v.name)).length,3);
- for(const re of [/Diesel Creek/,/Ecoflo/,/Bellario/,/Partnership Park/])assert.equal(vendors.filter(v=>re.test(v.name)).length,0,String(re));
+ for(const re of [/Bellario/,/Partnership Park/])assert.equal(vendors.filter(v=>re.test(v.name)).length,0,String(re));
 });
 test('new individually mapped outdoor exhibitors have no overlapping current catalog claims',()=>{
  const mapped=vendors.filter(v=>v.type!=='Indoor').map(v=>{

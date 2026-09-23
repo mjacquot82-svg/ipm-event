@@ -1,0 +1,264 @@
+{
+  "base_sha": "d9bc953928434e5765230347e9fa1dad09977c8a",
+  "before_count": 306,
+  "updates": [
+    {
+      "before": {
+        "id": "4f2e7b8c-17aa-5780-b8f9-3139d37341f6",
+        "name": "Bambrook Farm Equipment",
+        "type": "Outdoor",
+        "location": "1A-05",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      },
+      "after": {
+        "id": "4f2e7b8c-17aa-5780-b8f9-3139d37341f6",
+        "name": "iLGi Canada",
+        "type": "Outdoor",
+        "location": "1A 05",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      }
+    },
+    {
+      "before": {
+        "id": "685b1dc4-b17c-52c2-beac-3a7e0efcae40",
+        "name": "Style Catering, Stratford",
+        "type": "Food",
+        "location": "5A-23-24",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      },
+      "after": {
+        "id": "685b1dc4-b17c-52c2-beac-3a7e0efcae40",
+        "name": "Chris's Barbeque and Country Style Catering",
+        "type": "Food",
+        "location": "5A 23-24",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      }
+    },
+    {
+      "before": {
+        "id": "4d5f1aa5-31ea-558c-916a-62eaf36895a3",
+        "name": "Shiva Fashion Inc, Scarborough",
+        "type": "Outdoor",
+        "location": "4A-24",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      },
+      "after": {
+        "id": "4d5f1aa5-31ea-558c-916a-62eaf36895a3",
+        "name": "Diesel Creek Supply Co",
+        "type": "Outdoor",
+        "location": "4A 24",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      }
+    },
+    {
+      "before": {
+        "id": "ab05b77c-425e-5c91-88b9-6e935972b015",
+        "name": "Premier Tech Water & Environment",
+        "type": "Outdoor",
+        "location": "2A-28",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      },
+      "after": {
+        "id": "ab05b77c-425e-5c91-88b9-6e935972b015",
+        "name": "Ecoflo - Septic Solutions",
+        "type": "Outdoor",
+        "location": "2A 28",
+        "hours_of_operation": "",
+        "days_of_operation": "",
+        "priority": 99
+      }
+    }
+  ],
+  "removed_duplicates": [
+    {
+      "id": "2b4480b3-5c43-428a-9e72-fd537d75e31e",
+      "name": "iLGi Canada",
+      "type": "Outdoor",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    },
+    {
+      "id": "0d60adb3-a62f-4fd3-a301-5cae288d05fe",
+      "name": "Chris's Barbeque and Country Style Catering",
+      "type": "Food",
+      "location": "",
+      "hours_of_operation": "",
+      "days_of_operation": "",
+      "priority": 99
+    }
+  ],
+  "map_updates": [
+    {
+      "before": {
+        "name": "Style Catering, Stratford",
+        "category": "food",
+        "tent": null,
+        "locationLabel": "5A-23-24",
+        "booths": [
+          "5A-23",
+          "5A-24"
+        ],
+        "rect": {
+          "x": 47.55,
+          "y": 55.015,
+          "w": 2.486,
+          "h": 3.854
+        }
+      },
+      "after": {
+        "name": "Chris's Barbeque and Country Style Catering",
+        "category": "food",
+        "tent": null,
+        "locationLabel": "5A 23-24",
+        "booths": [
+          "5A-23",
+          "5A-24"
+        ],
+        "rect": {
+          "x": 47.55,
+          "y": 55.015,
+          "w": 2.486,
+          "h": 3.854
+        }
+      }
+    },
+    {
+      "before": {
+        "name": "Bambrook Farm Equipment",
+        "category": "outdoor",
+        "tent": null,
+        "locationLabel": "1A-05",
+        "booths": [
+          "1A-05"
+        ],
+        "rect": {
+          "x": 25.173,
+          "y": 19.975,
+          "w": 1.243,
+          "h": 3.854
+        }
+      },
+      "after": {
+        "name": "iLGi Canada",
+        "category": "outdoor",
+        "tent": null,
+        "locationLabel": "1A 05",
+        "booths": [
+          "1A-05"
+        ],
+        "rect": {
+          "x": 25.173,
+          "y": 19.975,
+          "w": 1.243,
+          "h": 3.854
+        }
+      }
+    },
+    {
+      "before": {
+        "name": "Premier Tech Water & Environment",
+        "category": "outdoor",
+        "tent": null,
+        "locationLabel": "2A-28",
+        "booths": [
+          "2A-28"
+        ],
+        "rect": {
+          "x": 53.243,
+          "y": 28.735,
+          "w": 1.069,
+          "h": 3.854
+        }
+      },
+      "after": {
+        "name": "Ecoflo - Septic Solutions",
+        "category": "outdoor",
+        "tent": null,
+        "locationLabel": "2A 28",
+        "booths": [
+          "2A-28"
+        ],
+        "rect": {
+          "x": 53.243,
+          "y": 28.735,
+          "w": 1.069,
+          "h": 3.854
+        }
+      }
+    },
+    {
+      "before": {
+        "name": "Shiva Fashion Inc, Scarborough",
+        "category": "outdoor",
+        "tent": null,
+        "locationLabel": "4A-24",
+        "booths": [
+          "4A-24"
+        ],
+        "rect": {
+          "x": 48.794,
+          "y": 46.255,
+          "w": 1.243,
+          "h": 3.854
+        }
+      },
+      "after": {
+        "name": "Diesel Creek Supply Co",
+        "category": "outdoor",
+        "tent": null,
+        "locationLabel": "4A 24",
+        "booths": [
+          "4A-24"
+        ],
+        "rect": {
+          "x": 48.794,
+          "y": 46.255,
+          "w": 1.243,
+          "h": 3.854
+        }
+      }
+    }
+  ],
+  "removed_map_duplicates": [
+    {
+      "name": "Hydro One Education Centre South 4 iLGi Canada, St. Agatha",
+      "category": "outdoor",
+      "tent": null,
+      "locationLabel": "1A-05",
+      "booths": [
+        "1A-05"
+      ],
+      "rect": {
+        "x": 25.173,
+        "y": 19.975,
+        "w": 1.243,
+        "h": 3.854
+      }
+    }
+  ],
+  "remaining_unresolved": [
+    "Gilligan’s Juice Bar",
+    "Brightshores Health System - Saugeen Shores Hospital Foundation",
+    "Bellario Café / Real Time Fun",
+    "Doc MacCheesey / RONA",
+    "MJ Burnt Creations, Mike’s Diecast, Hill Top Farm / WASTE MANAGEMNT",
+    "Pronano Solutions / RONA"
+  ],
+  "after_count": 304
+}

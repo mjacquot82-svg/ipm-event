@@ -101,16 +101,16 @@
     },
     {
       "id": "4f2e7b8c-17aa-5780-b8f9-3139d37341f6",
-      "name": "Bambrook Farm Equipment",
+      "name": "iLGi Canada",
       "type": "Outdoor",
-      "location": "1A-05",
+      "location": "1A 05",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
     },
     {
       "id": "544387d1-37b9-5d43-b747-61f890ea005b",
-      "name": "Bear Tracks Inn & Restaurant, Lion’s Head",
+      "name": "Bear Tracks Inn & Restaurant, Lion\u2019s Head",
       "type": "Food",
       "location": "4A-36",
       "hours_of_operation": "",
@@ -302,15 +302,6 @@
       "name": "Cheesy Monkii Food Truck, Kincardine",
       "type": "Food",
       "location": "3A-04",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
-      "id": "0d60adb3-a62f-4fd3-a301-5cae288d05fe",
-      "name": "Chris's Barbeque and Country Style Catering",
-      "type": "Food",
-      "location": "",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -892,15 +883,6 @@
       "priority": 99
     },
     {
-      "id": "2b4480b3-5c43-428a-9e72-fd537d75e31e",
-      "name": "iLGi Canada",
-      "type": "Outdoor",
-      "location": "",
-      "hours_of_operation": "",
-      "days_of_operation": "",
-      "priority": 99
-    },
-    {
       "id": "ed5c65db-fabc-5e09-bac2-abe5d715abe4",
       "name": "J&H Sales and Service, Chesley",
       "type": "Outdoor",
@@ -911,7 +893,7 @@
     },
     {
       "id": "da60dc40-1348-4a28-bba4-d72f96e9e258",
-      "name": "Jeff’s Catering, Uxbridge",
+      "name": "Jeff\u2019s Catering, Uxbridge",
       "type": "Food",
       "location": "4A-38",
       "hours_of_operation": "",
@@ -1055,7 +1037,7 @@
     },
     {
       "id": "8cec8e17-dd34-54e9-84b2-0a91b529ec24",
-      "name": "Lil’ Country Woodshop Ltd., Alma",
+      "name": "Lil\u2019 Country Woodshop Ltd., Alma",
       "type": "Outdoor",
       "location": "4B-25",
       "hours_of_operation": "",
@@ -1127,7 +1109,7 @@
     },
     {
       "id": "ac62d592-18e5-42b8-94cf-094a5a7fb3cd",
-      "name": "Martin’s Land Management, Blyth",
+      "name": "Martin\u2019s Land Management, Blyth",
       "type": "Outdoor",
       "location": "5A-36",
       "hours_of_operation": "",
@@ -1451,9 +1433,9 @@
     },
     {
       "id": "ab05b77c-425e-5c91-88b9-6e935972b015",
-      "name": "Premier Tech Water & Environment",
+      "name": "Ecoflo - Septic Solutions",
       "type": "Outdoor",
-      "location": "2A-28",
+      "location": "2A 28",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1514,7 +1496,7 @@
     },
     {
       "id": "fa3d7bc2-5810-466d-b041-edf8cffaaf3a",
-      "name": "Rintoul’s Pools & Hot Tubs, Owen Sound",
+      "name": "Rintoul\u2019s Pools & Hot Tubs, Owen Sound",
       "type": "Outdoor",
       "location": "2B-30-31",
       "hours_of_operation": "",
@@ -1532,7 +1514,7 @@
     },
     {
       "id": "c6f51443-af42-5f5b-a721-56003fffc888",
-      "name": "Robert’s Equipment, Chesley",
+      "name": "Robert\u2019s Equipment, Chesley",
       "type": "Outdoor",
       "location": "1A-01-04",
       "hours_of_operation": "",
@@ -1604,9 +1586,9 @@
     },
     {
       "id": "4d5f1aa5-31ea-558c-916a-62eaf36895a3",
-      "name": "Shiva Fashion Inc, Scarborough",
+      "name": "Diesel Creek Supply Co",
       "type": "Outdoor",
-      "location": "4A-24",
+      "location": "4A 24",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1676,9 +1658,9 @@
     },
     {
       "id": "685b1dc4-b17c-52c2-beac-3a7e0efcae40",
-      "name": "Style Catering, Stratford",
+      "name": "Chris's Barbeque and Country Style Catering",
       "type": "Food",
-      "location": "5A-23-24",
+      "location": "5A 23-24",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2171,7 +2153,7 @@
     },
     {
       "id": "f8f1907b-ab01-5e86-bef2-3db06ca6411e",
-      "name": "Candu Energy Inc, an AtkinsRéalis company",
+      "name": "Candu Energy Inc, an AtkinsR\u00e9alis company",
       "type": "Indoor",
       "location": "3B 07-12",
       "hours_of_operation": "",
@@ -2270,7 +2252,7 @@
     },
     {
       "id": "0042678d-478d-59c1-b11e-49249fbac550",
-      "name": "Eastern Ontario Wardens’ Caucus",
+      "name": "Eastern Ontario Wardens\u2019 Caucus",
       "type": "Indoor",
       "location": "3B 39-44",
       "hours_of_operation": "",
@@ -2756,5 +2738,5 @@
     }
   ],
   "last_updated": "2026-09-23T12:00:00.000Z",
-  "total_count": 306
+  "total_count": 304
 }

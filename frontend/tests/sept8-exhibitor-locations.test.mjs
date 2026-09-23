@@ -69,7 +69,7 @@ test('Sept8 backfills present with correct labels', () => {
 test('Sept8 must-adds and optional adds', () => {
   const expect = [
     ['Transit Trailer Ltd', '2A-03-04'],
-    ['Bambrook Farm Equipment', '1A-05'],
+    ['iLGi Canada', '1A 05'],
     ['Teeswater Agro Parts Ltd', '1A-21'],
     ['Maitland Valley Conservation', '5B-10-12'],
     ['DeDell Seeds Inc', '2B-19-20'],
@@ -79,7 +79,7 @@ test('Sept8 must-adds and optional adds', () => {
     ['Heavenly Dreams Ice Cream Inc', '4A-37'],
     ['Metcalf Food & Beverage Inc.', '3B 13-14'],
     ['Ontario Cattle Feeders', '2B-07'],
-    ['Premier Tech Water & Environment', '2A-28'],
+    ['Ecoflo - Septic Solutions', '2A 28'],
     ['Pro Cart', '5A-19'],
     ['Real Time Fun and Rentals', '4B-10'],
     ["What's Cookin' Food Trailer", '2A-12'],
@@ -124,7 +124,7 @@ test('AmSpec Group, Hamilton unchanged (NOT_ON_SEPT_8 hold)', () => {
 test('no duplicate exact names among Sept8 targets', () => {
   const names = [
     'Transit Trailer Ltd',
-    'Bambrook Farm Equipment',
+    'iLGi Canada',
     'Teeswater Agro Parts Ltd',
     'Maitland Valley Conservation',
     'Florence Leather',
@@ -144,5 +144,5 @@ test('no duplicate exact names among Sept8 targets', () => {
 
 test('vendor count did not drop below pre-Sept8 baseline', () => {
   assert.ok(vendors.length >= 318, `expected >= 318, got ${vendors.length}`);
-  assert.equal(vendors.length, 347); // September 22 additions and confirmed split-name repairs.
+  assert.equal(vendors.length, 346); // September 22 additions and confirmed split-name repairs.
 });

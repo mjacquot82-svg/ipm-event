@@ -111,7 +111,7 @@ function tokensMatch(hay, needle) {
 }
 
 const vendors = loadExhibitors();
-assert.equal(vendors.length, 347);
+assert.equal(vendors.length, 346);
 
 test('Tented City has valid initial dimensions without onLayout', () => {
   const viewport = tentedCityPaintViewport(null, { width: 390, height: 844 });
@@ -156,7 +156,7 @@ test('Georgian Bay Funeral Services resolves by exact/normalized name', () => {
 test('unknown Vendor does not guess', () => {
   assert.equal(resolveVendorMapQuery('Kubota', vendors).status, 'unmapped');
   assert.equal(resolveVendorMapQuery('Walkerton Clean Water Centre', vendors).status, 'mapped');
-  assert.equal(resolveVendorMapQuery('iLGi Canada', vendors).status, 'unmapped');
+  assert.equal(resolveVendorMapQuery('iLGi Canada', vendors).status, 'mapped');
   assert.equal(resolveVendorMapQuery('Agriculture and Agri-Food Canada', vendors).status, 'mapped');
   assert.equal(resolveVendorMapQuery('Armtec', vendors).status, 'mapped');
   assert.equal(resolveVendorMapQuery('Armtec', vendors).query, 'Armtec, Cambridge');

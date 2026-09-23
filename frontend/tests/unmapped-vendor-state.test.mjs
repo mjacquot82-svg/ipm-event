@@ -26,7 +26,7 @@ test('MNP approved EAST-2 parent remains trusted',()=>{
  }
 });
 test('single and multi-booth vendors retain normal map actions',()=>{
- for(const name of ['Bambrook Farm Equipment','Ontario Government','Transit Trailer Ltd'])assert.equal(vendorHasTrustedMapGeometry(name),true,name);
+ for(const name of ['iLGi Canada','Ontario Government','Transit Trailer Ltd'])assert.equal(vendorHasTrustedMapGeometry(name),true,name);
 });
 test('raw stale geometry cannot make unavailable footprint trusted',()=>{
  const v=tentedCityVendors.find(v=>v.name==='Maitland Valley Conservation');assert.equal(hasTrustedMapGeometry({kind:'vendor',vendor:{...v,rect:{x:1,y:1,w:5,h:5}}}),false);

@@ -135,12 +135,12 @@ test('ACE / JCB at 1A-09 is confident_lot with PDF rect', () => {
 
 test('matcher totals cover every vendor', () => {
   const t = report.totals;
-  assert.equal(t.confident_lot, 271);
+  assert.equal(t.confident_lot, 270);
   assert.equal(t.range_or_named, 71);
   assert.equal(t.ambiguous, 2);
   assert.equal(t.unmatched, 3);
   assert.equal(t.confident_lot + t.range_or_named + t.ambiguous + t.unmatched, report.vendor_count);
-  assert.equal(report.vendor_count, 347);
+  assert.equal(report.vendor_count, 346);
   assert.ok(report.classes.ambiguous.includes('Hanover'));
   assert.ok(report.classes.ambiguous.includes('Dodge RAM'));
   assert.ok(report.classes.range_or_named.includes('Bruce Power, Tiverton'));
