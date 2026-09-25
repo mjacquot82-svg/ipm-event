@@ -4,7 +4,7 @@
   command = "npm install && npm run build:web"
 
 [build.environment]
-  EXPO_PUBLIC_BACKEND_URL = "https://ipm-backend-eoiw.onrender.com"
+  EXPO_PUBLIC_BACKEND_URL = "https://ipm-staging-backend.onrender.com"
 
 # Production-safe static vendors bake: serve /api/vendors.json for the Vendors
 # tab without proxying to staging Render admin, and without writing production DB.
