@@ -380,10 +380,19 @@ async def traffic_report(repository: AnalyticsReportingRepository, range_name: s
     return await _cached_report("traffic", range_name, load)
 
 
+CONTENT_EVENT_NAMES = {
+    "page_viewed", "session_started", "schedule_viewed", "schedule_event_opened",
+    "schedule_filter_used", "schedule_search_used", "favorite_changed", "map_opened",
+    "vendor_directory_opened", "vendor_search_used", "vendor_filter_used", "queen_archive_opened",
+    "announcement_list_viewed", "announcement_impression", "announcement_opened",
+    "home_quick_action_clicked", "outbound_link_clicked",
+}
+
+
 async def content_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
     async def load() -> dict[str, Any]:
         current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
-        events = await repository.fetch_events(ANALYTICS_EVENT_SCOPE, start, end)
+        events = await repository.fetch_events(ANALYTICS_EVENT_SCOPE, start, end, CONTENT_EVENT_NAMES)
         return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "content": build_content(events)}
     if now is not None:
         return await load()
