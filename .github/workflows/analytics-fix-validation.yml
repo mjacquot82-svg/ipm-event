@@ -1,0 +1,17 @@
+name: Analytics fix validation
+on:
+  pull_request:
+    paths:
+      - 'backend/analytics_reporting.py'
+      - 'tests/test_analytics_reporting.py'
+      - '.github/workflows/analytics-fix-validation.yml'
+jobs:
+  analytics-reporting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r backend/requirements.txt
+      - run: python -m pytest tests/test_analytics_reporting.py -q
