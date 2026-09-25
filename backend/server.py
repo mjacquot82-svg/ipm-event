@@ -1561,6 +1561,54 @@ async def run_ranged_analytics_report(report, range_name: str, current_user: dic
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@api_router.get("/admin/analytics/headline")
+async def admin_analytics_headline(
+    current_user: dict = Depends(get_current_organizer_user),
+):
+    """Fast banquet/dashboard headline counts, aggregated entirely in MongoDB."""
+    require_analytics_reporting_repository(current_user)
+    database = require_mongodb()
+    now = datetime.now(timezone.utc)
+    local_now = now.astimezone(ANALYTICS_ZONE)
+    today_start = datetime.combine(local_now.date(), datetime.min.time(), ANALYTICS_ZONE).astimezone(timezone.utc)
+
+    async def counts(start):
+        session_match = {"eventScope": ANALYTICS_EVENT_SCOPE}
+        event_match = {"eventScope": ANALYTICS_EVENT_SCOPE}
+        if start is not None:
+            session_match["startedAt"] = {"$gte": start, "$lte": now}
+            event_match["receivedAt"] = {"$gte": start, "$lte": now}
+        session_pipeline = [
+            {"$match": session_match},
+            {"$group": {"_id": None, "sessions": {"$sum": 1}, "visitors": {"$addToSet": "$visitorId"}}},
+            {"$project": {"_id": 0, "sessions": 1, "uniqueVisitors": {"$size": "$visitors"}}},
+        ]
+        event_pipeline = [
+            {"$match": {**event_match, "eventName": {"$in": [
+                "app_launched", "page_viewed", "schedule_viewed", "schedule_event_opened",
+                "map_opened", "vendor_directory_opened"
+            ]}}},
+            {"$group": {"_id": "$eventName", "count": {"$sum": 1}}},
+        ]
+        session_rows, event_rows = await asyncio.gather(
+            database.analytics_sessions.aggregate(session_pipeline).to_list(length=1),
+            database.analytics_events.aggregate(event_pipeline).to_list(length=None),
+        )
+        session = session_rows[0] if session_rows else {"sessions": 0, "uniqueVisitors": 0}
+        events = {row["_id"]: row["count"] for row in event_rows}
+        return {
+            "uniqueVisitors": session["uniqueVisitors"], "sessions": session["sessions"],
+            "appLaunches": events.get("app_launched", 0), "pageViews": events.get("page_viewed", 0),
+            "scheduleViews": events.get("schedule_viewed", 0),
+            "scheduleEventOpens": events.get("schedule_event_opened", 0),
+            "mapOpens": events.get("map_opened", 0),
+            "vendorDirectoryOpens": events.get("vendor_directory_opened", 0),
+        }
+
+    today, all_time = await asyncio.gather(counts(today_start), counts(None))
+    return {"snapshotAt": now, "timezone": ANALYTICS_TIMEZONE, "today": today, "allTime": all_time}
+
+
 @api_router.get("/admin/analytics/summary")
 async def admin_analytics_summary(
     range: str = "7d",
