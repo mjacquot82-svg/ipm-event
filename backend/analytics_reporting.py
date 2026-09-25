@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
+from time import monotonic
+
 from collections import Counter, defaultdict
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any, Iterable, Optional, Protocol
@@ -19,6 +22,40 @@ except ModuleNotFoundError:
 
 
 RANGE_DAYS = {"today": 1, "7d": 7, "30d": 30, "all": None}
+REPORT_CACHE_TTL_SECONDS = {"today": 60.0, "7d": 120.0, "30d": 300.0, "all": 300.0}
+_REPORT_CACHE: dict[tuple[str, str], tuple[float, dict[str, Any]]] = {}
+_REPORT_INFLIGHT: dict[tuple[str, str], asyncio.Task] = {}
+
+
+async def _cached_report(kind: str, range_name: str, loader):
+    """Coalesce identical expensive reports and briefly cache completed aggregates.
+
+    The underlying task is shielded so a mobile/browser disconnect cannot cancel
+    the database work and force the next refresh to start the same scan again.
+    """
+    key = (kind, range_name)
+    now = monotonic()
+    cached = _REPORT_CACHE.get(key)
+    ttl = REPORT_CACHE_TTL_SECONDS.get(range_name, 60.0)
+    if cached and now - cached[0] < ttl:
+        return cached[1]
+    task = _REPORT_INFLIGHT.get(key)
+    if task is None or task.done():
+        task = asyncio.create_task(loader())
+        _REPORT_INFLIGHT[key] = task
+    try:
+        result = await asyncio.shield(task)
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        if _REPORT_INFLIGHT.get(key) is task:
+            _REPORT_INFLIGHT.pop(key, None)
+        raise
+    if _REPORT_INFLIGHT.get(key) is task:
+        _REPORT_INFLIGHT.pop(key, None)
+    _REPORT_CACHE[key] = (monotonic(), result)
+    return result
+
 HOURLY_LABELS = tuple(f"{hour:02d}:00" for hour in range(24))
 FEATURE_EVENTS = {
     "schedule": {"schedule_viewed", "schedule_event_opened", "schedule_filter_used", "schedule_search_used", "favorite_changed"},
@@ -308,17 +345,21 @@ def count_in(events: Iterable[dict[str, Any]], event_name: str) -> int:
 
 
 async def summary_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
-    current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
-    collection_started_at = await repository.fetch_collection_started_at(ANALYTICS_EVENT_SCOPE)
-    visitors = await repository.fetch_visitors(ANALYTICS_EVENT_SCOPE)
-    sessions = await repository.fetch_sessions(ANALYTICS_EVENT_SCOPE, start, end)
-    events = await repository.fetch_events(ANALYTICS_EVENT_SCOPE, start, end, {"app_launched", "page_viewed"})
-    return {
-        "range": range_name,
-        "timezone": ANALYTICS_TIMEZONE,
-        "collectionStartedAt": normalize_utc_datetime(collection_started_at) if collection_started_at else None,
-        "overview": build_summary(visitors, sessions, events, start, end),
-    }
+    async def load() -> dict[str, Any]:
+        current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
+        collection_started_at = await repository.fetch_collection_started_at(ANALYTICS_EVENT_SCOPE)
+        visitors = await repository.fetch_visitors(ANALYTICS_EVENT_SCOPE)
+        sessions = await repository.fetch_sessions(ANALYTICS_EVENT_SCOPE, start, end)
+        events = await repository.fetch_events(ANALYTICS_EVENT_SCOPE, start, end, {"app_launched", "page_viewed"})
+        return {
+            "range": range_name,
+            "timezone": ANALYTICS_TIMEZONE,
+            "collectionStartedAt": normalize_utc_datetime(collection_started_at) if collection_started_at else None,
+            "overview": build_summary(visitors, sessions, events, start, end),
+        }
+    if now is not None:
+        return await load()
+    return await _cached_report("summary", range_name, load)
 
 
 async def live_report(repository: AnalyticsReportingRepository, now: Optional[datetime] = None) -> dict[str, Any]:
@@ -329,13 +370,21 @@ async def live_report(repository: AnalyticsReportingRepository, now: Optional[da
 
 
 async def traffic_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
-    current = normalize_now(now); start, end, first, last = reporting_bounds(range_name, current)
-    rollups = await repository.fetch_rollups(ANALYTICS_EVENT_SCOPE, None if first == date.min else first.isoformat(), last.isoformat())
-    events = await repository.fetch_events(ANALYTICS_EVENT_SCOPE, start, end, {"session_started"})
-    return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "traffic": build_traffic(rollups, events, first, last)}
+    async def load() -> dict[str, Any]:
+        current = normalize_now(now); start, end, first, last = reporting_bounds(range_name, current)
+        rollups = await repository.fetch_rollups(ANALYTICS_EVENT_SCOPE, None if first == date.min else first.isoformat(), last.isoformat())
+        events = await repository.fetch_events(ANALYTICS_EVENT_SCOPE, start, end, {"session_started"})
+        return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "traffic": build_traffic(rollups, events, first, last)}
+    if now is not None:
+        return await load()
+    return await _cached_report("traffic", range_name, load)
 
 
 async def content_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
-    current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
-    events = await repository.fetch_events(ANALYTICS_EVENT_SCOPE, start, end)
-    return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "content": build_content(events)}
+    async def load() -> dict[str, Any]:
+        current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
+        events = await repository.fetch_events(ANALYTICS_EVENT_SCOPE, start, end)
+        return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "content": build_content(events)}
+    if now is not None:
+        return await load()
+    return await _cached_report("content", range_name, load)
