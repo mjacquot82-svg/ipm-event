@@ -37,7 +37,7 @@ export type AnalyticsTrafficResponse = {
   range: AnalyticsRange;
   timezone: 'America/Toronto';
   traffic: {
-    byDay: { date: string; visitors: number; sessions: number; launches: number; pageViews: number }[];
+    byDay: { date: string; visitors: number; newVisitors: number; returningVisitors: number; sessions: number; launches: number; pageViews: number }[];
     todayByHour: { hour: string; sessions: number }[];
     selectedRange: { firstLocalDate: string | null; lastLocalDate: string; timezone: string };
   };
