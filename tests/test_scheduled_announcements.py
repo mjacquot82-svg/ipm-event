@@ -34,3 +34,15 @@ def test_cancel_only_operates_on_scheduled_rows():
     platform=(ROOT/"backend"/"platform_services.py").read_text()
     cancel=platform[platform.index("async def cancel(self, schedule_id"):platform.index("async def due(",platform.index("async def cancel(self, schedule_id"))]
     assert '"status": "eq.scheduled"' in cancel
+
+
+def test_test_mode_is_exactly_one_installation_and_never_all():
+    assert 'MODE == "test"' in RUNNER
+    assert 'len(ids)!=1' in RUNNER
+    assert 'ids[0].upper()=="@ALL"' in RUNNER
+    assert 'WONDERPUSH_TEST_CAMPAIGN_ID' in RUNNER
+    assert 'provider.send_test' in RUNNER
+
+def test_broadcast_mode_remains_separate():
+    assert 'MODE not in {"broadcast","test"}' in RUNNER
+    assert 'provider.send_everyone' in RUNNER
