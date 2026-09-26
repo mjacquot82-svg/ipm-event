@@ -419,7 +419,10 @@ async def mongo_traffic_report(repository, range_name: str) -> dict[str, Any]:
     traffic = build_traffic(rollups, [], first, last)
     by_date = {r["date"]: r for r in traffic["byDay"]}
     for row in visitors:
-        if row.get("_id") in by_date:\n            by_date[row["_id"]]["visitors"] = int(row["visitors"])\n            by_date[row["_id"]]["newVisitors"] = int(row.get("newVisitors", 0))\n            by_date[row["_id"]]["returningVisitors"] = max(0, int(row["visitors"]) - int(row.get("newVisitors", 0)))
+        if row.get("_id") in by_date:
+            by_date[row["_id"]]["visitors"] = int(row["visitors"])
+            by_date[row["_id"]]["newVisitors"] = int(row.get("newVisitors", 0))
+            by_date[row["_id"]]["returningVisitors"] = max(0, int(row["visitors"]) - int(row.get("newVisitors", 0)))
     traffic["byDay"] = [by_date[k] for k in sorted(by_date)]
     return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "traffic": traffic}
 
