@@ -1571,8 +1571,8 @@ async def admin_analytics_headline(
         raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")
     database = require_mongodb()
     now = datetime.now(timezone.utc)
-    local_now = now.astimezone(ANALYTICS_ZONE)
-    today_start = datetime.combine(local_now.date(), datetime.min.time(), ANALYTICS_ZONE).astimezone(timezone.utc)
+    local_now = now.astimezone(ZoneInfo(ANALYTICS_TIMEZONE))
+    today_start = datetime.combine(local_now.date(), datetime.min.time(), ZoneInfo(ANALYTICS_TIMEZONE)).astimezone(timezone.utc)
 
     async def counts(start):
         session_match = {"eventScope": ANALYTICS_EVENT_SCOPE}
