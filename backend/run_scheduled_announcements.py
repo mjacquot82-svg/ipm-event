@@ -11,15 +11,27 @@ else:
     from platform_services import (SupabaseAnnouncementService, SupabaseContentClient,
         SupabaseScheduledAnnouncementRepository, SupabaseNotificationDeliveryService, WonderPushClient, WonderPushError)
 
-EVENT="ipm-2026"; SUPABASE_URL="https://hppboivlpqkfhhzfftuu.supabase.co"; APP_URL="https://theipm.ca"
+PRODUCTION_EVENT="ipm-2026"
+PRODUCTION_SUPABASE_URL="https://hppboivlpqkfhhzfftuu.supabase.co"
+PRODUCTION_APP_URL="https://theipm.ca"
 MODE=os.environ.get("SCHEDULED_ANNOUNCEMENTS_MODE","broadcast").strip()
+EVENT=os.environ.get("DEFAULT_EVENT_ID","").strip()
+SUPABASE_URL=os.environ.get("SUPABASE_URL","").strip()
+APP_URL=os.environ.get("PUBLIC_APP_URL","").strip()
 
 def require_environment():
-    if any(os.environ.get(k,"").strip()!=v for k,v in {
-        "SCHEDULED_ANNOUNCEMENTS_LIVE":"true","DEFAULT_EVENT_ID":EVENT,
-        "SUPABASE_URL":SUPABASE_URL,"PUBLIC_APP_URL":APP_URL}.items()):
+    if os.environ.get("SCHEDULED_ANNOUNCEMENTS_LIVE","").strip()!="true":
         raise ValueError("production_guard_failed")
-    if MODE not in {"broadcast","test"}: raise ValueError("production_guard_failed")
+    if MODE not in {"broadcast","test"}:
+        raise ValueError("production_guard_failed")
+    if not EVENT or not SUPABASE_URL or not APP_URL:
+        raise ValueError("production_guard_failed")
+    if MODE == "broadcast" and (
+        EVENT != PRODUCTION_EVENT
+        or SUPABASE_URL != PRODUCTION_SUPABASE_URL
+        or APP_URL != PRODUCTION_APP_URL
+    ):
+        raise ValueError("production_guard_failed")
     key=os.environ.get("SUPABASE_SERVICE_ROLE_KEY","").strip()
     token=os.environ.get("WONDERPUSH_ACCESS_TOKEN","").strip()
     if not key or not token: raise ValueError("production_guard_failed")
