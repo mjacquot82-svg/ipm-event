@@ -270,14 +270,14 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   }, [handleError]);
 
   useEffect(() => { void loadHeadline(); }, [loadHeadline]);
-  useEffect(() => { void loadAggregates(range); }, [range, loadAggregates]);
+  // Legacy aggregate reports are temporarily disabled while they are migrated to MongoDB-side aggregation.
   useEffect(() => {
     void loadLive();
     const timer = setInterval(() => void loadLive(), LIVE_REFRESH_MS);
     return () => clearInterval(timer);
   }, [loadLive]);
 
-  const manualRefresh = () => { void loadAggregates(range, true); void loadLive(); };
+  const manualRefresh = () => { void loadHeadline(); void loadLive(); };
   const overview = summary?.overview;
   const report = content?.content;
   const noData = Boolean(overview && overview.uniqueVisitors === 0 && overview.sessions === 0 && overview.pageViews === 0);
@@ -297,37 +297,6 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
         </MetricGrid>
       </> : null}
     </Section>
-    <Text style={styles.collectionStart}>Analytics collecting since: {formatCollectionStart(summary?.collectionStartedAt)} · “All Time” includes all analytics collected since this date.</Text>
-    <View style={styles.toolbar}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangeRow}>
-        {RANGE_OPTIONS.map((option) => <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected: range === option.value }} style={[styles.rangeButton, range === option.value && styles.rangeButtonActive]} onPress={() => setRange(option.value)}>
-          <Text style={[styles.rangeText, range === option.value && styles.rangeTextActive]}>{option.label}</Text>
-        </Pressable>)}
-      </ScrollView>
-      <Pressable style={styles.refreshButton} onPress={manualRefresh} disabled={refreshing}>
-        {refreshing ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <Feather name="refresh-cw" size={16} color={colors.textSecondary} />}
-        <Text style={styles.refreshText}>Refresh</Text>
-      </Pressable>
-    </View>
-
-    {aggregateLoading && !overview && !report ? <LoadingState label="Loading attendee analytics..." /> : null}
-    {aggregateErrors.length ? <ErrorState title="Some analytics could not be loaded" message={aggregateErrors.join(' · ')} onRetry={manualRefresh} /> : null}
-    {noData ? <EmptyState icon="bar-chart-2" title="No attendee analytics have been recorded yet" message="Metrics and charts will appear after attendees begin using the IPM app." action={{ label: 'Try again', icon: 'refresh-cw', onPress: manualRefresh }} /> : null}
-
-    {overview ? <Section title="Overview" subtitle="Visitors, sessions, launches, and page activity are separate measures." initiallyOpen>
-      <MetricGrid>
-        <MetricCard label="Unique Visitors" value={overview.uniqueVisitors} icon="users" help="Anonymous visitors with a session in this range." />
-        <MetricCard label="New Visitors" value={overview.newVisitors} icon="user-plus" help="First observed during this range." />
-        <MetricCard label="Returning Visitors" value={overview.returningVisitors} icon="repeat" help="Observed before this range and active again." />
-        <MetricCard label="Sessions" value={overview.sessions} icon="clock" help="Distinct visits; one visitor can have several sessions." />
-        <MetricCard label="App Launches" value={overview.launches} icon="play-circle" help="App starts, distinct from sessions and people." />
-        <MetricCard label="Page Views" value={overview.pageViews} icon="file-text" />
-        <MetricCard label="Installed PWA Visitors" value={overview.installedPwaVisitors} icon="smartphone" />
-        <MetricCard label="Browser Visitors" value={overview.browserOnlyVisitors} icon="globe" />
-        <MetricCard label="Average Session" value={formatDuration(overview.averageSessionDurationSeconds)} icon="activity" help={overview.sessionDurationSampleSize ? `Based on ${overview.sessionDurationSampleSize.toLocaleString()} completed sessions.` : 'Shown when reliable completed-session data exists.'} />
-      </MetricGrid>
-    </Section> : null}
-
     <Section title="Notifications" subtitle="All-time notification performance for this event; independent of the engagement date filter." initiallyOpen>
       <NotificationOverview announcements={notificationSummary} reminders={reminderSummary} loading={aggregateLoading} onOpenAnnouncements={onOpenAnnouncements} />
     </Section>
