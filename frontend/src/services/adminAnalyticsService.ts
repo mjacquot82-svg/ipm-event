@@ -94,6 +94,17 @@ export type NotificationAdoptionResponse = {
 
 const rangedPath = (path: string, range: AnalyticsRange) => `${path}?range=${encodeURIComponent(range)}`;
 
+export type AnalyticsHeadlineResponse = {
+  snapshotAt: string;
+  timezone: 'America/Toronto';
+  today: { uniqueVisitors: number; sessions: number; appLaunches: number; pageViews: number; scheduleViews: number; scheduleEventOpens: number; mapOpens: number; vendorDirectoryOpens: number };
+  allTime: { uniqueVisitors: number; sessions: number; appLaunches: number; pageViews: number; scheduleViews: number; scheduleEventOpens: number; mapOpens: number; vendorDirectoryOpens: number };
+};
+
+export function getAnalyticsHeadline() {
+  return adminRequest<AnalyticsHeadlineResponse>('/api/admin/analytics/headline');
+}
+
 export function getAnalyticsSummary(range: AnalyticsRange) {
   return adminRequest<AnalyticsSummaryResponse>(rangedPath('/api/admin/analytics/summary', range));
 }
