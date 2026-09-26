@@ -12,12 +12,14 @@ else:
         SupabaseScheduledAnnouncementRepository, SupabaseNotificationDeliveryService, WonderPushClient, WonderPushError)
 
 EVENT="ipm-2026"; SUPABASE_URL="https://hppboivlpqkfhhzfftuu.supabase.co"; APP_URL="https://theipm.ca"
+MODE=os.environ.get("SCHEDULED_ANNOUNCEMENTS_MODE","broadcast").strip()
 
 def require_environment():
     if any(os.environ.get(k,"").strip()!=v for k,v in {
         "SCHEDULED_ANNOUNCEMENTS_LIVE":"true","DEFAULT_EVENT_ID":EVENT,
         "SUPABASE_URL":SUPABASE_URL,"PUBLIC_APP_URL":APP_URL}.items()):
         raise ValueError("production_guard_failed")
+    if MODE not in {"broadcast","test"}: raise ValueError("production_guard_failed")
     key=os.environ.get("SUPABASE_SERVICE_ROLE_KEY","").strip()
     token=os.environ.get("WONDERPUSH_ACCESS_TOKEN","").strip()
     if not key or not token: raise ValueError("production_guard_failed")
@@ -55,8 +57,16 @@ async def run_once(now=None):
             target=f"{base}?notification_ref={delivery['id']}"
             content=provider.notification_content(published["title"],published["message"],target,image_url=(image or {}).get("url"))
             if hasattr(deliveries,"update_target_url"): await deliveries.update_target_url(delivery["id"],content["target_url"])
-            provider_id=await provider.send_everyone(**content,idempotency_key=f"announcement-{delivery['id']}",
-                expiration_time=(int(expiry.timestamp()) if item.get("expires_at") else None))
+            if MODE == "test":
+                ids=[value.strip() for value in os.environ.get("WONDERPUSH_TEST_INSTALLATION_IDS","").split(",") if value.strip()]
+                campaign=os.environ.get("WONDERPUSH_TEST_CAMPAIGN_ID","").strip()
+                if len(ids)!=1 or not campaign or ids[0].upper()=="@ALL": raise RuntimeError("test_target_guard_failed")
+                provider_id=await provider.send_test(**content,installation_ids=ids,
+                    idempotency_key="scheduled-test-"+delivery["id"],campaign_id=campaign,
+                    expiration_time=(int(expiry.timestamp()) if item.get("expires_at") else None))
+            else:
+                provider_id=await provider.send_everyone(**content,idempotency_key="announcement-"+delivery["id"],
+                    expiration_time=(int(expiry.timestamp()) if item.get("expires_at") else None))
             await deliveries.mark_sent(delivery["id"],provider_id)
             await queue.finish(job["id"],sent=True,event_id=EVENT); result["sent"]+=1
         except Exception as exc:
