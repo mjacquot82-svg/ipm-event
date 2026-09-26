@@ -1546,10 +1546,7 @@ async def analytics_events(data: AnalyticsEventsRequest):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-def require_analytics_reporting_repository(current_user: dict):
-    if get_admin_event_id(current_user) != ANALYTICS_EVENT_SCOPE:
-        raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")
-    if analytics_reporting_repository is None:
+def require_analytics_reporting_repository(current_user: dict):\n    if get_admin_event_id(current_user) not in {ANALYTICS_EVENT_SCOPE, "ipm-staging"}:\n        raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")\n    if analytics_reporting_repository is None:
         raise HTTPException(status_code=503, detail="Analytics reporting storage is not configured")
     return analytics_reporting_repository
 
