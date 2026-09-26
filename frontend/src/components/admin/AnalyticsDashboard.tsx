@@ -234,27 +234,34 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   const loadAggregates = useCallback(async (selectedRange: AnalyticsRange, manual = false) => {
     const request = ++aggregateRequest.current;
     if (manual) setRefreshing(true); else setAggregateLoading(true);
-    const results = await Promise.allSettled([
+
+    const coreResults = await Promise.allSettled([
       getAnalyticsSummary(selectedRange), getAnalyticsTraffic(selectedRange), getAnalyticsContent(selectedRange),
-      getNotificationHealthSummary(), getNotificationSummary(), getReminderSummary(), getPopularReminderEvents(),
     ]);
     if (request !== aggregateRequest.current) return;
-    const errors: string[] = [];
-    if (results[0].status === 'fulfilled') setSummary(results[0].value); else { setSummary(null); errors.push(`Overview: ${handleError(results[0].reason)}`); }
-    if (results[1].status === 'fulfilled') setTraffic(results[1].value); else { setTraffic(null); errors.push(`Traffic: ${handleError(results[1].reason)}`); }
-    if (results[2].status === 'fulfilled') setContent(results[2].value); else { setContent(null); errors.push(`Engagement: ${handleError(results[2].reason)}`); }
-    if (results[3].status === 'fulfilled') setHealthSummary(results[3].value);
-    else {
-      setHealthSummary(null);
-      errors.push(`Notification health: ${handleError(results[3].reason)}`);
-    }
-    if (results[4].status === 'fulfilled') setNotificationSummary(results[4].value);
-    else { setNotificationSummary(null); errors.push(`Notifications: ${handleError(results[4].reason)}`); }
-    if (results[5].status === 'fulfilled') setReminderSummary(results[5].value);
-    else { setReminderSummary(null); errors.push(`Reminders: ${handleError(results[5].reason)}`); }
-    if (results[6].status === 'fulfilled') setPopularReminders(results[6].value);
-    else { setPopularReminders(null); errors.push(`Reminder popularity: ${handleError(results[6].reason)}`); }
-    setAggregateErrors(errors); setAggregateLoading(false); setRefreshing(false);
+    const coreErrors: string[] = [];
+    if (coreResults[0].status === 'fulfilled') setSummary(coreResults[0].value); else { setSummary(null); coreErrors.push(`Overview: ${handleError(coreResults[0].reason)}`); }
+    if (coreResults[1].status === 'fulfilled') setTraffic(coreResults[1].value); else { setTraffic(null); coreErrors.push(`Traffic: ${handleError(coreResults[1].reason)}`); }
+    if (coreResults[2].status === 'fulfilled') setContent(coreResults[2].value); else { setContent(null); coreErrors.push(`Engagement: ${handleError(coreResults[2].reason)}`); }
+    setAggregateErrors(coreErrors);
+    setAggregateLoading(false);
+    setRefreshing(false);
+
+    void Promise.allSettled([
+      getNotificationHealthSummary(), getNotificationSummary(), getReminderSummary(), getPopularReminderEvents(),
+    ]).then((secondaryResults) => {
+      if (request !== aggregateRequest.current) return;
+      const secondaryErrors: string[] = [];
+      if (secondaryResults[0].status === 'fulfilled') setHealthSummary(secondaryResults[0].value);
+      else { setHealthSummary(null); secondaryErrors.push(`Notification health: ${handleError(secondaryResults[0].reason)}`); }
+      if (secondaryResults[1].status === 'fulfilled') setNotificationSummary(secondaryResults[1].value);
+      else { setNotificationSummary(null); secondaryErrors.push(`Notifications: ${handleError(secondaryResults[1].reason)}`); }
+      if (secondaryResults[2].status === 'fulfilled') setReminderSummary(secondaryResults[2].value);
+      else { setReminderSummary(null); secondaryErrors.push(`Reminders: ${handleError(secondaryResults[2].reason)}`); }
+      if (secondaryResults[3].status === 'fulfilled') setPopularReminders(secondaryResults[3].value);
+      else { setPopularReminders(null); secondaryErrors.push(`Reminder popularity: ${handleError(secondaryResults[3].reason)}`); }
+      if (secondaryErrors.length) setAggregateErrors((current) => [...current, ...secondaryErrors]);
+    });
   }, [handleError]);
 
   const loadHeadline = useCallback(async () => {
