@@ -269,7 +269,6 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
     finally { liveInFlight.current = false; }
   }, [handleError]);
 
-  useEffect(() => { void loadHeadline(); }, [loadHeadline]);
   useEffect(() => { void loadAggregates(range); }, [range, loadAggregates]);
   useEffect(() => {
     void loadLive();
@@ -285,19 +284,8 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   const mapSources = useMemo(() => Object.fromEntries((report?.map.sources || []).map((item) => [item.source, item.count])), [report]);\n  const dailyRows = useMemo(() => [...(traffic?.traffic.byDay || [])].sort((a,b) => dailySort === 'date' ? b.date.localeCompare(a.date) : Number(b[dailySort] || 0) - Number(a[dailySort] || 0)), [traffic, dailySort]);
 
   return <ContentPage title="Analytics" subtitle="Aggregate attendee engagement · America/Toronto">
-    <Section title="Headline Analytics" subtitle="Fast MongoDB totals for Today and All Time." initiallyOpen>
-      {headlineError ? <ErrorState message={`Headline analytics: ${headlineError}`} onRetry={() => void loadHeadline()} /> : null}
-      {!headline && !headlineError ? <LoadingState label="Loading headline analytics…" /> : null}
-      {headline ? <>
-        <Text style={styles.miniTitle}>Today</Text><MetricGrid>
-          <MetricCard label="Unique Visitors" value={headline.today.uniqueVisitors} icon="users" /><MetricCard label="Sessions" value={headline.today.sessions} icon="clock" /><MetricCard label="App Launches" value={headline.today.appLaunches} icon="play-circle" /><MetricCard label="Page Views" value={headline.today.pageViews} icon="file-text" /><MetricCard label="Schedule Views" value={headline.today.scheduleViews} icon="calendar" /><MetricCard label="Schedule Event Opens" value={headline.today.scheduleEventOpens} icon="eye" /><MetricCard label="Map Opens" value={headline.today.mapOpens} icon="map" /><MetricCard label="Vendor Directory Opens" value={headline.today.vendorDirectoryOpens} icon="shopping-bag" />
-        </MetricGrid>
-        <Text style={styles.miniTitle}>All Time</Text><MetricGrid>
-          <MetricCard label="Unique Visitors" value={headline.allTime.uniqueVisitors} icon="users" /><MetricCard label="Sessions" value={headline.allTime.sessions} icon="clock" /><MetricCard label="App Launches" value={headline.allTime.appLaunches} icon="play-circle" /><MetricCard label="Page Views" value={headline.allTime.pageViews} icon="file-text" /><MetricCard label="Schedule Views" value={headline.allTime.scheduleViews} icon="calendar" /><MetricCard label="Schedule Event Opens" value={headline.allTime.scheduleEventOpens} icon="eye" /><MetricCard label="Map Opens" value={headline.allTime.mapOpens} icon="map" /><MetricCard label="Vendor Directory Opens" value={headline.allTime.vendorDirectoryOpens} icon="shopping-bag" />
-        </MetricGrid>
-      </> : null}
-    </Section>
     <Text style={styles.collectionStart}>Analytics collecting since: {formatCollectionStart(summary?.collectionStartedAt)} · “All Time” includes all analytics collected since this date.</Text>
+    <Text style={styles.rangeHeading}>View analytics for</Text>
     <View style={styles.toolbar}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangeRow}>
         {RANGE_OPTIONS.map((option) => <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected: range === option.value }} style={[styles.rangeButton, range === option.value && styles.rangeButtonActive]} onPress={() => setRange(option.value)}>
@@ -314,7 +302,21 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
     {aggregateErrors.filter((error) => !error.startsWith('Reminder popularity:')).length ? <ErrorState title="Some analytics could not be loaded" message={aggregateErrors.filter((error) => !error.startsWith('Reminder popularity:')).join(' · ')} onRetry={manualRefresh} /> : null}
     {noData ? <EmptyState icon="bar-chart-2" title="No attendee analytics have been recorded yet" message="Metrics and charts will appear after attendees begin using the IPM app." action={{ label: 'Try again', icon: 'refresh-cw', onPress: manualRefresh }} /> : null}
 
-    {traffic ? <Section title="Daily Breakdown" subtitle="Compare each tracked day. Choose a metric to rank the days." initiallyOpen>
+    {overview ? <Section title="Overview" subtitle="Visitors, sessions, launches, and page activity are separate measures." initiallyOpen>
+      <MetricGrid>
+        <MetricCard label="Unique Visitors" value={overview.uniqueVisitors} icon="users" help="Anonymous visitors with a session in this range." />
+        <MetricCard label="New Visitors" value={overview.newVisitors} icon="user-plus" help="First observed during this range." />
+        <MetricCard label="Returning Visitors" value={overview.returningVisitors} icon="repeat" help="Observed before this range and active again." />
+        <MetricCard label="Sessions" value={overview.sessions} icon="clock" help="Distinct visits; one visitor can have several sessions." />
+        <MetricCard label="App Launches" value={overview.launches} icon="play-circle" help="App starts, distinct from sessions and people." />
+        <MetricCard label="Page Views" value={overview.pageViews} icon="file-text" />
+        <MetricCard label="Installed PWA Visitors" value={overview.installedPwaVisitors} icon="smartphone" />
+        <MetricCard label="Browser Visitors" value={overview.browserOnlyVisitors} icon="globe" />
+        <MetricCard label="Average Session" value={formatDuration(overview.averageSessionDurationSeconds)} icon="activity" help={overview.sessionDurationSampleSize ? `Based on ${overview.sessionDurationSampleSize.toLocaleString()} completed sessions.` : 'Shown when reliable completed-session data exists.'} />
+      </MetricGrid>
+    </Section> : null}
+
+{traffic ? <Section title="Daily Breakdown" subtitle="Compare each tracked day. Choose a metric to rank the days." initiallyOpen>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangeRow}>
         {([
           ['date','Newest'],['newVisitors','New Visitors'],['returningVisitors','Returning Visitors'],['visitors','Unique Visitors'],
@@ -337,21 +339,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
       </ScrollView>
     </Section> : null}
 
-    {overview ? <Section title="Overview" subtitle="Visitors, sessions, launches, and page activity are separate measures." initiallyOpen>
-      <MetricGrid>
-        <MetricCard label="Unique Visitors" value={overview.uniqueVisitors} icon="users" help="Anonymous visitors with a session in this range." />
-        <MetricCard label="New Visitors" value={overview.newVisitors} icon="user-plus" help="First observed during this range." />
-        <MetricCard label="Returning Visitors" value={overview.returningVisitors} icon="repeat" help="Observed before this range and active again." />
-        <MetricCard label="Sessions" value={overview.sessions} icon="clock" help="Distinct visits; one visitor can have several sessions." />
-        <MetricCard label="App Launches" value={overview.launches} icon="play-circle" help="App starts, distinct from sessions and people." />
-        <MetricCard label="Page Views" value={overview.pageViews} icon="file-text" />
-        <MetricCard label="Installed PWA Visitors" value={overview.installedPwaVisitors} icon="smartphone" />
-        <MetricCard label="Browser Visitors" value={overview.browserOnlyVisitors} icon="globe" />
-        <MetricCard label="Average Session" value={formatDuration(overview.averageSessionDurationSeconds)} icon="activity" help={overview.sessionDurationSampleSize ? `Based on ${overview.sessionDurationSampleSize.toLocaleString()} completed sessions.` : 'Shown when reliable completed-session data exists.'} />
-      </MetricGrid>
-    </Section> : null}
-
-    <Section title="Notifications" subtitle="All-time notification performance for this event; independent of the engagement date filter." initiallyOpen>
+        <Section title="Notifications" subtitle="All-time notification performance for this event; independent of the engagement date filter." initiallyOpen>
       <NotificationOverview announcements={notificationSummary} reminders={reminderSummary} loading={aggregateLoading} onOpenAnnouncements={onOpenAnnouncements} />
     </Section>
     <Section title="Most Popular Reminder Events" subtitle="Counts are reminder stars for individual schedule timeslots." initiallyOpen>
@@ -451,6 +439,7 @@ const styles = StyleSheet.create({
   healthAttention: { fontSize: 13, lineHeight: 18, color: colors.error },
   healthWarning: { color: colors.error, padding: 12, borderWidth: 1, borderColor: colors.error, borderRadius: 8 },
   collectionStart: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
+  rangeHeading: { marginTop: 8, marginBottom: 6, fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   toolbar: { flexDirection: 'row', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' },
   rangeRow: { gap: 8 }, rangeButton: { minHeight: 40, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'center' },
   rangeButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary }, rangeText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary }, rangeTextActive: { color: '#FFFFFF' },
