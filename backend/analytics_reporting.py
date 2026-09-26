@@ -443,6 +443,68 @@ CONTENT_EVENT_NAMES = {
 }
 
 
+
+
+def _rank_agg(rows, label_key, total=None, extra=None):
+    total = total if total is not None else sum(int(r.get("count", 0)) for r in rows)
+    out = []
+    for r in rows:
+        label = r.get("_id")
+        if label in (None, ""): continue
+        row = {label_key: label, "count": int(r.get("count", 0)), "share": round(int(r.get("count", 0))/total*100, 2) if total else 0.0}
+        if extra: row.update(extra(r))
+        out.append(row)
+    return out
+
+async def mongo_content_report(repository, range_name: str) -> dict[str, Any]:
+    current = normalize_now(); start, end, _, _ = reporting_bounds(range_name, current)
+    match = {"eventScope": ANALYTICS_EVENT_SCOPE, "receivedAt": {"$lt": end}, "eventName": {"$in": sorted(CONTENT_EVENT_NAMES)}}
+    if start is not None: match["receivedAt"]["$gte"] = start
+    def grouped(name, field):
+        return [{"$match": {"eventName": name}}, {"$group": {"_id": field, "count": {"$sum": 1}}}, {"$sort": {"count": -1, "_id": 1}}]
+    facets = {
+      "counts": [{"$group": {"_id": "$eventName", "count": {"$sum": 1}}}],
+      "pages": [{"$match": {"eventName": "page_viewed"}}, {"$group": {"_id": "$properties.page_id", "count": {"$sum": 1}, "visitors": {"$addToSet": "$visitorId"}}}, {"$sort": {"count": -1}}],
+      "scheduleItems": [{"$match": {"eventName": "schedule_event_opened"}}, {"$group": {"_id": "$properties.schedule_item_id", "count": {"$sum": 1}, "category": {"$first": "$properties.category"}}}, {"$sort": {"count": -1}}],
+      "scheduleFilters": grouped("schedule_filter_used", "$properties.filter_value"),
+      "vendorFilters": grouped("vendor_filter_used", "$properties.filter_value"),
+      "mapLocations": grouped("map_opened", "$properties.location_id"),
+      "mapSources": grouped("map_opened", "$properties.source"),
+      "announcementSources": grouped("announcement_opened", "$properties.source"),
+      "quickActions": grouped("home_quick_action_clicked", "$properties.action_id"),
+      "quickSources": grouped("home_quick_action_clicked", "$properties.source"),
+      "quickTypes": grouped("home_quick_action_clicked", "$properties.destination_type"),
+      "outTypes": grouped("outbound_link_clicked", "$properties.destination_type"),
+      "outDest": [{"$match": {"eventName": "outbound_link_clicked"}}, {"$group": {"_id": "$properties.destination_id", "count": {"$sum": 1}, "destinationType": {"$first": "$properties.destination_type"}}}, {"$sort": {"count": -1}}],
+      "scheduleSearch": [{"$match": {"eventName": "schedule_search_used"}}, {"$group": {"_id": None, "count": {"$sum": 1}, "zero": {"$sum": {"$cond": ["$properties.zero_results", 1, 0]}}}}],
+      "vendorSearch": [{"$match": {"eventName": "vendor_search_used"}}, {"$group": {"_id": None, "count": {"$sum": 1}, "zero": {"$sum": {"$cond": ["$properties.zero_results", 1, 0]}}}}],
+      "favorites": [{"$match": {"eventName": "favorite_changed"}}, {"$group": {"_id": "$properties.action", "count": {"$sum": 1}}}],
+      "queenVisitors": [{"$match": {"eventName": "queen_archive_opened"}}, {"$group": {"_id": "$visitorId"}}, {"$count": "count"}],
+      "ann": [{"$match": {"eventName": {"$in": ["announcement_impression", "announcement_opened"]}}}, {"$group": {"_id": {"id": "$properties.announcement_id", "name": "$eventName"}, "count": {"$sum": 1}}}],
+      "adoption": [{"$group": {"_id": "$visitorId", "events": {"$addToSet": "$eventName"}}}],
+      "days": [{"$group": {"_id": {"date": "$localDate", "name": "$eventName"}, "count": {"$sum": 1}, "visitors": {"$addToSet": "$visitorId"}}}]
+    }
+    rows = await repository.db.analytics_events.aggregate([{"$match": match}, {"$facet": facets}], allowDiskUse=True).to_list(length=1)
+    f = rows[0] if rows else {k: [] for k in facets}
+    counts = {r["_id"]: int(r["count"]) for r in f["counts"]}
+    pages = _rank_agg(f["pages"], "pageId", counts.get("page_viewed", 0), lambda r: {"uniqueVisitors": len([v for v in r.get("visitors", []) if v])})
+    schedule_items = _rank_agg(f["scheduleItems"], "scheduleItemId", counts.get("schedule_event_opened", 0), lambda r: {"category": r.get("category")})
+    ss = f["scheduleSearch"][0] if f["scheduleSearch"] else {"count": 0, "zero": 0}; vs = f["vendorSearch"][0] if f["vendorSearch"] else {"count": 0, "zero": 0}
+    fav = {r["_id"]: int(r["count"]) for r in f["favorites"]}
+    sources = Counter()
+    for r in f["mapSources"]:
+        sources[{"bottom_nav":"bottom_navigation","home_quick_action":"home_quick_action","schedule":"schedule"}.get(r.get("_id"), "other")] += int(r["count"])
+    announcements = {}
+    for r in f["ann"]:
+        aid = r["_id"].get("id")
+        if not aid: continue
+        row = announcements.setdefault(aid, {"announcementId": aid, "impressions": 0, "opens": 0, "openImpressionRate": None})
+        row["impressions" if r["_id"].get("name") == "announcement_impression" else "opens"] += int(r["count"])
+    for row in announcements.values(): row["openImpressionRate"] = round(row["opens"]/row["impressions"]*100, 2) if row["impressions"] else None
+    feature_names = FEATURE_EVENTS; total_visitors = len(f["adoption"]); adoption = []
+    for feature, names in feature_names.items():
+        used = sum(bool(set(r.get("events", [])) & names) for r in f["adoption"])
+        adoption.append({"feature": feature, "visitors": used, "percentage": round(used/total_visitors*100, 2) if total_visitors else 0.0})
 async def content_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
     async def load() -> dict[str, Any]:
         current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
