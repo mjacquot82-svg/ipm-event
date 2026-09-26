@@ -381,6 +381,8 @@ async def mongo_summary_report(repository, range_name: str) -> dict[str, Any]:
         "averageSessionDurationSeconds": round(sum(durations)/len(durations), 2) if durations else None, "sessionDurationSampleSize": len(durations)}}
 
 async def summary_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
+    if now is None and hasattr(repository, "db"):
+        return await _cached_report("summary", range_name, lambda: mongo_summary_report(repository, range_name))
     async def load() -> dict[str, Any]:
         current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
         collection_started_at = await repository.fetch_collection_started_at(ANALYTICS_EVENT_SCOPE)
@@ -440,6 +442,8 @@ async def mongo_traffic_report(repository, range_name: str) -> dict[str, Any]:
     return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "traffic": traffic}
 
 async def traffic_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
+    if now is None and hasattr(repository, "db"):
+        return await _cached_report("traffic", range_name, lambda: mongo_traffic_report(repository, range_name))
     async def load() -> dict[str, Any]:
         current = normalize_now(now); start, end, first, last = reporting_bounds(range_name, current)
         rollups = await repository.fetch_rollups(ANALYTICS_EVENT_SCOPE, None if first == date.min else first.isoformat(), last.isoformat())
@@ -546,6 +550,8 @@ async def mongo_content_report(repository, range_name: str) -> dict[str, Any]:
       "featureAdoption": adoption, "eventDayComparisons": comparisons}}
 
 async def content_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
+    if now is None and hasattr(repository, "db"):
+        return await _cached_report("content", range_name, lambda: mongo_content_report(repository, range_name))
     async def load() -> dict[str, Any]:
         current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
         events = await repository.fetch_events(ANALYTICS_EVENT_SCOPE, start, end, CONTENT_EVENT_NAMES)
