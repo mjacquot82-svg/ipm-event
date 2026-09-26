@@ -505,6 +505,30 @@ async def mongo_content_report(repository, range_name: str) -> dict[str, Any]:
     for feature, names in feature_names.items():
         used = sum(bool(set(r.get("events", [])) & names) for r in f["adoption"])
         adoption.append({"feature": feature, "visitors": used, "percentage": round(used/total_visitors*100, 2) if total_visitors else 0.0})
+    daymap = {}
+    for r in f["days"]:
+        day, name = r["_id"].get("date"), r["_id"].get("name")
+        if not day: continue
+        row = daymap.setdefault(day, {"visitors": set(), "sessions": 0, "pageViews": 0, "scheduleUsage": 0, "vendorUsage": 0, "mapUsage": 0})
+        row["visitors"].update(v for v in r.get("visitors", []) if v); count = int(r["count"])
+        if name == "session_started": row["sessions"] += count
+        if name == "page_viewed": row["pageViews"] += count
+        if name in FEATURE_EVENTS["schedule"]: row["scheduleUsage"] += count
+        if name in FEATURE_EVENTS["vendors"]: row["vendorUsage"] += count
+        if name == "map_opened": row["mapUsage"] += count
+    comparisons = [{"date": day, "visitors": len(row["visitors"]), "sessions": row["sessions"], "pageViews": row["pageViews"], "scheduleUsage": row["scheduleUsage"], "vendorUsage": row["vendorUsage"], "mapUsage": row["mapUsage"]} for day, row in sorted(daymap.items())]
+    quick_total = counts.get("home_quick_action_clicked", 0); out_total = counts.get("outbound_link_clicked", 0)
+    return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "content": {
+      "pages": pages,
+      "schedule": {"opens": counts.get("schedule_viewed",0), "eventOpens": counts.get("schedule_event_opened",0), "mostOpenedEvents": schedule_items, "filters": _rank_agg(f["scheduleFilters"], "filterValue"), "searches": int(ss["count"]), "zeroResultSearches": int(ss["zero"]), "favoritesAdded": fav.get("added",0), "favoritesRemoved": fav.get("removed",0), "mapActions": sources["schedule"]},
+      "vendors": {"directoryOpens": counts.get("vendor_directory_opened",0), "searches": int(vs["count"]), "zeroResultSearches": int(vs["zero"]), "filters": _rank_agg(f["vendorFilters"], "filterValue")},
+      "map": {"opens": counts.get("map_opened",0), "sources": [{"source": s, "count": sources[s]} for s in ("bottom_navigation","home_quick_action","schedule","other")], "locations": _rank_agg(f["mapLocations"], "locationId")},
+      "queenOfTheFurrow": {"archiveOpens": counts.get("queen_archive_opened",0), "uniqueArchiveVisitors": int(f["queenVisitors"][0]["count"]) if f["queenVisitors"] else 0},
+      "announcements": {"listViews": counts.get("announcement_list_viewed",0), "impressions": counts.get("announcement_impression",0), "opens": counts.get("announcement_opened",0), "openSources": _rank_agg(f["announcementSources"], "source"), "ranking": sorted(announcements.values(), key=lambda x: (-x["opens"], -x["impressions"], x["announcementId"]))},
+      "quickActions": {"clicks": quick_total, "actions": _rank_agg(f["quickActions"], "actionId", quick_total), "sources": _rank_agg(f["quickSources"], "source", quick_total), "destinationTypes": _rank_agg(f["quickTypes"], "destinationType", quick_total)},
+      "outboundLinks": {"clicks": out_total, "destinations": _rank_agg(f["outDest"], "destinationId", out_total, lambda r: {"destinationType": r.get("destinationType")}), "destinationTypes": _rank_agg(f["outTypes"], "destinationType", out_total)},
+      "featureAdoption": adoption, "eventDayComparisons": comparisons}}
+
 async def content_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
     async def load() -> dict[str, Any]:
         current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
