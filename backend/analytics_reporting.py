@@ -532,22 +532,25 @@ async def mongo_content_report(repository, range_name: str) -> dict[str, Any]:
         row = announcements.setdefault(aid, {"announcementId": aid, "impressions": 0, "opens": 0, "openImpressionRate": None})
         row["impressions" if r["_id"].get("name") == "announcement_impression" else "opens"] += int(r["count"])
     for row in announcements.values(): row["openImpressionRate"] = round(row["opens"]/row["impressions"]*100, 2) if row["impressions"] else None
-    feature_names = FEATURE_EVENTS; total_visitors = len(f["adoption"]); adoption = []
-    for feature, names in feature_names.items():
-        used = sum(bool(set(r.get("events", [])) & names) for r in f["adoption"])
+    event_visitors = {r["_id"]: int(r["visitors"]) for r in f["adoption"] if r.get("_id")}
+    total_visitors = int(f["totalVisitors"][0]["count"]) if f["totalVisitors"] else 0
+    adoption = []
+    for feature, names in FEATURE_EVENTS.items():
+        used = sum(event_visitors.get(name, 0) for name in names)
         adoption.append({"feature": feature, "visitors": used, "percentage": round(used/total_visitors*100, 2) if total_visitors else 0.0})
+    day_visitors = {r["_id"]: int(r["visitors"]) for r in f["dayVisitors"] if r.get("_id")}
     daymap = {}
     for r in f["days"]:
         day, name = r["_id"].get("date"), r["_id"].get("name")
         if not day: continue
-        row = daymap.setdefault(day, {"visitors": set(), "sessions": 0, "pageViews": 0, "scheduleUsage": 0, "vendorUsage": 0, "mapUsage": 0})
-        row["visitors"].update(v for v in r.get("visitors", []) if v); count = int(r["count"])
+        row = daymap.setdefault(day, {"visitors": day_visitors.get(day, 0), "sessions": 0, "pageViews": 0, "scheduleUsage": 0, "vendorUsage": 0, "mapUsage": 0})
+        count = int(r["count"])
         if name == "session_started": row["sessions"] += count
         if name == "page_viewed": row["pageViews"] += count
         if name in FEATURE_EVENTS["schedule"]: row["scheduleUsage"] += count
         if name in FEATURE_EVENTS["vendors"]: row["vendorUsage"] += count
         if name == "map_opened": row["mapUsage"] += count
-    comparisons = [{"date": day, "visitors": len(row["visitors"]), "sessions": row["sessions"], "pageViews": row["pageViews"], "scheduleUsage": row["scheduleUsage"], "vendorUsage": row["vendorUsage"], "mapUsage": row["mapUsage"]} for day, row in sorted(daymap.items())]
+    comparisons = [{"date": day, **row} for day, row in sorted(daymap.items())]
     quick_total = counts.get("home_quick_action_clicked", 0); out_total = counts.get("outbound_link_clicked", 0)
     return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "content": {
       "pages": pages,
