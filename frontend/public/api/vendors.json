@@ -101,7 +101,7 @@
     },
     {
       "id": "544387d1-37b9-5d43-b747-61f890ea005b",
-      "name": "Bear Tracks Inn & Restaurant, Lion\u2019s Head",
+      "name": "Bear Tracks Inn & Restaurant, Lion’s Head",
       "type": "Food",
       "location": "4A-36",
       "hours_of_operation": "",
@@ -112,7 +112,7 @@
       "id": "33c808d3-5f23-5ac4-ac19-39c5f525d78a",
       "name": "Beef Farmers of Ontario & Bruce County Beef Farmers",
       "type": "Outdoor",
-      "location": "2B-08\u201309",
+      "location": "2B-08–09",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -571,7 +571,7 @@
       "id": "15691f8e-2ecb-4904-8b4f-3ab4ec8f10c5",
       "name": "Fellowship of Christian Farmers",
       "type": "Outdoor",
-      "location": "2A-16\u201317",
+      "location": "2A-16–17",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -598,7 +598,7 @@
       "id": "50bfa217-fb8e-5691-b5e4-a0993415dc21",
       "name": "Florence Leather",
       "type": "Outdoor",
-      "location": "4B-15",
+      "location": "2A-38",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -866,7 +866,7 @@
     },
     {
       "id": "da60dc40-1348-4a28-bba4-d72f96e9e258",
-      "name": "Jeff\u2019s Catering, Uxbridge",
+      "name": "Jeff’s Catering, Uxbridge",
       "type": "Food",
       "location": "4A-38",
       "hours_of_operation": "",
@@ -1010,7 +1010,7 @@
     },
     {
       "id": "8cec8e17-dd34-54e9-84b2-0a91b529ec24",
-      "name": "Lil\u2019 Country Woodshop Ltd., Alma",
+      "name": "Lil’ Country Woodshop Ltd., Alma",
       "type": "Outdoor",
       "location": "4B-25",
       "hours_of_operation": "",
@@ -1082,7 +1082,7 @@
     },
     {
       "id": "ac62d592-18e5-42b8-94cf-094a5a7fb3cd",
-      "name": "Martin\u2019s Land Management, Blyth",
+      "name": "Martin’s Land Management, Blyth",
       "type": "Outdoor",
       "location": "5A-36",
       "hours_of_operation": "",
@@ -1156,7 +1156,7 @@
       "id": "b1280c80-ed82-5b61-a875-4ae2b558a0e0",
       "name": "Mitchell Cycle Inc., Mitchell",
       "type": "Outdoor",
-      "location": "2A-18\u201319",
+      "location": "2A-18–19",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1174,7 +1174,7 @@
       "id": "d4ce21fd-2eb8-5fd8-ab81-8f0776f95886",
       "name": "Mr. Kettle Corn, Campbellville",
       "type": "Food",
-      "location": "5A-11",
+      "location": "4B-03",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -1451,7 +1451,7 @@
     },
     {
       "id": "fa3d7bc2-5810-466d-b041-edf8cffaaf3a",
-      "name": "Rintoul\u2019s Pools & Hot Tubs, Owen Sound",
+      "name": "Rintoul’s Pools & Hot Tubs, Owen Sound",
       "type": "Outdoor",
       "location": "2B-30-31",
       "hours_of_operation": "",
@@ -1469,7 +1469,7 @@
     },
     {
       "id": "c6f51443-af42-5f5b-a721-56003fffc888",
-      "name": "Robert\u2019s Equipment, Chesley",
+      "name": "Robert’s Equipment, Chesley",
       "type": "Outdoor",
       "location": "1A-01-04",
       "hours_of_operation": "",
@@ -2092,7 +2092,7 @@
       "id": "1ce79caf-a959-5a43-8baa-c0c6d6a09528",
       "name": "Set Free Healing",
       "type": "Indoor",
-      "location": "4B 17\u201322",
+      "location": "4B 17–22",
       "hours_of_operation": "",
       "days_of_operation": "",
       "priority": 99
@@ -2243,7 +2243,7 @@
     },
     {
       "id": "f8f1907b-ab01-5e86-bef2-3db06ca6411e",
-      "name": "Candu Energy Inc, an AtkinsR\u00e9alis company",
+      "name": "Candu Energy Inc, an AtkinsRéalis company",
       "type": "Indoor",
       "location": "3B 07-12",
       "hours_of_operation": "",
@@ -2342,7 +2342,7 @@
     },
     {
       "id": "0042678d-478d-59c1-b11e-49249fbac550",
-      "name": "Eastern Ontario Wardens\u2019 Caucus",
+      "name": "Eastern Ontario Wardens’ Caucus",
       "type": "Indoor",
       "location": "3B 39-44",
       "hours_of_operation": "",
