@@ -1572,7 +1572,7 @@ async def admin_analytics_headline(
         raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")
     database = require_mongodb()
     now = datetime.now(timezone.utc)
-    local_now = now.astimezone(ZoneInfo(ANALYTICS_TIMEZONE))
+    local_now = now.astimezone(ZoneInfo("America/Toronto"))
     today_start = datetime.combine(local_now.date(), datetime.min.time(), ZoneInfo(ANALYTICS_TIMEZONE)).astimezone(timezone.utc)
 
     async def counts(start):
@@ -1609,7 +1609,7 @@ async def admin_analytics_headline(
         }
 
     today, all_time = await asyncio.gather(counts(today_start), counts(None))
-    return {"snapshotAt": now, "timezone": ANALYTICS_TIMEZONE, "today": today, "allTime": all_time}
+    return {"snapshotAt": now, "timezone": "America/Toronto", "today": today, "allTime": all_time}
 
 
 @api_router.get("/admin/analytics/summary")
