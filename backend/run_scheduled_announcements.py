@@ -42,13 +42,16 @@ async def run_once(now=None):
             if item.get("expires_at"):
                 expiry=datetime.fromisoformat(str(item["expires_at"]).replace("Z","+00:00"))
                 if expiry<=now: raise RuntimeError("announcement_expired")
-            published=await announcements.set_status(item["id"],"published",EVENT)
             base=f"{APP_URL}/announcements/{item['id']}"
-            image=published.get("image") if isinstance(published.get("image"),dict) else None
-            content=provider.notification_content(published["title"],published["message"],base,image_url=(image or {}).get("url"))
+            image=item.get("image") if isinstance(item.get("image"),dict) else None
+            content=provider.notification_content(item["title"],item["message"],base,image_url=(image or {}).get("url"))
+            # Reserve the one-and-only broad delivery before publishing. If this
+            # uniqueness gate fails, the announcement remains a draft.
             delivery=await deliveries.create_requested(event_id=EVENT,announcement_id=item["id"],audience="everyone",
                 requested_by=f"scheduled:{job['scheduled_by']}",target_url=content["target_url"],
                 notification_title=content["title"],notification_message=content["message"],provider="wonderpush")
+            published=await announcements.set_status(item["id"],"published",EVENT)
+            if not published: raise RuntimeError("publish_failed")
             target=f"{base}?notification_ref={delivery['id']}"
             content=provider.notification_content(published["title"],published["message"],target,image_url=(image or {}).get("url"))
             if hasattr(deliveries,"update_target_url"): await deliveries.update_target_url(delivery["id"],content["target_url"])
