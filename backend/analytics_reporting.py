@@ -512,8 +512,10 @@ async def mongo_content_report(repository, range_name: str) -> dict[str, Any]:
       "favorites": [{"$match": {"eventName": "favorite_changed"}}, {"$group": {"_id": "$properties.action", "count": {"$sum": 1}}}],
       "queenVisitors": [{"$match": {"eventName": "queen_archive_opened"}}, {"$group": {"_id": "$visitorId"}}, {"$count": "count"}],
       "ann": [{"$match": {"eventName": {"$in": ["announcement_impression", "announcement_opened"]}}}, {"$group": {"_id": {"id": "$properties.announcement_id", "name": "$eventName"}, "count": {"$sum": 1}}}],
-      "adoption": [{"$group": {"_id": "$visitorId", "events": {"$addToSet": "$eventName"}}}],
-      "days": [{"$group": {"_id": {"date": "$localDate", "name": "$eventName"}, "count": {"$sum": 1}, "visitors": {"$addToSet": "$visitorId"}}}]
+      "adoption": [{"$group": {"_id": {"visitor": "$visitorId", "name": "$eventName"}}}, {"$group": {"_id": "$_id.name", "visitors": {"$sum": 1}}}],
+      "totalVisitors": [{"$group": {"_id": "$visitorId"}}, {"$count": "count"}],
+      "days": [{"$group": {"_id": {"date": "$localDate", "name": "$eventName"}, "count": {"$sum": 1}}}],
+      "dayVisitors": [{"$group": {"_id": {"date": "$localDate", "visitor": "$visitorId"}}}, {"$group": {"_id": "$_id.date", "visitors": {"$sum": 1}}}]
     }
     rows = await repository.db.analytics_events.aggregate([{"$match": match}, {"$facet": facets}], allowDiskUse=True).to_list(length=1)
     f = rows[0] if rows else {k: [] for k in facets}
