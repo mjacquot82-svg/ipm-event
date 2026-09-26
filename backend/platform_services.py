@@ -1256,6 +1256,75 @@ class SupabaseAnnouncementService:
         return bool(rows)
 
 
+class SupabaseScheduledAnnouncementRepository:
+    """Durable event-scoped queue for future announcement broadcasts."""
+
+    def __init__(self, client: SupabaseContentClient, event_slug: str):
+        self.client = client
+        self.event_slug = event_slug
+
+    async def _event_id(self, event_id: Optional[str] = None) -> str:
+        return await self.client.get_event_id(event_id or self.event_slug)
+
+    async def list(self, event_id: Optional[str] = None) -> list[dict[str, Any]]:
+        resolved = await self._event_id(event_id)
+        return await self.client.request("GET", "/announcement_scheduled_sends", params={
+            "select": "*", "event_id": f"eq.{resolved}", "order": "scheduled_for.asc",
+        })
+
+    async def schedule(self, announcement_id: str, scheduled_for: datetime, scheduled_by: str,
+                       event_id: Optional[str] = None) -> dict[str, Any]:
+        resolved = await self._event_id(event_id)
+        if scheduled_for.tzinfo is None:
+            raise ValueError("scheduled_for must be timezone-aware")
+        when = scheduled_for.astimezone(timezone.utc)
+        if when <= datetime.now(timezone.utc):
+            raise ValueError("scheduled_for must be in the future")
+        rows = await self.client.request("POST", "/announcement_scheduled_sends", json={
+            "event_id": resolved, "announcement_id": announcement_id,
+            "scheduled_for": when.isoformat(), "status": "scheduled", "scheduled_by": scheduled_by,
+        }, headers={"Prefer": "return=representation"})
+        return rows[0]
+
+    async def cancel(self, schedule_id: str, event_id: Optional[str] = None) -> Optional[dict[str, Any]]:
+        resolved = await self._event_id(event_id)
+        rows = await self.client.request("PATCH", "/announcement_scheduled_sends", params={
+            "id": f"eq.{schedule_id}", "event_id": f"eq.{resolved}", "status": "eq.scheduled",
+        }, json={"status": "cancelled", "cancelled_at": datetime.now(timezone.utc).isoformat()},
+        headers={"Prefer": "return=representation"})
+        return rows[0] if rows else None
+
+    async def due(self, now: datetime, event_id: Optional[str] = None) -> list[dict[str, Any]]:
+        resolved = await self._event_id(event_id)
+        return await self.client.request("GET", "/announcement_scheduled_sends", params={
+            "select": "*", "event_id": f"eq.{resolved}", "status": "eq.scheduled",
+            "scheduled_for": f"lte.{now.astimezone(timezone.utc).isoformat()}",
+            "order": "scheduled_for.asc",
+        })
+
+    async def claim(self, schedule_id: str, event_id: Optional[str] = None) -> Optional[dict[str, Any]]:
+        resolved = await self._event_id(event_id)
+        now = datetime.now(timezone.utc).isoformat()
+        rows = await self.client.request("PATCH", "/announcement_scheduled_sends", params={
+            "id": f"eq.{schedule_id}", "event_id": f"eq.{resolved}", "status": "eq.scheduled",
+        }, json={"status": "processing", "claimed_at": now, "updated_at": now},
+        headers={"Prefer": "return=representation"})
+        return rows[0] if rows else None
+
+    async def finish(self, schedule_id: str, *, sent: bool, error_code: Optional[str] = None,
+                     event_id: Optional[str] = None) -> Optional[dict[str, Any]]:
+        resolved = await self._event_id(event_id)
+        now = datetime.now(timezone.utc).isoformat()
+        body = {"status": "sent" if sent else "failed", "updated_at": now,
+                "sent_at" if sent else "failed_at": now}
+        if error_code:
+            body["error_code"] = error_code[:100]
+        rows = await self.client.request("PATCH", "/announcement_scheduled_sends", params={
+            "id": f"eq.{schedule_id}", "event_id": f"eq.{resolved}", "status": "eq.processing",
+        }, json=body, headers={"Prefer": "return=representation"})
+        return rows[0] if rows else None
+
+
 class SupabaseNotificationDeliveryService:
     """Event-scoped persistence for announcement notification attempts."""
 
