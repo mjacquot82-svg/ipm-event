@@ -58,6 +58,9 @@ import {
   logoutOrganizer,
   publishAndSendAnnouncement,
   scheduleAnnouncementSend,
+  getScheduledAnnouncementSends,
+  cancelScheduledAnnouncementSend,
+  AnnouncementScheduledSend,
   OrganizerUser,
   PREVIEW_ONLY_MESSAGE,
   sendAnnouncementTestNotification,
@@ -183,6 +186,7 @@ export default function AdminDashboardScreen() {
   const [announcementSaving, setAnnouncementSaving] = useState(false);
   const [announcementSaveMessage, setAnnouncementSaveMessage] = useState<string | null>(null);
   const [notificationAction, setNotificationAction] = useState<NotificationActionState>(IDLE_NOTIFICATION_STATE);
+  const [scheduledSends, setScheduledSends] = useState<AnnouncementScheduledSend[]>([]);
   const notificationRequestInFlight = useRef(false);
 
   const loadVendors = useCallback(async () => {
@@ -219,6 +223,10 @@ export default function AdminDashboardScreen() {
     try {
       const result = await listAnnouncements();
       setAnnouncements(result.announcements);
+      try {
+        const scheduled = await getScheduledAnnouncementSends();
+        setScheduledSends(scheduled.schedules);
+      } catch { setScheduledSends([]); }
       try {
         const stats = await listAnnouncementDeliveryStats();
         setAnnouncementDeliveryStats(Object.fromEntries([...stats.deliveries].reverse().map((delivery) => [delivery.announcement_id, delivery])));
@@ -767,6 +775,12 @@ export default function AdminDashboardScreen() {
           saving={announcementSaving}
           saveMessage={announcementSaveMessage}
           notificationAction={notificationAction}
+          scheduledSends={scheduledSends}
+          onCancelScheduled={async (schedule) => {
+            if (typeof window !== 'undefined' && !window.confirm('Cancel this scheduled announcement?')) return;
+            try { await cancelScheduledAnnouncementSend(schedule.id); await loadAnnouncements(); }
+            catch (err) { setAnnouncementsError(err instanceof Error ? err.message : 'Unable to cancel scheduled announcement'); }
+          }}
           deliveryStats={announcementDeliveryStats}
           deliveryStatsAvailable={announcementStatsAvailable}
           editingAnnouncement={editingAnnouncement}
@@ -1666,13 +1680,14 @@ function VendorEditor({
 
 function AnnouncementsPage({
   announcements, totalCount, loading, error, search, editorMode, form, saving,
-  saveMessage, notificationAction, deliveryStats, deliveryStatsAvailable,
+  saveMessage, notificationAction, scheduledSends, onCancelScheduled, deliveryStats, deliveryStatsAvailable,
   editingAnnouncement, showTestAction, onSearchChange, onRefresh, onCreate, onEdit, onStatusChange,
   onDelete, onFormChange, onCloseEditor, onSave, onSendTest, onNotifyEveryone, onPreviewSendBlocked, onPreviewPublishBlocked, onUploadImage, onRemoveImage,
 }: {
   announcements: Announcement[]; totalCount: number; loading: boolean; error: string | null;
   search: string; editorMode: AnnouncementEditorMode; form: AnnouncementPayload; saving: boolean;
   saveMessage: string | null; notificationAction: NotificationActionState;
+  scheduledSends: AnnouncementScheduledSend[]; onCancelScheduled: (schedule: AnnouncementScheduledSend) => void;
   deliveryStats: Record<string, AnnouncementDeliveryStats>;
   deliveryStatsAvailable: boolean;
   editingAnnouncement: Announcement | null; showTestAction: boolean; onSearchChange: (value: string) => void;
@@ -1711,6 +1726,17 @@ function AnnouncementsPage({
           onUploadImage={onUploadImage} onRemoveImage={onRemoveImage}
         />
       )}
+      {scheduledSends.some((row) => row.status === 'scheduled' || row.status === 'processing') && <View style={styles.editorPanel}>
+        <Text style={styles.editorTitle}>Scheduled</Text>
+        <Text style={styles.editorSubtitle}>Upcoming announcements will publish and notify attendees automatically.</Text>
+        {scheduledSends.filter((row) => row.status === 'scheduled' || row.status === 'processing').map((row) => {
+          const item = announcements.find((announcement) => announcement.id === row.announcement_id);
+          return <View key={row.id} style={styles.tableRow}>
+            <View style={styles.nameColumn}><Text style={styles.vendorName}>{item?.title || 'Announcement'}</Text><Text style={styles.vendorMeta}>{new Date(row.scheduled_for).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Toronto' })} Eastern Time · {row.status === 'processing' ? 'Sending' : 'Scheduled'}</Text></View>
+            {row.status === 'scheduled' ? <Pressable style={styles.secondaryButton} onPress={() => onCancelScheduled(row)}><Feather name="x-circle" size={16} color={colors.error} /><Text style={styles.secondaryButtonText}>Cancel schedule</Text></Pressable> : <ActivityIndicator />}
+          </View>;
+        })}
+      </View>}
       {loading ? <LoadingState label="Loading announcements..." /> : announcements.length === 0 ? (
         <EmptyState
           icon="message-square"
