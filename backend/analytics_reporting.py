@@ -411,18 +411,31 @@ async def mongo_traffic_report(repository, range_name: str) -> dict[str, Any]:
     current = normalize_now(); start, end, first, last = reporting_bounds(range_name, current)
     rollups = await repository.fetch_rollups(ANALYTICS_EVENT_SCOPE, None if first == date.min else first.isoformat(), last.isoformat())
     match = {"eventScope": ANALYTICS_EVENT_SCOPE, "eventName": "session_started", "receivedAt": {"$lt": end}}
-    if start is not None: match["receivedAt"]["$gte"] = start
+    if start is not None:
+        match["receivedAt"]["$gte"] = start
     visitors = await repository.db.analytics_events.aggregate([
-        {"$match": match}, {"$group": {"_id": {"date": "$localDate", "visitor": "$visitorId"}}},
-        {"$lookup": {"from": "analytics_visitors", "let": {"vid": "$_id.visitor"}, "pipeline": [{"$match": {"$expr": {"$and": [{"$eq": ["$visitorId", "$vid"]}, {"$eq": ["$eventScope", ANALYTICS_EVENT_SCOPE]}]}}}, {"$project": {"_id": 0, "firstSeenAt": 1}}], "as": "visitor"}}, {"$project": {"date": "$_id.date", "firstSeenAt": {"$arrayElemAt": ["$visitor.firstSeenAt", 0]}}}, {"$group": {"_id": "$date", "visitors": {"$sum": 1}, "newVisitors": {"$sum": {"$cond": [{"$eq": [{"$dateToString": {"date": "$firstSeenAt", "format": "%Y-%m-%d", "timezone": ANALYTICS_TIMEZONE}}, "$date"]}, 1, 0]}}}}
+        {"$match": match},
+        {"$group": {"_id": {"date": "$localDate", "visitor": "$visitorId"}}},
+        {"$group": {"_id": "$_id.date", "visitors": {"$sum": 1}}},
     ]).to_list(length=None)
+    first_seen_match = {"eventScope": ANALYTICS_EVENT_SCOPE, "firstSeenAt": {"$lt": end}}
+    if start is not None:
+        first_seen_match["firstSeenAt"]["$gte"] = start
+    new_visitors = await repository.db.analytics_visitors.aggregate([
+        {"$match": first_seen_match},
+        {"$group": {"_id": {"$dateToString": {"date": "$firstSeenAt", "format": "%Y-%m-%d", "timezone": ANALYTICS_TIMEZONE}}, "newVisitors": {"$sum": 1}}},
+    ]).to_list(length=None)
+    new_by_date = {row["_id"]: int(row["newVisitors"]) for row in new_visitors if row.get("_id")}
     traffic = build_traffic(rollups, [], first, last)
     by_date = {r["date"]: r for r in traffic["byDay"]}
     for row in visitors:
-        if row.get("_id") in by_date:
-            by_date[row["_id"]]["visitors"] = int(row["visitors"])
-            by_date[row["_id"]]["newVisitors"] = int(row.get("newVisitors", 0))
-            by_date[row["_id"]]["returningVisitors"] = max(0, int(row["visitors"]) - int(row.get("newVisitors", 0)))
+        day = row.get("_id")
+        if day in by_date:
+            unique = int(row["visitors"])
+            new = min(unique, new_by_date.get(day, 0))
+            by_date[day]["visitors"] = unique
+            by_date[day]["newVisitors"] = new
+            by_date[day]["returningVisitors"] = max(0, unique - new)
     traffic["byDay"] = [by_date[k] for k in sorted(by_date)]
     return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "traffic": traffic}
 
