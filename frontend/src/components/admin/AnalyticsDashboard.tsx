@@ -210,7 +210,8 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   const [popularReminders, setPopularReminders] = useState<PopularReminderEventsResponse | null>(null);
   const [headline, setHeadline] = useState<AnalyticsHeadlineResponse | null>(null);
   const [headlineError, setHeadlineError] = useState<string | null>(null);
-  const [range, setRange] = useState<AnalyticsRange>('7d');\n  const [dailySort, setDailySort] = useState<'date'|'newVisitors'|'returningVisitors'|'visitors'|'sessions'|'launches'|'pageViews'>('date');
+  const [range, setRange] = useState<AnalyticsRange>('7d');
+  const [dailySort, setDailySort] = useState<'date'|'newVisitors'|'returningVisitors'|'visitors'|'sessions'|'launches'|'pageViews'>('date');
   const [summary, setSummary] = useState<AnalyticsSummaryResponse | null>(null);
   const [traffic, setTraffic] = useState<AnalyticsTrafficResponse | null>(null);
   const [content, setContent] = useState<AnalyticsContentResponse | null>(null);
@@ -281,7 +282,8 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   const report = content?.content;
   const noData = Boolean(overview && overview.uniqueVisitors === 0 && overview.sessions === 0 && overview.pageViews === 0);
   const vendorFilters = useMemo(() => Object.fromEntries((report?.vendors.filters || []).map((item) => [item.filterValue, item.count])), [report]);
-  const mapSources = useMemo(() => Object.fromEntries((report?.map.sources || []).map((item) => [item.source, item.count])), [report]);\n  const dailyRows = useMemo(() => [...(traffic?.traffic.byDay || [])].sort((a,b) => dailySort === 'date' ? b.date.localeCompare(a.date) : Number(b[dailySort] || 0) - Number(a[dailySort] || 0)), [traffic, dailySort]);
+  const mapSources = useMemo(() => Object.fromEntries((report?.map.sources || []).map((item) => [item.source, item.count])), [report]);
+  const dailyRows = useMemo(() => [...(traffic?.traffic.byDay || [])].sort((a,b) => dailySort === 'date' ? b.date.localeCompare(a.date) : Number(b[dailySort] || 0) - Number(a[dailySort] || 0)), [traffic, dailySort]);
 
   return <ContentPage title="Analytics" subtitle="Aggregate attendee engagement · America/Toronto">
     <Text style={styles.collectionStart}>Analytics collecting since: {formatCollectionStart(summary?.collectionStartedAt)} · “All Time” includes all analytics collected since this date.</Text>
