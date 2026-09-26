@@ -57,6 +57,7 @@ import {
   listScheduleEvents,
   logoutOrganizer,
   publishAndSendAnnouncement,
+  scheduleAnnouncementSend,
   OrganizerUser,
   PREVIEW_ONLY_MESSAGE,
   sendAnnouncementTestNotification,
@@ -1766,6 +1767,11 @@ function AnnouncementEditor({
   const [confirmPublish, setConfirmPublish] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
+  const [scheduleBusy, setScheduleBusy] = useState(false);
+  const [scheduleMessage, setScheduleMessage] = useState<string | null>(null);
   const isSending = notificationAction.status === 'sending';
   const isPublished = editingAnnouncement?.status === 'published';
   const isArchived = editingAnnouncement?.status === 'archived';
@@ -1914,6 +1920,9 @@ function AnnouncementEditor({
         <Pressable style={[styles.previewButton, (saving || isSending) && styles.buttonDisabled]} onPress={() => setShowPreview(true)} disabled={saving || isSending}>
           <Feather name="eye" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Preview</Text>
         </Pressable>
+        {(!editingAnnouncement || isDraft) && <Pressable style={[styles.secondaryButton, (saving || isSending || scheduleBusy || !hasRequiredContent) && styles.buttonDisabled]} onPress={() => setScheduleOpen(true)} disabled={saving || isSending || scheduleBusy || !hasRequiredContent}>
+          <Feather name="clock" size={17} color={colors.textPrimary} /><Text style={styles.secondaryButtonText}>Schedule for Later</Text>
+        </Pressable>}
         <Pressable style={[styles.saveButton, (saving || isSending || !hasRequiredContent || notificationDisabled) && styles.buttonDisabled]} onPress={() => setConfirmEveryone(true)} disabled={saving || isSending || !hasRequiredContent || notificationDisabled}>
           {isSending ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="bell" size={17} color="#FFFFFF" />}
           <Text style={styles.saveButtonText}>{isSending ? 'Sending...' : 'Send to Attendees'}</Text>
@@ -1935,6 +1944,41 @@ function AnnouncementEditor({
         </Pressable>
       </View>}
 
+      {scheduleMessage && <View style={styles.successNotice}><Feather name="clock" size={16} color={colors.success} /><Text style={styles.successNoticeText}>{scheduleMessage}</Text></View>}
+      <Modal visible={scheduleOpen} transparent animationType="fade" onRequestClose={() => { if (!scheduleBusy) setScheduleOpen(false); }}>
+        <View style={styles.modalBackdrop}><View style={styles.confirmDialog}>
+          <View style={styles.confirmHeader}><View><Text style={styles.confirmTitle}>Schedule announcement</Text><Text style={styles.confirmSubtitle}>Choose when this draft should be published and sent to attendees. Time is interpreted in your browser and stored as an exact UTC instant.</Text></View><Pressable style={styles.iconButton} onPress={() => setScheduleOpen(false)} disabled={scheduleBusy}><Feather name="x" size={18} color={colors.textSecondary} /></Pressable></View>
+          {Platform.OS === 'web' ? <View style={styles.formGrid}>
+            <View style={styles.formField}><FieldLabel label="Date" required /><input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} style={{ padding: 12, borderRadius: 8, border: '1px solid #D7DCE2' }} /></View>
+            <View style={styles.formField}><FieldLabel label="Time" required /><input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} style={{ padding: 12, borderRadius: 8, border: '1px solid #D7DCE2' }} /></View>
+          </View> : <Text style={styles.editorSubtitle}>Scheduling is available in the web admin portal.</Text>}
+          {scheduleDate && scheduleTime ? <Text style={styles.editorSubtitle}>Scheduled for {new Date(`${scheduleDate}T${scheduleTime}:00`).toLocaleString([], { dateStyle: 'full', timeStyle: 'short', timeZone: 'America/Toronto' })} Eastern Time.</Text> : null}
+          <View style={styles.editorActions}><Pressable style={styles.cancelButton} onPress={() => setScheduleOpen(false)} disabled={scheduleBusy}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>
+            <Pressable style={[styles.saveButton, (scheduleBusy || !scheduleDate || !scheduleTime) && styles.buttonDisabled]} disabled={scheduleBusy || !scheduleDate || !scheduleTime} onPress={async () => {
+              if (isDeployPreviewRuntime()) { setScheduleOpen(false); onPreviewSendBlocked(); return; }
+              setScheduleBusy(true);
+              try {
+                let item = editingAnnouncement;
+                if (!item) {
+                  item = await createAnnouncement({ ...form, status: 'draft' });
+                } else if (hasUnsavedChanges) {
+                  item = await updateAnnouncement(item.id, { ...form, status: 'draft' });
+                }
+                const local = new Date(`${scheduleDate}T${scheduleTime}:00`);
+                if (!Number.isFinite(local.getTime()) || local.getTime() <= Date.now()) throw new Error('Choose a future date and time.');
+                await scheduleAnnouncementSend(item.id, local.toISOString());
+                setScheduleMessage(`Scheduled for ${local.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.`);
+                setScheduleOpen(false);
+                onClose();
+              } catch (err) {
+                setScheduleMessage(null);
+                // Reuse the visible announcement error path through an explicit browser alert for this modal-only action.
+                if (typeof window !== 'undefined') window.alert(err instanceof Error ? err.message : 'Unable to schedule announcement');
+              } finally { setScheduleBusy(false); }
+            }}>{scheduleBusy ? <ActivityIndicator color="#FFFFFF" /> : <Feather name="clock" size={17} color="#FFFFFF" />}<Text style={styles.saveButtonText}>{scheduleBusy ? 'Scheduling...' : 'Schedule'}</Text></Pressable>
+          </View>
+        </View></View>
+      </Modal>
       <Modal visible={confirmEveryone} transparent animationType="fade" onRequestClose={() => { if (!isSending) setConfirmEveryone(false); }}>
         <View style={styles.modalBackdrop}>
           <View style={styles.confirmDialog} accessibilityRole="alert">
