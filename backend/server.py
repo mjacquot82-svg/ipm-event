@@ -97,6 +97,7 @@ try:
         ScheduleService,
         SupabaseScheduleService,
         SupabaseAnnouncementService,
+        SupabaseScheduledAnnouncementRepository,
         SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
@@ -112,6 +113,7 @@ except ImportError:
         ScheduleService,
         SupabaseScheduleService,
         SupabaseAnnouncementService,
+        SupabaseScheduledAnnouncementRepository,
         SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
@@ -920,6 +922,7 @@ else:
 announcement_service = None
 announcement_image_storage = None
 notification_delivery_service = None
+scheduled_announcement_repository = None
 notification_registration_repository = None
 if CONTENT_SOURCE == "supabase":
     announcement_service = SupabaseAnnouncementService(
@@ -930,6 +933,9 @@ if CONTENT_SOURCE == "supabase":
     announcement_image_storage = AnnouncementImageStorage(
         supabase_url=SUPABASE_URL,
         service_role_key=SUPABASE_SERVICE_ROLE_KEY,
+    )
+    scheduled_announcement_repository = SupabaseScheduledAnnouncementRepository(
+        schedule_service.client, event_service.get_public_event_id()
     )
     notification_delivery_service = SupabaseNotificationDeliveryService(
         supabase_url=SUPABASE_URL,
