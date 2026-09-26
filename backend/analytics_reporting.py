@@ -405,6 +405,24 @@ async def live_report(repository: AnalyticsReportingRepository, now: Optional[da
     return {"timezone": ANALYTICS_TIMEZONE, "live": build_live(events, sessions, current)}
 
 
+
+
+async def mongo_traffic_report(repository, range_name: str) -> dict[str, Any]:
+    current = normalize_now(); start, end, first, last = reporting_bounds(range_name, current)
+    rollups = await repository.fetch_rollups(ANALYTICS_EVENT_SCOPE, None if first == date.min else first.isoformat(), last.isoformat())
+    match = {"eventScope": ANALYTICS_EVENT_SCOPE, "eventName": "session_started", "receivedAt": {"$lt": end}}
+    if start is not None: match["receivedAt"]["$gte"] = start
+    visitors = await repository.db.analytics_events.aggregate([
+        {"$match": match}, {"$group": {"_id": {"date": "$localDate", "visitor": "$visitorId"}}},
+        {"$group": {"_id": "$_id.date", "visitors": {"$sum": 1}}}
+    ]).to_list(length=None)
+    traffic = build_traffic(rollups, [], first, last)
+    by_date = {r["date"]: r for r in traffic["byDay"]}
+    for row in visitors:
+        if row.get("_id") in by_date: by_date[row["_id"]]["visitors"] = int(row["visitors"])
+    traffic["byDay"] = [by_date[k] for k in sorted(by_date)]
+    return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "traffic": traffic}
+
 async def traffic_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
     async def load() -> dict[str, Any]:
         current = normalize_now(now); start, end, first, last = reporting_bounds(range_name, current)
