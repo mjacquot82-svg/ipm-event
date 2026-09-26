@@ -97,6 +97,7 @@ try:
         ScheduleService,
         SupabaseScheduleService,
         SupabaseAnnouncementService,
+        SupabaseScheduledAnnouncementRepository,
         SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
@@ -112,6 +113,7 @@ except ImportError:
         ScheduleService,
         SupabaseScheduleService,
         SupabaseAnnouncementService,
+        SupabaseScheduledAnnouncementRepository,
         SupabaseNotificationDeliveryService,
         SupabaseVendorService,
         VendorService,
@@ -447,6 +449,28 @@ class AnnouncementPayload(BaseModel):
 
 class AnnouncementStatusPayload(BaseModel):
     status: AnnouncementStatus
+
+class AnnouncementSchedulePayload(BaseModel):
+    scheduled_for: datetime
+
+class AnnouncementScheduledSendResponse(BaseModel):
+    id: str
+    event_id: str
+    announcement_id: str
+    scheduled_for: datetime
+    status: Literal["scheduled", "processing", "sent", "cancelled", "failed"]
+    scheduled_by: str
+    created_at: datetime
+    updated_at: datetime
+    claimed_at: Optional[datetime] = None
+    sent_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    failed_at: Optional[datetime] = None
+    error_code: Optional[str] = None
+
+class AnnouncementScheduledSendsResponse(BaseModel):
+    schedules: List[AnnouncementScheduledSendResponse]
+    total_count: int
 
 class AnnouncementResponse(BaseModel):
     id: str
@@ -920,6 +944,7 @@ else:
 announcement_service = None
 announcement_image_storage = None
 notification_delivery_service = None
+scheduled_announcement_repository = None
 notification_registration_repository = None
 if CONTENT_SOURCE == "supabase":
     announcement_service = SupabaseAnnouncementService(
@@ -930,6 +955,9 @@ if CONTENT_SOURCE == "supabase":
     announcement_image_storage = AnnouncementImageStorage(
         supabase_url=SUPABASE_URL,
         service_role_key=SUPABASE_SERVICE_ROLE_KEY,
+    )
+    scheduled_announcement_repository = SupabaseScheduledAnnouncementRepository(
+        schedule_service.client, event_service.get_public_event_id()
     )
     notification_delivery_service = SupabaseNotificationDeliveryService(
         supabase_url=SUPABASE_URL,
@@ -2083,6 +2111,57 @@ async def set_admin_announcement_status(
     if not announcement:
         raise HTTPException(status_code=404, detail="Announcement not found")
     return announcement
+
+
+@api_router.get("/admin/announcements/scheduled-sends", response_model=AnnouncementScheduledSendsResponse)
+async def list_scheduled_announcement_sends(current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    if scheduled_announcement_repository is None:
+        raise HTTPException(status_code=503, detail="Announcement scheduling is unavailable")
+    rows = await scheduled_announcement_repository.list(get_admin_event_id(current_user))
+    return AnnouncementScheduledSendsResponse(schedules=rows, total_count=len(rows))
+
+
+@api_router.post("/admin/announcements/{announcement_id}/schedule", response_model=AnnouncementScheduledSendResponse)
+async def schedule_announcement_send(announcement_id: str, data: AnnouncementSchedulePayload,
+                                     current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    if scheduled_announcement_repository is None:
+        raise HTTPException(status_code=503, detail="Announcement scheduling is unavailable")
+    event_id = get_admin_event_id(current_user)
+    announcement = await require_announcement_service().get(announcement_id, event_id)
+    if not announcement:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    if announcement.get("status") != "draft":
+        raise HTTPException(status_code=409, detail="Only draft announcements can be scheduled")
+    when = data.scheduled_for
+    if when.tzinfo is None:
+        raise HTTPException(status_code=400, detail="Scheduled time must include a timezone")
+    if announcement.get("expires_at"):
+        expiry = datetime.fromisoformat(str(announcement["expires_at"]).replace("Z", "+00:00"))
+        if when.astimezone(timezone.utc) >= expiry:
+            raise HTTPException(status_code=400, detail="Scheduled time must be before announcement expiry")
+    try:
+        return await scheduled_announcement_repository.schedule(
+            announcement_id, when, current_user.get("display_name") or current_user["username"], event_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 409:
+            raise HTTPException(status_code=409, detail="This announcement already has an active schedule") from exc
+        raise
+
+
+@api_router.delete("/admin/announcements/scheduled-sends/{schedule_id}", response_model=AnnouncementScheduledSendResponse)
+async def cancel_scheduled_announcement_send(schedule_id: str,
+                                              current_user: dict = Depends(get_current_organizer_user)):
+    require_announcement_manager_role(current_user)
+    if scheduled_announcement_repository is None:
+        raise HTTPException(status_code=503, detail="Announcement scheduling is unavailable")
+    row = await scheduled_announcement_repository.cancel(schedule_id, get_admin_event_id(current_user))
+    if not row:
+        raise HTTPException(status_code=409, detail="Scheduled send is no longer cancellable")
+    return row
 
 
 @api_router.delete("/admin/announcements/{announcement_id}", status_code=204)
