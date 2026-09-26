@@ -344,6 +344,42 @@ def count_in(events: Iterable[dict[str, Any]], event_name: str) -> int:
     return sum(event.get("eventName") == event_name for event in events)
 
 
+
+
+async def mongo_summary_report(repository, range_name: str) -> dict[str, Any]:
+    current = normalize_now(); start, end, _, _ = reporting_bounds(range_name, current)
+    sm = {"eventScope": ANALYTICS_EVENT_SCOPE, "startedAt": {"$lt": end}}
+    if start is not None: sm["startedAt"]["$gte"] = start
+    sessions = await repository.db.analytics_sessions.aggregate([
+        {"$match": sm},
+        {"$group": {"_id": "$visitorId", "sessions": {"$sum": 1}, "durations": {"$push": "$durationSeconds"}}}
+    ]).to_list(length=None)
+    visitor_ids = [r["_id"] for r in sessions if r.get("_id")]
+    visitors = await repository.db.analytics_visitors.find(
+        {"eventScope": ANALYTICS_EVENT_SCOPE, "visitorId": {"$in": visitor_ids}},
+        {"_id": 0, "visitorId": 1, "firstSeenAt": 1},
+    ).to_list(length=None)
+    first = {v["visitorId"]: normalize_utc_datetime(v["firstSeenAt"]) for v in visitors if isinstance(v.get("firstSeenAt"), datetime)}
+    new = sum(1 for vid in visitor_ids if vid in first and (start is None or first[vid] >= start) and first[vid] < end)
+    em = {"eventScope": ANALYTICS_EVENT_SCOPE, "receivedAt": {"$lt": end}, "eventName": {"$in": ["app_launched", "page_viewed"]}}
+    if start is not None: em["receivedAt"]["$gte"] = start
+    rows = await repository.db.analytics_events.aggregate([{"$match": em}, {"$facet": {
+        "counts": [{"$group": {"_id": "$eventName", "count": {"$sum": 1}}}],
+        "modes": [{"$match": {"eventName": "app_launched"}}, {"$group": {"_id": {"visitor": "$visitorId", "mode": "$properties.launch_mode"}}}]
+    }}]).to_list(length=1)
+    facet = rows[0] if rows else {"counts": [], "modes": []}
+    counts = {r["_id"]: r["count"] for r in facet["counts"]}
+    installed = {r["_id"]["visitor"] for r in facet["modes"] if r["_id"].get("mode") in {"installed_pwa", "native"}}
+    browser = {r["_id"]["visitor"] for r in facet["modes"] if r["_id"].get("mode") == "browser"} - installed
+    durations = [float(v) for r in sessions for v in r.get("durations", []) if isinstance(v, (int, float)) and v >= 0]
+    metadata = await repository.fetch_collection_started_at(ANALYTICS_EVENT_SCOPE)
+    unique = len(set(visitor_ids))
+    return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "collectionStartedAt": normalize_utc_datetime(metadata) if metadata else None, "overview": {
+        "uniqueVisitors": unique, "newVisitors": new, "returningVisitors": max(0, unique-new),
+        "sessions": sum(r["sessions"] for r in sessions), "launches": counts.get("app_launched", 0), "pageViews": counts.get("page_viewed", 0),
+        "installedPwaVisitors": len(installed), "browserOnlyVisitors": len(browser),
+        "averageSessionDurationSeconds": round(sum(durations)/len(durations), 2) if durations else None, "sessionDurationSampleSize": len(durations)}}
+
 async def summary_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
     async def load() -> dict[str, Any]:
         current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
