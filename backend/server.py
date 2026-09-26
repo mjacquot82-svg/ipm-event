@@ -1573,7 +1573,7 @@ async def admin_analytics_headline(
     database = require_mongodb()
     now = datetime.now(timezone.utc)
     local_now = now.astimezone(ZoneInfo("America/Toronto"))
-    today_start = datetime.combine(local_now.date(), datetime.min.time(), ZoneInfo(ANALYTICS_TIMEZONE)).astimezone(timezone.utc)
+    today_start = datetime.combine(local_now.date(), datetime.min.time(), ZoneInfo("America/Toronto")).astimezone(timezone.utc)
 
     async def counts(start):
         session_match = {"eventScope": ANALYTICS_EVENT_SCOPE}
