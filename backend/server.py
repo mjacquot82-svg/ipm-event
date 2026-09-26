@@ -1566,7 +1566,9 @@ async def admin_analytics_headline(
     current_user: dict = Depends(get_current_organizer_user),
 ):
     """Fast banquet/dashboard headline counts, aggregated entirely in MongoDB."""
-    require_analytics_reporting_repository(current_user)
+    admin_event_id = get_admin_event_id(current_user)
+    if admin_event_id not in {ANALYTICS_EVENT_SCOPE, "ipm-staging"}:
+        raise HTTPException(status_code=403, detail="Analytics are unavailable for this event")
     database = require_mongodb()
     now = datetime.now(timezone.utc)
     local_now = now.astimezone(ANALYTICS_ZONE)
