@@ -349,42 +349,38 @@ def count_in(events: Iterable[dict[str, Any]], event_name: str) -> int:
 async def mongo_summary_report(repository, range_name: str) -> dict[str, Any]:
     current = normalize_now(); start, end, _, _ = reporting_bounds(range_name, current)
     sm = {"eventScope": ANALYTICS_EVENT_SCOPE, "startedAt": {"$lt": end}}
-    if start is not None:
-        sm["startedAt"]["$gte"] = start
-    session_rows = await repository.db.analytics_sessions.aggregate([
-        {"$match": sm},
-        {"$group": {
-            "_id": None,
-            "sessions": {"$sum": 1},
-            "visitors": {"$addToSet": "$visitorId"},
-            "durationTotal": {"$sum": {"$cond": [{"$gte": ["$durationSeconds", 0]}, "$durationSeconds", 0]}},
-            "durationCount": {"$sum": {"$cond": [{"$gte": ["$durationSeconds", 0]}, 1, 0]}},
-        }},
-    ]).to_list(length=1)
-    session = session_rows[0] if session_rows else {"sessions": 0, "visitors": [], "durationTotal": 0, "durationCount": 0}
-    visitor_ids = [vid for vid in session.get("visitors", []) if vid]
-    vm = {"eventScope": ANALYTICS_EVENT_SCOPE, "visitorId": {"$in": visitor_ids}}
-    visitor_rows = await repository.db.analytics_visitors.aggregate([
-        {"$match": vm},
-        {"$group": {"_id": None, "newVisitors": {"$sum": {"$cond": [{"$and": [
-            {"$lt": ["$firstSeenAt", end]},
-            *([{"$gte": ["$firstSeenAt", start]}] if start is not None else []),
-        ]}, 1, 0]}}}},
-    ]).to_list(length=1) if visitor_ids else []
-    new = int(visitor_rows[0].get("newVisitors", 0)) if visitor_rows else 0
+    if start is not None: sm["startedAt"]["$gte"] = start
+    vm = {"eventScope": ANALYTICS_EVENT_SCOPE, "firstSeenAt": {"$lt": end}}
+    if start is not None: vm["firstSeenAt"]["$gte"] = start
     em = {"eventScope": ANALYTICS_EVENT_SCOPE, "receivedAt": {"$lt": end}, "eventName": {"$in": ["app_launched", "page_viewed"]}}
-    if start is not None:
-        em["receivedAt"]["$gte"] = start
-    rows = await repository.db.analytics_events.aggregate([{"$match": em}, {"$facet": {
-        "counts": [{"$group": {"_id": "$eventName", "count": {"$sum": 1}}}],
-        "modes": [{"$match": {"eventName": "app_launched"}}, {"$group": {"_id": {"visitor": "$visitorId", "mode": "$properties.launch_mode"}}}],
-    }}]).to_list(length=1)
-    facet = rows[0] if rows else {"counts": [], "modes": []}
+    if start is not None: em["receivedAt"]["$gte"] = start
+
+    session_rows, new_rows, event_rows, metadata = await asyncio.gather(
+        repository.db.analytics_sessions.aggregate([
+            {"$match": sm},
+            {"$group": {
+                "_id": None, "sessions": {"$sum": 1}, "visitors": {"$addToSet": "$visitorId"},
+                "durationTotal": {"$sum": {"$cond": [{"$gte": ["$durationSeconds", 0]}, "$durationSeconds", 0]}},
+                "durationCount": {"$sum": {"$cond": [{"$gte": ["$durationSeconds", 0]}, 1, 0]}},
+            }},
+        ]).to_list(length=1),
+        repository.db.analytics_visitors.aggregate([
+            {"$match": vm}, {"$count": "newVisitors"},
+        ]).to_list(length=1),
+        repository.db.analytics_events.aggregate([{"$match": em}, {"$facet": {
+            "counts": [{"$group": {"_id": "$eventName", "count": {"$sum": 1}}}],
+            "modes": [{"$match": {"eventName": "app_launched"}}, {"$group": {"_id": {"visitor": "$visitorId", "mode": "$properties.launch_mode"}}}],
+        }}]).to_list(length=1),
+        repository.fetch_collection_started_at(ANALYTICS_EVENT_SCOPE),
+    )
+    session = session_rows[0] if session_rows else {"sessions": 0, "visitors": [], "durationTotal": 0, "durationCount": 0}
+    visitor_ids = {vid for vid in session.get("visitors", []) if vid}
+    new = int(new_rows[0].get("newVisitors", 0)) if new_rows else 0
+    facet = event_rows[0] if event_rows else {"counts": [], "modes": []}
     counts = {r["_id"]: int(r["count"]) for r in facet["counts"]}
     installed = {r["_id"]["visitor"] for r in facet["modes"] if r["_id"].get("mode") in {"installed_pwa", "native"}}
     browser = {r["_id"]["visitor"] for r in facet["modes"] if r["_id"].get("mode") == "browser"} - installed
-    metadata = await repository.fetch_collection_started_at(ANALYTICS_EVENT_SCOPE)
-    unique = len(set(visitor_ids)); duration_count = int(session.get("durationCount", 0)); duration_total = float(session.get("durationTotal", 0))
+    unique = len(visitor_ids); duration_count = int(session.get("durationCount", 0)); duration_total = float(session.get("durationTotal", 0))
     return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "collectionStartedAt": normalize_utc_datetime(metadata) if metadata else None, "overview": {
         "uniqueVisitors": unique, "newVisitors": min(unique, new), "returningVisitors": max(0, unique-new),
         "sessions": int(session.get("sessions", 0)), "launches": counts.get("app_launched", 0), "pageViews": counts.get("page_viewed", 0),
