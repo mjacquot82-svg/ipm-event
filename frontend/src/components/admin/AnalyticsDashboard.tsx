@@ -211,6 +211,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   const [headline, setHeadline] = useState<AnalyticsHeadlineResponse | null>(null);
   const [headlineError, setHeadlineError] = useState<string | null>(null);
   const [range, setRange] = useState<AnalyticsRange>('7d');
+  const [dailySort, setDailySort] = useState<'date'|'newVisitors'|'returningVisitors'|'visitors'|'sessions'|'launches'|'pageViews'>('date');
   const [summary, setSummary] = useState<AnalyticsSummaryResponse | null>(null);
   const [traffic, setTraffic] = useState<AnalyticsTrafficResponse | null>(null);
   const [content, setContent] = useState<AnalyticsContentResponse | null>(null);
@@ -269,35 +270,78 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
     finally { liveInFlight.current = false; }
   }, [handleError]);
 
-  useEffect(() => { void loadHeadline(); }, [loadHeadline]);
-  // Legacy aggregate reports are temporarily disabled while they are migrated to MongoDB-side aggregation.
+  useEffect(() => { void loadAggregates(range); }, [range, loadAggregates]);
   useEffect(() => {
     void loadLive();
     const timer = setInterval(() => void loadLive(), LIVE_REFRESH_MS);
     return () => clearInterval(timer);
   }, [loadLive]);
 
-  const manualRefresh = () => { void loadHeadline(); void loadLive(); };
+  const manualRefresh = () => { void loadAggregates(range, true); void loadLive(); };
   const overview = summary?.overview;
   const report = content?.content;
   const noData = Boolean(overview && overview.uniqueVisitors === 0 && overview.sessions === 0 && overview.pageViews === 0);
   const vendorFilters = useMemo(() => Object.fromEntries((report?.vendors.filters || []).map((item) => [item.filterValue, item.count])), [report]);
   const mapSources = useMemo(() => Object.fromEntries((report?.map.sources || []).map((item) => [item.source, item.count])), [report]);
+  const dailyRows = useMemo(() => [...(traffic?.traffic.byDay || [])].sort((a,b) => dailySort === 'date' ? b.date.localeCompare(a.date) : Number(b[dailySort] || 0) - Number(a[dailySort] || 0)), [traffic, dailySort]);
 
   return <ContentPage title="Analytics" subtitle="Aggregate attendee engagement · America/Toronto">
-    <Section title="Headline Analytics" subtitle="Fast MongoDB totals for Today and All Time." initiallyOpen>
-      {headlineError ? <ErrorState message={`Headline analytics: ${headlineError}`} onRetry={() => void loadHeadline()} /> : null}
-      {!headline && !headlineError ? <LoadingState label="Loading headline analytics…" /> : null}
-      {headline ? <>
-        <Text style={styles.miniTitle}>Today</Text><MetricGrid>
-          <MetricCard label="Unique Visitors" value={headline.today.uniqueVisitors} icon="users" /><MetricCard label="Sessions" value={headline.today.sessions} icon="clock" /><MetricCard label="App Launches" value={headline.today.appLaunches} icon="play-circle" /><MetricCard label="Page Views" value={headline.today.pageViews} icon="file-text" /><MetricCard label="Schedule Views" value={headline.today.scheduleViews} icon="calendar" /><MetricCard label="Schedule Event Opens" value={headline.today.scheduleEventOpens} icon="eye" /><MetricCard label="Map Opens" value={headline.today.mapOpens} icon="map" /><MetricCard label="Vendor Directory Opens" value={headline.today.vendorDirectoryOpens} icon="shopping-bag" />
-        </MetricGrid>
-        <Text style={styles.miniTitle}>All Time</Text><MetricGrid>
-          <MetricCard label="Unique Visitors" value={headline.allTime.uniqueVisitors} icon="users" /><MetricCard label="Sessions" value={headline.allTime.sessions} icon="clock" /><MetricCard label="App Launches" value={headline.allTime.appLaunches} icon="play-circle" /><MetricCard label="Page Views" value={headline.allTime.pageViews} icon="file-text" /><MetricCard label="Schedule Views" value={headline.allTime.scheduleViews} icon="calendar" /><MetricCard label="Schedule Event Opens" value={headline.allTime.scheduleEventOpens} icon="eye" /><MetricCard label="Map Opens" value={headline.allTime.mapOpens} icon="map" /><MetricCard label="Vendor Directory Opens" value={headline.allTime.vendorDirectoryOpens} icon="shopping-bag" />
-        </MetricGrid>
-      </> : null}
-    </Section>
-    <Section title="Notifications" subtitle="All-time notification performance for this event; independent of the engagement date filter." initiallyOpen>
+    <Text style={styles.collectionStart}>Analytics collecting since: {formatCollectionStart(summary?.collectionStartedAt)} · “All Time” includes all analytics collected since this date.</Text>
+    <Text style={styles.rangeHeading}>View analytics for</Text>
+    <View style={styles.toolbar}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangeRow}>
+        {RANGE_OPTIONS.map((option) => <Pressable key={option.value} accessibilityRole="button" accessibilityState={{ selected: range === option.value }} style={[styles.rangeButton, range === option.value && styles.rangeButtonActive]} onPress={() => setRange(option.value)}>
+          <Text style={[styles.rangeText, range === option.value && styles.rangeTextActive]}>{option.label}</Text>
+        </Pressable>)}
+      </ScrollView>
+      <Pressable style={styles.refreshButton} onPress={manualRefresh} disabled={refreshing}>
+        {refreshing ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <Feather name="refresh-cw" size={16} color={colors.textSecondary} />}
+        <Text style={styles.refreshText}>Refresh</Text>
+      </Pressable>
+    </View>
+
+    {aggregateLoading && !overview && !report ? <LoadingState label="Loading attendee analytics..." /> : null}
+    {aggregateErrors.filter((error) => !error.startsWith('Reminder popularity:')).length ? <ErrorState title="Some analytics could not be loaded" message={aggregateErrors.filter((error) => !error.startsWith('Reminder popularity:')).join(' · ')} onRetry={manualRefresh} /> : null}
+    {noData ? <EmptyState icon="bar-chart-2" title="No attendee analytics have been recorded yet" message="Metrics and charts will appear after attendees begin using the IPM app." action={{ label: 'Try again', icon: 'refresh-cw', onPress: manualRefresh }} /> : null}
+
+    {overview ? <Section title="Overview" subtitle="Visitors, sessions, launches, and page activity are separate measures." initiallyOpen>
+      <MetricGrid>
+        <MetricCard label="Unique Visitors" value={overview.uniqueVisitors} icon="users" help="Anonymous visitors with a session in this range." />
+        <MetricCard label="New Visitors" value={overview.newVisitors} icon="user-plus" help="First observed during this range." />
+        <MetricCard label="Returning Visitors" value={overview.returningVisitors} icon="repeat" help="Observed before this range and active again." />
+        <MetricCard label="Sessions" value={overview.sessions} icon="clock" help="Distinct visits; one visitor can have several sessions." />
+        <MetricCard label="App Launches" value={overview.launches} icon="play-circle" help="App starts, distinct from sessions and people." />
+        <MetricCard label="Page Views" value={overview.pageViews} icon="file-text" />
+        <MetricCard label="Installed PWA Visitors" value={overview.installedPwaVisitors} icon="smartphone" />
+        <MetricCard label="Browser Visitors" value={overview.browserOnlyVisitors} icon="globe" />
+        <MetricCard label="Average Session" value={formatDuration(overview.averageSessionDurationSeconds)} icon="activity" help={overview.sessionDurationSampleSize ? `Based on ${overview.sessionDurationSampleSize.toLocaleString()} completed sessions.` : 'Shown when reliable completed-session data exists.'} />
+      </MetricGrid>
+    </Section> : null}
+
+{traffic ? <Section title="Daily Breakdown" subtitle="Compare each tracked day. Choose a metric to rank the days." initiallyOpen>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangeRow}>
+        {([
+          ['date','Newest'],['newVisitors','New Visitors'],['returningVisitors','Returning Visitors'],['visitors','Unique Visitors'],
+          ['sessions','Sessions'],['launches','App Launches'],['pageViews','Page Views']
+        ] as const).map(([key,label]) => <Pressable key={key} style={[styles.rangeButton, dailySort === key && styles.rangeButtonActive]} onPress={() => setDailySort(key)}>
+          <Text style={[styles.rangeText, dailySort === key && styles.rangeTextActive]}>{label}</Text>
+        </Pressable>)}
+      </ScrollView>
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View>
+          <View style={styles.dailyTableRow}>
+            {['Date','New','Returning','Unique','Sessions','Launches','Page Views'].map((label) => <Text key={label} style={[styles.dailyTableCell, styles.dailyTableHeader]}>{label}</Text>)}
+          </View>
+          {dailyRows.map((row) => <View key={row.date} style={styles.dailyTableRow}>
+            <Text style={styles.dailyTableCell}>{row.date}</Text><Text style={styles.dailyTableCell}>{row.newVisitors || 0}</Text>
+            <Text style={styles.dailyTableCell}>{row.returningVisitors || 0}</Text><Text style={styles.dailyTableCell}>{row.visitors}</Text>
+            <Text style={styles.dailyTableCell}>{row.sessions}</Text><Text style={styles.dailyTableCell}>{row.launches}</Text><Text style={styles.dailyTableCell}>{row.pageViews}</Text>
+          </View>)}
+        </View>
+      </ScrollView>
+    </Section> : null}
+
+        <Section title="Notifications" subtitle="All-time notification performance for this event; independent of the engagement date filter." initiallyOpen>
       <NotificationOverview announcements={notificationSummary} reminders={reminderSummary} loading={aggregateLoading} onOpenAnnouncements={onOpenAnnouncements} />
     </Section>
     <Section title="Most Popular Reminder Events" subtitle="Counts are reminder stars for individual schedule timeslots." initiallyOpen>
@@ -397,11 +441,16 @@ const styles = StyleSheet.create({
   healthAttention: { fontSize: 13, lineHeight: 18, color: colors.error },
   healthWarning: { color: colors.error, padding: 12, borderWidth: 1, borderColor: colors.error, borderRadius: 8 },
   collectionStart: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
+  rangeHeading: { marginTop: 8, marginBottom: 6, fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   toolbar: { flexDirection: 'row', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' },
   rangeRow: { gap: 8 }, rangeButton: { minHeight: 40, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'center' },
   rangeButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary }, rangeText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary }, rangeTextActive: { color: '#FFFFFF' },
   refreshButton: { minHeight: 40, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', gap: 8 }, refreshText: { fontWeight: '700', color: colors.textSecondary },
   section: { borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: 'hidden' }, sectionHeader: { minHeight: 72, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, sectionTitleBlock: { flex: 1 }, sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary }, sectionSubtitle: { fontSize: 13, lineHeight: 18, color: colors.textSecondary, marginTop: 4 }, sectionBody: { padding: 16, paddingTop: 0, gap: 16 },
+  dailyTableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border },
+  dailyTableCell: { width: 110, paddingVertical: 10, paddingHorizontal: 8, color: colors.textPrimary, fontSize: 13 },
+  dailyTableHeader: { fontWeight: '700', color: colors.textSecondary },
+
   metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, metricCard: { flexGrow: 1, flexBasis: 190, minWidth: 170, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceElevated, padding: 14 }, metricIcon: { width: 34, height: 34, borderRadius: 8, backgroundColor: colors.surfaceHighlight, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }, metricValue: { fontSize: 22, fontWeight: '800', color: colors.textPrimary }, metricLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginTop: 3 }, metricHelp: { fontSize: 11, lineHeight: 16, color: colors.textMuted, marginTop: 7 },
   inlineEmpty: { color: colors.textMuted, fontSize: 13, paddingVertical: 16, textAlign: 'center' }, rankList: { gap: 12 }, rankRow: { gap: 6 }, rankHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, rankLabel: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.textPrimary }, rankValue: { fontSize: 13, fontWeight: '800', color: colors.primary }, rankDetail: { fontSize: 11, color: colors.textMuted }, barTrack: { height: 7, borderRadius: 4, backgroundColor: colors.surfaceHighlight, overflow: 'hidden' }, barFill: { height: '100%', borderRadius: 4, backgroundColor: colors.primary },
   miniPanel: { flex: 1, minWidth: 260, borderRadius: 8, borderWidth: 1, borderColor: colors.border, padding: 14, gap: 12, backgroundColor: colors.surfaceElevated }, miniTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary }, split: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }, splitCompact: { flexDirection: 'column' },
