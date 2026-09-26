@@ -344,6 +344,42 @@ def count_in(events: Iterable[dict[str, Any]], event_name: str) -> int:
     return sum(event.get("eventName") == event_name for event in events)
 
 
+
+
+async def mongo_summary_report(repository, range_name: str) -> dict[str, Any]:
+    current = normalize_now(); start, end, _, _ = reporting_bounds(range_name, current)
+    sm = {"eventScope": ANALYTICS_EVENT_SCOPE, "startedAt": {"$lt": end}}
+    if start is not None: sm["startedAt"]["$gte"] = start
+    sessions = await repository.db.analytics_sessions.aggregate([
+        {"$match": sm},
+        {"$group": {"_id": "$visitorId", "sessions": {"$sum": 1}, "durations": {"$push": "$durationSeconds"}}}
+    ]).to_list(length=None)
+    visitor_ids = [r["_id"] for r in sessions if r.get("_id")]
+    visitors = await repository.db.analytics_visitors.find(
+        {"eventScope": ANALYTICS_EVENT_SCOPE, "visitorId": {"$in": visitor_ids}},
+        {"_id": 0, "visitorId": 1, "firstSeenAt": 1},
+    ).to_list(length=None)
+    first = {v["visitorId"]: normalize_utc_datetime(v["firstSeenAt"]) for v in visitors if isinstance(v.get("firstSeenAt"), datetime)}
+    new = sum(1 for vid in visitor_ids if vid in first and (start is None or first[vid] >= start) and first[vid] < end)
+    em = {"eventScope": ANALYTICS_EVENT_SCOPE, "receivedAt": {"$lt": end}, "eventName": {"$in": ["app_launched", "page_viewed"]}}
+    if start is not None: em["receivedAt"]["$gte"] = start
+    rows = await repository.db.analytics_events.aggregate([{"$match": em}, {"$facet": {
+        "counts": [{"$group": {"_id": "$eventName", "count": {"$sum": 1}}}],
+        "modes": [{"$match": {"eventName": "app_launched"}}, {"$group": {"_id": {"visitor": "$visitorId", "mode": "$properties.launch_mode"}}}]
+    }}]).to_list(length=1)
+    facet = rows[0] if rows else {"counts": [], "modes": []}
+    counts = {r["_id"]: r["count"] for r in facet["counts"]}
+    installed = {r["_id"]["visitor"] for r in facet["modes"] if r["_id"].get("mode") in {"installed_pwa", "native"}}
+    browser = {r["_id"]["visitor"] for r in facet["modes"] if r["_id"].get("mode") == "browser"} - installed
+    durations = [float(v) for r in sessions for v in r.get("durations", []) if isinstance(v, (int, float)) and v >= 0]
+    metadata = await repository.fetch_collection_started_at(ANALYTICS_EVENT_SCOPE)
+    unique = len(set(visitor_ids))
+    return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "collectionStartedAt": normalize_utc_datetime(metadata) if metadata else None, "overview": {
+        "uniqueVisitors": unique, "newVisitors": new, "returningVisitors": max(0, unique-new),
+        "sessions": sum(r["sessions"] for r in sessions), "launches": counts.get("app_launched", 0), "pageViews": counts.get("page_viewed", 0),
+        "installedPwaVisitors": len(installed), "browserOnlyVisitors": len(browser),
+        "averageSessionDurationSeconds": round(sum(durations)/len(durations), 2) if durations else None, "sessionDurationSampleSize": len(durations)}}
+
 async def summary_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
     async def load() -> dict[str, Any]:
         current = normalize_now(now); start, end, _, _ = reporting_bounds(range_name, current)
@@ -369,6 +405,24 @@ async def live_report(repository: AnalyticsReportingRepository, now: Optional[da
     return {"timezone": ANALYTICS_TIMEZONE, "live": build_live(events, sessions, current)}
 
 
+
+
+async def mongo_traffic_report(repository, range_name: str) -> dict[str, Any]:
+    current = normalize_now(); start, end, first, last = reporting_bounds(range_name, current)
+    rollups = await repository.fetch_rollups(ANALYTICS_EVENT_SCOPE, None if first == date.min else first.isoformat(), last.isoformat())
+    match = {"eventScope": ANALYTICS_EVENT_SCOPE, "eventName": "session_started", "receivedAt": {"$lt": end}}
+    if start is not None: match["receivedAt"]["$gte"] = start
+    visitors = await repository.db.analytics_events.aggregate([
+        {"$match": match}, {"$group": {"_id": {"date": "$localDate", "visitor": "$visitorId"}}},
+        {"$group": {"_id": "$_id.date", "visitors": {"$sum": 1}}}
+    ]).to_list(length=None)
+    traffic = build_traffic(rollups, [], first, last)
+    by_date = {r["date"]: r for r in traffic["byDay"]}
+    for row in visitors:
+        if row.get("_id") in by_date: by_date[row["_id"]]["visitors"] = int(row["visitors"])
+    traffic["byDay"] = [by_date[k] for k in sorted(by_date)]
+    return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "traffic": traffic}
+
 async def traffic_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
     async def load() -> dict[str, Any]:
         current = normalize_now(now); start, end, first, last = reporting_bounds(range_name, current)
@@ -388,6 +442,92 @@ CONTENT_EVENT_NAMES = {
     "home_quick_action_clicked", "outbound_link_clicked",
 }
 
+
+
+
+def _rank_agg(rows, label_key, total=None, extra=None):
+    total = total if total is not None else sum(int(r.get("count", 0)) for r in rows)
+    out = []
+    for r in rows:
+        label = r.get("_id")
+        if label in (None, ""): continue
+        row = {label_key: label, "count": int(r.get("count", 0)), "share": round(int(r.get("count", 0))/total*100, 2) if total else 0.0}
+        if extra: row.update(extra(r))
+        out.append(row)
+    return out
+
+async def mongo_content_report(repository, range_name: str) -> dict[str, Any]:
+    current = normalize_now(); start, end, _, _ = reporting_bounds(range_name, current)
+    match = {"eventScope": ANALYTICS_EVENT_SCOPE, "receivedAt": {"$lt": end}, "eventName": {"$in": sorted(CONTENT_EVENT_NAMES)}}
+    if start is not None: match["receivedAt"]["$gte"] = start
+    def grouped(name, field):
+        return [{"$match": {"eventName": name}}, {"$group": {"_id": field, "count": {"$sum": 1}}}, {"$sort": {"count": -1, "_id": 1}}]
+    facets = {
+      "counts": [{"$group": {"_id": "$eventName", "count": {"$sum": 1}}}],
+      "pages": [{"$match": {"eventName": "page_viewed"}}, {"$group": {"_id": "$properties.page_id", "count": {"$sum": 1}, "visitors": {"$addToSet": "$visitorId"}}}, {"$sort": {"count": -1}}],
+      "scheduleItems": [{"$match": {"eventName": "schedule_event_opened"}}, {"$group": {"_id": "$properties.schedule_item_id", "count": {"$sum": 1}, "category": {"$first": "$properties.category"}}}, {"$sort": {"count": -1}}],
+      "scheduleFilters": grouped("schedule_filter_used", "$properties.filter_value"),
+      "vendorFilters": grouped("vendor_filter_used", "$properties.filter_value"),
+      "mapLocations": grouped("map_opened", "$properties.location_id"),
+      "mapSources": grouped("map_opened", "$properties.source"),
+      "announcementSources": grouped("announcement_opened", "$properties.source"),
+      "quickActions": grouped("home_quick_action_clicked", "$properties.action_id"),
+      "quickSources": grouped("home_quick_action_clicked", "$properties.source"),
+      "quickTypes": grouped("home_quick_action_clicked", "$properties.destination_type"),
+      "outTypes": grouped("outbound_link_clicked", "$properties.destination_type"),
+      "outDest": [{"$match": {"eventName": "outbound_link_clicked"}}, {"$group": {"_id": "$properties.destination_id", "count": {"$sum": 1}, "destinationType": {"$first": "$properties.destination_type"}}}, {"$sort": {"count": -1}}],
+      "scheduleSearch": [{"$match": {"eventName": "schedule_search_used"}}, {"$group": {"_id": None, "count": {"$sum": 1}, "zero": {"$sum": {"$cond": ["$properties.zero_results", 1, 0]}}}}],
+      "vendorSearch": [{"$match": {"eventName": "vendor_search_used"}}, {"$group": {"_id": None, "count": {"$sum": 1}, "zero": {"$sum": {"$cond": ["$properties.zero_results", 1, 0]}}}}],
+      "favorites": [{"$match": {"eventName": "favorite_changed"}}, {"$group": {"_id": "$properties.action", "count": {"$sum": 1}}}],
+      "queenVisitors": [{"$match": {"eventName": "queen_archive_opened"}}, {"$group": {"_id": "$visitorId"}}, {"$count": "count"}],
+      "ann": [{"$match": {"eventName": {"$in": ["announcement_impression", "announcement_opened"]}}}, {"$group": {"_id": {"id": "$properties.announcement_id", "name": "$eventName"}, "count": {"$sum": 1}}}],
+      "adoption": [{"$group": {"_id": "$visitorId", "events": {"$addToSet": "$eventName"}}}],
+      "days": [{"$group": {"_id": {"date": "$localDate", "name": "$eventName"}, "count": {"$sum": 1}, "visitors": {"$addToSet": "$visitorId"}}}]
+    }
+    rows = await repository.db.analytics_events.aggregate([{"$match": match}, {"$facet": facets}], allowDiskUse=True).to_list(length=1)
+    f = rows[0] if rows else {k: [] for k in facets}
+    counts = {r["_id"]: int(r["count"]) for r in f["counts"]}
+    pages = _rank_agg(f["pages"], "pageId", counts.get("page_viewed", 0), lambda r: {"uniqueVisitors": len([v for v in r.get("visitors", []) if v])})
+    schedule_items = _rank_agg(f["scheduleItems"], "scheduleItemId", counts.get("schedule_event_opened", 0), lambda r: {"category": r.get("category")})
+    ss = f["scheduleSearch"][0] if f["scheduleSearch"] else {"count": 0, "zero": 0}; vs = f["vendorSearch"][0] if f["vendorSearch"] else {"count": 0, "zero": 0}
+    fav = {r["_id"]: int(r["count"]) for r in f["favorites"]}
+    sources = Counter()
+    for r in f["mapSources"]:
+        sources[{"bottom_nav":"bottom_navigation","home_quick_action":"home_quick_action","schedule":"schedule"}.get(r.get("_id"), "other")] += int(r["count"])
+    announcements = {}
+    for r in f["ann"]:
+        aid = r["_id"].get("id")
+        if not aid: continue
+        row = announcements.setdefault(aid, {"announcementId": aid, "impressions": 0, "opens": 0, "openImpressionRate": None})
+        row["impressions" if r["_id"].get("name") == "announcement_impression" else "opens"] += int(r["count"])
+    for row in announcements.values(): row["openImpressionRate"] = round(row["opens"]/row["impressions"]*100, 2) if row["impressions"] else None
+    feature_names = FEATURE_EVENTS; total_visitors = len(f["adoption"]); adoption = []
+    for feature, names in feature_names.items():
+        used = sum(bool(set(r.get("events", [])) & names) for r in f["adoption"])
+        adoption.append({"feature": feature, "visitors": used, "percentage": round(used/total_visitors*100, 2) if total_visitors else 0.0})
+    daymap = {}
+    for r in f["days"]:
+        day, name = r["_id"].get("date"), r["_id"].get("name")
+        if not day: continue
+        row = daymap.setdefault(day, {"visitors": set(), "sessions": 0, "pageViews": 0, "scheduleUsage": 0, "vendorUsage": 0, "mapUsage": 0})
+        row["visitors"].update(v for v in r.get("visitors", []) if v); count = int(r["count"])
+        if name == "session_started": row["sessions"] += count
+        if name == "page_viewed": row["pageViews"] += count
+        if name in FEATURE_EVENTS["schedule"]: row["scheduleUsage"] += count
+        if name in FEATURE_EVENTS["vendors"]: row["vendorUsage"] += count
+        if name == "map_opened": row["mapUsage"] += count
+    comparisons = [{"date": day, "visitors": len(row["visitors"]), "sessions": row["sessions"], "pageViews": row["pageViews"], "scheduleUsage": row["scheduleUsage"], "vendorUsage": row["vendorUsage"], "mapUsage": row["mapUsage"]} for day, row in sorted(daymap.items())]
+    quick_total = counts.get("home_quick_action_clicked", 0); out_total = counts.get("outbound_link_clicked", 0)
+    return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "content": {
+      "pages": pages,
+      "schedule": {"opens": counts.get("schedule_viewed",0), "eventOpens": counts.get("schedule_event_opened",0), "mostOpenedEvents": schedule_items, "filters": _rank_agg(f["scheduleFilters"], "filterValue"), "searches": int(ss["count"]), "zeroResultSearches": int(ss["zero"]), "favoritesAdded": fav.get("added",0), "favoritesRemoved": fav.get("removed",0), "mapActions": sources["schedule"]},
+      "vendors": {"directoryOpens": counts.get("vendor_directory_opened",0), "searches": int(vs["count"]), "zeroResultSearches": int(vs["zero"]), "filters": _rank_agg(f["vendorFilters"], "filterValue")},
+      "map": {"opens": counts.get("map_opened",0), "sources": [{"source": s, "count": sources[s]} for s in ("bottom_navigation","home_quick_action","schedule","other")], "locations": _rank_agg(f["mapLocations"], "locationId")},
+      "queenOfTheFurrow": {"archiveOpens": counts.get("queen_archive_opened",0), "uniqueArchiveVisitors": int(f["queenVisitors"][0]["count"]) if f["queenVisitors"] else 0},
+      "announcements": {"listViews": counts.get("announcement_list_viewed",0), "impressions": counts.get("announcement_impression",0), "opens": counts.get("announcement_opened",0), "openSources": _rank_agg(f["announcementSources"], "source"), "ranking": sorted(announcements.values(), key=lambda x: (-x["opens"], -x["impressions"], x["announcementId"]))},
+      "quickActions": {"clicks": quick_total, "actions": _rank_agg(f["quickActions"], "actionId", quick_total), "sources": _rank_agg(f["quickSources"], "source", quick_total), "destinationTypes": _rank_agg(f["quickTypes"], "destinationType", quick_total)},
+      "outboundLinks": {"clicks": out_total, "destinations": _rank_agg(f["outDest"], "destinationId", out_total, lambda r: {"destinationType": r.get("destinationType")}), "destinationTypes": _rank_agg(f["outTypes"], "destinationType", out_total)},
+      "featureAdoption": adoption, "eventDayComparisons": comparisons}}
 
 async def content_report(repository: AnalyticsReportingRepository, range_name: str, now: Optional[datetime] = None) -> dict[str, Any]:
     async def load() -> dict[str, Any]:
