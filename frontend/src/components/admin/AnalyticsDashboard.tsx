@@ -6,11 +6,11 @@ import { Feather } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { AdminRequestError } from '../../services/adminAuthService';
 import {
-  AnalyticsContentResponse, AnalyticsLiveResponse, AnalyticsRange,
+  AnalyticsContentResponse, AnalyticsHeadlineResponse, AnalyticsLiveResponse, AnalyticsRange,
   AnalyticsSummaryResponse, AnalyticsTrafficResponse, RankedMetric,
   NotificationHealthResponse, getAnalyticsContent, getAnalyticsLive, getAnalyticsSummary,
   getAnalyticsTraffic, getNotificationHealth, getNotificationHealthSummary, NotificationHealthSummary, getNotificationSummary, getReminderSummary,
-  NotificationSummaryResponse, ReminderSummaryResponse, PopularReminderEventsResponse, getPopularReminderEvents,
+  NotificationSummaryResponse, ReminderSummaryResponse, PopularReminderEventsResponse, getPopularReminderEvents, getAnalyticsHeadline,
 } from '../../services/adminAnalyticsService';
 import { ContentPage, EmptyState, ErrorState, LoadingState } from './ContentScaffold';
 
@@ -208,6 +208,8 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   const { width } = useWindowDimensions();
   const compact = width < 720;
   const [popularReminders, setPopularReminders] = useState<PopularReminderEventsResponse | null>(null);
+  const [headline, setHeadline] = useState<AnalyticsHeadlineResponse | null>(null);
+  const [headlineError, setHeadlineError] = useState<string | null>(null);
   const [range, setRange] = useState<AnalyticsRange>('7d');
   const [summary, setSummary] = useState<AnalyticsSummaryResponse | null>(null);
   const [traffic, setTraffic] = useState<AnalyticsTrafficResponse | null>(null);
@@ -254,6 +256,11 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
     setAggregateErrors(errors); setAggregateLoading(false); setRefreshing(false);
   }, [handleError]);
 
+  const loadHeadline = useCallback(async () => {
+    try { setHeadline(await getAnalyticsHeadline()); setHeadlineError(null); }
+    catch (error) { setHeadlineError(handleError(error)); }
+  }, [handleError]);
+
   const loadLive = useCallback(async () => {
     if (liveInFlight.current) return;
     liveInFlight.current = true;
@@ -262,6 +269,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
     finally { liveInFlight.current = false; }
   }, [handleError]);
 
+  useEffect(() => { void loadHeadline(); }, [loadHeadline]);
   useEffect(() => { void loadAggregates(range); }, [range, loadAggregates]);
   useEffect(() => {
     void loadLive();
@@ -277,6 +285,18 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   const mapSources = useMemo(() => Object.fromEntries((report?.map.sources || []).map((item) => [item.source, item.count])), [report]);
 
   return <ContentPage title="Analytics" subtitle="Aggregate attendee engagement · America/Toronto">
+    <Section title="Headline Analytics" subtitle="Fast MongoDB totals for Today and All Time." initiallyOpen>
+      {headlineError ? <ErrorState message={`Headline analytics: ${headlineError}`} onRetry={() => void loadHeadline()} /> : null}
+      {!headline && !headlineError ? <LoadingState label="Loading headline analytics…" /> : null}
+      {headline ? <>
+        <Text style={styles.miniTitle}>Today</Text><MetricGrid>
+          <MetricCard label="Unique Visitors" value={headline.today.uniqueVisitors} icon="users" /><MetricCard label="Sessions" value={headline.today.sessions} icon="clock" /><MetricCard label="App Launches" value={headline.today.appLaunches} icon="play-circle" /><MetricCard label="Page Views" value={headline.today.pageViews} icon="file-text" /><MetricCard label="Schedule Views" value={headline.today.scheduleViews} icon="calendar" /><MetricCard label="Schedule Event Opens" value={headline.today.scheduleEventOpens} icon="eye" /><MetricCard label="Map Opens" value={headline.today.mapOpens} icon="map" /><MetricCard label="Vendor Directory Opens" value={headline.today.vendorDirectoryOpens} icon="shopping-bag" />
+        </MetricGrid>
+        <Text style={styles.miniTitle}>All Time</Text><MetricGrid>
+          <MetricCard label="Unique Visitors" value={headline.allTime.uniqueVisitors} icon="users" /><MetricCard label="Sessions" value={headline.allTime.sessions} icon="clock" /><MetricCard label="App Launches" value={headline.allTime.appLaunches} icon="play-circle" /><MetricCard label="Page Views" value={headline.allTime.pageViews} icon="file-text" /><MetricCard label="Schedule Views" value={headline.allTime.scheduleViews} icon="calendar" /><MetricCard label="Schedule Event Opens" value={headline.allTime.scheduleEventOpens} icon="eye" /><MetricCard label="Map Opens" value={headline.allTime.mapOpens} icon="map" /><MetricCard label="Vendor Directory Opens" value={headline.allTime.vendorDirectoryOpens} icon="shopping-bag" />
+        </MetricGrid>
+      </> : null}
+    </Section>
     <Text style={styles.collectionStart}>Analytics collecting since: {formatCollectionStart(summary?.collectionStartedAt)} · “All Time” includes all analytics collected since this date.</Text>
     <View style={styles.toolbar}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangeRow}>
