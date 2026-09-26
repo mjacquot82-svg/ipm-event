@@ -532,7 +532,7 @@ async def mongo_content_report(repository, range_name: str) -> dict[str, Any]:
         row = announcements.setdefault(aid, {"announcementId": aid, "impressions": 0, "opens": 0, "openImpressionRate": None})
         row["impressions" if r["_id"].get("name") == "announcement_impression" else "opens"] += int(r["count"])
     for row in announcements.values(): row["openImpressionRate"] = round(row["opens"]/row["impressions"]*100, 2) if row["impressions"] else None
-    event_visitors = {r["_id"]: int(r["visitors"]) for r in f["adoption"] if r.get("_id")}
+    event_visitors = {r["_id"]: int(r.get("visitors", r.get("count", 0))) for r in f["adoption"] if r.get("_id")}
     total_visitors = int(f["totalVisitors"][0]["count"]) if f["totalVisitors"] else 0
     adoption = []
     for feature, names in FEATURE_EVENTS.items():
