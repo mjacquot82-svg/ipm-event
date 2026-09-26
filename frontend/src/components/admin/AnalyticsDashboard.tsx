@@ -210,7 +210,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   const [popularReminders, setPopularReminders] = useState<PopularReminderEventsResponse | null>(null);
   const [headline, setHeadline] = useState<AnalyticsHeadlineResponse | null>(null);
   const [headlineError, setHeadlineError] = useState<string | null>(null);
-  const [range, setRange] = useState<AnalyticsRange>('7d');
+  const [range, setRange] = useState<AnalyticsRange>('7d');\n  const [dailySort, setDailySort] = useState<'date'|'newVisitors'|'returningVisitors'|'visitors'|'sessions'|'launches'|'pageViews'>('date');
   const [summary, setSummary] = useState<AnalyticsSummaryResponse | null>(null);
   const [traffic, setTraffic] = useState<AnalyticsTrafficResponse | null>(null);
   const [content, setContent] = useState<AnalyticsContentResponse | null>(null);
@@ -282,7 +282,7 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
   const report = content?.content;
   const noData = Boolean(overview && overview.uniqueVisitors === 0 && overview.sessions === 0 && overview.pageViews === 0);
   const vendorFilters = useMemo(() => Object.fromEntries((report?.vendors.filters || []).map((item) => [item.filterValue, item.count])), [report]);
-  const mapSources = useMemo(() => Object.fromEntries((report?.map.sources || []).map((item) => [item.source, item.count])), [report]);
+  const mapSources = useMemo(() => Object.fromEntries((report?.map.sources || []).map((item) => [item.source, item.count])), [report]);\n  const dailyRows = useMemo(() => [...(traffic?.traffic.byDay || [])].sort((a,b) => dailySort === 'date' ? b.date.localeCompare(a.date) : Number(b[dailySort] || 0) - Number(a[dailySort] || 0)), [traffic, dailySort]);
 
   return <ContentPage title="Analytics" subtitle="Aggregate attendee engagement · America/Toronto">
     <Section title="Headline Analytics" subtitle="Fast MongoDB totals for Today and All Time." initiallyOpen>
@@ -311,8 +311,31 @@ export function AnalyticsDashboard({ onAuthenticationExpired, onOpenAnnouncement
     </View>
 
     {aggregateLoading && !overview && !report ? <LoadingState label="Loading attendee analytics..." /> : null}
-    {aggregateErrors.length ? <ErrorState title="Some analytics could not be loaded" message={aggregateErrors.join(' · ')} onRetry={manualRefresh} /> : null}
+    {aggregateErrors.filter((error) => !error.startsWith('Reminder popularity:')).length ? <ErrorState title="Some analytics could not be loaded" message={aggregateErrors.filter((error) => !error.startsWith('Reminder popularity:')).join(' · ')} onRetry={manualRefresh} /> : null}
     {noData ? <EmptyState icon="bar-chart-2" title="No attendee analytics have been recorded yet" message="Metrics and charts will appear after attendees begin using the IPM app." action={{ label: 'Try again', icon: 'refresh-cw', onPress: manualRefresh }} /> : null}
+
+    {traffic ? <Section title="Daily Breakdown" subtitle="Compare each tracked day. Choose a metric to rank the days." initiallyOpen>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rangeRow}>
+        {([
+          ['date','Newest'],['newVisitors','New Visitors'],['returningVisitors','Returning Visitors'],['visitors','Unique Visitors'],
+          ['sessions','Sessions'],['launches','App Launches'],['pageViews','Page Views']
+        ] as const).map(([key,label]) => <Pressable key={key} style={[styles.rangeButton, dailySort === key && styles.rangeButtonActive]} onPress={() => setDailySort(key)}>
+          <Text style={[styles.rangeText, dailySort === key && styles.rangeTextActive]}>{label}</Text>
+        </Pressable>)}
+      </ScrollView>
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View>
+          <View style={styles.dailyTableRow}>
+            {['Date','New','Returning','Unique','Sessions','Launches','Page Views'].map((label) => <Text key={label} style={[styles.dailyTableCell, styles.dailyTableHeader]}>{label}</Text>)}
+          </View>
+          {dailyRows.map((row) => <View key={row.date} style={styles.dailyTableRow}>
+            <Text style={styles.dailyTableCell}>{row.date}</Text><Text style={styles.dailyTableCell}>{row.newVisitors || 0}</Text>
+            <Text style={styles.dailyTableCell}>{row.returningVisitors || 0}</Text><Text style={styles.dailyTableCell}>{row.visitors}</Text>
+            <Text style={styles.dailyTableCell}>{row.sessions}</Text><Text style={styles.dailyTableCell}>{row.launches}</Text><Text style={styles.dailyTableCell}>{row.pageViews}</Text>
+          </View>)}
+        </View>
+      </ScrollView>
+    </Section> : null}
 
     {overview ? <Section title="Overview" subtitle="Visitors, sessions, launches, and page activity are separate measures." initiallyOpen>
       <MetricGrid>
@@ -433,6 +456,10 @@ const styles = StyleSheet.create({
   rangeButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary }, rangeText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary }, rangeTextActive: { color: '#FFFFFF' },
   refreshButton: { minHeight: 40, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', gap: 8 }, refreshText: { fontWeight: '700', color: colors.textSecondary },
   section: { borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: 'hidden' }, sectionHeader: { minHeight: 72, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, sectionTitleBlock: { flex: 1 }, sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary }, sectionSubtitle: { fontSize: 13, lineHeight: 18, color: colors.textSecondary, marginTop: 4 }, sectionBody: { padding: 16, paddingTop: 0, gap: 16 },
+  dailyTableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border },
+  dailyTableCell: { width: 110, paddingVertical: 10, paddingHorizontal: 8, color: colors.textPrimary, fontSize: 13 },
+  dailyTableHeader: { fontWeight: '700', color: colors.textSecondary },
+
   metricGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, metricCard: { flexGrow: 1, flexBasis: 190, minWidth: 170, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceElevated, padding: 14 }, metricIcon: { width: 34, height: 34, borderRadius: 8, backgroundColor: colors.surfaceHighlight, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }, metricValue: { fontSize: 22, fontWeight: '800', color: colors.textPrimary }, metricLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginTop: 3 }, metricHelp: { fontSize: 11, lineHeight: 16, color: colors.textMuted, marginTop: 7 },
   inlineEmpty: { color: colors.textMuted, fontSize: 13, paddingVertical: 16, textAlign: 'center' }, rankList: { gap: 12 }, rankRow: { gap: 6 }, rankHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, rankLabel: { flex: 1, fontSize: 13, fontWeight: '700', color: colors.textPrimary }, rankValue: { fontSize: 13, fontWeight: '800', color: colors.primary }, rankDetail: { fontSize: 11, color: colors.textMuted }, barTrack: { height: 7, borderRadius: 4, backgroundColor: colors.surfaceHighlight, overflow: 'hidden' }, barFill: { height: '100%', borderRadius: 4, backgroundColor: colors.primary },
   miniPanel: { flex: 1, minWidth: 260, borderRadius: 8, borderWidth: 1, borderColor: colors.border, padding: 14, gap: 12, backgroundColor: colors.surfaceElevated }, miniTitle: { fontSize: 14, fontWeight: '800', color: colors.textPrimary }, split: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }, splitCompact: { flexDirection: 'column' },
