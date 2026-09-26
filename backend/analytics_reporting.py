@@ -414,12 +414,12 @@ async def mongo_traffic_report(repository, range_name: str) -> dict[str, Any]:
     if start is not None: match["receivedAt"]["$gte"] = start
     visitors = await repository.db.analytics_events.aggregate([
         {"$match": match}, {"$group": {"_id": {"date": "$localDate", "visitor": "$visitorId"}}},
-        {"$group": {"_id": "$_id.date", "visitors": {"$sum": 1}}}
+        {"$lookup": {"from": "analytics_visitors", "let": {"vid": "$_id.visitor"}, "pipeline": [{"$match": {"$expr": {"$and": [{"$eq": ["$visitorId", "$vid"]}, {"$eq": ["$eventScope", ANALYTICS_EVENT_SCOPE]}]}}}, {"$project": {"_id": 0, "firstSeenAt": 1}}], "as": "visitor"}}, {"$project": {"date": "$_id.date", "firstSeenAt": {"$arrayElemAt": ["$visitor.firstSeenAt", 0]}}}, {"$group": {"_id": "$date", "visitors": {"$sum": 1}, "newVisitors": {"$sum": {"$cond": [{"$eq": [{"$dateToString": {"date": "$firstSeenAt", "format": "%Y-%m-%d", "timezone": ANALYTICS_TIMEZONE}}, "$date"]}, 1, 0]}}}}
     ]).to_list(length=None)
     traffic = build_traffic(rollups, [], first, last)
     by_date = {r["date"]: r for r in traffic["byDay"]}
     for row in visitors:
-        if row.get("_id") in by_date: by_date[row["_id"]]["visitors"] = int(row["visitors"])
+        if row.get("_id") in by_date:\n            by_date[row["_id"]]["visitors"] = int(row["visitors"])\n            by_date[row["_id"]]["newVisitors"] = int(row.get("newVisitors", 0))\n            by_date[row["_id"]]["returningVisitors"] = max(0, int(row["visitors"]) - int(row.get("newVisitors", 0)))
     traffic["byDay"] = [by_date[k] for k in sorted(by_date)]
     return {"range": range_name, "timezone": ANALYTICS_TIMEZONE, "traffic": traffic}
 
