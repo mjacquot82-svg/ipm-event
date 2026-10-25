@@ -60,7 +60,6 @@ test('external controls are isolated under Link Buttons without URL changes', ()
     Volunteer: ['volunteer', 'https://www.plowingmatch.org/ipm2026/get-involved/become-a-volunteer/'],
     Exhibitors: ['exhibitor', 'https://www.plowingmatch.org/ipm2026/get-involved/become-an-exhibitor/'],
     Tickets: ['tickets', 'https://www.tix123.com/tickets/?code=IPMRE26'],
-    Souvenirs: ['merchandise', 'https://ipm26.itemorder.com/shop/home/'],
     'Celebration of Excellence': ['celebration_of_excellence', 'https://www.zeffy.com/en-CA/ticketing/2026-ipm-celebration-of-excellence'],
     '2026 Show Guide': ['show_guide', 'https://www.plowingmatch.org/ipm2026/wp-content/uploads/2026/08/IPM-2026-Show-Guide.pdf'],
   };
@@ -148,4 +147,10 @@ test('About adds install replay while retaining production Emergency Services', 
   assert.match(about, /Emergency Services \/ Need Help/);
   assert.match(about, /<PWAInstallPrompt \/>/);
   assert.doesNotMatch(about, /NotificationOptIn|AppStatus|appHelp/);
+});
+
+test('Souvenirs opens the in-app page; expired external store is gone', () => {
+  assert.match(home, /quickAction\('souvenirs', 'internal', \(\) => router\.push\('\/souvenirs'/);
+  assert.doesNotMatch(home, /itemorder\.com/);
+  assert.doesNotMatch(destinations, /itemorder\.com|merchandise:/);
 });

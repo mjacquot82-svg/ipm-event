@@ -63,9 +63,10 @@ test('Back handles stack navigation and direct deep links', () => {
 });
 
 test('unrelated Quick Actions retain their existing handlers', () => {
-  for (const action of ['sponsors', 'volunteer', 'exhibitors', 'tickets', 'souvenirs']) {
+  for (const action of ['sponsors', 'volunteer', 'exhibitors', 'tickets']) {
     assert.match(home, new RegExp(`openQuickLink\\('${action}'`));
   }
+  assert.match(home, /quickAction\('souvenirs', 'internal'/);
   assert.match(home, /quickAction\('emergency_services'/);
   assert.match(home, /pathname: '\/schedule', params: \{ source: 'home_quick_action' \}/);
   assert.doesNotMatch(home, /pathname: '\/map', params: \{ source: 'home_quick_action' \}/);

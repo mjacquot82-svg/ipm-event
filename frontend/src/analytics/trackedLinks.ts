@@ -8,7 +8,6 @@ export const IPM_DESTINATIONS = {
   exhibitor: { id: 'exhibitor', type: 'registration', url: 'https://www.plowingmatch.org/ipm2026/get-involved/become-an-exhibitor/' },
   tickets: { id: 'tickets', type: 'ticketing', url: 'https://www.tix123.com/tickets/?code=IPMRE26' },
   camping: { id: 'camping', type: 'registration', url: 'https://letscamp.ca/camps/ipm-2026' },
-  merchandise: { id: 'merchandise', type: 'shopping', url: 'https://ipm26.itemorder.com/shop/home/' },
   celebration_of_excellence: { id: 'celebration_of_excellence', type: 'ticketing', url: 'https://www.zeffy.com/en-CA/ticketing/2026-ipm-celebration-of-excellence' },
   worship_service_pdf: { id: 'worship_service_pdf', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/wp-content/uploads/2026/03/IPM-2026-Worship-Service.pdf' },
   show_guide: { id: 'show_guide', type: 'information', url: 'https://www.plowingmatch.org/ipm2026/wp-content/uploads/2026/08/IPM-2026-Show-Guide.pdf' },
