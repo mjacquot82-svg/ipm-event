@@ -686,6 +686,19 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
+              onPress={() => quickAction('volunteer_glasses', 'internal', () => router.push('/volunteer-glasses' as never))}
+              activeOpacity={0.8}
+              accessibilityRole="link"
+              accessibilityLabel="Volunteer Glasses pre-order (password required)"
+            >
+              <View style={[styles.actionIcon, { backgroundColor: '#9C27B0' }]}>
+                <Feather name="lock" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.actionTitle}>Volunteer Glasses</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionCard}
               onPress={() => openQuickLink('celebration_of_excellence', 'celebration_of_excellence')}
               activeOpacity={0.8}
               accessibilityRole="link"

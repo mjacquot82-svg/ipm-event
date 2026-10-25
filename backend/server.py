@@ -256,6 +256,11 @@ except ModuleNotFoundError:
 api_router = APIRouter(prefix="/api")
 api_router.include_router(what3words_router)
 
+try:
+    from backend.volunteer_orders import build_router as build_volunteer_orders_router
+except ModuleNotFoundError:
+    from volunteer_orders import build_router as build_volunteer_orders_router
+
 
 # Define Models
 class StatusCheck(BaseModel):
@@ -3055,6 +3060,8 @@ async def send_sos_push_notification(push_token: str, title: str, body: str, dat
                 logger.warning(f"Failed to send SOS notification: {response.text}")
     except Exception as e:
         logger.error(f"Error sending SOS push notification: {e}")
+
+api_router.include_router(build_volunteer_orders_router(lambda: require_mongodb()))
 
 # Include the router in the main app
 app.include_router(api_router)
