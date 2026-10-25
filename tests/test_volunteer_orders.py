@@ -16,6 +16,10 @@ class FakeCollection:
     def __init__(self): self.docs = []
     async def insert_one(self, doc): self.docs.append({k: v for k, v in doc.items()})
     def find(self, *a): return FakeCursor(self.docs)
+    async def delete_one(self, query):
+        before = len(self.docs)
+        self.docs = [d for d in self.docs if d.get("id") != query.get("id")]
+        return type("R", (), {"deleted_count": before - len(self.docs)})()
 
 
 def make_client(monkeypatch, closes="2099-01-01T00:00"):
@@ -80,3 +84,31 @@ def test_admin_list_and_csv(monkeypatch):
     assert data["summary"] == {"sets_by_style": {"colored_logo": 2, "large_etched": 3, "short_etched": 1}, "total_sets": 6, "total_cents": 9600}
     csv_text = client.get("/api/volunteer-glasses/admin/orders.csv", headers={"X-Admin-Password": "admin-pass"}).text
     assert csv_text.splitlines()[-1] == "TOTAL,,,2,3,1,6,96.00,"
+
+
+def test_admin_delete_order(monkeypatch):
+    client, col = make_client(monkeypatch)
+    h = {"X-Volunteer-Password": "vol-pass"}
+    keep = client.post("/api/volunteer-glasses/orders", json=ORDER, headers=h).json()["id"]
+    gone = client.post("/api/volunteer-glasses/orders", json={**ORDER, "name": "TEST"}, headers=h).json()["id"]
+    url = f"/api/volunteer-glasses/admin/orders/{gone}"
+    assert client.delete(url).status_code == 401
+    assert client.delete(url, headers={"X-Admin-Password": "vol-pass"}).status_code == 401
+    assert len(col.docs) == 2
+    r = client.delete(url, headers={"X-Admin-Password": "admin-pass"})
+    assert r.status_code == 200 and r.json() == {"deleted": gone}
+    assert [d["id"] for d in col.docs] == [keep]
+    data = client.get("/api/volunteer-glasses/admin/orders", headers={"X-Admin-Password": "admin-pass"}).json()
+    assert data["summary"]["total_sets"] == 3
+
+
+def test_admin_delete_missing_order_404(monkeypatch):
+    client, _ = make_client(monkeypatch)
+    r = client.delete("/api/volunteer-glasses/admin/orders/nope", headers={"X-Admin-Password": "admin-pass"})
+    assert r.status_code == 404
+
+
+def test_admin_delete_unconfigured_503(monkeypatch):
+    client, _ = make_client(monkeypatch)
+    monkeypatch.delenv("VOLUNTEER_ORDER_ADMIN_PASSWORD")
+    assert client.delete("/api/volunteer-glasses/admin/orders/x", headers={"X-Admin-Password": ""}).status_code == 503

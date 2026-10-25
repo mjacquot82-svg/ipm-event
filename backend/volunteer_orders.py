@@ -144,6 +144,14 @@ def build_router(get_db: Callable) -> APIRouter:
         orders = await _all()
         return {"orders": orders, "summary": summarize(orders), "closes_at": closes_at().isoformat(), "open": is_open()}
 
+    @router.delete("/admin/orders/{order_id}")
+    async def admin_delete(order_id: str, x_admin_password: Optional[str] = Header(default=None)):
+        _check("VOLUNTEER_ORDER_ADMIN_PASSWORD", x_admin_password)
+        result = await get_db()[COLLECTION].delete_one({"id": order_id})
+        if not result.deleted_count:
+            raise HTTPException(status_code=404, detail="Order not found")
+        return {"deleted": order_id}
+
     @router.get("/admin/orders.csv")
     async def admin_csv(x_admin_password: Optional[str] = Header(default=None)):
         _check("VOLUNTEER_ORDER_ADMIN_PASSWORD", x_admin_password)
