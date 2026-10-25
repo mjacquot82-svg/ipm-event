@@ -2,9 +2,9 @@
 // Owner-only order list for the Volunteer Glasses pre-order (password: VOLUNTEER_ORDER_ADMIN_PASSWORD).
 
 import React, { useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import colors from '../src/theme/colors';
-import { formatDollars, getVolunteerGlassesCsv, getVolunteerGlassesOrders } from '../src/services/volunteerGlassesService';
+import { deleteVolunteerGlassesOrder, formatDollars, getVolunteerGlassesCsv, getVolunteerGlassesOrders } from '../src/services/volunteerGlassesService';
 
 const NAMES: Record<string, string> = { colored_logo: 'Colored Logo', large_etched: 'Large Etched', short_etched: 'Short Etched' };
 
@@ -16,6 +16,24 @@ export default function VolunteerGlassesOrdersScreen() {
   const load = async () => {
     setError(null);
     try { setData(await getVolunteerGlassesOrders(password)); } catch (e) { setError((e as Error).message); }
+  };
+
+  const confirmDelete = (o: any): Promise<boolean> => {
+    const message = `Delete the order from ${o.name}? This can't be undone.`;
+    if (Platform.OS === 'web') return Promise.resolve(window.confirm(message));
+    return new Promise((resolve) => Alert.alert('Delete order', message, [
+      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+      { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
+    ]));
+  };
+
+  const remove = async (o: any) => {
+    if (!(await confirmDelete(o))) return;
+    setError(null);
+    try {
+      await deleteVolunteerGlassesOrder(password, o.id);
+      await load();
+    } catch (e) { setError((e as Error).message); }
   };
 
   const download = async () => {
@@ -50,6 +68,9 @@ export default function VolunteerGlassesOrdersScreen() {
             <View key={o.id} style={styles.row}>
               <Text style={styles.name}>{o.name} — {o.contact}</Text>
               <Text style={styles.body}>{Object.entries(o.quantities).filter(([, q]) => Number(q) > 0).map(([id, q]) => `${NAMES[id]} ×${q}`).join(', ')} · {formatDollars(o.total_cents)}</Text>
+              <TouchableOpacity style={styles.deleteButton} onPress={() => remove(o)} accessibilityLabel={`Delete order from ${o.name}`}>
+                <Text style={styles.deleteText}>Delete</Text>
+              </TouchableOpacity>
             </View>
           ))}
         </View>
@@ -69,5 +90,7 @@ const styles = StyleSheet.create({
   total: { fontSize: 18, fontWeight: '800', color: colors.textPrimary, marginTop: 6 },
   row: { borderTopWidth: 1, borderTopColor: colors.border, paddingVertical: 10 },
   name: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  deleteButton: { alignSelf: 'flex-start', borderWidth: 1, borderColor: '#B00020', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, marginTop: 6 },
+  deleteText: { color: '#B00020', fontWeight: '700' },
   error: { color: '#B00020', fontWeight: '700', marginTop: 10 },
 });

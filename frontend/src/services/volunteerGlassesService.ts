@@ -56,3 +56,7 @@ export async function getVolunteerGlassesOrders(adminPassword: string) {
 export async function getVolunteerGlassesCsv(adminPassword: string): Promise<string> {
   return (await request('/admin/orders.csv', { method: 'GET', headers: { 'X-Admin-Password': adminPassword } })).text();
 }
+
+export async function deleteVolunteerGlassesOrder(adminPassword: string, orderId: string) {
+  return (await request(`/admin/orders/${encodeURIComponent(orderId)}`, { method: 'DELETE', headers: { 'X-Admin-Password': adminPassword } })).json();
+}
