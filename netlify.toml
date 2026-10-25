@@ -21,6 +21,11 @@
     Netlify-CDN-Cache-Control = "public, s-maxage=30, stale-while-revalidate=30"
 
 [[redirects]]
+  from = "/orders"
+  to = "/volunteer-glasses-orders"
+  status = 301
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
