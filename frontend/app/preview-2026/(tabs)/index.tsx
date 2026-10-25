@@ -479,7 +479,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => openLink('https://ipm26.itemorder.com/shop/home/')}
+              onPress={() => router.push('/souvenirs' as never)}
               activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: '#9C27B0' }]}>

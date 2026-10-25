@@ -7,11 +7,13 @@ const page = await readFile(new URL('../app/volunteer-glasses.tsx', import.meta.
 const orders = await readFile(new URL('../app/volunteer-glasses-orders.tsx', import.meta.url), 'utf8');
 const service = await readFile(new URL('../src/services/volunteerGlassesService.ts', import.meta.url), 'utf8');
 
-test('Volunteer Glasses link sits right after Souvenirs and routes internally', () => {
-  const souvenirs = home.indexOf("openQuickLink('souvenirs'");
-  const glasses = home.indexOf("quickAction('volunteer_glasses', 'internal'");
-  assert.ok(souvenirs > 0 && glasses > souvenirs);
-  assert.match(home, /router\.push\('\/volunteer-glasses'/);
+const souvenirs = await readFile(new URL('../app/souvenirs.tsx', import.meta.url), 'utf8');
+
+test('Volunteer Glasses button lives on the Souvenirs page, not the home page', () => {
+  assert.doesNotMatch(home, /volunteer_glasses|>Volunteer Glasses</);
+  assert.match(souvenirs, />Volunteer Glasses</);
+  assert.match(souvenirs, /name="lock"/);
+  assert.match(souvenirs, /router\.push\('\/volunteer-glasses'/);
 });
 
 test('page shows three styles, price, closing date, pay at pickup, closed state', () => {
