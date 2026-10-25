@@ -11,7 +11,7 @@ import {
   submitVolunteerGlassesOrder, unlockVolunteerGlasses, VolunteerGlassesInfo,
 } from '../src/services/volunteerGlassesService';
 
-export const CLOSING_LABEL = 'Pre-order closes November 20';
+export const CLOSING_LABEL = 'Pre-order end date to be decided';
 
 const GLASS_IMAGES: Record<string, number> = {
   colored_logo: require('../assets/images/volunteer-glasses/colored-logo.jpg'),

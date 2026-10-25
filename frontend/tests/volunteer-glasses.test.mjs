@@ -17,7 +17,7 @@ test('Volunteer Glasses button lives on the Souvenirs page, not the home page', 
 });
 
 test('page shows three styles, price, closing date, pay at pickup, closed state', () => {
-  for (const s of ['Colored Logo', 'Large Etched', 'Short Etched', '$16 per set of two', 'Pre-order closes November 20', 'Pay at pickup', 'Pre-order closed', 'no mixing']) {
+  for (const s of ['Colored Logo', 'Large Etched', 'Short Etched', '$16 per set of two', 'Pre-order end date to be decided', 'Pay at pickup', 'Pre-order closed', 'no mixing']) {
     assert.ok(page.includes(s), `missing ${s}`);
   }
   assert.match(page, /secureTextEntry/);
