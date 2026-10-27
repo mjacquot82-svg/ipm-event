@@ -4,7 +4,7 @@ Env vars (set in hosting, never in code):
   VOLUNTEER_ORDER_PASSWORD        shared password volunteers enter
   VOLUNTEER_ORDER_ADMIN_PASSWORD  owner password for the order list / CSV
   VOLUNTEER_ORDER_CLOSES_AT       ISO local datetime, America/Toronto
-                                  (default 2026-11-16T00:00, exclusive cutoff)
+                                  (default 2026-11-15T12:00, exclusive cutoff)
 Orders are stored in MongoDB collection ``volunteer_glass_orders``.
 """
 import csv
@@ -21,8 +21,8 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 TORONTO = ZoneInfo("America/Toronto")
-# Accept orders throughout November 15, including its final minute and second.
-DEFAULT_CLOSES_AT = "2026-11-16T00:00"
+# Accept orders before noon on November 15 in Toronto; noon itself is closed.
+DEFAULT_CLOSES_AT = "2026-11-15T12:00"
 PRICE_PER_SET_CENTS = 1600
 MAX_SETS_PER_STYLE = 50
 STYLES = [

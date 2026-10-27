@@ -1,6 +1,37 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { scheduleVolunteerGlassesClose } from '../src/services/volunteerGlassesDeadline.ts';
+
+for (const cutoff of ['2026-11-15T12:00:00-05:00', '2026-11-15T17:00:00Z']) {
+  test(`open form closes exactly at Toronto noon: ${cutoff}`, (t) => {
+    t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: new Date('2026-11-15T16:59:59.999Z') });
+    let closed = false;
+    const cancel = scheduleVolunteerGlassesClose(cutoff, () => { closed = true; });
+    assert.equal(closed, false);
+    t.mock.timers.tick(1);
+    assert.equal(closed, true);
+    cancel();
+  });
+}
+
+for (const now of ['2026-11-15T17:00:00Z', '2026-11-15T17:00:00.001Z']) {
+  test(`form opened at or after cutoff is immediately closed: ${now}`, (t) => {
+    t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: new Date(now) });
+    let closed = false;
+    scheduleVolunteerGlassesClose('2026-11-15T12:00:00-05:00', () => { closed = true; });
+    assert.equal(closed, true);
+  });
+}
+
+test('unmount cancels the pending deadline timer', (t) => {
+  t.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: new Date('2026-11-15T16:59:00Z') });
+  let closed = false;
+  const cancel = scheduleVolunteerGlassesClose('2026-11-15T12:00:00-05:00', () => { closed = true; });
+  cancel();
+  t.mock.timers.tick(60_000);
+  assert.equal(closed, false);
+});
 
 const home = await readFile(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
 const page = await readFile(new URL('../app/volunteer-glasses.tsx', import.meta.url), 'utf8');
@@ -21,7 +52,7 @@ test('page shows three styles, price, closing date, pay at pickup, closed state'
     'Glassware is available as a set of two.', 'No mix and matching.', '3 styles to choose from',
     'Cash payment at pickup $16 per set of 2 glasses',
     'Pickup December 17th at the Chepstow Lions Park from 5-8pm. If you cannot be there send someone on your behalf with payment',
-    'Deadline to order nov 15', 'Pre-order closed']) {
+    'Deadline to order November 15 at noon (Toronto time)', 'Pre-order closed']) {
     assert.ok(page.includes(s), `missing ${s}`);
   }
   assert.match(page, /secureTextEntry/);

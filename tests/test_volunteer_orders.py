@@ -37,17 +37,17 @@ def make_client(monkeypatch, closes="2099-01-01T00:00"):
 ORDER = {"name": "Pat", "contact": "pat@example.com", "quantities": {"colored_logo": 2, "short_etched": 1}}
 
 
-def test_default_close_is_end_of_nov_15_toronto(monkeypatch):
+def test_default_close_is_noon_nov_15_toronto(monkeypatch):
     monkeypatch.delenv("VOLUNTEER_ORDER_CLOSES_AT", raising=False)
-    assert vo.closes_at().isoformat() == "2026-11-16T00:00:00-05:00"
-    assert vo.closes_at().astimezone(timezone.utc).isoformat() == "2026-11-16T05:00:00+00:00"
+    assert vo.closes_at().isoformat() == "2026-11-15T12:00:00-05:00"
+    assert vo.closes_at().astimezone(timezone.utc).isoformat() == "2026-11-15T17:00:00+00:00"
 
 
-@pytest.mark.parametrize("override", [None, "2026-11-16T00:00", "2026-11-16T00:00:00-05:00", "2026-11-16T05:00:00+00:00"])
+@pytest.mark.parametrize("override", [None, "2026-11-15T12:00", "2026-11-15T12:00:00-05:00", "2026-11-15T17:00:00+00:00"])
 @pytest.mark.parametrize("instant, expected_open", [
-    ("2026-11-16T04:59:59.999999+00:00", True),
-    ("2026-11-16T05:00:00+00:00", False),
-    ("2026-11-16T05:00:00.000001+00:00", False),
+    ("2026-11-15T16:59:59.999999+00:00", True),
+    ("2026-11-15T17:00:00+00:00", False),
+    ("2026-11-15T17:00:00.000001+00:00", False),
 ])
 def test_exact_cutoff_matches_status_unlock_and_order(monkeypatch, override, instant, expected_open):
     client, col = make_client(monkeypatch)

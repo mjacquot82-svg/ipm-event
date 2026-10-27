@@ -6,12 +6,13 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import colors from '../src/theme/colors';
 import { attendeePageContent, useAttendeeLayout } from '../src/theme/attendeePageLayout';
+import { scheduleVolunteerGlassesClose } from '../src/services/volunteerGlassesDeadline';
 import {
   formatDollars, getVolunteerGlassesStatus, orderTotalCents, PRICE_PER_SET_CENTS,
   submitVolunteerGlassesOrder, unlockVolunteerGlasses, VolunteerGlassesInfo,
 } from '../src/services/volunteerGlassesService';
 
-export const CLOSING_LABEL = 'Deadline to order nov 15';
+export const CLOSING_LABEL = 'Deadline to order November 15 at noon (Toronto time)';
 
 const GLASS_IMAGES: Record<string, number> = {
   colored_logo: require('../assets/images/volunteer-glasses/colored-logo.jpg'),
@@ -47,15 +48,7 @@ export default function VolunteerGlassesScreen() {
 
   useEffect(() => {
     if (!closesAt || closed) return;
-    let timer: ReturnType<typeof setTimeout>;
-    const checkDeadline = () => {
-      const remaining = Date.parse(closesAt) - Date.now();
-      if (!Number.isFinite(remaining)) return;
-      if (remaining <= 0) setClosed(true);
-      else timer = setTimeout(checkDeadline, Math.min(remaining, 60_000));
-    };
-    checkDeadline();
-    return () => clearTimeout(timer);
+    return scheduleVolunteerGlassesClose(closesAt, () => setClosed(true));
   }, [closesAt, closed]);
 
   const total = useMemo(() => orderTotalCents(quantities, info?.price_per_set_cents ?? PRICE_PER_SET_CENTS), [quantities, info]);
