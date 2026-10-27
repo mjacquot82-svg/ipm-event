@@ -17,7 +17,11 @@ test('Volunteer Glasses button lives on the Souvenirs page, not the home page', 
 });
 
 test('page shows three styles, price, closing date, pay at pickup, closed state', () => {
-  for (const s of ['Colored Logo', 'Large Etched', 'Short Etched', '$16 per set of two', 'Pre-order end date to be decided', 'Pay at pickup', 'Pre-order closed', 'no mixing']) {
+  for (const s of ['Colored Logo', 'Large Etched', 'Short Etched',
+    'Glassware is available as a set of two.', 'No mix and matching.', '3 styles to choose from',
+    'Cash payment at pickup $16 per set of 2 glasses',
+    'Pickup December 17th at the Chepstow Lions Park from 5-8pm. If you cannot be there send someone on your behalf with payment',
+    'Deadline to order nov 15', 'Pre-order closed']) {
     assert.ok(page.includes(s), `missing ${s}`);
   }
   assert.match(page, /secureTextEntry/);

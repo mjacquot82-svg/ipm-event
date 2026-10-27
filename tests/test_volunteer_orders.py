@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+import pytest
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -35,9 +37,47 @@ def make_client(monkeypatch, closes="2099-01-01T00:00"):
 ORDER = {"name": "Pat", "contact": "pat@example.com", "quantities": {"colored_logo": 2, "short_etched": 1}}
 
 
-def test_default_close_is_nov_20_toronto(monkeypatch):
+def test_default_close_is_end_of_nov_15_toronto(monkeypatch):
     monkeypatch.delenv("VOLUNTEER_ORDER_CLOSES_AT", raising=False)
-    assert vo.closes_at().isoformat() == "2026-11-20T23:59:00-05:00"
+    assert vo.closes_at().isoformat() == "2026-11-16T00:00:00-05:00"
+    assert vo.closes_at().astimezone(timezone.utc).isoformat() == "2026-11-16T05:00:00+00:00"
+
+
+@pytest.mark.parametrize("override", [None, "2026-11-16T00:00", "2026-11-16T00:00:00-05:00", "2026-11-16T05:00:00+00:00"])
+@pytest.mark.parametrize("instant, expected_open", [
+    ("2026-11-16T04:59:59.999999+00:00", True),
+    ("2026-11-16T05:00:00+00:00", False),
+    ("2026-11-16T05:00:00.000001+00:00", False),
+])
+def test_exact_cutoff_matches_status_unlock_and_order(monkeypatch, override, instant, expected_open):
+    client, col = make_client(monkeypatch)
+    if override is None:
+        monkeypatch.delenv("VOLUNTEER_ORDER_CLOSES_AT")
+    else:
+        monkeypatch.setenv("VOLUNTEER_ORDER_CLOSES_AT", override)
+    now = datetime.fromisoformat(instant)
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return now.astimezone(tz)
+
+    monkeypatch.setattr(vo, "datetime", Clock)
+    h = {"X-Volunteer-Password": "vol-pass"}
+    status = client.get("/api/volunteer-glasses/status").json()
+    info = client.post("/api/volunteer-glasses/unlock", headers=h).json()
+    assert status["open"] is info["open"] is expected_open
+    assert datetime.fromisoformat(status["closes_at"]) == vo.closes_at()
+    assert info["set_size"] == 2 and info["price_per_set_cents"] == 1600
+    assert len(info["styles"]) == 3
+    response = client.post("/api/volunteer-glasses/orders", headers=h, json=ORDER)
+    assert response.status_code == (201 if expected_open else 403)
+    assert len(col.docs) == (1 if expected_open else 0)
+
+
+def test_local_environment_override_uses_toronto_dst(monkeypatch):
+    monkeypatch.setenv("VOLUNTEER_ORDER_CLOSES_AT", "2026-07-15T00:00")
+    assert vo.closes_at().isoformat() == "2026-07-15T00:00:00-04:00"
 
 
 def test_wrong_or_missing_password_rejected(monkeypatch):

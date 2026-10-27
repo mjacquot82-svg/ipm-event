@@ -11,7 +11,7 @@ import {
   submitVolunteerGlassesOrder, unlockVolunteerGlasses, VolunteerGlassesInfo,
 } from '../src/services/volunteerGlassesService';
 
-export const CLOSING_LABEL = 'Pre-order end date to be decided';
+export const CLOSING_LABEL = 'Deadline to order nov 15';
 
 const GLASS_IMAGES: Record<string, number> = {
   colored_logo: require('../assets/images/volunteer-glasses/colored-logo.jpg'),
@@ -31,6 +31,7 @@ export default function VolunteerGlassesScreen() {
   const [password, setPassword] = useState('');
   const [info, setInfo] = useState<VolunteerGlassesInfo | null>(null);
   const [closed, setClosed] = useState(false);
+  const [closesAt, setClosesAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -39,8 +40,23 @@ export default function VolunteerGlassesScreen() {
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
   useEffect(() => {
-    getVolunteerGlassesStatus().then((s) => setClosed(!s.open)).catch(() => undefined);
+    getVolunteerGlassesStatus().then((s) => {
+      setClosed(!s.open); setClosesAt(s.closes_at);
+    }).catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    if (!closesAt || closed) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const checkDeadline = () => {
+      const remaining = Date.parse(closesAt) - Date.now();
+      if (!Number.isFinite(remaining)) return;
+      if (remaining <= 0) setClosed(true);
+      else timer = setTimeout(checkDeadline, Math.min(remaining, 60_000));
+    };
+    checkDeadline();
+    return () => clearTimeout(timer);
+  }, [closesAt, closed]);
 
   const total = useMemo(() => orderTotalCents(quantities, info?.price_per_set_cents ?? PRICE_PER_SET_CENTS), [quantities, info]);
   const totalSets = Object.values(quantities).reduce((a, b) => a + b, 0);
@@ -52,7 +68,7 @@ export default function VolunteerGlassesScreen() {
     setBusy(true); setError(null);
     try {
       const result = await unlockVolunteerGlasses(password);
-      setInfo(result); setClosed(!result.open);
+      setInfo(result); setClosed(!result.open); setClosesAt(result.closes_at);
     } catch (e) {
       setError((e as Error).message === 'Incorrect password' ? 'That password is not correct.' : (e as Error).message);
     } finally { setBusy(false); }
@@ -68,7 +84,7 @@ export default function VolunteerGlassesScreen() {
     setBusy(true);
     try {
       const result = await submitVolunteerGlassesOrder(password, { name, contact, quantities });
-      setConfirmation(`Thanks ${name.trim()}! Your order for ${result.total_sets} set${result.total_sets === 1 ? '' : 's'} (${formatDollars(result.total_cents)}) is in. Pay at pickup.`);
+      setConfirmation(`Thanks ${name.trim()}! Your order for ${result.total_sets} set${result.total_sets === 1 ? '' : 's'} (${formatDollars(result.total_cents)}) is in. Cash payment at pickup.`);
     } catch (e) {
       if ((e as { status?: number }).status === 403) setClosed(true);
       setError((e as Error).message);
@@ -84,12 +100,15 @@ export default function VolunteerGlassesScreen() {
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
           <Text style={styles.pageTitle} accessibilityRole="header">Volunteer Glasses Pre-Order</Text>
-          <Text style={styles.closing}>{CLOSING_LABEL}</Text>
-          <Text style={styles.body}>$16 per set of two. Each set is one style (no mixing). Order as many sets of each style as you like.</Text>
+          <Text style={styles.body}>Glassware is available as a set of two.</Text>
+          <Text style={styles.body}>No mix and matching.</Text>
+          <Text style={styles.body}>3 styles to choose from</Text>
           <View style={styles.notice}>
             <Feather name="dollar-sign" size={18} color={colors.primaryDark} />
-            <Text style={styles.noticeText}>Pay at pickup. There is no online payment.</Text>
+            <Text style={styles.noticeText}>Cash payment at pickup $16 per set of 2 glasses</Text>
           </View>
+          <Text style={styles.body}>Pickup December 17th at the Chepstow Lions Park from 5-8pm. If you cannot be there send someone on your behalf with payment</Text>
+          <Text style={styles.closing}>{CLOSING_LABEL}</Text>
 
           {closed ? (
             <View style={styles.card}><Text style={styles.sectionTitle}>Pre-order closed</Text>
@@ -130,7 +149,7 @@ export default function VolunteerGlassesScreen() {
                 <Text style={styles.label}>Phone or email</Text>
                 <TextInput style={styles.input} value={contact} onChangeText={setContact} placeholder="So we can reach you at pickup" />
                 <Text style={styles.total}>Total: {totalSets} set{totalSets === 1 ? '' : 's'} · {formatDollars(total)}</Text>
-                <Text style={styles.body}>Pay at pickup.</Text>
+                <Text style={styles.body}>Cash payment at pickup.</Text>
                 <TouchableOpacity style={styles.primaryButton} onPress={submit} disabled={busy}>
                   {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Place pre-order</Text>}
                 </TouchableOpacity>

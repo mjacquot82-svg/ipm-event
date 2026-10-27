@@ -4,7 +4,7 @@ Env vars (set in hosting, never in code):
   VOLUNTEER_ORDER_PASSWORD        shared password volunteers enter
   VOLUNTEER_ORDER_ADMIN_PASSWORD  owner password for the order list / CSV
   VOLUNTEER_ORDER_CLOSES_AT       ISO local datetime, America/Toronto
-                                  (default 2026-11-20T23:59)
+                                  (default 2026-11-16T00:00, exclusive cutoff)
 Orders are stored in MongoDB collection ``volunteer_glass_orders``.
 """
 import csv
@@ -21,7 +21,8 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 TORONTO = ZoneInfo("America/Toronto")
-DEFAULT_CLOSES_AT = "2026-11-20T23:59"
+# Accept orders throughout November 15, including its final minute and second.
+DEFAULT_CLOSES_AT = "2026-11-16T00:00"
 PRICE_PER_SET_CENTS = 1600
 MAX_SETS_PER_STYLE = 50
 STYLES = [
@@ -110,7 +111,7 @@ def build_router(get_db: Callable) -> APIRouter:
 
     def info():
         return {"open": is_open(), "closes_at": closes_at().isoformat(), "price_per_set_cents": PRICE_PER_SET_CENTS,
-                "set_size": 2, "styles": STYLES, "payment": "Pay at pickup. No online payment."}
+                "set_size": 2, "styles": STYLES, "payment": "Cash payment at pickup. No online payment."}
 
     @router.get("/status")
     async def status():
