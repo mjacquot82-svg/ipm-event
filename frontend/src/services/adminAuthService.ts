@@ -447,6 +447,35 @@ export function publishAndSendAnnouncement(id: string) {
   });
 }
 
+export type AnnouncementScheduledSend = {
+  id: string; event_id: string; announcement_id: string; scheduled_for: string;
+  status: 'scheduled' | 'processing' | 'sent' | 'cancelled' | 'failed';
+  scheduled_by: string; created_at: string; updated_at: string;
+  claimed_at?: string | null; sent_at?: string | null; cancelled_at?: string | null;
+  failed_at?: string | null; error_code?: string | null;
+};
+
+export async function getScheduledAnnouncementSends() {
+  return adminRequest<{ schedules: AnnouncementScheduledSend[]; total_count: number }>(
+    '/api/admin/announcements/scheduled-sends'
+  );
+}
+
+export function scheduleAnnouncementSend(id: string, scheduledFor: string) {
+  return adminRequest<AnnouncementScheduledSend>(
+    `/api/admin/announcements/${encodeURIComponent(id)}/schedule`,
+    { method: 'POST', body: JSON.stringify({ scheduled_for: scheduledFor }) }
+  );
+}
+
+export function cancelScheduledAnnouncementSend(scheduleId: string) {
+  return adminRequest<AnnouncementScheduledSend>(
+    `/api/admin/announcements/scheduled-sends/${encodeURIComponent(scheduleId)}`,
+    { method: 'DELETE' }
+  );
+}
+
+
 export function listScheduleEvents() {
   return adminRequest<AdminScheduleResponse>('/api/admin/schedule');
 }
