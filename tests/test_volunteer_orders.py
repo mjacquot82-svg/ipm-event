@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from backend import volunteer_orders as vo
+from pymongo.errors import DuplicateKeyError
 
 
 class FakeCursor:
@@ -16,7 +17,12 @@ class FakeCursor:
 
 class FakeCollection:
     def __init__(self): self.docs = []
-    async def insert_one(self, doc): self.docs.append({k: v for k, v in doc.items()})
+    async def insert_one(self, doc):
+        if "_id" in doc and any(d.get("_id") == doc["_id"] for d in self.docs):
+            raise DuplicateKeyError("duplicate fixture key")
+        self.docs.append(dict(doc))
+    async def find_one(self, query):
+        return next((dict(d) for d in self.docs if all(d.get(k) == v for k, v in query.items())), None)
     def find(self, *a): return FakeCursor(self.docs)
     async def delete_one(self, query):
         before = len(self.docs)
@@ -152,3 +158,90 @@ def test_admin_delete_unconfigured_503(monkeypatch):
     client, _ = make_client(monkeypatch)
     monkeypatch.delenv("VOLUNTEER_ORDER_ADMIN_PASSWORD")
     assert client.delete("/api/volunteer-glasses/admin/orders/x", headers={"X-Admin-Password": ""}).status_code == 503
+
+
+MANUAL = {**ORDER, "request_id": "73848b53-e989-4942-bb32-bfa2df06b4dd"}
+ADMIN_URL = "/api/volunteer-glasses/admin/orders"
+ADMIN_HEADERS = {"X-Admin-Password": "admin-pass"}
+
+
+@pytest.mark.parametrize("headers", [{}, {"X-Admin-Password": "wrong"},
+                                     {"X-Admin-Password": "vol-pass"}, {"X-Volunteer-Password": "vol-pass"}])
+def test_manual_requires_owner_password(monkeypatch, headers):
+    client, col = make_client(monkeypatch, closes="2020-01-01T00:00")
+    assert client.post(ADMIN_URL, json=MANUAL, headers=headers).status_code == 401
+    assert col.docs == []
+
+
+def test_manual_unconfigured_is_disabled(monkeypatch):
+    client, col = make_client(monkeypatch)
+    monkeypatch.delenv("VOLUNTEER_ORDER_ADMIN_PASSWORD")
+    assert client.post(ADMIN_URL, json=MANUAL, headers=ADMIN_HEADERS).status_code == 503
+    assert col.docs == []
+
+
+def test_manual_after_close_preserves_existing_and_exports(monkeypatch):
+    client, col = make_client(monkeypatch)
+    client.post("/api/volunteer-glasses/orders", json=ORDER, headers={"X-Volunteer-Password": "vol-pass"})
+    original = dict(col.docs[0])
+    monkeypatch.setenv("VOLUNTEER_ORDER_CLOSES_AT", "2020-01-01T00:00")
+    result = client.post(ADMIN_URL, json={**MANUAL, "name": " Late Pat ", "notes": " pickup "}, headers=ADMIN_HEADERS)
+    assert result.status_code == 201
+    assert result.json()["total_sets"] == 3 and result.json()["total_cents"] == 4800
+    assert col.docs[0] == original
+    assert col.docs[1]["name"] == "Late Pat" and col.docs[1]["notes"] == "pickup"
+    data = client.get(ADMIN_URL, headers=ADMIN_HEADERS).json()
+    assert data["open"] is False and data["summary"]["total_cents"] == 9600
+    assert len(data["orders"]) == 2
+    assert "TOTAL,,,4,0,2,6,96.00," in client.get(ADMIN_URL + ".csv", headers=ADMIN_HEADERS).text
+    assert client.post("/api/volunteer-glasses/orders", json=ORDER, headers={"X-Volunteer-Password": "vol-pass"}).status_code == 403
+    assert client.get("/api/volunteer-glasses/status").json()["open"] is False
+
+
+@pytest.mark.parametrize("change", [
+    {"name": "   "}, {"contact": "   "}, {"name": "x" * 121}, {"contact": "x" * 161},
+    {"notes": "x" * 501}, {"request_id": "bad"}, {"quantities": {}},
+    *[{"quantities": {"colored_logo": q}} for q in [-1, 51, 1.5, True, "2", 0]],
+    {"quantities": {"unknown": 2}},
+])
+def test_invalid_manual_never_writes(monkeypatch, change):
+    client, col = make_client(monkeypatch)
+    assert client.post(ADMIN_URL, json={**MANUAL, **change}, headers=ADMIN_HEADERS).status_code == 422
+    assert col.docs == []
+
+
+def test_manual_retry_same_key_returns_original_and_conflict_does_not_mutate(monkeypatch):
+    client, col = make_client(monkeypatch)
+    first = client.post(ADMIN_URL, json=MANUAL, headers=ADMIN_HEADERS)
+    original = dict(col.docs[0])
+    retry = client.post(ADMIN_URL, json=MANUAL, headers=ADMIN_HEADERS)
+    assert first.status_code == 201 and retry.status_code == 200
+    assert retry.json() == first.json() and col.docs == [original]
+    conflict = client.post(ADMIN_URL, json={**MANUAL, "quantities": {"colored_logo": 5}}, headers=ADMIN_HEADERS)
+    assert conflict.status_code == 409 and col.docs == [original]
+
+
+def test_manual_simultaneous_requests_use_one_atomic_insert(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    client, col = make_client(monkeypatch)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: client.post(ADMIN_URL, json=MANUAL, headers=ADMIN_HEADERS), range(2)))
+    assert sorted(r.status_code for r in results) == [200, 201]
+    assert results[0].json() == results[1].json() and len(col.docs) == 1
+
+
+def test_manual_response_lost_retry_after_router_restart(monkeypatch):
+    client, col = make_client(monkeypatch)
+    client.post(ADMIN_URL, json=MANUAL, headers=ADMIN_HEADERS)  # client loses this response
+    app = FastAPI()
+    app.include_router(vo.build_router(lambda: {vo.COLLECTION: col}), prefix="/api")
+    retry = TestClient(app).post(ADMIN_URL, json=MANUAL, headers=ADMIN_HEADERS)
+    assert retry.status_code == 200 and len(col.docs) == 1
+
+
+def test_public_route_cannot_be_opened_with_owner_header(monkeypatch):
+    client, col = make_client(monkeypatch, closes="2020-01-01T00:00")
+    assert client.post("/api/volunteer-glasses/orders", json=ORDER, headers=ADMIN_HEADERS).status_code == 401
+    assert client.post("/api/volunteer-glasses/orders", json=ORDER,
+                       headers={**ADMIN_HEADERS, "X-Volunteer-Password": "vol-pass"}).status_code == 403
+    assert col.docs == []
