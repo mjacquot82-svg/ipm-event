@@ -18,7 +18,8 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictInt, field_validator
+from pymongo.errors import DuplicateKeyError
 
 TORONTO = ZoneInfo("America/Toronto")
 # Accept orders before noon on November 15 in Toronto; noon itself is closed.
@@ -59,6 +60,19 @@ class OrderRequest(BaseModel):
     contact: str = Field(min_length=3, max_length=160)
     quantities: Dict[str, int]
     notes: Optional[str] = Field(default=None, max_length=500)
+
+
+class ManualOrderRequest(OrderRequest):
+    request_id: uuid.UUID
+    quantities: Dict[str, StrictInt]
+
+    @field_validator("name", "contact")
+    @classmethod
+    def nonblank(cls, value, info):
+        value = value.strip()
+        if len(value) < (3 if info.field_name == "contact" else 1):
+            raise ValueError("Enter a name and contact information")
+        return value
 
 
 def validate_quantities(quantities: Dict[str, int]) -> Dict[str, int]:
@@ -144,6 +158,31 @@ def build_router(get_db: Callable) -> APIRouter:
         _check("VOLUNTEER_ORDER_ADMIN_PASSWORD", x_admin_password)
         orders = await _all()
         return {"orders": orders, "summary": summarize(orders), "closes_at": closes_at().isoformat(), "open": is_open()}
+
+    @router.post("/admin/orders", status_code=201)
+    async def admin_create(order: ManualOrderRequest, response: Response,
+                           x_admin_password: Optional[str] = Header(default=None)):
+        _check("VOLUNTEER_ORDER_ADMIN_PASSWORD", x_admin_password)
+        quantities = validate_quantities(order.quantities)
+        sets = sum(quantities.values())
+        payload = {"name": order.name, "contact": order.contact, "quantities": quantities,
+                   "notes": (order.notes or "").strip() or None}
+        # Mongo's built-in unique _id makes simultaneous requests and retries atomic.
+        # No index migration or changes to existing orders are required.
+        key = f"manual:{order.request_id}"
+        doc = {"_id": key, "id": str(order.request_id), **payload,
+               "total_sets": sets, "total_cents": sets * PRICE_PER_SET_CENTS,
+               "created_at": datetime.now(timezone.utc)}
+        collection = get_db()[COLLECTION]
+        try:
+            await collection.insert_one(dict(doc))
+        except DuplicateKeyError:
+            existing = await collection.find_one({"_id": key})
+            if not existing or any(existing.get(k) != v for k, v in payload.items()):
+                raise HTTPException(status_code=409, detail="This request was already used for a different order")
+            doc = existing
+            response.status_code = 200
+        return {"id": doc["id"], "total_sets": doc["total_sets"], "total_cents": doc["total_cents"]}
 
     @router.delete("/admin/orders/{order_id}")
     async def admin_delete(order_id: str, x_admin_password: Optional[str] = Header(default=None)):

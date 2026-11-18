@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import colors from '../src/theme/colors';
+import ManualGlassesOrderForm from '../src/components/ManualGlassesOrderForm';
 import { deleteVolunteerGlassesOrder, formatDollars, getVolunteerGlassesCsv, getVolunteerGlassesOrders } from '../src/services/volunteerGlassesService';
 
 const NAMES: Record<string, string> = { colored_logo: 'Colored Logo', large_etched: 'Large Etched', short_etched: 'Short Etched' };
@@ -64,6 +65,7 @@ export default function VolunteerGlassesOrdersScreen() {
           ))}
           <Text style={styles.total}>Total: {data.summary.total_sets} sets · {formatDollars(data.summary.total_cents)}</Text>
           <TouchableOpacity style={styles.button} onPress={download}><Text style={styles.buttonText}>Download CSV</Text></TouchableOpacity>
+          <ManualGlassesOrderForm password={password} onSaved={load} styles={styles} />
           {data.orders.map((o: any) => (
             <View key={o.id} style={styles.row}>
               <Text style={styles.name}>{o.name} — {o.contact}</Text>

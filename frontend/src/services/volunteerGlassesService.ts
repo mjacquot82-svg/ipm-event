@@ -53,6 +53,16 @@ export async function getVolunteerGlassesOrders(adminPassword: string) {
   return (await request('/admin/orders', { method: 'GET', headers: { 'X-Admin-Password': adminPassword } })).json();
 }
 
+export async function submitManualGlassesOrder(adminPassword: string, order: {
+  request_id: string; name: string; contact: string; quantities: Record<string, number>; notes?: string;
+}) {
+  return (await request('/admin/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPassword },
+    body: JSON.stringify(order),
+  })).json();
+}
+
 export async function getVolunteerGlassesCsv(adminPassword: string): Promise<string> {
   return (await request('/admin/orders.csv', { method: 'GET', headers: { 'X-Admin-Password': adminPassword } })).text();
 }
